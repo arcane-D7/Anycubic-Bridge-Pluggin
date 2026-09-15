@@ -97,15 +97,18 @@ Usa sempre:
   "mcpServers": {
     "anycubic-slicer-next": {
       "command": "node",
-      "args": ["${workspaceFolder}/scripts/mcp-entry.mjs"],
-      "cwd": "${workspaceFolder}",
-    },
-  },
+      "args": ["scripts/mcp-entry.mjs"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
 }
 ```
 
-`scripts/mcp-entry.mjs` resolve `dist/server.mjs` relativo a si próprio e
-auto-builda se faltar. Nunca ponhas `dist/` em paths de execução do cliente.
+Nota: alguns clientes MCP **não expandem** `${workspaceFolder}` dentro da string
+`args` (fica literal → `MODULE_NOT_FOUND`). Por isso o `args` usa um **caminho
+relativo** (`scripts/mcp-entry.mjs`) apoiado pelo `cwd` (que o cliente expande), e o
+entry resolve `dist/server.mjs` relativo a si próprio + auto-builda se faltar.
+Nunca ponhas `dist/` nem o token `${workspaceFolder}` dentro do caminho de `args`.
 
 ## 8. Health gate (obrigatório antes de commit de código)
 
