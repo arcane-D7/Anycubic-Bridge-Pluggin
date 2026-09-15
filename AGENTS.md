@@ -98,9 +98,9 @@ Usa sempre:
     "anycubic-slicer-next": {
       "command": "node",
       "args": ["scripts/mcp-entry.mjs"],
-      "cwd": "${workspaceFolder}"
-    }
-  }
+      "cwd": "${workspaceFolder}",
+    },
+  },
 }
 ```
 

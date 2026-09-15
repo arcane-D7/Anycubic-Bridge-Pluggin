@@ -80,11 +80,11 @@ $serverPath = Join-Path $projectDir 'dist\server.mjs'
 ### Em `.mcp.json`
 
 **NUNCA**: `"args": ["${workspaceFolder}/dist/server.mjs"]` — alguns clientes não
- expandem o token dentro do `args` e o node tenta abrir um path literal com
- `${workspaceFolder}`.
+expandem o token dentro do `args` e o node tenta abrir um path literal com
+`${workspaceFolder}`.
 
 **TAMBÉM NUNCA**: `"args": ["${workspaceFolder}/scripts/mcp-entry.mjs"]` — o
- mesmo problema: nem todos expandem o token dentro de `args`.
+mesmo problema: nem todos expandem o token dentro de `args`.
 
 **SEMPRE**:
 
@@ -96,6 +96,7 @@ $serverPath = Join-Path $projectDir 'dist\server.mjs'
 Os argumentos do node são um **caminho relativo** resolvido a partir do `cwd`
 (que o cliente expande) — `scripts/mcp-entry.mjs` resolve-se de forma fiável.
 `scripts/mcp-entry.mjs`:
+
 1. resolve `dist/server.mjs` relativo a si próprio (independente do cwd);
 2. auto-builda a partir de `vendor/server.mjs` se `dist/` não existir (fresh clone);
 3. devolve ao servidor real mantendo o transporte stdio intacto.
