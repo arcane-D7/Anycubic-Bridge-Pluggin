@@ -1,0 +1,10 @@
+import fs from "node:fs";
+const src = fs.readFileSync("<REPO_ROOT>/dist/bridge-server.mjs", "utf8");
+const out = [];
+const re = /pathname\s*===?\s*["']([^"']+)["']/g;
+let m;
+while ((m = re.exec(src)) !== null) out.push(m[1]);
+const re2 = /pathname\.startsWith\(["']([^"']+)["']\)/g;
+while ((m = re2.exec(src)) !== null) out.push(m[1] + "*");
+fs.writeFileSync("<REPO_ROOT>/.bridge-routes.txt", [...new Set(out)].sort().join("\n"));
+console.log("routes:", [...new Set(out)].length);

@@ -1,0 +1,1518 @@
+{
+  "printer_id": 0,
+  "collected_at": "2026-09-10T21:49:31.063Z",
+  "transport": "cloud-mqtt",
+  "queries": {
+    "axis": {
+      "msgid": "5eccbe0a-f8e9-4aa5-9019-1b215995eb0e",
+      "state": "uncorrelated_report",
+      "replies": [
+        {
+          "topic": "axis/report",
+          "received_at": "2026-09-10T21:49:31.846Z",
+          "data": {
+            "type": "axis",
+            "action": "query",
+            "timestamp": 1789077026328,
+            "msgid": "40afe946-f1dd-430e-a52c-831fb598582f",
+            "state": "done",
+            "code": 200,
+            "msg": "",
+            "data": {
+              "coordinates": {
+                "x": 47,
+                "y": 276,
+                "z": 4.034207620182453
+              }
+            }
+          }
+        }
+      ],
+      "device_codes": [
+        200
+      ]
+    },
+    "info": {
+      "msgid": "7be2efb6-8300-456a-a38c-b0991ee7ea98",
+      "state": "uncorrelated_report",
+      "replies": [
+        {
+          "topic": "info/report",
+          "received_at": "2026-09-10T21:49:31.858Z",
+          "data": {
+            "type": "info",
+            "action": "report",
+            "timestamp": 1789077026334,
+            "msgid": "5238484e-794a-4b0f-a58d-9b1da7294adb",
+            "state": "done",
+            "code": 200,
+            "msg": "done",
+            "data": {
+              "printerName": "Anycubic Kobra S1",
+              "urls": {
+                "fileUploadurl": "[redacted]",
+                "rtspUrl": "[redacted]"
+              },
+              "project": null,
+              "last_project": {
+                "remain_time": 68,
+                "curr_layer": 62,
+                "total_layers": 150,
+                "supplies_usage": 11673,
+                "print_time": 76,
+                "progress": 53,
+                "state": "failed",
+                "print_status": 3,
+                "filename": "0910-2020-OpenSCAD Model_plate(01)_PLA_0.2_2h32m25s.gcode",
+                "pause": 0,
+                "project_type": 2,
+                "task_id": 0,
+                "localtask": "",
+                "task_settings": {
+                  "camera_timelapse": 0
+                },
+                "print_speed_mode": null
+              },
+              "model": "Anycubic Kobra S1",
+              "ip": "127.0.0.1",
+              "version": "",
+              "state": "free",
+              "temp": {
+                "curr_hotbed_temp": 43,
+                "curr_nozzle_temp": 41,
+                "target_hotbed_temp": 0,
+                "target_nozzle_temp": 0
+              },
+              "print_speed_mode": 2,
+              "fan_speed_pct": 0,
+              "aux_fan_speed_pct": 0,
+              "box_fan_level": 0,
+              "features": {
+                "auto_leveling_support": true,
+                "vibration_compensation_support": true,
+                "flow_calibration_support": true,
+                "drying_first_support": true,
+                "camera_timelapse_support": true,
+                "gcode_3mf_support": true,
+                "delete_batch_support": true,
+                "preheating_support": true,
+                "fod_support": true,
+                "shengwang_rtc_support": true,
+                "pre_cancel_support": true,
+                "shengwang_rdt_support": true
+              }
+            }
+          }
+        }
+      ],
+      "device_codes": [
+        200
+      ]
+    },
+    "print": {
+      "msgid": "5e7107f3-9818-4181-a94e-de9067f38100",
+      "state": "timeout",
+      "replies": [],
+      "device_codes": []
+    },
+    "tempature": {
+      "msgid": "26f47238-31e1-4f2e-9ecf-466fbb99b642",
+      "state": "uncorrelated_report",
+      "replies": [
+        {
+          "topic": "tempature/report",
+          "received_at": "2026-09-10T21:49:31.866Z",
+          "data": {
+            "type": "tempature",
+            "action": "query",
+            "timestamp": 1789077026348,
+            "msgid": "b21afb3a-05d9-4a19-a85c-81cc0f1f0498",
+            "state": "done",
+            "code": 200,
+            "msg": "",
+            "data": {
+              "curr_hotbed_temp": 43,
+              "curr_nozzle_temp": 41,
+              "curr_chamber_temp": 0,
+              "target_hotbed_temp": 0,
+              "target_nozzle_temp": 0,
+              "target_chamber_temp": 0
+            }
+          }
+        }
+      ],
+      "device_codes": [
+        200
+      ]
+    },
+    "fan": {
+      "msgid": "f2a6c728-eed7-4806-9324-c8c463e937cf",
+      "state": "uncorrelated_report",
+      "replies": [
+        {
+          "topic": "fan/report",
+          "received_at": "2026-09-10T21:49:31.867Z",
+          "data": {
+            "type": "fan",
+            "action": "query",
+            "timestamp": 1789077026351,
+            "msgid": "0d7cdf86-278c-4e13-9710-31fc3e25b88f",
+            "state": "done",
+            "code": 200,
+            "msg": "done",
+            "data": {
+              "aux_fan_speed_pct": 0,
+              "box_fan_level": 0,
+              "fan_speed_pct": 0
+            }
+          }
+        }
+      ],
+      "device_codes": [
+        200
+      ]
+    },
+    "light": {
+      "msgid": "8644525e-6377-4739-b950-32787c29e832",
+      "state": "uncorrelated_report",
+      "replies": [
+        {
+          "topic": "light/report",
+          "received_at": "2026-09-10T21:49:31.996Z",
+          "data": {
+            "type": "light",
+            "action": "query",
+            "timestamp": 1789077026358,
+            "msgid": "09aa5587-afb8-41d7-9471-46064a86275a",
+            "state": "done",
+            "code": 200,
+            "msg": "done",
+            "data": {
+              "lights": [
+                {
+                  "type": 2,
+                  "status": 0,
+                  "brightness": 0
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "device_codes": [
+        200
+      ]
+    },
+    "peripherie": {
+      "msgid": "f194ae3c-bfd1-498a-89a8-3dfd1f874df0",
+      "state": "uncorrelated_report",
+      "replies": [
+        {
+          "topic": "peripherie/report",
+          "received_at": "2026-09-10T21:49:31.936Z",
+          "data": {
+            "type": "peripherie",
+            "action": "query",
+            "timestamp": 1789077026367,
+            "msgid": "969553bb-3619-45a7-a733-c3343d768086",
+            "state": "done",
+            "code": 200,
+            "msg": "done",
+            "data": {
+              "camera": 1,
+              "multiColorBox": 1,
+              "udisk": 1
+            }
+          }
+        }
+      ],
+      "device_codes": [
+        200
+      ]
+    },
+    "aiSettings": {
+      "msgid": "6534781a-6cfc-4b20-bc33-8b43f57a4abe",
+      "state": "uncorrelated_report",
+      "replies": [
+        {
+          "topic": "aiSettings/report",
+          "received_at": "2026-09-10T21:49:31.936Z",
+          "data": {
+            "type": "aiSettings",
+            "action": "query",
+            "timestamp": 1789077026370,
+            "msgid": "5fd7fd14-7e55-4cb4-bfde-4c16aa2e3a95",
+            "state": "done",
+            "code": 200,
+            "msg": "done",
+            "data": {
+              "ai_settings": {
+                "status": 3,
+                "type": 2,
+                "count": 60,
+                "notice_type": [
+                  0,
+                  1
+                ],
+                "sensitivity_level": [
+                  1,
+                  1
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "device_codes": [
+        200
+      ]
+    },
+    "extfilbox": {
+      "msgid": "92b8883f-50e5-4a21-abd1-7b4942f87b97",
+      "state": "timeout",
+      "replies": [],
+      "device_codes": []
+    },
+    "multiColorBox": {
+      "msgid": "b4b4fa73-01cd-4fc7-bd68-1bbe22163c4a",
+      "state": "uncorrelated_report",
+      "replies": [
+        {
+          "topic": "multiColorBox/report",
+          "received_at": "2026-09-10T21:49:32.007Z",
+          "data": {
+            "type": "multiColorBox",
+            "action": "getInfo",
+            "timestamp": 1789077026495,
+            "msgid": "c47aabae-fc9b-4fcd-be53-1d2b7105f2f5",
+            "state": "success",
+            "code": 200,
+            "msg": "done",
+            "data": {
+              "head_tools_model": 0,
+              "multi_color_box": [
+                {
+                  "id": 0,
+                  "status": 1,
+                  "model_id": 0,
+                  "auto_feed": 0,
+                  "loaded_slot": -1,
+                  "feed_status": {
+                    "code": 200,
+                    "type": -1,
+                    "current_status": -1,
+                    "slot_index": -1
+                  },
+                  "temp": 41,
+                  "humidity": 25,
+                  "drying_status": {
+                    "status": 0,
+                    "target_temp": 0,
+                    "duration": 0,
+                    "remain_time": 0
+                  },
+                  "slots": [
+                    {
+                      "index": 0,
+                      "sku": "AHHSGY-107",
+                      "type": "PLA High Speed",
+                      "color": [
+                        117,
+                        120,
+                        123
+                      ],
+                      "edit_status": 0,
+                      "status": 5,
+                      "color_group": [
+                        [
+                          117,
+                          120,
+                          123,
+                          255
+                        ]
+                      ],
+                      "icon_type": 0,
+                      "consumables_percent": 13
+                    },
+                    {
+                      "index": 1,
+                      "sku": "AHPLLB-107",
+                      "type": "PLA",
+                      "color": [
+                        212,
+                        185,
+                        150
+                      ],
+                      "edit_status": 0,
+                      "status": 5,
+                      "color_group": [
+                        [
+                          212,
+                          185,
+                          150,
+                          255
+                        ]
+                      ],
+                      "icon_type": 0,
+                      "consumables_percent": 93
+                    },
+                    {
+                      "index": 2,
+                      "sku": "",
+                      "type": "PLA Silk",
+                      "color": [
+                        255,
+                        215,
+                        0
+                      ],
+                      "edit_status": 1,
+                      "status": 5,
+                      "color_group": [
+                        [
+                          255,
+                          215,
+                          0,
+                          255
+                        ]
+                      ],
+                      "icon_type": 0,
+                      "consumables_percent": 0
+                    },
+                    {
+                      "index": 3,
+                      "sku": "",
+                      "type": "PLA",
+                      "color": [
+                        0,
+                        0,
+                        0
+                      ],
+                      "edit_status": 1,
+                      "status": 5,
+                      "color_group": [
+                        [
+                          0,
+                          0,
+                          0,
+                          255
+                        ]
+                      ],
+                      "icon_type": 0,
+                      "consumables_percent": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "device_codes": [
+        200
+      ]
+    }
+  },
+  "events": [
+    {
+      "topic": "axis/report",
+      "received_at": "2026-09-10T21:49:31.846Z",
+      "data": {
+        "type": "axis",
+        "action": "query",
+        "timestamp": 1789077026328,
+        "msgid": "40afe946-f1dd-430e-a52c-831fb598582f",
+        "state": "done",
+        "code": 200,
+        "msg": "",
+        "data": {
+          "coordinates": {
+            "x": 47,
+            "y": 276,
+            "z": 4.034207620182453
+          }
+        }
+      }
+    },
+    {
+      "topic": "info/report",
+      "received_at": "2026-09-10T21:49:31.858Z",
+      "data": {
+        "type": "info",
+        "action": "report",
+        "timestamp": 1789077026334,
+        "msgid": "5238484e-794a-4b0f-a58d-9b1da7294adb",
+        "state": "done",
+        "code": 200,
+        "msg": "done",
+        "data": {
+          "printerName": "Anycubic Kobra S1",
+          "urls": {
+            "fileUploadurl": "[redacted]",
+            "rtspUrl": "[redacted]"
+          },
+          "project": null,
+          "last_project": {
+            "remain_time": 68,
+            "curr_layer": 62,
+            "total_layers": 150,
+            "supplies_usage": 11673,
+            "print_time": 76,
+            "progress": 53,
+            "state": "failed",
+            "print_status": 3,
+            "filename": "0910-2020-OpenSCAD Model_plate(01)_PLA_0.2_2h32m25s.gcode",
+            "pause": 0,
+            "project_type": 2,
+            "task_id": 0,
+            "localtask": "",
+            "task_settings": {
+              "camera_timelapse": 0
+            },
+            "print_speed_mode": null
+          },
+          "model": "Anycubic Kobra S1",
+          "ip": "127.0.0.1",
+          "version": "",
+          "state": "free",
+          "temp": {
+            "curr_hotbed_temp": 43,
+            "curr_nozzle_temp": 41,
+            "target_hotbed_temp": 0,
+            "target_nozzle_temp": 0
+          },
+          "print_speed_mode": 2,
+          "fan_speed_pct": 0,
+          "aux_fan_speed_pct": 0,
+          "box_fan_level": 0,
+          "features": {
+            "auto_leveling_support": true,
+            "vibration_compensation_support": true,
+            "flow_calibration_support": true,
+            "drying_first_support": true,
+            "camera_timelapse_support": true,
+            "gcode_3mf_support": true,
+            "delete_batch_support": true,
+            "preheating_support": true,
+            "fod_support": true,
+            "shengwang_rtc_support": true,
+            "pre_cancel_support": true,
+            "shengwang_rdt_support": true
+          }
+        }
+      }
+    },
+    {
+      "topic": "tempature/report",
+      "received_at": "2026-09-10T21:49:31.866Z",
+      "data": {
+        "type": "tempature",
+        "action": "query",
+        "timestamp": 1789077026348,
+        "msgid": "b21afb3a-05d9-4a19-a85c-81cc0f1f0498",
+        "state": "done",
+        "code": 200,
+        "msg": "",
+        "data": {
+          "curr_hotbed_temp": 43,
+          "curr_nozzle_temp": 41,
+          "curr_chamber_temp": 0,
+          "target_hotbed_temp": 0,
+          "target_nozzle_temp": 0,
+          "target_chamber_temp": 0
+        }
+      }
+    },
+    {
+      "topic": "fan/report",
+      "received_at": "2026-09-10T21:49:31.867Z",
+      "data": {
+        "type": "fan",
+        "action": "query",
+        "timestamp": 1789077026351,
+        "msgid": "0d7cdf86-278c-4e13-9710-31fc3e25b88f",
+        "state": "done",
+        "code": 200,
+        "msg": "done",
+        "data": {
+          "aux_fan_speed_pct": 0,
+          "box_fan_level": 0,
+          "fan_speed_pct": 0
+        }
+      }
+    },
+    {
+      "topic": "peripherie/report",
+      "received_at": "2026-09-10T21:49:31.936Z",
+      "data": {
+        "type": "peripherie",
+        "action": "query",
+        "timestamp": 1789077026367,
+        "msgid": "969553bb-3619-45a7-a733-c3343d768086",
+        "state": "done",
+        "code": 200,
+        "msg": "done",
+        "data": {
+          "camera": 1,
+          "multiColorBox": 1,
+          "udisk": 1
+        }
+      }
+    },
+    {
+      "topic": "aiSettings/report",
+      "received_at": "2026-09-10T21:49:31.936Z",
+      "data": {
+        "type": "aiSettings",
+        "action": "query",
+        "timestamp": 1789077026370,
+        "msgid": "5fd7fd14-7e55-4cb4-bfde-4c16aa2e3a95",
+        "state": "done",
+        "code": 200,
+        "msg": "done",
+        "data": {
+          "ai_settings": {
+            "status": 3,
+            "type": 2,
+            "count": 60,
+            "notice_type": [
+              0,
+              1
+            ],
+            "sensitivity_level": [
+              1,
+              1
+            ]
+          }
+        }
+      }
+    },
+    {
+      "topic": "light/report",
+      "received_at": "2026-09-10T21:49:31.996Z",
+      "data": {
+        "type": "light",
+        "action": "query",
+        "timestamp": 1789077026358,
+        "msgid": "09aa5587-afb8-41d7-9471-46064a86275a",
+        "state": "done",
+        "code": 200,
+        "msg": "done",
+        "data": {
+          "lights": [
+            {
+              "type": 2,
+              "status": 0,
+              "brightness": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "topic": "multiColorBox/report",
+      "received_at": "2026-09-10T21:49:32.007Z",
+      "data": {
+        "type": "multiColorBox",
+        "action": "getInfo",
+        "timestamp": 1789077026495,
+        "msgid": "c47aabae-fc9b-4fcd-be53-1d2b7105f2f5",
+        "state": "success",
+        "code": 200,
+        "msg": "done",
+        "data": {
+          "head_tools_model": 0,
+          "multi_color_box": [
+            {
+              "id": 0,
+              "status": 1,
+              "model_id": 0,
+              "auto_feed": 0,
+              "loaded_slot": -1,
+              "feed_status": {
+                "code": 200,
+                "type": -1,
+                "current_status": -1,
+                "slot_index": -1
+              },
+              "temp": 41,
+              "humidity": 25,
+              "drying_status": {
+                "status": 0,
+                "target_temp": 0,
+                "duration": 0,
+                "remain_time": 0
+              },
+              "slots": [
+                {
+                  "index": 0,
+                  "sku": "AHHSGY-107",
+                  "type": "PLA High Speed",
+                  "color": [
+                    117,
+                    120,
+                    123
+                  ],
+                  "edit_status": 0,
+                  "status": 5,
+                  "color_group": [
+                    [
+                      117,
+                      120,
+                      123,
+                      255
+                    ]
+                  ],
+                  "icon_type": 0,
+                  "consumables_percent": 13
+                },
+                {
+                  "index": 1,
+                  "sku": "AHPLLB-107",
+                  "type": "PLA",
+                  "color": [
+                    212,
+                    185,
+                    150
+                  ],
+                  "edit_status": 0,
+                  "status": 5,
+                  "color_group": [
+                    [
+                      212,
+                      185,
+                      150,
+                      255
+                    ]
+                  ],
+                  "icon_type": 0,
+                  "consumables_percent": 93
+                },
+                {
+                  "index": 2,
+                  "sku": "",
+                  "type": "PLA Silk",
+                  "color": [
+                    255,
+                    215,
+                    0
+                  ],
+                  "edit_status": 1,
+                  "status": 5,
+                  "color_group": [
+                    [
+                      255,
+                      215,
+                      0,
+                      255
+                    ]
+                  ],
+                  "icon_type": 0,
+                  "consumables_percent": 0
+                },
+                {
+                  "index": 3,
+                  "sku": "",
+                  "type": "PLA",
+                  "color": [
+                    0,
+                    0,
+                    0
+                  ],
+                  "edit_status": 1,
+                  "status": 5,
+                  "color_group": [
+                    [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  ],
+                  "icon_type": 0,
+                  "consumables_percent": 0
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "recovery": {
+    "executable": false,
+    "reason": "Coordinates alone do not establish homing, offsets or crash position"
+  },
+  "http": {
+    "printer_status": {
+      "endpoint": "/v2/Printer/status",
+      "query": {
+        "id": 0
+      },
+      "state": "reply",
+      "response": {
+        "code": 1,
+        "msg": "Connection successful",
+        "data": {
+          "is_printing": 1,
+          "device_status": 1,
+          "key": "dev-key-redacted",
+          "id": 0,
+          "machine_type": 0
+        }
+      }
+    },
+    "printer_info": {
+      "endpoint": "/v2/printer/info",
+      "query": {
+        "id": 0
+      },
+      "state": "reply",
+      "response": {
+        "code": 1,
+        "msg": "Connection successful",
+        "data": {
+          "advance": [],
+          "base": {
+            "create_time": 1788626992,
+            "description": "D720-B77B-8316-405A",
+            "firmware_version": "",
+            "machine_mac": "B0-8C-B3-51-B0-96",
+            "material_type": "Filament",
+            "material_used": "2.93kg",
+            "print_count": 63,
+            "print_totaltime": "128hour22min"
+          },
+          "device_status": 1,
+          "external_shelves": {
+            "brand_name": null,
+            "color": [
+              233,
+              157,
+              67
+            ],
+            "current_status": -1,
+            "id": 0,
+            "loaded": 1,
+            "material_name": null,
+            "status_type": -1,
+            "type": "PLA"
+          },
+          "features": [
+            {
+              "name": "shengwang_rdt_support",
+              "value": true
+            },
+            {
+              "name": "auto_leveling_support",
+              "value": true
+            },
+            {
+              "name": "vibration_compensation_support",
+              "value": true
+            },
+            {
+              "name": "camera_timelapse_support",
+              "value": true
+            },
+            {
+              "name": "preheating_support",
+              "value": true
+            },
+            {
+              "name": "fod_support",
+              "value": true
+            },
+            {
+              "name": "pre_cancel_support",
+              "value": true
+            },
+            {
+              "name": "flow_calibration_support",
+              "value": true
+            },
+            {
+              "name": "drying_first_support",
+              "value": true
+            },
+            {
+              "name": "gcode_3mf_support",
+              "value": true
+            },
+            {
+              "name": "delete_batch_support",
+              "value": true
+            },
+            {
+              "name": "shengwang_rtc_support",
+              "value": true
+            }
+          ],
+          "free_temp_limit": "{\n  \"hotbed_temp_limit\": [\n    0,\n    120\n  ],\n  \"nozzle_temp_limit\": [\n    0,\n    320\n  ]\n}",
+          "head_tools_model": 0,
+          "help_url": "[redacted]",
+          "id": 0,
+          "img": "[redacted URL]",
+          "is_printing": 1,
+          "is_read_quick_start_url": "[redacted]",
+          "key": "dev-key-redacted",
+          "machine_data": {
+            "anti_max": 8,
+            "format": "pw0Img",
+            "name": "Anycubic Kobra S1",
+            "pixel": 34.4,
+            "res_x": 11520,
+            "res_y": 5120,
+            "size_x": 250,
+            "size_y": 250,
+            "size_z": 260,
+            "suffix": "gcode"
+          },
+          "machine_type": 0,
+          "maintenance_manual_url": "[redacted]",
+          "max_box_num": 4,
+          "model": "Anycubic Kobra S1",
+          "multi_color_box": {
+            "auto_feed": 0,
+            "curr_nozzle_temp": 41,
+            "drying_status": {
+              "duration": 0,
+              "remain_time": 0,
+              "status": 0,
+              "target_temp": 0
+            },
+            "feed_status": {
+              "code": 200,
+              "current_status": -1,
+              "slot_index": -1,
+              "type": -1
+            },
+            "humidity": 25,
+            "id": 0,
+            "loaded_slot": -1,
+            "model_id": 0,
+            "slots": [
+              {
+                "color": [
+                  117,
+                  120,
+                  123
+                ],
+                "color_group": [
+                  [
+                    117,
+                    120,
+                    123,
+                    255
+                  ]
+                ],
+                "consumables_percent": 13,
+                "edit_status": 0,
+                "icon_type": 0,
+                "index": 0,
+                "sku": "AHHSGY-107",
+                "status": 5,
+                "type": "PLA High Speed"
+              },
+              {
+                "color": [
+                  212,
+                  185,
+                  150
+                ],
+                "color_group": [
+                  [
+                    212,
+                    185,
+                    150,
+                    255
+                  ]
+                ],
+                "consumables_percent": 93,
+                "edit_status": 0,
+                "icon_type": 0,
+                "index": 1,
+                "sku": "AHPLLB-107",
+                "status": 5,
+                "type": "PLA"
+              },
+              {
+                "color": [
+                  255,
+                  215,
+                  0
+                ],
+                "color_group": [
+                  [
+                    255,
+                    215,
+                    0,
+                    255
+                  ]
+                ],
+                "consumables_percent": 0,
+                "edit_status": 1,
+                "icon_type": 0,
+                "index": 2,
+                "sku": "",
+                "status": 5,
+                "type": "PLA Silk"
+              },
+              {
+                "color": [
+                  0,
+                  0,
+                  0
+                ],
+                "color_group": [
+                  [
+                    0,
+                    0,
+                    0,
+                    255
+                  ]
+                ],
+                "consumables_percent": 0,
+                "edit_status": 1,
+                "icon_type": 0,
+                "index": 3,
+                "sku": "",
+                "status": 5,
+                "type": "PLA"
+              }
+            ],
+            "status": 1,
+            "target_nozzle_temp": 0,
+            "temp": 41
+          },
+          "multi_color_box_version": [
+            {
+              "box_id": 0,
+              "box_name": "ACE 2 Pro",
+              "firmware_version": "1.1.36",
+              "force_update": 0,
+              "img": "[redacted URL]",
+              "need_update": 0,
+              "target_version": "1.1.36",
+              "time_cost": 0,
+              "update_date": 0,
+              "update_desc": "",
+              "update_progress": 0,
+              "update_status": ""
+            }
+          ],
+          "name": "Kobra S1 ",
+          "need_update": 0,
+          "nozzle_diameter": 0.4,
+          "parameter": {
+            "curr_hotbed_temp": 43,
+            "curr_nozzle_temp": 41
+          },
+          "quick_start_url": "[redacted]",
+          "releasefilm_url": "[redacted]",
+          "rotate_deg": 0,
+          "temp_limit": "{\"hotbed_temp_limit\":[35,120],\"nozzle_temp_limit\":[185,320]}",
+          "tools": [
+            {
+              "control": 0,
+              "function_des": "View or delete files stored locally on the printer",
+              "function_name": "Document Management",
+              "function_type": 1,
+              "icon_url": "[redacted]",
+              "id": 206,
+              "model_id": 0,
+              "param": [],
+              "parent_id": 0,
+              "show_place": 1,
+              "status": 1,
+              "typd_id": 2,
+              "type_function_id": 2
+            },
+            {
+              "control": 0,
+              "function_des": "Check if the XYZ-axis motor is normal",
+              "function_name": "Moving XYZ-axis",
+              "function_type": 1,
+              "icon_url": "[redacted]",
+              "id": 209,
+              "model_id": 0,
+              "param": [],
+              "parent_id": 0,
+              "show_place": 1,
+              "status": 1,
+              "typd_id": 2,
+              "type_function_id": 13
+            }
+          ],
+          "type_function_ids": [
+            2,
+            13,
+            22,
+            39,
+            41,
+            43,
+            44,
+            45,
+            47,
+            48,
+            67,
+            2006
+          ],
+          "version": {
+            "firmware_version": "",
+            "force_update": 0,
+            "img": "[redacted URL]",
+            "need_update": 0,
+            "target_version": "",
+            "time_cost": 10,
+            "update_date": 0,
+            "update_desc": "1.Fixed system errors caused by abnormal commands in certain G-code files.\n2.Optimized key processes such as print pause resume and stop to improve printing stability.\n3.Fixed low-probability operation anomalies and abnormal memory usage issues.",
+            "update_progress": 0,
+            "update_status": ""
+          }
+        }
+      }
+    },
+    "printer_tool": {
+      "endpoint": "/v2/printer/tool",
+      "query": {
+        "id": 0,
+        "model_id": 0
+      },
+      "state": "error",
+      "error": "invalid PrinterToolReq.TypeFunctionId: value must be greater than 0"
+    },
+    "printer_functions": {
+      "endpoint": "/v2/printer/functions",
+      "query": {
+        "id": 0,
+        "model_id": 0
+      },
+      "state": "reply",
+      "response": {
+        "code": 1,
+        "msg": "Connection successful",
+        "data": {
+          "name": "Photon S",
+          "type_function_ids": null,
+          "net_function_ids": null
+        }
+      }
+    },
+    "ace": {
+      "endpoint": "/v2/printer/multiColorBoxInfo",
+      "query": {
+        "id": 0
+      },
+      "state": "error",
+      "error": "request error"
+    },
+    "project_info": {
+      "endpoint": "/v2/project/info",
+      "query": {
+        "id": 0
+      },
+      "state": "reply",
+      "response": {
+        "code": 1,
+        "msg": "Connection successful",
+        "data": {
+          "auto_operation": null,
+          "aux_fan_speed_limit": [
+            0,
+            100
+          ],
+          "aux_fan_speed_pct": 0,
+          "box_fan_level": 0,
+          "box_fan_level_limit": [
+            0,
+            100
+          ],
+          "create_time": 1789068084,
+          "device_message": {
+            "action": "start",
+            "curr_layer": 62,
+            "display_filename": "0910-2020-OpenSCAD Model_plate(01)_PLA_0.2_2h32m25s.gcode",
+            "filename": "0910-2020-OpenSCAD Model_plate(01)_PLA_0.2_2h32m25s.gcode",
+            "heating_remain_time": 0,
+            "localtask": "",
+            "origin3mf": "/useremain/app/gk/gcodes/0910-2020-OpenSCAD Model_plate(01)_PLA_0.2_2h32m25s.gcode.3mf",
+            "print_time": 76,
+            "progress": 53,
+            "reason": 10116,
+            "remain_time": 68,
+            "resume_needs_unpack": false,
+            "slicer": "AnycubicSlicer",
+            "source_type": "3mf",
+            "state": "failed",
+            "supplies_usage": 11673,
+            "taskid": "0",
+            "temp_dir": "/useremain/app/gk/gcodes/.3mf_unpack_1789068094591732676",
+            "temp_gcode": "/useremain/app/gk/gcodes/.3mf_temp/0910-2020-OpenSCAD Model_plate(01)_PLA_0.2_2h32m25s.gcode",
+            "timestamp": 1789073578935,
+            "total_layers": 150
+          },
+          "end_time": 1789073571,
+          "fan_limit": [
+            0,
+            100
+          ],
+          "fan_speed_pct": 0,
+          "gcode_id": 0,
+          "gcode_name": "0910-2020-OpenSCAD Model_plate(01)_PLA_0.2_2h32m25s",
+          "id": 0,
+          "img": "[redacted URL]",
+          "is_comment": 1,
+          "is_feedback": 0,
+          "key": "dev-key-redacted",
+          "machine_name": "Anycubic Kobra S1",
+          "machine_type": 0,
+          "material": 0,
+          "material_unit": "g",
+          "model": "Anycubic Kobra S1",
+          "monitor": null,
+          "pause": 4,
+          "post_id": 0,
+          "post_title": null,
+          "print_speed_mode": 2,
+          "print_speed_model_des": [
+            {
+              "print_speed_mode": 1,
+              "title": "Quiet"
+            },
+            {
+              "print_speed_mode": 2,
+              "title": "Standard"
+            },
+            {
+              "print_speed_mode": 3,
+              "title": "Sport"
+            }
+          ],
+          "print_speed_pct": 100,
+          "print_status": 3,
+          "printer_monitor": 0,
+          "printer_name": "Kobra S1 ",
+          "printer_type": "FDM",
+          "progress": 53,
+          "project_type": 1,
+          "reason": "Abnormal slice file. Please reslice and print with the correct parameters and software.",
+          "reason_help_url": "[redacted]",
+          "reason_id": 10116,
+          "rotate_deg": 0,
+          "set_limit": null,
+          "slice_param": {
+            "bed_temperature": 55,
+            "brim_type": "on",
+            "filament_retract_length": 0.8,
+            "filament_type": "PLA;PLA;PLA;PLA",
+            "fill_density": 15,
+            "layer_height": 0.2,
+            "material_name": "Filament",
+            "paint_infos": [
+              {
+                "filament_used": 68.11,
+                "material_type": "PLA",
+                "paint_color": [
+                  212,
+                  185,
+                  150
+                ],
+                "paint_index": 1
+              }
+            ],
+            "perimeter_extrusion_width": 0.42,
+            "perimeter_speed": 200,
+            "perimeters": 2,
+            "printer_settings_id": "Anycubic Kobra S1 0.4 nozzle",
+            "support_material_auto": 0,
+            "temperature": 215,
+            "travel_speed": 300
+          },
+          "slice_result": {
+            "size_x": 200,
+            "size_y": 250,
+            "size_z": 30
+          },
+          "slice_status": 0,
+          "sliced_plates": null,
+          "task_mode": 1,
+          "task_settings": {
+            "ai_detect": 1,
+            "ai_settings": {
+              "count": 60,
+              "notice_type": [
+                0,
+                1
+              ],
+              "sensitivity_level": [
+                1,
+                1
+              ],
+              "status": 3,
+              "type": 2
+            },
+            "auto_leveling": 1,
+            "camera_timelapse": 0,
+            "dry_mode": 1,
+            "drying_settings": {
+              "dry_remain_time": 0,
+              "duration": 180,
+              "target_temp": 46
+            },
+            "flow_calibration": 1,
+            "timelapse": {
+              "mode": 0,
+              "status": 0
+            },
+            "vibration_compensation": 0
+          },
+          "temp": {
+            "curr_chamber_temp": 0,
+            "curr_hotbed_temp": 43,
+            "curr_nozzle_temp": 41,
+            "limit": {
+              "hotbed_temp_limit": [
+                35,
+                120
+              ],
+              "nozzle_temp_limit": [
+                185,
+                320
+              ]
+            },
+            "target_chamber_temp": 0,
+            "target_hotbed_temp": 0,
+            "target_nozzle_temp": 0
+          },
+          "total_time": "0",
+          "type_function_ids": [
+            2,
+            13,
+            22,
+            39,
+            41,
+            43,
+            44,
+            45,
+            47,
+            48,
+            67,
+            2006
+          ],
+          "z_thick": 0.2
+        }
+      }
+    },
+    "project_monitor": {
+      "endpoint": "/v2/project/monitor",
+      "query": {
+        "id": 0
+      },
+      "state": "reply",
+      "response": {
+        "code": 1,
+        "msg": "Connection successful",
+        "data": {
+          "monitor": [],
+          "monitor_des": []
+        }
+      }
+    },
+    "history_detail": {
+      "endpoint": "/v5/project/printHistory/detail",
+      "query": {
+        "task_id": 0
+      },
+      "state": "reply",
+      "response": {
+        "code": 1,
+        "msg": "Operation successful",
+        "data": {
+          "id": 0,
+          "file_name": "0910-2020-OpenSCAD Model_plate(01)_PLA_0.2_2h32m25s.gcode",
+          "thumbnail": "[redacted URL]",
+          "file_size": 0,
+          "upload_time": "09-10 19:21",
+          "printer_model": "Anycubic Kobra S1",
+          "printer_name": "Kobra S1 ",
+          "nozzle_diameter": 0.4,
+          "model_dimensions": {
+            "length": 200,
+            "width": 250,
+            "height": 30
+          },
+          "layer_count": 150,
+          "total_filament_used": 68.11,
+          "estimated_time_s": 9145,
+          "estimated_time_str": "2h32m",
+          "print_time": 115,
+          "print_status": 3,
+          "pause": 4,
+          "progress": 53,
+          "start_time": 1789068084,
+          "end_time": 1789073571,
+          "paint_infos": [
+            {
+              "filament_used": 68.11,
+              "paint_index": 1,
+              "paint_color": [
+                212,
+                185,
+                150
+              ],
+              "material_type": "PLA"
+            }
+          ],
+          "print_params": {
+            "layer_height": 0.2,
+            "fill_density": 15,
+            "support_material_auto": 0,
+            "bed_adhesion_type": "on",
+            "bed_temperature": 55,
+            "nozzle_temperature": 215,
+            "cooling_fan_speed": 0,
+            "retraction_length": 0.8,
+            "perimeters": 2,
+            "perimeter_extrusion_width": 0.42,
+            "perimeter_speed_inner": 200,
+            "perimeter_speed_outer": 200,
+            "travel_speed": 300
+          },
+          "nozzle_type": 1,
+          "is_feedback": 0,
+          "is_comment": 1,
+          "bed_type": 2,
+          "reason_id": 10116,
+          "reason": "Abnormal slice file. Please reslice and print with the correct parameters and software."
+        }
+      }
+    },
+    "gcode_info_fdm": {
+      "endpoint": "/work/gcode/infoFdm",
+      "query": {
+        "id": 0
+      },
+      "state": "reply",
+      "response": {
+        "code": 1,
+        "msg": "Connection successful",
+        "data": {
+          "create_time": 1789068084,
+          "estimate": 9145,
+          "file_id": 0,
+          "gcode_id": 0,
+          "image_id": "[redacted URL]",
+          "img": "[redacted URL]",
+          "machine_class": 2,
+          "material_unit": "g",
+          "name": "0910-2020-OpenSCAD Model_plate(01)_PLA_0.2_2h32m25s.gcode",
+          "progress": 100,
+          "size": 3263836,
+          "slice_param": {
+            "bed_temperature": 55,
+            "brim_type": "on",
+            "color_merge": 0,
+            "curr_bed_type": 2,
+            "curr_bed_type_label": "Smooth Plate/Transfer Plate",
+            "enable_support": 0,
+            "extruder_colour": [
+              [
+                117,
+                120,
+                123
+              ],
+              [
+                212,
+                185,
+                150
+              ],
+              [
+                255,
+                215,
+                0
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            "fan_max_speed": [
+              100,
+              100,
+              100,
+              100
+            ],
+            "fan_min_speed": [
+              100,
+              100,
+              100,
+              100
+            ],
+            "filament_retract_length": 0.8,
+            "filament_settings_id": [
+              "Anycubic PLA High Speed @Anycubic Kobra S1 0.4 nozzle",
+              "Anycubic PLA @Anycubic Kobra S1 0.4 nozzle",
+              "Anycubic PLA Silk @Anycubic Kobra S1 0.4 nozzle",
+              "Anycubic PLA @Anycubic Kobra S1 0.4 nozzle"
+            ],
+            "filament_type": "PLA;PLA;PLA;PLA",
+            "fill_density": 15,
+            "image_id": "cloud/2026/09-10/png/<MD5>.png",
+            "inner_wall_speed": 300,
+            "layer_height": 0.2,
+            "nozzle_diameter": [
+              0.4
+            ],
+            "nozzle_type": 1,
+            "nozzle_type_label": "Brass",
+            "outer_wall_speed": 200,
+            "paint_infos": [
+              {
+                "filament_used": 68.11,
+                "material_type": "PLA",
+                "paint_color": [
+                  212,
+                  185,
+                  150
+                ],
+                "paint_index": 1
+              }
+            ],
+            "perimeter_extrusion_width": 0.42,
+            "perimeter_speed": 200,
+            "perimeters": 2,
+            "printer_model": "Anycubic Kobra S1",
+            "printer_names": [
+              "Anycubic Kobra S1 0.4 nozzle"
+            ],
+            "printer_settings_id": "Anycubic Kobra S1 0.4 nozzle",
+            "support_material_auto": 0,
+            "support_type": "tree(auto)",
+            "temperature": 215,
+            "travel_speed": 300
+          },
+          "slice_result": {
+            "bounding_box_max": "",
+            "bounding_box_min": "",
+            "filament used [g]": [
+              0,
+              68.11,
+              0,
+              0
+            ],
+            "model_size": "200.00,250.00,30.00",
+            "print_time": "2h 32m 25s",
+            "size_x": 200,
+            "size_y": 250,
+            "size_z": 30,
+            "sliced_md5": "md5-redacted",
+            "total_layers": 150,
+            "used_filament": 22.84
+          },
+          "status": 2
+        }
+      }
+    }
+  }
+}

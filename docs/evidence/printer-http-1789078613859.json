@@ -1,0 +1,89 @@
+{
+  "ip": "127.0.0.1",
+  "captured_at": "2026-09-10T22:16:53.297Z",
+  "transport": "curl-http-readonly",
+  "endpoints": {
+    "version": {
+      "path": "/api/version",
+      "status": 200,
+      "state": "reply",
+      "data": {
+        "api": "0.1",
+        "server": "1.8.7",
+        "text": "OctoPrint 1.8.7"
+      }
+    },
+    "printer": {
+      "path": "/api/printer",
+      "status": 404,
+      "state": "http_error",
+      "data": {
+        "error": "Not Found"
+      }
+    },
+    "job": {
+      "path": "/api/job",
+      "status": 404,
+      "state": "http_error",
+      "data": {
+        "error": "Not Found"
+      }
+    },
+    "connection": {
+      "path": "/api/connection",
+      "status": 404,
+      "state": "http_error",
+      "data": {
+        "error": "Not Found"
+      }
+    },
+    "files": {
+      "path": "/api/files",
+      "status": 404,
+      "state": "http_error",
+      "data": {
+        "error": "Not Found"
+      }
+    },
+    "settings": {
+      "path": "/api/settings",
+      "status": 404,
+      "state": "http_error",
+      "data": {
+        "error": "Not Found"
+      }
+    },
+    "logs": {
+      "path": "/api/logs",
+      "status": 404,
+      "state": "http_error",
+      "data": {
+        "error": "Not Found"
+      }
+    },
+    "server_info": {
+      "path": "/server/info",
+      "status": 404,
+      "state": "http_error",
+      "data": {
+        "error": "Not Found"
+      }
+    },
+    "objects": {
+      "path": "/printer/objects/list",
+      "status": 404,
+      "state": "http_error",
+      "data": {
+        "error": "Not Found"
+      }
+    },
+    "info": {
+      "path": "/info",
+      "status": 404,
+      "state": "http_error",
+      "data": {
+        "error": "Not Found"
+      }
+    }
+  }
+}

@@ -1,0 +1,622 @@
+{
+  "captured_at": "2026-09-10T21:50:42.553Z",
+  "requests": [
+    {
+      "name": "axis",
+      "id": 1214,
+      "result": {
+        "msgid": "49905442-4e8d-407f-be42-f6ea512ffcfa"
+      }
+    },
+    {
+      "name": "peripherie",
+      "id": 1231,
+      "result": {
+        "msgid": "151ad6d5-d97f-4721-9089-57ada6d31209"
+      }
+    },
+    {
+      "name": "light",
+      "id": 1232,
+      "result": {
+        "msgid": "6ab81ed6-f2ba-4065-8a67-46725fa08cd9"
+      }
+    },
+    {
+      "name": "multiColorBox",
+      "id": 1206,
+      "result": {
+        "msgid": "1ddf2b07-a20f-4fbd-97ee-a07928e83c05"
+      }
+    },
+    {
+      "name": "local_files",
+      "id": 103,
+      "result": {
+        "msgid": "0935f698-2a05-4d5b-8880-d4e02df7b395"
+      }
+    }
+  ],
+  "events": [
+    {
+      "topic": "axis/report",
+      "data": {
+        "type": "axis",
+        "action": "query",
+        "timestamp": 1789077097850,
+        "msgid": "e5fd3c80-8ddd-4b9f-b3eb-4725d3705252",
+        "state": "done",
+        "code": 200,
+        "msg": "",
+        "data": {
+          "coordinates": {
+            "x": 47,
+            "y": 276,
+            "z": 4.034207620182453
+          }
+        }
+      }
+    },
+    {
+      "topic": "peripherie/report",
+      "data": {
+        "type": "peripherie",
+        "action": "query",
+        "timestamp": 1789077098943,
+        "msgid": "e2312fdf-cc79-48a3-b782-35a0cf2c2c7b",
+        "state": "done",
+        "code": 200,
+        "msg": "done",
+        "data": {
+          "camera": 1,
+          "multiColorBox": 1,
+          "udisk": 1
+        }
+      }
+    },
+    {
+      "topic": "light/report",
+      "data": {
+        "type": "light",
+        "action": "query",
+        "timestamp": 1789077100090,
+        "msgid": "5fe0b8c9-1c86-41a6-b18c-3030755cf272",
+        "state": "done",
+        "code": 200,
+        "msg": "done",
+        "data": {
+          "lights": [
+            {
+              "type": 2,
+              "status": 0,
+              "brightness": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "topic": "multiColorBox/report",
+      "data": {
+        "type": "multiColorBox",
+        "action": "getInfo",
+        "timestamp": 1789077101458,
+        "msgid": "2c491783-4a32-4826-96ef-4f00ca4cb230",
+        "state": "success",
+        "code": 200,
+        "msg": "done",
+        "data": {
+          "head_tools_model": 0,
+          "multi_color_box": [
+            {
+              "id": 0,
+              "status": 1,
+              "model_id": 0,
+              "auto_feed": 0,
+              "loaded_slot": -1,
+              "feed_status": {
+                "code": 200,
+                "type": -1,
+                "current_status": -1,
+                "slot_index": -1
+              },
+              "temp": 41,
+              "humidity": 25,
+              "drying_status": {
+                "status": 0,
+                "target_temp": 0,
+                "duration": 0,
+                "remain_time": 0
+              },
+              "slots": [
+                {
+                  "index": 0,
+                  "sku": "AHHSGY-107",
+                  "type": "PLA High Speed",
+                  "color": [
+                    117,
+                    120,
+                    123
+                  ],
+                  "edit_status": 0,
+                  "status": 5,
+                  "color_group": [
+                    [
+                      117,
+                      120,
+                      123,
+                      255
+                    ]
+                  ],
+                  "icon_type": 0,
+                  "consumables_percent": 13
+                },
+                {
+                  "index": 1,
+                  "sku": "AHPLLB-107",
+                  "type": "PLA",
+                  "color": [
+                    212,
+                    185,
+                    150
+                  ],
+                  "edit_status": 0,
+                  "status": 5,
+                  "color_group": [
+                    [
+                      212,
+                      185,
+                      150,
+                      255
+                    ]
+                  ],
+                  "icon_type": 0,
+                  "consumables_percent": 93
+                },
+                {
+                  "index": 2,
+                  "sku": "",
+                  "type": "PLA Silk",
+                  "color": [
+                    255,
+                    215,
+                    0
+                  ],
+                  "edit_status": 1,
+                  "status": 5,
+                  "color_group": [
+                    [
+                      255,
+                      215,
+                      0,
+                      255
+                    ]
+                  ],
+                  "icon_type": 0,
+                  "consumables_percent": 0
+                },
+                {
+                  "index": 3,
+                  "sku": "",
+                  "type": "PLA",
+                  "color": [
+                    0,
+                    0,
+                    0
+                  ],
+                  "edit_status": 1,
+                  "status": 5,
+                  "color_group": [
+                    [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  ],
+                  "icon_type": 0,
+                  "consumables_percent": 0
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "topic": "file/report",
+      "data": {
+        "type": "file",
+        "action": "listLocal",
+        "timestamp": 1789077102595,
+        "msgid": "0935f698-2a05-4d5b-8880-d4e02df7b395",
+        "state": "done",
+        "code": 200,
+        "msg": "done",
+        "data": {
+          "list_mode": 0,
+          "records": [
+            {
+              "is_dir": false,
+              "filename": "0910-2020-OpenSCAD Model_plate(01)_PLA_0.2_2h32m25s.gcode.3mf",
+              "timestamp": 1789068094481,
+              "size": 3263836,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0910-1808-OpenSCAD Model_plate(01)_PLA_0.2_1h2m12s.gcode.3mf",
+              "timestamp": 1789060201483,
+              "size": 786992,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0909-2000-sections - textured plate(01)_PLA_0.16_3h57m46s.gcode.3mf",
+              "timestamp": 1788987862436,
+              "size": 2090475,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0901-1452-OpenSCAD Model_plate(02)_PLA_0.2_7h2m14s.gcode.3mf",
+              "timestamp": 1788795491950,
+              "size": 8020382,
+              "plate_number": 3
+            },
+            {
+              "is_dir": false,
+              "filename": "0903-1116-OpenSCAD Model_plate(01)_PLA_0.28_8h25m52s.gcode.3mf",
+              "timestamp": 1788430633181,
+              "size": 11613019,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0902-0810-OpenSCAD Model_plate(02)_PLA_0.2_8h35m58s.gcode.3mf",
+              "timestamp": 1788333083061,
+              "size": 9093405,
+              "plate_number": 3
+            },
+            {
+              "is_dir": false,
+              "filename": "0901-1305-OpenSCAD Model_plate(03)_PLA_0.2_58m16s.gcode.3mf",
+              "timestamp": 1788264352334,
+              "size": 3339947,
+              "plate_number": 3
+            },
+            {
+              "is_dir": false,
+              "filename": "0830-1829-organizer_makeup_tablet_plate(01)_PLA_0.16_3h9m15s.gcode.3mf",
+              "timestamp": 1788111032605,
+              "size": 4905996,
+              "plate_number": 2
+            },
+            {
+              "is_dir": false,
+              "filename": "0830-1152-Loop v17_plate(01)_PLA_0.12_16m28s.gcode.3mf",
+              "timestamp": 1788087211443,
+              "size": 2923717,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0829-2342-Montagem_plate(02)_PLA_0.2_2h3m27s.gcode.3mf",
+              "timestamp": 1788043361798,
+              "size": 3866985,
+              "plate_number": 2
+            },
+            {
+              "is_dir": false,
+              "filename": "0829-2148-盒体(01)_PLA_0.2_1h27m22s.gcode.3mf",
+              "timestamp": 1788036539581,
+              "size": 1745528,
+              "plate_number": 2
+            },
+            {
+              "is_dir": false,
+              "filename": "0829-1957-[Small] 180L x 42W x 20H in mm(01)_PLA_0.16_4h32m9s.gcode.3mf",
+              "timestamp": 1788029894914,
+              "size": 5108687,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0829-1751-[Small] 180L x 42W x 20H in mm(01)_PLA_0.2_2h38m38s.gcode.3mf",
+              "timestamp": 1788022315996,
+              "size": 3445171,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0829-1247-[Small] 180L x 42W x 20H in mm(01)_PLA_0.2_4h28m23s.gcode.3mf",
+              "timestamp": 1788004058878,
+              "size": 3661937,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0829-0302-Inside_Spool_Silica_Gel_Container_v3_plate(01)_PLA_0.2_6h38m8s.gcode.3mf",
+              "timestamp": 1787968987611,
+              "size": 12154158,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0828-1917-Montagem_plate(01)_PLA_0.2_1h9m55s.gcode.3mf",
+              "timestamp": 1787941091905,
+              "size": 1075305,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0828-1838-Montagem_plate(02)_PLA_0.2_19m18s.gcode.3mf",
+              "timestamp": 1787938716418,
+              "size": 852640,
+              "plate_number": 2
+            },
+            {
+              "is_dir": false,
+              "filename": "Braco estrutural 1_PLA_11h29m38s.gcode.3mf",
+              "timestamp": 1787874621945,
+              "size": 13836509,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "anymcp-plate-final.gcode",
+              "timestamp": 1787865137987,
+              "size": 331610,
+              "plate_number": 0
+            },
+            {
+              "is_dir": false,
+              "filename": "Braco estrutural 1_PLA_14h22m21s.gcode.3mf",
+              "timestamp": 1787857083410,
+              "size": 12846682,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0827-0126-Montagem_plate(01)_PLA_0.2_24m58s.gcode.3mf",
+              "timestamp": 1787790430885,
+              "size": 1030420,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0826-1836-Ring sizing tool_plate(01)_PLA_0.2_16m3s.gcode.3mf",
+              "timestamp": 1787765829039,
+              "size": 382127,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "rice+rinser+3mf_plate_1(2).gcode.3mf",
+              "timestamp": 1787682352511,
+              "size": 7126594,
+              "plate_number": 2
+            },
+            {
+              "is_dir": false,
+              "filename": "rice+rinser+3mf_plate_2(1).gcode.3mf",
+              "timestamp": 1787407129283,
+              "size": 36386645,
+              "plate_number": 2
+            },
+            {
+              "is_dir": false,
+              "filename": "0814-1655-Montagem_plate(01)_PLA_0.1_5h44m43s.gcode.3mf",
+              "timestamp": 1786722992368,
+              "size": 12029448,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "Adaptador VESA secundario 75-100mm_PLA_3h48m27s.gcode.3mf",
+              "timestamp": 1786631763495,
+              "size": 6108113,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "Adaptador VESA secundario 75-100mm_PLA_3h32m13s.gcode.3mf",
+              "timestamp": 1786626654528,
+              "size": 5039679,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "Placa magnetica HONGO V6 - base cheia corrigida_PLA_4h48m46s.gcode.3mf",
+              "timestamp": 1786605053639,
+              "size": 2703207,
+              "plate_number": 3
+            },
+            {
+              "is_dir": false,
+              "filename": "0812-1256-MOES adapter V9(01)_PLA_0.28_2h7m11s.gcode.3mf",
+              "timestamp": 1786535790351,
+              "size": 1510315,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0811-2134-MOES adapter V7(01)_PLA_0.28_33m30s.gcode.3mf",
+              "timestamp": 1786480509105,
+              "size": 377856,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0811-1247-Cable_Clip_Hinge(01)_PLA_0.2_44m47s.gcode.3mf",
+              "timestamp": 1786448856615,
+              "size": 1039853,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0809-1826-Cable_Clip_Hinge(01)_PLA_0.2_4h55m57s.gcode.3mf",
+              "timestamp": 1786296441823,
+              "size": 12178164,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0809-1539-Montagem_plate(01)_PLA_0.2_26m15s.gcode.3mf",
+              "timestamp": 1786286366668,
+              "size": 678870,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0808-1816-Assembly_plate(01)_PLA_0.2_5h14m55s.gcode.3mf",
+              "timestamp": 1786209433575,
+              "size": 1503316,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0806-1934-Assembly_plate(01)_PLA_0.2_17m53s.gcode.3mf",
+              "timestamp": 1786041276628,
+              "size": 172936,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0805-1653-guitar_upper_face_brace_parametric_v1_plate(01)_PLA_0.2_1h14m9s.gcode.3mf",
+              "timestamp": 1785945239270,
+              "size": 1152612,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0805-1226-guitar_upper_face_brace_parametric_v1_plate(01)_PLA_0.2_1h4m1s.gcode.3mf",
+              "timestamp": 1785929216619,
+              "size": 1041308,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0804-2214-Assembly_plate(01)_PLA_0.2_17m28s.gcode.3mf",
+              "timestamp": 1785878074797,
+              "size": 161139,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "Peca-final-Kobra-S1-suportes_PLA_0.2_13m26s.gcode",
+              "timestamp": 1785870433779,
+              "size": 467763,
+              "plate_number": 0
+            },
+            {
+              "is_dir": false,
+              "filename": "CS1_WB4_plate_1.gcode",
+              "timestamp": 1785686925884,
+              "size": 118272503,
+              "plate_number": 0
+            },
+            {
+              "is_dir": false,
+              "filename": "0801-2223-Peca-final-v2-corrigida-perfeita_plate(01)_PLA_0.2_9m18s.gcode.3mf",
+              "timestamp": 1785619427694,
+              "size": 217390,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0801-1800-peca_fixed_plate(01)_PLA_0.2_9m46s.gcode.3mf",
+              "timestamp": 1785603743926,
+              "size": 228732,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0801-1456-Plate 1(01)_PLA_0.2_20h16m15s.gcode.3mf",
+              "timestamp": 1785592614582,
+              "size": 10474317,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0730-2212-Final_plate(02)_PLA_0.16_10m31s.gcode.3mf",
+              "timestamp": 1785445982319,
+              "size": 673920,
+              "plate_number": 2
+            },
+            {
+              "is_dir": false,
+              "filename": "0727-1943-guitar_upper_face_brace_parametric_v1_plate(01)_PLA_0.16_2h14m5s.gcode.3mf",
+              "timestamp": 1785177832979,
+              "size": 3110618,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "0727-0746-RoundTrayLargeV2_plate(02)_PLA_0.16_3h54m21s.gcode.3mf",
+              "timestamp": 1785134840881,
+              "size": 7074580,
+              "plate_number": 2
+            },
+            {
+              "is_dir": false,
+              "filename": "0726-1708-organizer_makeup_tablet_plate(01)_PLA_0.16_9h2m43s.gcode.3mf",
+              "timestamp": 1785082192803,
+              "size": 28225901,
+              "plate_number": 2
+            },
+            {
+              "is_dir": false,
+              "filename": "caixa_tomada_v2_kit_2pecas_plate_1.gcode",
+              "timestamp": 1785003221497,
+              "size": 2363908,
+              "plate_number": 0
+            },
+            {
+              "is_dir": false,
+              "filename": "arruelas_4pecas_furo_compensado_2_4mm_plate_1.gcode",
+              "timestamp": 1784994603966,
+              "size": 934511,
+              "plate_number": 0
+            },
+            {
+              "is_dir": false,
+              "filename": "arruelas_4pecas_furo_compensado_2_4mm_plate_1(1).gcode",
+              "timestamp": 1784992855699,
+              "size": 962250,
+              "plate_number": 0
+            },
+            {
+              "is_dir": false,
+              "filename": "espacadores_kit_8_pecas_plate_1.gcode",
+              "timestamp": 1784986898795,
+              "size": 757300,
+              "plate_number": 0
+            },
+            {
+              "is_dir": false,
+              "filename": "0724-1749-Assembly_plate(01)_PLA_0.2_4h57m38s.gcode.3mf",
+              "timestamp": 1784911875037,
+              "size": 2951682,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "hungry-rex_plate_1.gcode.3mf",
+              "timestamp": 1784900073293,
+              "size": 1307484,
+              "plate_number": 1
+            },
+            {
+              "is_dir": false,
+              "filename": "Arcane_D7_slot_fit_test_10_2mm_plate_1.gcode",
+              "timestamp": 1784824340817,
+              "size": 825287,
+              "plate_number": 0
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

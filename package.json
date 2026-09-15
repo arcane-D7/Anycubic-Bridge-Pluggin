@@ -1,0 +1,44 @@
+{
+  "name": "anycubic-slicer-next-control",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local MCP server for safe Anycubic Slicer Next automation on Windows.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "clean": "node scripts/clean.mjs",
+    "dev": "tsx src/index.ts",
+    "test": "node --test \"tests/*.test.mjs\"",
+    "smoke": "node scripts/smoke.mjs",
+    "e2e:ui": "node tests/e2e/cad-ui.e2e.mjs",
+    "poc": "node scripts/poc-slice.mjs",
+    "check": "pnpm run build && pnpm run test && pnpm run smoke && pnpm run e2e:ui"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "basic-ftp": "^6.2.0",
+    "manifold-3d": "^3.5.3",
+    "mqtt": "^5.15.2",
+    "node-forge": "1.4.0",
+    "pngjs": "^7.0.0",
+    "replicad": "^1.1.0",
+    "replicad-opencascadejs": "^1.1.0",
+    "three": "0.186.0",
+    "three-bvh-csg": "^0.0.18",
+    "three-mesh-bvh": "^0.9.15",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "26.3.0",
+    "@types/pngjs": "^6.0.5",
+    "esbuild": "0.28.2",
+    "puppeteer-core": "^25.10.0",
+    "tsx": "4.20.6",
+    "typescript": "7.0.2"
+  },
+  "packageManager": "pnpm@11.19.0"
+}

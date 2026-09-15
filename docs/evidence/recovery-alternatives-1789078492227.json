@@ -1,0 +1,350 @@
+{
+  "captured_at": "2026-09-10T22:14:52.227Z",
+  "network": [
+    {
+      "port": 22,
+      "state": "error",
+      "error": "ECONNREFUSED"
+    },
+    {
+      "port": 80,
+      "state": "open"
+    },
+    {
+      "port": 443,
+      "state": "error",
+      "error": "ECONNREFUSED"
+    },
+    {
+      "port": 2222,
+      "state": "error",
+      "error": "ECONNREFUSED"
+    },
+    {
+      "port": 2883,
+      "state": "error",
+      "error": "ECONNREFUSED"
+    },
+    {
+      "port": 7125,
+      "state": "error",
+      "error": "ECONNREFUSED"
+    },
+    {
+      "port": 9883,
+      "state": "error",
+      "error": "ECONNREFUSED"
+    },
+    {
+      "port": 18086,
+      "state": "error",
+      "error": "ECONNREFUSED"
+    },
+    {
+      "port": 18088,
+      "state": "open"
+    },
+    {
+      "port": 18910,
+      "state": "error",
+      "error": "ECONNREFUSED"
+    }
+  ],
+  "cloud": {
+    "printer_id": 0,
+    "collected_at": "2026-09-10T22:14:41.358Z",
+    "transport": "cloud-mqtt",
+    "queries": {
+      "axis": {
+        "msgid": "35ae3a69-f69f-494a-b850-1267e3dd316b",
+        "state": "uncorrelated_report",
+        "replies": [
+          {
+            "topic": "axis/report",
+            "received_at": "2026-09-10T22:14:42.299Z",
+            "data": {
+              "type": "axis",
+              "action": "query",
+              "timestamp": 1789078536795,
+              "msgid": "469b7c64-a9b9-4334-aa5d-a8a47104be1c",
+              "state": "done",
+              "code": 200,
+              "msg": "",
+              "data": {
+                "coordinates": {
+                  "x": 47,
+                  "y": 276,
+                  "z": 4.034207620182453
+                }
+              }
+            }
+          }
+        ],
+        "device_codes": [
+          200
+        ]
+      },
+      "info": {
+        "msgid": "60c44eff-0485-484c-9be2-12397f119cf3",
+        "state": "uncorrelated_report",
+        "replies": [
+          {
+            "topic": "info/report",
+            "received_at": "2026-09-10T22:14:42.308Z",
+            "data": {
+              "type": "info",
+              "action": "report",
+              "timestamp": 1789078536802,
+              "msgid": "0deb937b-674d-4e34-a0aa-8d6419dd5c99",
+              "state": "done",
+              "code": 200,
+              "msg": "done",
+              "data": {
+                "printerName": "Anycubic Kobra S1",
+                "urls": {
+                  "fileUploadurl": "[redacted]",
+                  "rtspUrl": "[redacted]"
+                },
+                "project": null,
+                "last_project": {
+                  "remain_time": 68,
+                  "curr_layer": 62,
+                  "total_layers": 150,
+                  "supplies_usage": 11673,
+                  "print_time": 76,
+                  "progress": 53,
+                  "state": "failed",
+                  "print_status": 3,
+                  "filename": "0910-2020-OpenSCAD Model_plate(01)_PLA_0.2_2h32m25s.gcode",
+                  "pause": 0,
+                  "project_type": 2,
+                  "task_id": 0,
+                  "localtask": "",
+                  "task_settings": {
+                    "camera_timelapse": 0
+                  },
+                  "print_speed_mode": null
+                },
+                "model": "Anycubic Kobra S1",
+                "ip": "127.0.0.1",
+                "version": "",
+                "state": "free",
+                "temp": {
+                  "curr_hotbed_temp": 51,
+                  "curr_nozzle_temp": 40,
+                  "target_hotbed_temp": 50,
+                  "target_nozzle_temp": 0
+                },
+                "print_speed_mode": 2,
+                "fan_speed_pct": 0,
+                "aux_fan_speed_pct": 0,
+                "box_fan_level": 0,
+                "features": {
+                  "auto_leveling_support": true,
+                  "vibration_compensation_support": true,
+                  "flow_calibration_support": true,
+                  "drying_first_support": true,
+                  "camera_timelapse_support": true,
+                  "gcode_3mf_support": true,
+                  "delete_batch_support": true,
+                  "preheating_support": true,
+                  "fod_support": true,
+                  "shengwang_rtc_support": true,
+                  "pre_cancel_support": true,
+                  "shengwang_rdt_support": true
+                }
+              }
+            }
+          }
+        ],
+        "device_codes": [
+          200
+        ]
+      },
+      "peripherie": {
+        "msgid": "7feeaa35-a0ce-4bb6-b693-ce4ff1b3e72e",
+        "state": "uncorrelated_report",
+        "replies": [
+          {
+            "topic": "peripherie/report",
+            "received_at": "2026-09-10T22:14:42.308Z",
+            "data": {
+              "type": "peripherie",
+              "action": "query",
+              "timestamp": 1789078536812,
+              "msgid": "5a67138c-63e6-4d63-b492-508a988f6090",
+              "state": "done",
+              "code": 200,
+              "msg": "done",
+              "data": {
+                "camera": 1,
+                "multiColorBox": 1,
+                "udisk": 1
+              }
+            }
+          }
+        ],
+        "device_codes": [
+          200
+        ]
+      }
+    },
+    "events": [
+      {
+        "topic": "axis/report",
+        "received_at": "2026-09-10T22:14:42.299Z",
+        "data": {
+          "type": "axis",
+          "action": "query",
+          "timestamp": 1789078536795,
+          "msgid": "469b7c64-a9b9-4334-aa5d-a8a47104be1c",
+          "state": "done",
+          "code": 200,
+          "msg": "",
+          "data": {
+            "coordinates": {
+              "x": 47,
+              "y": 276,
+              "z": 4.034207620182453
+            }
+          }
+        }
+      },
+      {
+        "topic": "info/report",
+        "received_at": "2026-09-10T22:14:42.308Z",
+        "data": {
+          "type": "info",
+          "action": "report",
+          "timestamp": 1789078536802,
+          "msgid": "0deb937b-674d-4e34-a0aa-8d6419dd5c99",
+          "state": "done",
+          "code": 200,
+          "msg": "done",
+          "data": {
+            "printerName": "Anycubic Kobra S1",
+            "urls": {
+              "fileUploadurl": "[redacted]",
+              "rtspUrl": "[redacted]"
+            },
+            "project": null,
+            "last_project": {
+              "remain_time": 68,
+              "curr_layer": 62,
+              "total_layers": 150,
+              "supplies_usage": 11673,
+              "print_time": 76,
+              "progress": 53,
+              "state": "failed",
+              "print_status": 3,
+              "filename": "0910-2020-OpenSCAD Model_plate(01)_PLA_0.2_2h32m25s.gcode",
+              "pause": 0,
+              "project_type": 2,
+              "task_id": 0,
+              "localtask": "",
+              "task_settings": {
+                "camera_timelapse": 0
+              },
+              "print_speed_mode": null
+            },
+            "model": "Anycubic Kobra S1",
+            "ip": "127.0.0.1",
+            "version": "",
+            "state": "free",
+            "temp": {
+              "curr_hotbed_temp": 51,
+              "curr_nozzle_temp": 40,
+              "target_hotbed_temp": 50,
+              "target_nozzle_temp": 0
+            },
+            "print_speed_mode": 2,
+            "fan_speed_pct": 0,
+            "aux_fan_speed_pct": 0,
+            "box_fan_level": 0,
+            "features": {
+              "auto_leveling_support": true,
+              "vibration_compensation_support": true,
+              "flow_calibration_support": true,
+              "drying_first_support": true,
+              "camera_timelapse_support": true,
+              "gcode_3mf_support": true,
+              "delete_batch_support": true,
+              "preheating_support": true,
+              "fod_support": true,
+              "shengwang_rtc_support": true,
+              "pre_cancel_support": true,
+              "shengwang_rdt_support": true
+            }
+          }
+        }
+      },
+      {
+        "topic": "peripherie/report",
+        "received_at": "2026-09-10T22:14:42.308Z",
+        "data": {
+          "type": "peripherie",
+          "action": "query",
+          "timestamp": 1789078536812,
+          "msgid": "5a67138c-63e6-4d63-b492-508a988f6090",
+          "state": "done",
+          "code": 200,
+          "msg": "done",
+          "data": {
+            "camera": 1,
+            "multiColorBox": 1,
+            "udisk": 1
+          }
+        }
+      },
+      {
+        "topic": "file/report",
+        "received_at": "2026-09-10T22:14:42.327Z",
+        "data": {
+          "type": "file",
+          "action": "listUdisk",
+          "timestamp": 1789078536816,
+          "msgid": "f5b90b95-2818-4fac-a1e0-234ad62e0b1a",
+          "state": "done",
+          "code": 200,
+          "msg": "done",
+          "data": {
+            "list_mode": 0,
+            "records": []
+          }
+        }
+      }
+    ],
+    "recovery": {
+      "executable": false,
+      "reason": "Coordinates alone do not establish homing, offsets or crash position"
+    },
+    "http_orders": {
+      "usb_files": {
+        "id": 101,
+        "ack": {
+          "msgid": "f5b90b95-2818-4fac-a1e0-234ad62e0b1a"
+        },
+        "state": "correlated_reply",
+        "replies": [
+          {
+            "topic": "file/report",
+            "received_at": "2026-09-10T22:14:42.327Z",
+            "data": {
+              "type": "file",
+              "action": "listUdisk",
+              "timestamp": 1789078536816,
+              "msgid": "f5b90b95-2818-4fac-a1e0-234ad62e0b1a",
+              "state": "done",
+              "code": 200,
+              "msg": "done",
+              "data": {
+                "list_mode": 0,
+                "records": []
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

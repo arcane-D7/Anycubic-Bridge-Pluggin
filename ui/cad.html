@@ -1,0 +1,2385 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Anycubic CAD Workspace</title>
+    <style>
+      :root {
+        --bg: #121418;
+        --panel: #1a1e26;
+        --panel2: #20242e;
+        --border: #2c3240;
+        --text: #d8dee9;
+        --muted: #7f8b9e;
+        --accent: #3b82f6;
+        --accent2: #22c55e;
+        --danger: #ef4444;
+        --focus: rgba(59, 130, 246, 0.35);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          13px/1.45 "Segoe UI",
+          system-ui,
+          sans-serif;
+      }
+      #app {
+        display: flex;
+        height: 100vh;
+      }
+      #sidebar {
+        width: 300px;
+        min-width: 300px;
+        background: var(--panel);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      #stage {
+        flex: 1;
+        position: relative;
+      }
+      #stage canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      .section {
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      .section h3 {
+        margin: 0 0 8px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+      label {
+        display: block;
+        margin: 6px 0 2px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      input[type="number"],
+      input[type="text"],
+      select {
+        width: 100%;
+        padding: 5px 7px;
+        background: var(--panel2);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        font: inherit;
+      }
+      input:focus,
+      select:focus {
+        outline: 2px solid var(--focus);
+      }
+      .row {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .row > * {
+        flex: 1;
+      }
+      button {
+        padding: 6px 10px;
+        background: var(--panel2);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        cursor: pointer;
+        font: inherit;
+        transition: background 0.12s;
+      }
+      button:hover {
+        background: #2a3040;
+      }
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      button.primary:hover {
+        background: #2f6fdb;
+      }
+      button.success {
+        background: var(--accent2);
+        border-color: var(--accent2);
+        color: #04260f;
+      }
+      button.danger {
+        background: var(--danger);
+        border-color: var(--danger);
+        color: #fff;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      #toast {
+        position: fixed;
+        bottom: 16px;
+        right: 16px;
+        background: #223;
+        color: #fff;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+        z-index: 10;
+        max-width: 420px;
+      }
+      #toast.show {
+        opacity: 1;
+      }
+      #objectList {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      #objectList li {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 6px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      #objectList li:hover {
+        background: var(--panel2);
+      }
+      #objectList li.selected {
+        background: rgba(59, 130, 246, 0.25);
+        outline: 1px solid var(--accent);
+      }
+      #objectList li .name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #objectList li .tri {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      #stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px 10px;
+        font-size: 11px;
+      }
+      #stats b {
+        color: var(--accent2);
+        font-weight: 600;
+      }
+      .hint {
+        color: var(--muted);
+        font-size: 11px;
+        margin-top: 4px;
+      }
+      #legend {
+        position: absolute;
+        bottom: 12px;
+        left: 12px;
+        background: rgba(18, 20, 24, 0.8);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 11px;
+        color: var(--muted);
+        pointer-events: none;
+      }
+      #legend button {
+        pointer-events: auto;
+      }
+      #topbar {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+        background: rgba(18, 20, 24, 0.85);
+        border: 1px solid var(--border);
+        padding: 6px 10px;
+        border-radius: 8px;
+        z-index: 5;
+      }
+      #topbar button {
+        font-size: 12px;
+      }
+      kbd {
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-bottom-width: 2px;
+        border-radius: 4px;
+        padding: 1px 5px;
+        font-family: inherit;
+        font-size: 11px;
+      }
+      .divider {
+        border-top: 1px solid var(--border);
+        margin: 10px 0;
+      }
+      #fileInput {
+        display: none;
+      }
+      #texFile {
+        display: none;
+      }
+      #imgFile {
+        display: none;
+      }
+      #faceInfo {
+        color: var(--muted);
+        font-size: 11px;
+        margin-top: 4px;
+      }
+      #agentCode {
+        width: 100%;
+        height: 130px;
+        background: #12161d;
+        color: #9fb4d0;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px;
+        font:
+          11px/1.5 "Consolas",
+          monospace;
+        resize: vertical;
+      }
+      .tag {
+        display: inline-block;
+        background: rgba(59, 130, 246, 0.16);
+        color: #8ab4ff;
+        border-radius: 4px;
+        padding: 1px 6px;
+        font-size: 10px;
+        margin-left: 6px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 10px;
+        color: var(--muted);
+        cursor: pointer;
+      }
+      .pill.active {
+        background: rgba(34, 197, 94, 0.18);
+        border-color: var(--accent2);
+        color: var(--accent2);
+      }
+      .submode {
+        flex: 1;
+        padding: 4px 4px;
+        font-size: 11px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--panel2);
+        color: var(--muted);
+        cursor: pointer;
+      }
+      .submode.active {
+        background: rgba(59, 130, 246, 0.2);
+        border-color: var(--accent);
+        color: var(--accent2);
+      }
+      #subSelectRow {
+        display: none;
+      }
+      #selectHint {
+        position: absolute;
+        left: 50%;
+        bottom: 48px;
+        transform: translateX(-50%);
+        background: rgba(18, 20, 24, 0.85);
+        border: 1px solid var(--border);
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 11px;
+        color: var(--muted);
+        z-index: 6;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="sidebar">
+        <div class="section">
+          <h3>Objects</h3>
+          <ul id="objectList"></ul>
+          <div id="statsBox" class="hint" style="margin-top: 8px"></div>
+          <div class="divider"></div>
+          <button id="btnClear" class="danger">Clear workspace</button>
+        </div>
+        <div class="section">
+          <h3>Add primitive (mm)</h3>
+          <label>Type</label>
+          <select id="primKind">
+            <option value="box">Box</option>
+            <option value="cylinder">Cylinder</option>
+            <option value="cone">Cone</option>
+            <option value="sphere">Sphere</option>
+            <option value="prism">Prism (n-gon)</option>
+          </select>
+          <div class="row" id="primRow">
+            <div>
+              <label>W / R dia</label><input id="primW" type="number" step="0.01" value="20" />
+            </div>
+            <div><label>H</label><input id="primH" type="number" step="0.01" value="10" /></div>
+            <div>
+              <label>D / R2</label><input id="primD" type="number" step="0.01" value="20" />
+            </div>
+          </div>
+          <label>Segments (sides)</label>
+          <input id="primSeg" type="number" min="3" max="256" step="1" value="48" />
+          <div style="margin-top: 8px">
+            <button id="btnAdd" class="primary" style="width: 100%">Add primitive</button>
+          </div>
+        </div>
+        <div class="section">
+          <h3>Transform selected</h3>
+          <label>X (mm)</label><input id="tx" type="number" step="0.01" value="0" />
+          <label>Y (mm)</label><input id="ty" type="number" step="0.01" value="0" />
+          <label>Z (mm)</label><input id="tz" type="number" step="0.01" value="0" />
+          <div class="row" style="margin-top: 6px">
+            <button id="btnMove">Move</button>
+            <button id="btnCenter">Center</button>
+            <button id="btnCenterPlate" title="Center XY on plate origin and sit Z on z=0">Center on plate</button>
+          </div>
+          <label>Rotate (deg)</label>
+          <div class="row">
+            <select id="rotAxis">
+              <option value="x">X</option>
+              <option value="y">Y</option>
+              <option value="z">Z</option></select
+            ><input id="rotDeg" type="number" step="0.1" value="90" />
+          </div>
+          <div style="margin-top: 6px">
+            <button id="btnRotate" style="width: 100%">Rotate</button>
+          </div>
+          <label>Scale (x / y / z)</label>
+          <div class="row">
+            <input id="sx" type="number" step="0.01" value="1" /><input
+              id="sy"
+              type="number"
+              step="0.01"
+              value="1"
+            /><input id="sz" type="number" step="0.01" value="1" />
+          </div>
+          <div style="margin-top: 6px">
+            <button id="btnScale" style="width: 100%">Scale</button>
+          </div>
+        </div>
+        <div class="section">
+          <h3>Arrange on plate</h3>
+          <div class="row">
+            <label style="flex: 1">Gap (mm)</label
+            ><input id="arrGap" type="number" step="0.5" min="0" value="2" style="width: 60px" />
+            <label style="flex: 1">Bed W×D</label
+            ><input
+              id="arrBed"
+              type="text"
+              value="220x220"
+              title="Usable bed size WxD (mm)"
+              style="width: 70px"
+            />
+          </div>
+          <div style="margin-top: 8px">
+            <button id="btnArrange" class="primary" style="width: 100%">Arrange all uniformly</button>
+          </div>
+          <div id="arrWarn" class="hint" style="display: none"></div>
+          <div class="hint">
+            Packs all objects with shelf-layout, no overlaps, each piece centered in XY and Z=0
+            on the plate.
+          </div>
+        </div>
+        <div class="section">
+          <h3>Boolean (CSG)</h3>
+          <label>Operand A</label
+          ><select id="csgA"></select>
+          <label>Operand B</label
+          ><select id="csgB"></select>
+          <label>Operation</label>
+          <select id="csgOp">
+            <option value="add">Union (A ∪ B)</option>
+            <option value="subtract">Subtract (A − B)</option>
+            <option value="intersect">Intersect (A ∩ B)</option>
+          </select>
+          <label>Result name</label><input id="csgName" type="text" value="result" />
+          <label style="display: flex; align-items: center; gap: 6px; margin-top: 8px"
+            ><input id="robustBool" type="checkbox" checked style="width: auto" /> Robust
+            boolean (three-bvh-csg)</label
+          >
+          <div style="margin-top: 8px">
+            <button id="btnCsg" class="primary" style="width: 100%">Apply boolean</button>
+          </div>
+        </div>
+        <div class="section">
+          <h3>Parametric (manifold)</h3>
+          <label>Script (return a handle)</label>
+          <textarea id="paramScript" rows="5" spellcheck="false"></textarea>
+          <div class="hint" style="margin-bottom: 6px">
+            Bindings: box(w,h,d), cylinder(r,h,segs), sphere(r,segs), cone(rb,rt,h,segs),
+            tetrahedron(edge), add(a,b), subtract(a,b), intersect(a,b), translate(h,{x,y,z}),
+            rotate(h,rx,ry,rz), scale(h,{x,y,z}), mirror(h,{x,y,z}). Example:
+            <code>return subtract(box(20,24,10), cylinder(4,40,48))</code>
+          </div>
+          <label>Object name</label>
+          <div class="row">
+            <input id="paramName" type="text" value="parametric" style="flex: 1" />
+            <select id="paramExport" title="Export format">
+              <option value="none">none</option>
+              <option value="stl">STL</option>
+              <option value="step">STEP</option>
+            </select>
+          </div>
+          <div class="hint" id="paramStatus" style="color: var(--accent); min-height: 14px"></div>
+          <div style="margin-top: 8px">
+            <button id="btnParam" class="primary" style="width: 100%">Run parametric script</button>
+          </div>
+        </div>
+        <div class="section">
+          <h3>AI prompt (text → CAD)</h3>
+          <label>Describe the model</label>
+          <textarea id="aiPrompt" rows="3" spellcheck="false"></textarea>
+          <label style="display: flex; align-items: center; gap: 6px; margin-top: 8px"
+            ><input id="aiDryRun" type="checkbox" checked style="width: auto" /> Preview script
+            (dry-run, no API call)</label
+          >
+          <div class="hint" id="aiStatus" style="color: var(--accent); min-height: 14px"></div>
+          <div style="margin-top: 8px" class="row">
+            <button id="btnAi" class="primary" style="flex: 1">Generate from prompt</button>
+          </div>
+          <pre id="aiScript" class="hint" style="white-space: pre-wrap; display: none"></pre>
+        </div>
+        <div class="section">
+          <h3>Edit selected faces <span class="tag" id="faceCountTag">0</span></h3>
+          <label>Select mode</label>
+          <div class="row" style="margin-bottom: 6px">
+            <button id="btnSelectMode" class="primary">✥ Face select</button>
+            <button id="btnClearSel">Clear</button>
+          </div>
+          <div id="faceInfo">Click a face on the model to select it (Shift = add).</div>
+          <label>Operation</label>
+          <select id="editOp">
+            <option value="extrude">Extrude</option>
+            <option value="bevel">Bevel (chamfer)</option>
+            <option value="inset">Inset</option>
+            <option value="subdivide">Subdivide</option>
+            <option value="sculpt">Sculpt (push/pull)</option>
+          </select>
+          <label>Amount (mm / smooth)</label>
+          <div class="row">
+            <input id="editAmount" type="number" step="0.1" value="2" />
+            <button
+              id="btnSculptSmooth"
+              class="pill"
+              title="Sculpt uses smooth (laplacian) when bold"
+            >
+              Smooth
+            </button>
+          </div>
+          <div style="margin-top: 8px">
+            <button id="btnApplyEdit" class="primary" style="width: 100%">Apply edit</button>
+          </div>
+        </div>
+        <div class="section">
+          <h3>Sub-mesh modeling <span class="tag" id="subTag">vertex</span></h3>
+          <label>Select</label>
+          <div class="row" style="margin-bottom: 6px">
+            <button id="btnSubMode" title="Pick vertices / edges / faces (Tab cycles)">
+              ⬡ Sub-select
+            </button>
+            <button id="btnSubClear">Clear</button>
+          </div>
+          <div class="row" id="subSelectRow" style="margin-bottom: 6px">
+            <button id="subModeVertex" class="submode active">● Vertex</button>
+            <button id="subModeEdge" class="submode">— Edge</button>
+            <button id="subModeFace" class="submode">▰ Face</button>
+          </div>
+          <div id="subInfo" class="hint">
+            Enable ⬡, hover to highlight, click to select (Shift = add). Esc exits.
+          </div>
+          <label>Transform selected</label>
+          <div class="row">
+            <button id="btnSubMove">Move</button>
+            <button id="btnSubRotate">Rotate</button>
+            <button id="btnSubScale">Scale</button>
+            <select id="subTransformSpace" title="Transform space">
+              <option value="local">Local</option>
+              <option value="world">World</option>
+            </select>
+          </div>
+          <label>Falloff (smooth edit)</label>
+          <div class="row">
+            <input id="subFalloff" type="number" step="0.5" value="0" min="0" title="Influence radius (mm); 0 = single element" />
+            <button id="btnSubSmoothFall" class="pill" title="Enable smooth falloff gradient">Soft</button>
+          </div>
+          <label>Topology tools</label>
+          <div class="row" style="margin-bottom: 4px">
+            <button id="btnBridge">Bridge</button>
+            <button id="btnAddEdge">Add edge</button>
+            <button id="btnFillHole">Fill</button>
+          </div>
+          <div class="row">
+            <button id="btnSubDelete" class="danger">Delete</button>
+            <button id="btnSubCommit" class="success">Commit mesh</button>
+          </div>
+          <div id="vertexInfo" class="hint">
+            Select a sub-element, transform with gizmo or move falloff. Topology ops (bridge/add edge/fill) persist on commit.
+          </div>
+        </div>
+        <div class="section">
+          <h3>Texture (per face)</h3>
+          <label>Color</label>
+          <input id="texColor" type="color" value="#58a6ff" style="width: 100%; height: 28px" />
+          <div class="row" style="margin-top: 6px">
+            <button id="btnApplyColor">Apply color</button>
+            <button id="btnTexFile">Texture image…</button>
+          </div>
+          <input id="texFile" type="file" accept="image/*" />
+          <div class="row" style="margin-top: 6px">
+            <input
+              id="texStrength"
+              type="number"
+              step="0.1"
+              value="1"
+              title="Relief height (mm)"
+              style="flex: 2"
+            />
+            <button id="btnRelief" class="success" style="flex: 1">Relief</button>
+          </div>
+          <div class="hint">
+            Image → displacement on the selected faces (real 3D relief you can print).
+          </div>
+        </div>
+        <div class="section">
+          <h3>Image → 3D (heightfield)</h3>
+          <input id="imgFile" type="file" accept="image/*" />
+          <button id="btnImgFile" style="width: 100%">Upload image…</button>
+          <div class="row" style="margin-top: 6px">
+            <label style="flex: 1">Size</label>
+            <select id="imgSize" style="flex: 2">
+              <option value="64">64 × 64</option>
+              <option value="96" selected>96 × 96</option>
+              <option value="128">128 × 128</option>
+              <option value="160">160 × 160</option>
+              <option value="192">192 × 192</option>
+            </select>
+          </div>
+          <div class="row" style="margin-top: 6px">
+            <label style="flex: 1">Depth (mm)</label
+            ><input id="imgDepth" type="number" step="0.5" value="4" style="flex: 2" />
+            <label style="flex: 1">Base (mm)</label
+            ><input id="imgBase" type="number" step="0.5" value="1" style="flex: 2" />
+          </div>
+          <div class="hint">
+            Convert a photo/logo to an editable 3D relief object (light → raised).
+          </div>
+        </div>
+        <div class="section">
+          <h3>Import / Export</h3>
+          <input id="fileInput" type="file" accept=".stl,.obj" />
+          <button id="btnImport" style="width: 100%">Import STL / OBJ…</button>
+          <div class="row" style="margin-top: 8px">
+            <button id="btnExportStl" class="success">STL</button>
+            <button id="btnExportObj">OBJ</button>
+            <button id="btnExport3mf">3MF</button>
+          </div>
+          <div class="hint">Exports save into <b id="exportPath"></b></div>
+        </div>
+      </div>
+
+      <div id="stage">
+        <div id="topbar">
+          <button id="btnFitView">Fit view</button>
+          <button id="btnOrtho">Ortho</button>
+          <button id="btnSnap">Snap: 0.5</button>
+          <button id="btnGrid">Grid</button>
+        </div>
+        <div
+          id="agentCode"
+          style="position: absolute; top: 60px; left: 12px; width: 340px; display: none"
+        ></div>
+        <div id="selectHint" style="display: none">
+          Click a face to select · Shift = add · Esc = exit
+        </div>
+        <div id="legend">
+          <b>LMB</b> orbit &nbsp;·&nbsp; <b>RMB</b> pan &nbsp;·&nbsp; <b>Wheel</b> zoom<br />
+          <b>G</b> move gizmo &nbsp;·&nbsp; <b>R</b> rotate gizmo &nbsp;·&nbsp; <b>S</b> scale
+          gizmo<br />
+          <b>Tab</b> face select &nbsp;·&nbsp; <b>F</b> fit view
+        </div>
+        <div id="toast"></div>
+      </div>
+    </div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/",
+          "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.9.15",
+          "three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.18"
+        }
+      }
+    </script>
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+      import { TransformControls } from "three/addons/controls/TransformControls.js";
+      let BvhCsg = null; // lazy-loaded three-bvh-csg (only when Robust boolean is used)
+
+      /* ---------------- Config / state ---------------- */
+      const token = new URLSearchParams(location.search).get("token") ?? "";
+      const api = async (action, payload = {}, method = "POST") => {
+        const res = await fetch(`/api/${action}`, {
+          method,
+          headers: { "Content-Type": "application/json", "X-Cad-Token": token },
+          body: method === "POST" ? JSON.stringify(payload) : undefined,
+        });
+        if (res.status === 401) {
+          showToast("Session expired — close and reopen the workspace", 5000);
+          throw new Error("unauthorized");
+        }
+        const data = await res.json().catch(() => ({ ok: false, error: "bad response" }));
+        if (!data.ok) throw new Error(data.error || "API error");
+        return data;
+      };
+      const $ = (id) => document.getElementById(id);
+      let selected = null;
+      // sub-mesh modeling state (declared early because hoverGhost() in
+      // render() reads these before the later init section executes)
+      let subMode = false;
+      let subElemType = "vertex";
+      let subSel = [];
+      let subHover = null;
+      let subTransform = "move";
+      let subFalloff = 0;
+      let subFalloffSoft = false;
+      let vertexDrag = null;
+      let scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x121418);
+      // Ortho/Persp cameras: `camera` is reassigned when toggling.
+      let perspCamera = new THREE.PerspectiveCamera(50, 1, 0.01, 5000);
+      perspCamera.position.set(60, 45, 70);
+      let camera = perspCamera;
+      let orthoCamera = null;
+      let isOrtho = false;
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      $("stage").appendChild(renderer.domElement);
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      // Grid + axes (floor plane XZ — Three.js is Y-up; CAD data is Z-up)
+      const gridHelper = new THREE.GridHelper(100, 20, 0x3a4a5f, 0x232b38);
+      scene.add(gridHelper);
+      const axes = new THREE.AxesHelper(40);
+      scene.add(axes);
+      // Z-up group: all CAD meshes (3MF/slicer convention, Z = height) live here.
+      // Rotating the GROUP -90° in X displays them upright on the bed while the
+      // server data stays in printer coordinates (no data mutation).
+      const modelGroup = new THREE.Group();
+      modelGroup.rotation.x = -Math.PI / 2; // Z-up -> Y-up
+      scene.add(modelGroup);
+      // Real printer build plate (fixed, non-movable) — Kawasaki Kobra S1
+      // useful area 220×220mm. Override via ?bed=<WxH> (e.g. ?bed=300x300).
+      const plateW = Number(new URLSearchParams(location.search).get("bed")?.split("x")[0]) || 220;
+      const plateD = Number(new URLSearchParams(location.search).get("bed")?.split("x")[1]) || 220;
+      const buildPlate = new THREE.Group();
+      buildPlate.name = "buildPlate";
+      // PEI-textured plate surface (slightly raised grid, dark speckled)
+      const plateMat = new THREE.MeshStandardMaterial({
+        color: 0x2a3038,
+        roughness: 0.9,
+        metalness: 0.05,
+        side: THREE.DoubleSide,
+      });
+      const plateMesh = new THREE.Mesh(new THREE.PlaneGeometry(plateW, plateD), plateMat);
+      plateMesh.rotation.x = -Math.PI / 2;
+      plateMesh.position.y = 0;
+      buildPlate.add(plateMesh);
+      // Grid texture illusion: fine lines every 10mm on the plate
+      const plateGrid = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.PlaneGeometry(plateW, plateD)),
+        new THREE.LineBasicMaterial({ color: 0x3a4657, transparent: true, opacity: 0.55 }),
+      );
+      plateGrid.rotation.x = -Math.PI / 2;
+      plateGrid.position.y = 0.01;
+      buildPlate.add(plateGrid);
+      // Raised rim (border) showing the plate boundary
+      const rim = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.BoxGeometry(plateW, 0.4, plateD)),
+        new THREE.LineBasicMaterial({ color: 0x5a6a80 }),
+      );
+      rim.position.y = 0.2;
+      buildPlate.add(rim);
+      // Dimension labels on two edges (text via canvas sprite)
+      const lblTex = document.createElement("canvas");
+      lblTex.width = 256;
+      lblTex.height = 64;
+      const lctx = lblTex.getContext("2d");
+      lctx.fillStyle = "#cdd6e4";
+      lctx.font = "bold 28px Segoe UI, sans-serif";
+      lctx.textAlign = "center";
+      lctx.textBaseline = "middle";
+      lctx.fillText(`Kobra S1 · ${plateW}×${plateD} mm`, 128, 32);
+      const lblSprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(lblTex), transparent: true }),
+      );
+      lblSprite.position.set(0, 0.6, plateD / 2 + 6);
+      lblSprite.scale.set(28, 7, 1);
+      buildPlate.add(lblSprite);
+      scene.add(buildPlate);
+
+      // Lighting
+      scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+      dirLight.position.set(60, 80, 40);
+      scene.add(dirLight);
+      scene.add(new THREE.HemisphereLight(0x8888ff, 0x443322, 0.35));
+
+      /* ---------------- Transform gizmo ---------------- */
+      const gizmo = new TransformControls(camera, renderer.domElement);
+      gizmo.addEventListener("dragging-changed", (e) => (controls.enabled = !e.value));
+      scene.add(gizmo);
+      let gizmoMode = "translate";
+      const activeMesh = { obj: null, name: null };
+
+      gizmo.addEventListener("change", () => {});
+
+      function attachGizmo(name, mesh3D) {
+        detachGizmo();
+        gizmo.attach(mesh3D);
+        gizmo.setMode(gizmoMode);
+        gizmo.setSize(0.9);
+        activeMesh.obj = mesh3D;
+        activeMesh.name = name;
+      }
+      function detachGizmo() {
+        if (activeMesh.obj) gizmo.detach();
+        activeMesh.obj = null;
+        activeMesh.name = null;
+      }
+
+      /* ---------------- Object registry ---------------- */
+      const meshes = new Map(); // name -> THREE.Mesh
+      const objectData = new Map(); // name -> { positions, tris, info }
+      let revision = 0;
+
+      async function refreshList() {
+        const data = await api("objects", {}, "GET");
+        revision = data.revision;
+        // keep per-object material/selection cache from groups payload (if present)
+        if (data.groups) {
+          for (const gInfo of data.groups) {
+            appStateSel.set(gInfo.name, gInfo.selection || []);
+            objectData.set(
+              gInfo.name,
+              Object.assign(objectData.get(gInfo.name) || {}, {
+                material: gInfo.material,
+                groups: gInfo.groups,
+              }),
+            );
+          }
+        }
+        const listEl = $("objectList");
+        const current = [...listEl.children].map((li) => li.dataset.name);
+        const names = data.objects.map((o) => o.name);
+        for (const n of current)
+          if (!names.includes(n))
+            listEl.removeChild(listEl.querySelector(`[data-name="${CSS.escape(n)}"]`));
+        for (const o of data.objects) {
+          let li = listEl.querySelector(`[data-name="${CSS.escape(o.name)}"]`);
+          if (!li) {
+            li = document.createElement("li");
+            li.dataset.name = o.name;
+            li.innerHTML = `<span class="name"></span><span class="tri"></span>`;
+            li.addEventListener("click", () => selectObject(o.name));
+            listEl.appendChild(li);
+          }
+          li.querySelector(".name").textContent = o.name;
+          li.querySelector(".tri").textContent = `${o.triangles} tri · ${o.sizeMm.z.toFixed(2)}mm`;
+          li.classList.toggle("selected", o.name === selected);
+        }
+        // Populate CSG dropdowns and stats
+        const selOptions = names.map((n) => `<option value="${n}">${n}</option>`).join("");
+        $("csgA").innerHTML = selOptions;
+        $("csgB").innerHTML = selOptions;
+        const sel = data.objects.find((o) => o.name === selected);
+        if (sel) {
+          $("statsBox").innerHTML = `
+      <div>Size: <b>${sel.sizeMm.x.toFixed(2)} × ${sel.sizeMm.y.toFixed(2)} × ${sel.sizeMm.z.toFixed(2)} mm</b></div>
+      <div>Volume: <b>${(sel.volumeMm3 / 1000).toFixed(2)} cm³</b></div>
+      <div>Surface: <b>${sel.surfaceAreaMm2.toFixed(1)} mm²</b></div>
+      <div>Triangles: <b>${sel.triangles}</b></div>
+      <div>Watertight: <b>${sel.watertight ? "yes" : "no"}</b></div>`;
+        }
+      }
+
+      async function selectObject(name) {
+        selected = name;
+        selectedFaces = [...(appStateSel.get(name) ?? [])];
+        await buildMesh3D(name);
+        refreshList();
+        updateFaceTag();
+      }
+
+      async function buildMesh3D(name) {
+        const data = await api(`../mesh/${encodeURIComponent(name)}`, {}, "GET");
+        meshDataCache.set(name, { positions: data.positions, tris: data.tris });
+        if (name === selected) currentTris = data.tris || [];
+        // remove existing
+        const old = meshes.get(name);
+        if (old) {
+          modelGroup.remove(old);
+          meshes.delete(name);
+        }
+        const pos = new Float32Array(data.positions);
+        const posAttr = new THREE.BufferAttribute(pos, 3);
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", posAttr);
+        const indices = new Uint32Array(data.tris.length * 3);
+        data.tris.forEach((t, i) => {
+          indices[i * 3] = t.a;
+          indices[i * 3 + 1] = t.b;
+          indices[i * 3 + 2] = t.c;
+        });
+        geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+        geometry.computeVertexNormals();
+        // material: use server-side texture/color if present
+        const matInfo = objectData.get(name) || {};
+        const matColor =
+          matInfo.material && matInfo.material.color
+            ? new THREE.Color(
+                matInfo.material.color[0] / 255,
+                matInfo.material.color[1] / 255,
+                matInfo.material.color[2] / 255,
+              )
+            : new THREE.Color(0x58a6ff);
+        const material = new THREE.MeshStandardMaterial({
+          color: matColor,
+          roughness: 0.55,
+          metalness: 0.15,
+          side: THREE.DoubleSide,
+          flatShading: true,
+        });
+        // if a texture URL was set on the object, try to load it as material.map
+        if (matInfo.material && matInfo.material.texture_url) {
+          const loader = new THREE.TextureLoader();
+          loader.load(matInfo.material.texture_url, (tex) => {
+            material.map = tex;
+            material.needsUpdate = true;
+            render();
+          });
+        }
+        const mesh3D = new THREE.Mesh(geometry, material);
+        mesh3D.name = name;
+        mesh3D.userData.cadName = name;
+        // Auto-flat: sit the object on the build plate (lowest vertex on z=0).
+        // Positions come from the server in printer coords (Z-up); the mesh lives
+        // in the Z-up group, so we raise it so that min(z) === 0 => on the plate.
+        // NOTE: index i+2 is Z (i and i+1 are X/Y — never shift those, or the
+        // object loses its X/Y centering on the plate).
+        const posArr = geometry.attributes.position.array;
+        let minZ = Infinity;
+        for (let i = 2; i < posArr.length; i += 3) minZ = Math.min(minZ, posArr[i]);
+        if (minZ !== 0 && minZ < Infinity) {
+          for (let i = 2; i < posArr.length; i += 3) posArr[i] -= minZ;
+          geometry.attributes.position.needsUpdate = true;
+          geometry.computeVertexNormals();
+        }
+        modelGroup.add(mesh3D);
+        meshes.set(name, mesh3D);
+        if (name === selected) attachGizmo(name, mesh3D);
+        render();
+      }
+
+      async function removeObject(name) {
+        const mesh3D = meshes.get(name);
+        if (mesh3D) {
+          modelGroup.remove(mesh3D);
+          meshes.delete(name);
+        }
+        if (activeMesh.name === name) detachGizmo();
+        await api("remove", { name });
+        if (selected === name) selected = null;
+        await refreshList();
+        render();
+      }
+
+      const hoverGhostMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(1.4, 8, 6),
+        new THREE.MeshBasicMaterial({ color: 0x8ab4ff, transparent: true, opacity: 0.55 }),
+      );
+      hoverGhostMesh.visible = false;
+      scene.add(hoverGhostMesh);
+      function render() {
+        // hover ghost feedback for sub-mesh selecting
+        const hp = hoverGhost();
+        if (hp) {
+          hoverGhostMesh.position.copy(hp);
+          hoverGhostMesh.visible = true;
+        } else hoverGhostMesh.visible = false;
+        renderer.render(scene, camera);
+      }
+      function resize() {
+        const w = $("stage").clientWidth,
+          h = $("stage").clientHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+        render();
+      }
+      new ResizeObserver(resize).observe($("stage"));
+      resize();
+
+      /* ---------------- Actions ---------------- */
+      $("btnAdd").onclick = async () => {
+        const kind = $("primKind").value;
+        const seg = Math.max(3, parseInt($("primSeg").value, 10) || 48);
+        const params = { kind };
+        if (kind === "box") {
+          params.width = num("primW");
+          params.height = num("primH");
+          params.depth = num("primD");
+        } else if (kind === "cylinder") {
+          params.radius = num("primW") / 2;
+          params.height = num("primH");
+          params.segments = seg;
+        } else if (kind === "cone") {
+          params.radiusBottom = num("primW") / 2;
+          params.radiusTop = num("primD") / 2;
+          params.height = num("primH");
+          params.segments = seg;
+        } else if (kind === "sphere") {
+          params.radius = num("primW") / 2;
+          params.segments = seg;
+        } else if (kind === "prism") {
+          params.sides = Math.max(3, parseInt($("primSeg").value, 10) || 6);
+          params.radius = num("primW") / 2;
+          params.height = num("primH");
+        }
+        const counter = revision + 1;
+        const name = `${kind}_${counter}`;
+        await api("add", { name, params });
+        selected = name;
+        await refreshList();
+        await buildMesh3D(name);
+        fitView();
+      };
+      function num(id) {
+        return parseFloat($(id).value) || 0;
+      }
+
+      $("btnMove").onclick = async () => {
+        if (!selected) return showToast("Select an object first");
+        await api("transform", {
+          name: selected,
+          params: { translate: { x: num("tx"), y: num("ty"), z: num("tz") } },
+        });
+        await refreshList();
+        await buildMesh3D(selected);
+      };
+      $("btnCenter").onclick = async () => {
+        if (!selected) return showToast("Select an object first");
+        await api("transform", { name: selected, params: { center: true } });
+        await refreshList();
+        await buildMesh3D(selected);
+        fitView();
+      };
+      $("btnCenterPlate").onclick = async () => {
+        if (!selected) return showToast("Select an object first");
+        await api("transform", { name: selected, params: { center_on_plate: true } });
+        await refreshList();
+        await buildMesh3D(selected);
+        fitView();
+      };
+      $("btnRotate").onclick = async () => {
+        if (!selected) return showToast("Select an object first");
+        await api("transform", {
+          name: selected,
+          params: { rotate: { axis: $("rotAxis").value, degrees: num("rotDeg") } },
+        });
+        await refreshList();
+        await buildMesh3D(selected);
+      };
+      $("btnScale").onclick = async () => {
+        if (!selected) return showToast("Select an object first");
+        await api("transform", {
+          name: selected,
+          params: { scale: { x: num("sx") || 1, y: num("sy") || 1, z: num("sz") || 1 } },
+        });
+        await refreshList();
+        await buildMesh3D(selected);
+      };
+      $("btnArrange").onclick = async () => {
+        const gap = num("arrGap");
+        const m = /([\d.]+)\s*[xX]\s*([\d.]+)/.exec($("arrBed").value);
+        const plateW = m ? Number(m[1]) : plateW;
+        const plateD = m ? Number(m[2]) : plateD;
+        const data = await api("arrange", { gap, plateW, plateD });
+        // rebuild every arranged object so the viewport reflects new positions
+        for (const p of data.placed ?? []) await buildMesh3D(p.name);
+        refreshList();
+        fitView();
+        const warnEl = $("arrWarn");
+        if (data.warnings && data.warnings.length) {
+          warnEl.textContent = "⚠ " + data.warnings.join(" · ");
+          warnEl.style.display = "block";
+        } else {
+          warnEl.style.display = "none";
+        }
+        showToast(
+          `Arranged ${(data.placed ?? []).length} object(s) · ${(data.warnings ?? []).length} warning(s)`,
+        );
+      };
+      $("btnCsg").onclick = async () => {
+        const a = $("csgA").value,
+          b = $("csgB").value,
+          op = $("csgOp").value;
+        const name = $("csgName").value.trim() || "result";
+        if (!a || !b) return showToast("Pick two operands");
+        try {
+          if ($("robustBool").checked) {
+            await robustBoolean(a, b, op, name);
+          } else {
+            await api("boolean", { name_a: a, name_b: b, op, result_name: name });
+          }
+          selected = name;
+          await refreshList();
+          await buildMesh3D(name);
+          fitView();
+        } catch (e) {
+          showToast(String(e.message || e));
+        }
+      };
+
+      // ---- Robust boolean CSG (client-side three-bvh-csg) ----
+      // three-bvh-csg imports `MeshBVH` directly from three-mesh-bvh (ESM) —
+      // it never reads `THREE.MeshBVH`. What it DOES require is that the
+      // geometry prototype has computeBoundsTree/disposeBoundsTree patched in
+      // (that is what three-mesh-bvh's ExtensionUtilities does).
+      async function loadBvhCsg() {
+        if (!BvhCsg) {
+          const bvhMod = await import("three-mesh-bvh");
+          const ext = {};
+          // Only wire methods that actually exist in this three-mesh-bvh
+          // version — assigning `undefined` would clobber the native Three.js
+          // computeBoundingBox/computeBoundingSphere.
+          for (const k of [
+            "computeBoundsTree",
+            "disposeBoundsTree",
+            "computeBoundingBox",
+            "computeBoundingSphere",
+          ]) {
+            if (typeof bvhMod[k] === "function") ext[k] = bvhMod[k];
+          }
+          Object.assign(THREE.BufferGeometry.prototype, ext);
+          Object.assign(THREE.Mesh.prototype, ext);
+          Object.assign(THREE.Line.prototype, ext);
+          Object.assign(THREE.Points.prototype, ext);
+          BvhCsg = await import("three-bvh-csg");
+        }
+        return BvhCsg;
+      }
+      function geometryFromMeshData(data) {
+        const pos = new Float32Array(data.positions);
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+        const idx = new Uint32Array(data.tris.length * 3);
+        data.tris.forEach((t, i) => {
+          idx[i * 3] = t.a;
+          idx[i * 3 + 1] = t.b;
+          idx[i * 3 + 2] = t.c;
+        });
+        geom.setIndex(new THREE.BufferAttribute(idx, 1));
+        geom.computeVertexNormals();
+        // three-bvh-csg's GeometryBuilder reads position/uv/normal — a missing
+        // uv attribute crashes `initFromGeometry`. Provide flat zeros (mirrors
+        // the Node engine in scripts/cad-csg-engine.mjs for the same reason).
+        const uv = new Float32Array(data.tris.length * 6);
+        geom.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+        return geom;
+      }
+      function meshToBinaryStlBase64(geom, gname) {
+        const posAttr = geom.attributes.position;
+        const idx = geom.index?.array;
+        const header = new Uint8Array(80);
+        const enc = new TextEncoder().encode(String(gname).slice(0, 79));
+        header.set(enc);
+        const count = idx ? idx.length / 3 : posAttr.count / 3;
+        const buf = new ArrayBuffer(84 + count * 50);
+        const view = new DataView(buf);
+        new Uint8Array(buf, 0, 80).set(header);
+        view.setUint32(80, count, true);
+        let off = 84;
+        const v = (i) => ({ x: posAttr.getX(i), y: posAttr.getY(i), z: posAttr.getZ(i) });
+        const triAt = (i) => (idx ? [idx[i * 3], idx[i * 3 + 1], idx[i * 3 + 2]] : [i * 3, i * 3 + 1, i * 3 + 2]);
+        for (let i = 0; i < count; i++) {
+          const [ia, ib, ic] = triAt(i);
+          const a = v(ia), b = v(ib), c = v(ic);
+          const ux = b.x - a.x, uy = b.y - a.y, uz = b.z - a.z;
+          const vx = c.x - a.x, vy = c.y - a.y, vz = c.z - a.z;
+          let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+          const len = Math.hypot(nx, ny, nz) || 1;
+          view.setFloat32(off, nx / len, true);
+          view.setFloat32(off + 4, ny / len, true);
+          view.setFloat32(off + 8, nz / len, true);
+          off += 12;
+          for (const vi of [a, b, c]) {
+            view.setFloat32(off, vi.x, true);
+            view.setFloat32(off + 4, vi.y, true);
+            view.setFloat32(off + 8, vi.z, true);
+            off += 12;
+          }
+          view.setUint16(off, 0, true);
+          off += 2;
+        }
+        const bytes = new Uint8Array(buf);
+        let binary = "";
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk)
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+        return btoa(binary);
+      }
+      async function robustBoolean(a, b, op, resultName) {
+        const csg = await loadBvhCsg();
+        const fetchMeshData = async (name) => {
+          const res = await fetch(`/mesh/${encodeURIComponent(name)}`, {
+            headers: { "X-Cad-Token": token },
+          });
+          if (res.status === 401) throw new Error("Session expired — close and reopen the workspace");
+          const data = await res.json().catch(() => ({ ok: false, error: "bad response" }));
+          if (!data.ok) throw new Error(data.error || "mesh error");
+          return data;
+        };
+        const [meshA, meshB] = await Promise.all([
+          fetchMeshData(a),
+          fetchMeshData(b),
+        ]);
+        const brushA = new csg.Brush(geometryFromMeshData(meshA));
+        brushA.updateMatrixWorld(true);
+        const brushB = new csg.Brush(geometryFromMeshData(meshB));
+        brushB.updateMatrixWorld(true);
+        const opMap = {
+          add: csg.ADDITION,
+          subtract: csg.SUBTRACTION,
+          intersect: csg.INTERSECTION,
+          difference: csg.DIFFERENCE,
+        };
+        const evaluator = new csg.Evaluator();
+        const result = evaluator.evaluate(brushA, brushB, opMap[op] ?? csg.ADDITION);
+        const dataB64 = meshToBinaryStlBase64(result.geometry, resultName);
+        await api("import", { name: resultName, data_base64: dataB64, format: "stl" });
+        showToast(`Robust boolean applied (${result.geometry.attributes.position.count / 3} verts)`);
+      }
+      // ---- Parametric (manifold) ----
+      $("paramScript").value =
+        "let base = box(20, 24, 10);\nlet hole = cylinder(4, 40, 48);\nreturn subtract(base, hole);";
+      $("btnParam").onclick = async () => {
+        const script = $("paramScript").value;
+        const objectName = $("paramName").value.trim() || "parametric";
+        const exportFormat = $("paramExport").value;
+        const statusEl = $("paramStatus");
+        statusEl.textContent = "Running…";
+        try {
+          const res = await api("parametric", {
+            script,
+            object_name: objectName,
+            export_format: exportFormat,
+          });
+          if (!res.ok) throw new Error(res.error || "parametric failed");
+          statusEl.textContent = `OK — ${res.triangles} tris, ${res.vertices} verts, volume ${Number(res.volume_mm3).toFixed(0)} mm³` +
+            (res.stl_base64 ? " · STL ✓" : "") + (res.step_base64 ? " · STEP ✓" : "");
+          selected = objectName;
+          await refreshList();
+          await buildMesh3D(objectName);
+          fitView();
+        } catch (e) {
+          statusEl.textContent = String(e.message || e);
+        }
+      };
+
+      // ---- AI prompt (text → CAD) ----
+      $("aiPrompt").value = "a box 20 by 24 by 10 mm with a 4 mm hole through it";
+      $("btnAi").onclick = async () => {
+        const prompt = $("aiPrompt").value.trim();
+        const dryRun = $("aiDryRun").checked;
+        const statusEl = $("aiStatus");
+        const scriptEl = $("aiScript");
+        if (!prompt) return (statusEl.textContent = "Describe the model first");
+        statusEl.textContent = dryRun ? "Previewing script…" : "Generating (AI)…";
+        scriptEl.style.display = "none";
+        try {
+          const res = await api("ai_prompt", { prompt, dry_run: dryRun });
+          if (!res.ok) {
+            const msg = /not configured/i.test(res.error || "")
+              ? "AI provider not configured — set CAD_AI_API_KEY (browser runs via workspace server)"
+              : res.error;
+            return (statusEl.textContent = msg);
+          }
+          if (res.dry_run) {
+            scriptEl.textContent = res.script;
+            scriptEl.style.display = "block";
+            statusEl.textContent = "Script preview (dry-run) — uncheck to execute.";
+            return;
+          }
+          statusEl.textContent = `OK — ${res.triangles} tris, ${res.vertices} verts, volume ${Number(res.volume_mm3).toFixed(0)} mm³`;
+          if (res.stl_base64) statusEl.textContent += " · STL ✓";
+          selected = res.object;
+          await refreshList();
+          await buildMesh3D(res.object);
+          fitView();
+        } catch (e) {
+          statusEl.textContent = String(e.message || e);
+        }
+      };
+
+      let snap = 0.5;
+      $("btnSnap").onclick = () => {
+        snap = snap === 0.5 ? 0.1 : snap === 0.1 ? 1 : 0.5;
+        $("btnSnap").textContent = `Snap: ${snap}`;
+      };
+      $("btnGrid").onclick = () => {
+        gridHelper.visible = !gridHelper.visible;
+        render();
+      };
+      $("btnClear").onclick = async () => {
+        if (!confirm("Clear all objects?")) return;
+        await api("clear", {});
+        for (const [name, m] of meshes) modelGroup.remove(m);
+        meshes.clear();
+        objectData.clear();
+        detachGizmo();
+        selected = null;
+        await refreshList();
+        render();
+      };
+      $("btnFitView").onclick = () => fitView();
+      $("btnOrtho").onclick = () => {
+        isOrtho = !isOrtho;
+        $("btnOrtho").textContent = isOrtho ? "Persp" : "Ortho";
+        if (isOrtho) {
+          if (!orthoCamera) orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 5000);
+          orthoCamera.position.copy(perspCamera.position);
+          orthoCamera.quaternion.copy(perspCamera.quaternion);
+          const dist = perspCamera.position.distanceTo(controls.target);
+          const frustum = Math.max(1, dist * 0.5);
+          orthoCamera.left = -frustum;
+          orthoCamera.right = frustum;
+          orthoCamera.top = frustum;
+          orthoCamera.bottom = -frustum;
+          orthoCamera.updateProjectionMatrix();
+          camera = orthoCamera;
+        } else {
+          camera = perspCamera;
+        }
+        controls.object = camera;
+        controls.update();
+        render();
+      };
+      function fitView() {
+        // Frame only the loaded CAD meshes (skip grid/axes/bed helpers)
+        const box = new THREE.Box3();
+        for (const [, m] of meshes) box.expandByObject(m);
+        if (box.isEmpty()) return;
+        const sphere = box.getBoundingSphere(new THREE.Sphere());
+        const dir = new THREE.Vector3(1, 0.8, 1).normalize();
+        const center = box.getCenter(new THREE.Vector3());
+        controls.target.copy(center);
+        const dist = Math.max(sphere.radius, 1) * 2.4;
+        camera.position.copy(center).add(dir.multiplyScalar(dist));
+        camera.near = Math.max(0.01, sphere.radius / 1000);
+        camera.far = sphere.radius * 200 + 1000;
+        if (camera.isOrthographicCamera) {
+          const frustum = Math.max(1, sphere.radius * 1.2);
+          camera.left = -frustum;
+          camera.right = frustum;
+          camera.top = frustum;
+          camera.bottom = -frustum;
+        }
+        camera.updateProjectionMatrix();
+        controls.update();
+        render();
+      }
+      // Keyboard gizmo mode (translate only; rotate/scale use numeric fields for precision)
+      window.addEventListener("keydown", (e) => {
+        if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+        if (e.key === "g" || e.key === "G") {
+          gizmoMode = "translate";
+          gizmo.setMode("translate");
+        }
+        if (e.key === "r" || e.key === "R") {
+          gizmoMode = "rotate";
+          gizmo.setMode("rotate");
+          showToast("Rotate hint: use the numeric Rotate fields for precision");
+        }
+        if (e.key === "s" || e.key === "S") {
+          gizmoMode = "scale";
+          gizmo.setMode("scale");
+          showToast("Scale hint: use the numeric Scale fields for precision");
+        }
+        if (e.key === "f" || e.key === "F") fitView();
+        if (e.key === "Delete" && selected) removeObject(selected);
+        if (e.key === "Tab") {
+          e.preventDefault();
+          $("btnSelectMode").click();
+        }
+        if (e.key === "Escape" && faceSelectMode) exitFaceSelect();
+      });
+
+      // When gizmo drags end, persist to server (translate with snap; rotate/scale
+      // are decomposed into per-axis calls), then re-fetch the mesh from the server
+      // so the Three.js object and server state stay in sync.
+      gizmo.addEventListener("mouseUp", async () => {
+        if (!activeMesh.name) return;
+        const mesh3D = activeMesh.obj;
+        if (!mesh3D) return;
+        const name = activeMesh.name;
+        try {
+          if (gizmoMode === "translate") {
+            const p = mesh3D.position;
+            if (snap > 0) {
+              p.x = Math.round(p.x / snap) * snap;
+              p.y = Math.round(p.y / snap) * snap;
+              p.z = Math.round(p.z / snap) * snap;
+            }
+            await api("transform", { name, params: { translate: { x: p.x, y: p.y, z: p.z } } });
+          } else if (gizmoMode === "rotate") {
+            // Decompose euler (ZYX order) into per-axis degree calls (server applies in order)
+            const r = mesh3D.rotation;
+            const deg = (rad) => (rad * 180) / Math.PI;
+            const steps = [];
+            if (Math.abs(r.z) > 1e-6) steps.push({ axis: "z", degrees: deg(r.z) });
+            if (Math.abs(r.y) > 1e-6) steps.push({ axis: "y", degrees: deg(r.y) });
+            if (Math.abs(r.x) > 1e-6) steps.push({ axis: "x", degrees: deg(r.x) });
+            for (const s of steps) await api("transform", { name, params: { rotate: s } });
+          } else if (gizmoMode === "scale") {
+            const s = mesh3D.scale;
+            await api("transform", { name, params: { scale: { x: s.x, y: s.y, z: s.z } } });
+          }
+          await buildMesh3D(name);
+        } catch {}
+        await refreshList();
+      });
+
+      // Import
+      $("btnImport").onclick = () => $("fileInput").click();
+      $("fileInput").onchange = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const buf = await file.arrayBuffer();
+        const base64 = arrayBufferToBase64(buf);
+        const name = file.name.replace(/\.[^.]+$/, "") || "imported";
+        try {
+          await api("import", {
+            name,
+            data_base64: base64,
+            format: file.name.split(".").pop().toLowerCase(),
+          });
+          selected = name;
+          await refreshList();
+          await buildMesh3D(name);
+          fitView();
+          showToast(`${file.name} imported (${(buf.byteLength / 1024).toFixed(1)} KB)`);
+        } catch (err) {
+          showToast(`Import failed: ${err.message}`, 5000);
+        }
+      };
+      function arrayBufferToBase64(buffer) {
+        let binary = "";
+        const bytes = new Uint8Array(buffer);
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk)
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+        return btoa(binary);
+      }
+
+      // Export
+      async function exportFile(format) {
+        if (!selected) return showToast("Select an object first");
+        try {
+          const data = await api("export", { name: selected, format, export_name: selected });
+          showToast(`Exported ${format.toUpperCase()} → ${data.file_path}`);
+          $("exportPath").textContent = data.file_path;
+        } catch (e) {
+          showToast(`Export failed: ${e.message}`, 5000);
+        }
+      }
+      $("btnExportStl").onclick = () => exportFile("stl");
+      $("btnExportObj").onclick = () => exportFile("obj");
+      $("btnExport3mf").onclick = () => exportFile("3mf");
+
+      let toastTimer;
+      function showToast(msg, ms = 2600) {
+        $("toast").textContent = msg;
+        $("toast").classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => $("toast").classList.remove("show"), ms);
+      }
+
+      // Init
+      (async function init() {
+        try {
+          await refreshList();
+          const listEl = $("objectList");
+          // Build every existing object so the viewport shows all parts on the
+          // plate even before any selection happens.
+          const names = [...listEl.children].map((li) => li.dataset.name);
+          for (const n of names) {
+            try {
+              await buildMesh3D(n);
+            } catch (e) {
+              console.warn("buildMesh3D init skip", n, e);
+            }
+          }
+          if (names.length > 0) {
+            fitView();
+          }
+          $("exportPath").textContent = "select object & export";
+          subscribeSse();
+        } catch (e) {
+          showToast("Cannot load workspace: " + e.message, 5000);
+        }
+        animate();
+      })();
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        render();
+      }
+
+      /* ---------------- SSE live sync (UI <-> agent) ---------------- */
+      let sseReconnect = 0;
+      function subscribeSse() {
+        const es = new EventSource(`/sync?token=${encodeURIComponent(token)}`);
+        es.onopen = () => {
+          sseReconnect = 0;
+        };
+        es.addEventListener("scene", async () => {
+          try {
+            await refreshList();
+            if (selected) await buildMesh3D(selected);
+          } catch {}
+        });
+        es.onerror = () => {
+          es.close();
+          const t = Math.min(5000, 500 * Math.pow(2, sseReconnect++));
+          setTimeout(subscribeSse, t);
+        };
+      }
+
+      /* ---------------- Face selection (Raycaster) ---------------- */
+      let faceSelectMode = false;
+      let raycaster = new THREE.Raycaster();
+      const pointer = new THREE.Vector2();
+      let selectedFaces = []; // tri indices for selected object
+      function onPointerDown(e) {
+        if (!faceSelectMode || !selected) return;
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        const mesh3D = meshes.get(selected);
+        if (!mesh3D) return;
+        const hits = raycaster.intersectObject(mesh3D, false);
+        if (hits.length === 0) return;
+        const faceIdx = hits[0].faceIndex;
+        const adding = e.shiftKey || e.ctrlKey || e.metaKey;
+        if (adding) {
+          selectedFaces = selectedFaces.includes(faceIdx)
+            ? selectedFaces.filter((f) => f !== faceIdx)
+            : [...selectedFaces, faceIdx];
+        } else {
+          selectedFaces = [faceIdx];
+        }
+        persistFaceSelection();
+        highlightFaces();
+        render();
+      }
+      function persistFaceSelection() {
+        if (!selected) return;
+        api("select_faces", { name: selected, face_ids: selectedFaces }); // fire & forget
+        updateFaceTag();
+      }
+      function updateFaceTag() {
+        const tag = $("faceCountTag");
+        if (!tag) return;
+        tag.textContent = String(selectedFaces.length);
+        $("faceInfo").textContent = selectedFaces.length
+          ? `${selectedFaces.length} face(s) selected on '${selected}'`
+          : "Click a face on the model to select it (Shift = add).";
+      }
+      function highlightFaces() {
+        const mesh3D = meshes.get(selected);
+        if (!mesh3D) return;
+        const geom = mesh3D.geometry;
+        if (!geom.getAttribute("color")) {
+          const colors = new Float32Array(geom.getAttribute("position").count * 3);
+          geom.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+        }
+        const col = geom.getAttribute("color");
+        for (let i = 0; i < col.count; i++) {
+          const r = 0.345,
+            g = 0.65,
+            b = 0.96; // default blue
+          col.setXYZ(i, r, g, b);
+        }
+        // highlight selected tri verts
+        for (const f of selectedFaces) {
+          const tri = currentTris[f];
+          if (!tri) continue;
+          for (const v of [tri.a, tri.b, tri.c]) col.setXYZ(v, 1, 0.75, 0.25);
+        }
+        col.needsUpdate = true;
+        geom.computeVertexNormals();
+        mesh3D.material.vertexColors = true;
+      }
+      function exitFaceSelect() {
+        faceSelectMode = false;
+        $("btnSelectMode").classList.remove("active");
+        $("selectHint").style.display = "none";
+        const mesh3D = meshes.get(selected);
+        if (mesh3D) {
+          mesh3D.material.vertexColors = false;
+          mesh3D.geometry.deleteAttribute("color");
+        }
+        render();
+      }
+      $("btnSelectMode").onclick = () => {
+        if (!selected) {
+          showToast("Select an object first");
+          return;
+        }
+        faceSelectMode = !faceSelectMode;
+        $("btnSelectMode").classList.toggle("active", faceSelectMode);
+        $("selectHint").style.display = faceSelectMode ? "block" : "none";
+        if (faceSelectMode) {
+          // pre-load tris for highlight
+          const d = meshDataCache.get(selected);
+          currentTris = d && d.tris ? d.tris : [];
+        } else {
+          exitFaceSelect();
+        }
+        render();
+      };
+      $("btnClearSel").onclick = () => {
+        selectedFaces = [];
+        persistFaceSelection();
+        highlightFaces();
+        render();
+        showToast("Selection cleared");
+      };
+
+      // Global pointerdown only when in face-select mode (don't block orbit)
+      renderer.domElement.addEventListener("pointerdown", onPointerDown);
+
+      /* ---------------- Mesh edits ---------------- */
+      $("btnApplyEdit").onclick = async () => {
+        if (!selected) return showToast("Select an object first");
+        if (selectedFaces.length === 0) return showToast("Select faces first (Tab or ✥)");
+        const op = $("editOp").value;
+        const amount = parseFloat($("editAmount").value) || 2;
+        const smooth = $("btnSculptSmooth").classList.contains("active");
+        try {
+          await api("mesh_edit", { name: selected, op, face_ids: selectedFaces, amount, smooth });
+          selectedFaces = [];
+          updateFaceTag();
+          await refreshList();
+          await buildMesh3D(selected);
+          showToast(`Edit applied (${op})`);
+          exitFaceSelect();
+          render();
+        } catch (e) {
+          showToast("Edit failed: " + (e.message || e), 5000);
+        }
+      };
+      $("btnSculptSmooth").onclick = () => $("btnSculptSmooth").classList.toggle("active");
+
+      /* ---------------- Sub-mesh modeling (vertex/edge/face) ---------------- */
+      // state (subMode, subElemType, subSel, subHover, subTransform,
+      // subFalloff, subFalloffSoft, vertexDrag) declared at top of script
+      // TransformControls from the CDN build is not a full Object3D, so we
+      // drive it through an anchor Group and read the anchor's transform.
+      const subAnchor = new THREE.Group();
+      scene.add(subAnchor);
+      let subLastAnchor = new THREE.Vector3();
+      const subGizmo = new TransformControls(camera, renderer.domElement);
+      subGizmo.setSize(0.8);
+      subGizmo.visible = false;
+      scene.add(subGizmo);
+      subGizmo.addEventListener("dragging-changed", (e) => (controls.enabled = !e.value));
+      subGizmo.addEventListener("change", () => {
+        if (!subMode || !selected) return;
+        const m = meshes.get(selected);
+        if (!m) return;
+        const anchor = subAnchor.getWorldPosition(new THREE.Vector3());
+        const delta = anchor.clone().sub(subLastAnchor);
+        subLastAnchor.copy(anchor);
+        // apply delta (local space of the mesh, converted) to selected verts
+        const deltaLocal = m.worldToLocal(anchor.clone().add(delta)).sub(
+          m.worldToLocal(anchor.clone()),
+        );
+        moveSubSelection(deltaLocal.x, deltaLocal.y, deltaLocal.z);
+        m.geometry.computeVertexNormals();
+        updateSubOverlay(); // keep overlay + gizmo glued to the growing selection
+        render();
+      });
+      subGizmo.addEventListener("mouseUp", () => {
+        // gizmo dragged a sub-element: recompute normals (positions live-updated)
+        const m = meshes.get(selected);
+        if (!m) return;
+        m.geometry.computeVertexNormals();
+        render();
+      });
+      // visual helpers
+      const selSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(2, 10, 8),
+        new THREE.MeshBasicMaterial({ color: 0xffd54a }),
+      );
+      selSphere.visible = false;
+      scene.add(selSphere);
+      const selPts = new THREE.Points(
+        new THREE.BufferGeometry(),
+        new THREE.PointsMaterial({ color: 0xffd54a, size: 6, sizeAttenuation: false }),
+      );
+      selPts.frustumCulled = false;
+      scene.add(selPts);
+      const selEdges = new THREE.LineSegments(
+        new THREE.BufferGeometry(),
+        new THREE.LineBasicMaterial({ color: 0x4fe3ff }),
+      );
+      selEdges.frustumCulled = false;
+      scene.add(selEdges);
+      function buildSubGeometry() {
+        const m = meshes.get(selected);
+        const geom = m ? m.geometry : null;
+        const posArr = geom ? geom.attributes.position.array : null;
+        if (!geom || !posArr) {
+          selPts.visible = false;
+          selEdges.visible = false;
+          selSphere.visible = false;
+          subGizmo.visible = false;
+          return;
+        }
+        const verts = new Set();
+        const edgesSet = new Set();
+        if (subElemType === "vertex") {
+          for (const v of subSel) verts.add(Number(v));
+        } else if (subElemType === "edge") {
+          const edges = subSel.map((k) => k.split("|").map(Number));
+          for (const [a, b] of edges) {
+            verts.add(a);
+            verts.add(b);
+            edgesSet.add(`${a}|${b}`);
+          }
+        } else {
+          for (const f of subSel) {
+            const tri = currentTris[f];
+            if (!tri) continue;
+            verts.add(tri.a);
+            verts.add(tri.b);
+            verts.add(tri.c);
+            edgesSet.add(tri.a < tri.b ? `${tri.a}|${tri.b}` : `${tri.b}|${tri.a}`);
+            edgesSet.add(tri.b < tri.c ? `${tri.b}|${tri.c}` : `${tri.c}|${tri.b}`);
+            edgesSet.add(tri.c < tri.a ? `${tri.c}|${tri.a}` : `${tri.a}|${tri.c}`);
+          }
+        }
+        const toWorld = (v) => {
+          const p = new THREE.Vector3(posArr[v * 3], posArr[v * 3 + 1], posArr[v * 3 + 2]);
+          return m.localToWorld(p);
+        };
+        // points (world coords)
+        const ptArr = [];
+        for (const v of verts) {
+          const p = toWorld(v);
+          ptArr.push(p.x, p.y, p.z);
+        }
+        selPts.geometry.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(ptArr, 3),
+        );
+        selPts.geometry.attributes.position.needsUpdate = true;
+        selPts.visible = ptArr.length > 0;
+        // edges (pairs for LineSegments, world coords)
+        const edgeArr = [];
+        for (const k of edgesSet) {
+          const [a, b] = k.split("|").map(Number);
+          const p = toWorld(a);
+          const q = toWorld(b);
+          edgeArr.push(p.x, p.y, p.z, q.x, q.y, q.z);
+        }
+        selEdges.geometry.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(edgeArr, 3),
+        );
+        selEdges.geometry.attributes.position.needsUpdate = true;
+        selEdges.visible = edgeArr.length > 0;
+        // center of selection (world) → gizmo anchor
+        if (ptArr.length > 0) {
+          const b = new THREE.Box3();
+          for (let i = 0; i < ptArr.length / 3; i++) {
+            const p = new THREE.Vector3(ptArr[i * 3], ptArr[i * 3 + 1], ptArr[i * 3 + 2]);
+            if (Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z))
+              b.expandByPoint(p);
+          }
+          const c = b.isEmpty() ? null : b.getCenter(new THREE.Vector3());
+          if (c) {
+            subAnchor.position.copy(c);
+            subAnchor.rotation.set(0, 0, 0);
+            subAnchor.scale.set(1, 1, 1);
+            subLastAnchor.copy(c);
+            if (!subGizmo.object) subGizmo.attach(subAnchor);
+            subGizmo.visible = true;
+          } else subGizmo.visible = false;
+        } else {
+          subGizmo.visible = false;
+        }
+        if (subSel.length === 1 && subElemType === "vertex") {
+          const v = Number(subSel[0]);
+          selSphere.position.copy(toWorld(v));
+          selSphere.visible = true;
+        } else selSphere.visible = false;
+      }
+      function updateSubOverlay() {
+        if (!subMode) {
+          selPts.visible = false;
+          selEdges.visible = false;
+          selSphere.visible = false;
+          subGizmo.visible = false;
+          return;
+        }
+        buildSubGeometry();
+        const plural = subElemType === "vertex" ? "vertices" : `${subElemType}s`;
+        $("subInfo").textContent = `${plural} selected: ${subSel.length}`;
+      }
+      function subWorldPoint(m, idx) {
+        const pos = m.geometry.attributes.position;
+        const p = new THREE.Vector3(pos.getX(idx), pos.getY(idx), pos.getZ(idx));
+        return m.localToWorld(p);
+      }
+      function onSubPointerMove(e) {
+        if (!subMode || vertexDrag) return;
+        const m = meshes.get(selected);
+        if (!m) return;
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        const hit = raycaster.intersectObject(m, false)[0];
+        if (!hit) {
+          if (subHover) {
+            subHover = null;
+            render();
+          }
+          return;
+        }
+        const posArr = m.geometry.attributes.position.array;
+        const hitLocal = m.worldToLocal(hit.point.clone());
+        const tol = subElemType === "edge" ? 0.15 : 0.05; // edges need a wider
+        // snap window (ray hits the face, pixel offset ~1-2 units)
+        if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+        const box = m.geometry.boundingBox;
+        const len = box.getSize(new THREE.Vector3()).length();
+        const thresh = len * tol;
+        let hover = null;
+        if (subElemType === "vertex") {
+          let best = -1,
+            bd = thresh * thresh;
+          for (let i = 0; i < posArr.length / 3; i++) {
+            const dx = posArr[i*3] - hitLocal.x,
+              dy = posArr[i*3+1] - hitLocal.y,
+              dz = posArr[i*3+2] - hitLocal.z;
+            const d = dx*dx + dy*dy + dz*dz;
+            if (d < bd) {
+              bd = d;
+              best = i;
+            }
+          }
+          if (best >= 0) hover = { type: "vertex", index: best };
+        } else if (subElemType === "face") {
+          const fi = hit.faceIndex; // faceIndex is already the triangle index for indexed geometry
+          if (fi !== undefined && fi >= 0 && fi < currentTris.length)
+            hover = { type: "face", index: fi };
+        } else {
+          // edge: nearest edge among mesh edges
+          const edges = buildEdgeList(m);
+          let best = null,
+            bd = thresh * thresh;
+          const p = hitLocal;
+          for (const [a, bIdx] of edges) {
+            const p1 = new THREE.Vector3(posArr[a*3], posArr[a*3+1], posArr[a*3+2]);
+            const p2 = new THREE.Vector3(posArr[bIdx*3], posArr[bIdx*3+1], posArr[bIdx*3+2]);
+            const dist = ptSegDist2(p, p1, p2);
+            if (dist < bd) {
+              bd = dist;
+              best = a < bIdx ? `${a}|${bIdx}` : `${bIdx}|${a}`;
+            }
+          }
+          if (best) hover = { type: "edge", index: best };
+        }
+        if (hover) {
+          subHover = hover;
+          render();
+        } else if (subHover) {
+          subHover = null;
+          render();
+        }
+      }
+      function hoverGhost() {
+        // small ghost sphere at hovered element for feedback
+        if (!subMode || !subHover || vertexDrag || !selected) return null;
+        const m = meshes.get(selected);
+        if (!m) return null;
+        const posArr = m.geometry.attributes.position.array;
+        if (subHover.type === "vertex") {
+          return subWorldPoint(m, subHover.index);
+        }
+        if (subHover.type === "edge") {
+          const [a, b] = subHover.index.split("|").map(Number);
+          return subWorldPoint(m, a).add(subWorldPoint(m, b)).multiplyScalar(0.5);
+        }
+        const tri = currentTris[subHover.index];
+        if (!tri) return null;
+        return subWorldPoint(m, tri.a)
+          .add(subWorldPoint(m, tri.b))
+          .add(subWorldPoint(m, tri.c))
+          .multiplyScalar(1 / 3);
+      }
+      function ptSegDist2(p, a, b) {
+        const abx = b.x - a.x,
+          aby = b.y - a.y,
+          abz = b.z - a.z;
+        const t = Math.max(0, Math.min(1, ((p.x-a.x)*abx + (p.y-a.y)*aby + (p.z-a.z)*abz) / (abx*abx+aby*aby+abz*abz || 1)));
+        const dx = p.x - (a.x + abx*t),
+          dy = p.y - (a.y + aby*t),
+          dz = p.z - (a.z + abz*t);
+        return dx*dx + dy*dy + dz*dz;
+      }
+      function buildEdgeList(m) {
+        const pos = m.geometry.attributes.position;
+        const edges = new Set();
+        const idx = m.geometry.index;
+        if (idx) {
+          const arr = idx.array;
+          for (let i = 0; i < arr.length; i += 3) {
+            const a = arr[i], b = arr[i+1], c = arr[i+2];
+            edges.add(a < b ? `${a}|${b}` : `${b}|${a}`);
+            edges.add(b < c ? `${b}|${c}` : `${c}|${b}`);
+            edges.add(c < a ? `${c}|${a}` : `${a}|${c}`);
+          }
+        }
+        return [...edges].map((k) => k.split("|").map(Number));
+      }
+      function onSubPointerDown(e) {
+        if (!subMode || vertexDrag) return;
+        if (subHover) {
+          const key = subElemType === "vertex" ? String(subHover.index) : subHover.index;
+          const adding = e.shiftKey || e.ctrlKey || e.metaKey;
+          if (adding) {
+            subSel = subSel.includes(key) ? subSel.filter((k) => k !== key) : [...subSel, key];
+          } else {
+            subSel = [key];
+          }
+          updateSubOverlay();
+          // stop orbit + propagation so we can start a drag
+          controls.enabled = false;
+          e.stopPropagation();
+          // begin drag of the selection
+          const m = meshes.get(selected);
+          const pos = m.geometry.attributes.position;
+          // drag anchor: for edge use the midpoint, else the vertex/face anchor
+          let anchor;
+          if (subElemType === "edge") {
+            const [a, b] = subHover.index.split("|").map(Number);
+            const pa = subWorldPoint(m, a);
+            const pb = subWorldPoint(m, b);
+            anchor = pa.add(pb).multiplyScalar(0.5);
+          } else {
+            const baseV = ["vertex"].includes(subElemType) ? Number(subHover.index) : 0;
+            if (subElemType === "face") {
+              const tri = currentTris[subHover.index];
+              const pa = subWorldPoint(m, tri.a);
+              const pb = subWorldPoint(m, tri.b);
+              const pc = subWorldPoint(m, tri.c);
+              anchor = pa.add(pb).add(pc).multiplyScalar(1 / 3);
+            } else anchor = subWorldPoint(m, baseV);
+          }
+          vertexDrag = {
+            type: subElemType,
+            indices: subSel.slice(),
+            mesh3D: m,
+            plane: new THREE.Plane().setFromNormalAndCoplanarPoint(
+              camera.getWorldDirection(new THREE.Vector3()),
+              anchor,
+            ),
+            startPos: null,
+          };
+          // stopImmediatePropagation blocks other listeners on the SAME element
+          // (OrbitControls + TransformControls register bubble-phase handlers
+          // on renderer.domElement); we already stopPropagation'd, so also stop
+          // the same-node listeners that would otherwise handle this pointer.
+          e.stopImmediatePropagation();
+          try {
+            renderer.domElement.setPointerCapture(e.pointerId);
+          } catch (err) {
+            /* synthetic events in tests carry no active pointer */
+          }
+          return;
+        }
+        // miss → allow orbit
+      }
+      function onSubPointerMoveDrag(e) {
+        if (!vertexDrag) return onSubPointerMove(e);
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        const inter = new THREE.Vector3();
+        if (!raycaster.ray.intersectPlane(vertexDrag.plane, inter)) return;
+        const m = vertexDrag.mesh3D;
+        const local = m.worldToLocal(inter.clone());
+        const pos = m.geometry.attributes.position;
+        // gather affected vertices (selection + falloff ring)
+        const affected = new Set();
+        const baseVerts = [];
+        if (subElemType === "vertex") {
+          for (const v of subSel) {
+            baseVerts.push(parseInt(v));
+            affected.add(parseInt(v));
+          }
+        } else if (subElemType === "edge") {
+          for (const k of subSel) {
+            const [a, b] = k.split("|").map(Number);
+            baseVerts.push(a, b);
+            affected.add(a);
+            affected.add(b);
+          }
+        } else {
+          for (const f of subSel) {
+            const tri = currentTris[f];
+            if (!tri) continue;
+            baseVerts.push(tri.a, tri.b, tri.c);
+            affected.add(tri.a);
+            affected.add(tri.b);
+            affected.add(tri.c);
+          }
+        }
+        const falloff = subFalloff;
+        if (falloff > 0) {
+          // find centroid of base verts
+          let cx = 0, cy = 0, cz = 0;
+          for (const v of baseVerts) {
+            cx += pos.getX(v); cy += pos.getY(v); cz += pos.getZ(v);
+          }
+          cx /= baseVerts.length || 1; cy /= baseVerts.length || 1; cz /= baseVerts.length || 1;
+          for (let i = 0; i < pos.count; i++) {
+            const dx = pos.getX(i) - cx, dy = pos.getY(i) - cy, dz = pos.getZ(i) - cz;
+            const d = Math.sqrt(dx*dx + dy*dy + dz*dz);
+            if (d <= falloff) affected.add(i);
+          }
+        }
+        // delta relative to first base vertex
+        const first = baseVerts[0];
+        if (vertexDrag.startPos === null) {
+          vertexDrag.startPos = {
+            x: pos.getX(first), y: pos.getY(first), z: pos.getZ(first),
+          };
+        }
+        const dx = local.x - vertexDrag.startPos.x;
+        const dy = local.y - vertexDrag.startPos.y;
+        const dz = local.z - vertexDrag.startPos.z;
+        for (const v of affected) {
+          let w = 1;
+          if (falloff > 0) {
+            const d = Math.sqrt(
+              (pos.getX(v)-pos.getX(first))**2 +
+              (pos.getY(v)-pos.getY(first))**2 +
+              (pos.getZ(v)-pos.getZ(first))**2,
+            );
+            w = 1 - Math.min(1, d / falloff);
+            if (!subFalloffSoft) w = w > 0 ? 1 : 0;
+          }
+          const ox = pos.getX(v) + dx * w, oy = pos.getY(v) + dy * w, oz = pos.getZ(v) + dz * w;
+          pos.setXYZ(
+            v,
+            THREE.MathUtils.clamp(ox, -plateW / 2, plateW / 2),
+            THREE.MathUtils.clamp(oy, 0, 1000),
+            THREE.MathUtils.clamp(oz, -plateD / 2, plateD / 2),
+          );
+        }
+        pos.needsUpdate = true;
+        m.geometry.computeVertexNormals();
+        updateSubOverlay();
+        render();
+      }
+      function onSubPointerUp(e) {
+        if (vertexDrag) {
+          vertexDrag = null;
+          controls.enabled = true;
+          try {
+            renderer.domElement.releasePointerCapture(e.pointerId);
+          } catch (err) {
+            /* synthetic events in tests carry no active pointer */
+          }
+          render();
+        }
+      }
+      // Move the vertices under the current selection (+ optional falloff ring)
+      // by a LOCAL-space delta (dx, dy, dz), clamped to the build plate.
+      function moveSubSelection(dx, dy, dz) {
+        const m = meshes.get(selected);
+        if (!m) return;
+        const pos = m.geometry.attributes.position;
+        const baseVerts = [];
+        const affected = new Set();
+        if (subElemType === "vertex") {
+          for (const v of subSel) {
+            baseVerts.push(Number(v));
+            affected.add(Number(v));
+          }
+        } else if (subElemType === "edge") {
+          for (const k of subSel) {
+            const [a, b] = k.split("|").map(Number);
+            baseVerts.push(a, b);
+            affected.add(a);
+            affected.add(b);
+          }
+        } else {
+          for (const f of subSel) {
+            const tri = currentTris[f];
+            if (!tri) continue;
+            baseVerts.push(tri.a, tri.b, tri.c);
+            affected.add(tri.a);
+            affected.add(tri.b);
+            affected.add(tri.c);
+          }
+        }
+        if (baseVerts.length === 0) return;
+        // falloff ring: vertices within subFalloff of the selection centroid
+        const falloff = subFalloff > 0 ? subFalloff : 0;
+        if (falloff > 0) {
+          let cx = 0, cy = 0, cz = 0;
+          for (const v of baseVerts) {
+            cx += pos.getX(v);
+            cy += pos.getY(v);
+            cz += pos.getZ(v);
+          }
+          cx /= baseVerts.length;
+          cy /= baseVerts.length;
+          cz /= baseVerts.length;
+          for (let i = 0; i < pos.count; i++) {
+            const d = Math.sqrt(
+              (pos.getX(i) - cx) ** 2 + (pos.getY(i) - cy) ** 2 + (pos.getZ(i) - cz) ** 2,
+            );
+            if (d <= falloff) affected.add(i);
+          }
+        }
+        const soft = subFalloffSoft && falloff > 0;
+        for (const v of affected) {
+          let w = 1;
+          if (falloff > 0) {
+            // distance of this vertex from the first base vertex
+            const fv = baseVerts[0];
+            const d = Math.sqrt(
+              (pos.getX(v) - pos.getX(fv)) ** 2 +
+                (pos.getY(v) - pos.getY(fv)) ** 2 +
+                (pos.getZ(v) - pos.getZ(fv)) ** 2,
+            );
+            w = Math.max(0, 1 - d / falloff);
+            if (!soft) w = w > 0 ? 1 : 0;
+          }
+          if (w === 0) continue;
+          pos.setXYZ(
+            v,
+            THREE.MathUtils.clamp(pos.getX(v) + dx * w, -plateW / 2, plateW / 2),
+            THREE.MathUtils.clamp(pos.getY(v) + dy * w, 0, 1000),
+            THREE.MathUtils.clamp(pos.getZ(v) + dz * w, -plateD / 2, plateD / 2),
+          );
+        }
+        pos.needsUpdate = true;
+        m.geometry.computeVertexNormals();
+      }
+      function exitSubMode() {
+        subMode = false;
+        subSel = [];
+        subHover = null;
+        selPts.visible = false;
+        selEdges.visible = false;
+        selSphere.visible = false;
+        subGizmo.visible = false;
+        $("btnSubMode").classList.remove("active");
+        $("subInfo").textContent =
+          "Enable ⬡, hover to highlight, click to select (Shift = add). Esc exits.";
+        render();
+      }
+      function subSelValues() {
+        return subSel.slice();
+      }
+      $("btnSubMode").onclick = () => {
+        if (!selected) return showToast("Select an object first");
+        subMode = !subMode;
+        $("btnSubMode").classList.toggle("active", subMode);
+        $("subSelectRow").style.display = subMode ? "flex" : "none";
+        if (subMode) {
+          // pre-load currentTris from cache
+          const d = meshDataCache.get(selected);
+          currentTris = d && d.tris ? d.tris : [];
+          faceSelectMode = false;
+          $("btnSelectMode").classList.remove("active");
+          $("selectHint").style.display = "none";
+          detachGizmo();
+        } else {
+          exitSubMode();
+        }
+        updateSubOverlay();
+        render();
+      };
+      $("subModeVertex").onclick = () => setSubElemType("vertex");
+      $("subModeEdge").onclick = () => setSubElemType("edge");
+      $("subModeFace").onclick = () => setSubElemType("face");
+      function setSubElemType(t) {
+        subElemType = t;
+        subSel = [];
+        subHover = null;
+        document.querySelectorAll(".submode").forEach((b) => b.classList.remove("active"));
+        $(t === "vertex" ? "subModeVertex" : t === "edge" ? "subModeEdge" : "subModeFace").classList.add("active");
+        $("subTag").textContent = t;
+        updateSubOverlay();
+        render();
+      }
+      $("btnSubClear").onclick = () => {
+        subSel = [];
+        updateSubOverlay();
+        render();
+      };
+      $("btnSubMove").onclick = () => setSubTransform("move");
+      $("btnSubRotate").onclick = () => setSubTransform("rotate");
+      $("btnSubScale").onclick = () => setSubTransform("scale");
+      function setSubTransform(t) {
+        subTransform = t;
+        subGizmo.setMode(t);
+        render();
+      }
+      $("subFalloff").oninput = () => {
+        subFalloff = parseFloat($("subFalloff").value) || 0;
+      };
+      $("btnSubSmoothFall").onclick = () => $("btnSubSmoothFall").classList.toggle("active");
+      $("btnSubDelete").onclick = async () => {
+        if (!selected || subSel.length === 0) return showToast("Select sub-elements first");
+        try {
+          await api("mesh_sub_delete", { name: selected, type: subElemType, ids: subSelValues() });
+          subSel = [];
+          await refreshList();
+          await buildMesh3D(selected);
+          showToast("Sub-elements deleted");
+        } catch (e) {
+          showToast("Delete failed: " + (e.message || e), 5000);
+        }
+      };
+      $("btnBridge").onclick = async () => {
+        if (!selected || subSel.length < 2) return showToast("Select 2+ edges/vertices to bridge");
+        try {
+          const res = await api("mesh_bridge", { name: selected, type: subElemType, ids: subSelValues() });
+          subSel = [];
+          await refreshList();
+          await buildMesh3D(selected);
+          showToast(`Bridged (${res?.added ?? 0} faces)`);
+        } catch (e) {
+          showToast("Bridge failed: " + (e.message || e), 5000);
+        }
+      };
+      $("btnAddEdge").onclick = async () => {
+        if (!selected) return showToast("Select an object first");
+        try {
+          const res = await api("mesh_add_edge", { name: selected, ids: subSelValues() });
+          subSel = [];
+          await refreshList();
+          await buildMesh3D(selected);
+          showToast(`Edge added (${res?.new_faces ?? 0} faces)`);
+        } catch (e) {
+          showToast("Add edge failed: " + (e.message || e), 5000);
+        }
+      };
+      $("btnFillHole").onclick = async () => {
+        if (!selected) return showToast("Select an object first");
+        try {
+          const res = await api("mesh_fill", { name: selected });
+          await refreshList();
+          await buildMesh3D(selected);
+          showToast(`Hole filled (${res?.added ?? 0} faces)`);
+        } catch (e) {
+          showToast("Fill failed: " + (e.message || e), 5000);
+        }
+      };
+      $("btnSubCommit").onclick = async () => {
+        if (!selected) return showToast("Select an object first");
+        const mesh3D = meshes.get(selected);
+        if (!mesh3D) return showToast("Object not loaded");
+        const pos = mesh3D.geometry.attributes.position;
+        const positions = Array.from(pos.array);
+        try {
+          await api("mesh_update", { name: selected, positions });
+          await refreshList();
+          await buildMesh3D(selected);
+          showToast("Mesh committed to server");
+        } catch (e) {
+          showToast("Commit failed: " + (e.message || e), 5000);
+        }
+      };
+      renderer.domElement.addEventListener("pointermove", onSubPointerMoveDrag);
+      renderer.domElement.addEventListener("pointerdown", onSubPointerDown, true);
+      renderer.domElement.addEventListener("pointerup", onSubPointerUp);
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && subMode) exitSubMode();
+        if (e.key === "Tab" && subMode) {
+          e.preventDefault();
+          const order = ["vertex", "edge", "face"];
+          const next = order[(order.indexOf(subElemType) + 1) % order.length];
+          setSubElemType(next);
+        }
+        if (e.key === "Delete" && subMode && subSel.length) $("btnSubDelete").click();
+      });
+
+      /* ---------------- Texture ---------------- */
+      $("btnApplyColor").onclick = async () => {
+        if (!selected) return showToast("Select an object first");
+        const hex = $("texColor").value;
+        const r = parseInt(hex.slice(1, 3), 16),
+          g = parseInt(hex.slice(3, 5), 16),
+          b = parseInt(hex.slice(5, 7), 16);
+        try {
+          await api("texture", { name: selected, color: [r, g, b] });
+          await refreshList();
+          await buildMesh3D(selected);
+          showToast("Color applied");
+        } catch (e) {
+          showToast(e.message, 5000);
+        }
+      };
+      $("btnTexFile").onclick = () => $("texFile").click();
+      $("texFile").onchange = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file || !selected) return;
+        if (selectedFaces.length === 0) {
+          showToast("Select faces first to apply relief");
+          return;
+        }
+        const base64 = await fileToBase64(file);
+        const strength = parseFloat($("texStrength").value) || 1;
+        try {
+          await api("heightmap", {
+            name: selected,
+            face_ids: selectedFaces,
+            data_base64: base64,
+            strength,
+          });
+          selectedFaces = [];
+          updateFaceTag();
+          await refreshList();
+          await buildMesh3D(selected);
+          showToast("Relief texture applied to selected faces");
+        } catch (err) {
+          showToast("Texture failed: " + (err.message || err), 5000);
+        }
+      };
+
+      /* ---------------- Image -> 3D heightfield ---------------- */
+      $("btnImgFile").onclick = () => $("imgFile").click();
+      $("imgFile").onchange = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const base64 = await fileToBase64(file);
+        const size = parseInt($("imgSize").value, 10) || 96;
+        const depthMm = parseFloat($("imgDepth").value) || 4;
+        const baseMm = parseFloat($("imgBase").value) || 1;
+        const name = "relief_" + (revision + 1);
+        try {
+          const data = await api("image_to_heightfield", {
+            name,
+            data_base64: base64,
+            width: size,
+            height: size,
+            depth_mm: depthMm,
+            base_mm: baseMm,
+          });
+          selected = name;
+          await refreshList();
+          await buildMesh3D(name);
+          fitView();
+          showToast(`Image → 3D: ${data.triangles} tris, ${data.sizeMm.z.toFixed(2)}mm tall`);
+        } catch (err) {
+          showToast("Image→3D failed: " + (err.message || err), 5000);
+        }
+      };
+
+      /* ---------------- Agent reference (shared face selection) ---------------- */
+      // append agent ref button to legend area (dynamic)
+      const legend = document.querySelector("#legend");
+      const btnAgent = document.createElement("button");
+      btnAgent.className = "pill";
+      btnAgent.id = "btnAgentRef";
+      btnAgent.textContent = "🤖 Agent ref";
+      btnAgent.style.marginLeft = "6px";
+      legend.appendChild(btnAgent);
+
+      const appStateSel = new Map(); // name -> lastSelection from server
+      let meshDataCache = new Map(); // name -> {positions, tris}
+      let currentTris = [];
+
+      $("btnAgentRef").onclick = () => {
+        if (!selected) return showToast("Select an object first");
+        const faces = selectedFaces.length ? selectedFaces : appStateSel.get(selected) || [];
+        const faceLine = faces.length
+          ? `face_ids: [${faces.join(", ")}],`
+          : "// no faces selected — agent will select its own region";
+        const code = `cad_texture_faces({
+  object: "${selected}",
+  ${faceLine}
+  material: "leather-croc",
+  relief_mm: 1.2
+})`;
+        const el = $("agentCode");
+        el.style.display = "block";
+        el.textContent = code;
+        showToast("Agent reference shown — paste to any agent");
+      };
+
+      /* ---------------- Helpers ---------------- */
+      function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => {
+            const s = String(fr.result).split(",")[1] || "";
+            resolve(s);
+          };
+          fr.onerror = reject;
+          fr.readAsDataURL(file);
+        });
+      }
+    </script>
+  </body>
+</html>

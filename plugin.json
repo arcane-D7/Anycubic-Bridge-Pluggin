@@ -1,0 +1,28 @@
+{
+  "name": "anycubic-slicer-next-control",
+  "version": "0.1.0",
+  "description": "Secure local control of Anycubic Slicer Next on Windows through structured MCP tools.",
+  "author": {
+    "name": "Local developer"
+  },
+  "license": "MIT",
+  "keywords": ["anycubic", "slicer", "3d-printing", "mcp", "windows"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Anycubic Slicer Next Control",
+    "shortDescription": "Safely prepare, export, and print local slicing jobs (LAN or cloud account).",
+    "longDescription": "Opens Anycubic Slicer Next, loads STL or 3MF models, applies validated basic settings, slices locally, exports G-code or G-code 3MF artifacts, inspects the desktop UI, and can upload/start/control prints on an Anycubic printer over LAN MQTT/FTP or via the user's Anycubic cloud account. It can also automatically capture the account access_token from the app's memory (watch mode) and store it DPAPI-encrypted for secure cloud printing.",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": [
+      "Inspect my Anycubic Slicer Next installation.",
+      "Prepare a safe slicing plan for this STL.",
+      "Discover my Anycubic printer and report its status.",
+      "Upload and start a print on my Anycubic printer.",
+      "Capture my Anycubic cloud token automatically and show my account printers.",
+      "List the printers in my Anycubic account."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}
