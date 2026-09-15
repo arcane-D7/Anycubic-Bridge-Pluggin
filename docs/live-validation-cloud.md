@@ -204,7 +204,7 @@ e [live-validated-order1-2026-09-11.md](live-validated-order1-2026-09-11.md).
 
 - ✅ OrcaSlicer arranca com **"Anycubic Cloud & Kobra S1"** (plugin carregado)
 - ✅ **printer-agent `anycubic-cloud` registado e ativado** no Orca
-- ✅ Orca Cloud Account com login (Marcos Freitas)
+- ✅ Orca Cloud Account com login (account holder, redacted)
 - ✅ Aba **Device** presente; perfis Kobra S1 (49 machine/98 process/153 filament)
 - ✅ `/cloud/devices?lan_fallback=1` → `{"ok":true,"devices":[{id: fa65ef..., name: "Anycubic Kobra S1 (LAN)", online: true}]}`
 - ✅ Bridge `/lan/status?ip=<LAN_IP>` → telemetria LAN completa (temps, features, ACE, rtspUrl)

@@ -176,12 +176,12 @@ error details, last executed commands and recovery state before any restart.
 The export may supply the needed evidence; its contents are not yet available
 and must not be assumed to contain an exact resume position.
 
-PC inventory found removable E: labelled MFreitas, exFAT. No writes or formatting
-were performed; user confirmation of the target drive is still required.
+PC inventory found removable E: labelled with the user's name, exFAT. No writes or
+formatting were performed; user confirmation of the target drive is still required.
 
 Subsequent update: user reconnected and authorized preparation of the USB drive.
-Verified E: is the removable Lexar USB Flash Drive labelled MFreitas, exFAT,
-with only System Volume Information visible at its root. Verified the official
+Verified E: is the removable Lexar USB Flash Drive labelled with the user's name,
+exFAT, with only System Volume Information visible at its root. Verified the official
 archive SHA256 above, then extracted it without overwrite. The resulting
 `E:\ZXhwb3J0X2Rpcgo=\ZXhwb3J0LnR4dAo=` is 12 bytes and contains `log:1` and
 `cfg:1`. No formatting, deletion, firmware installation or printer command was
