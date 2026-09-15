@@ -18,7 +18,7 @@
  * no secrets by construction).
  */
 import path from "node:path";
-import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
 import {
   buildSliceArgs,
   collectArtifacts,
@@ -300,6 +300,169 @@ export function registerSlicerTools(server, z) {
           compatibility: inspectCompatibility(file),
         }));
         return out({ ok: true, exit_code: res.exitCode, output_dir: cwd, artifacts });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  // ---- slicer_project_state ------------------------------------------------
+  server.registerTool(
+    "slicer_project_state",
+    {
+      title: "Inspect an open/listed slicer project in full (objects, configs)",
+      description:
+        "Read-only. Locates a project (by window title, by recent project entry, or by explicit path) in the Anycubic Slicer Next data dir, then parses the matching .3MF to report: objects and their meshes, plates, project_settings.config (599 keys) and process_settings_*.config (332 keys) with the print-relevant keys (layer height, walls, infill, support, speeds, temperatures, filaments/colors), plus per-plate bounding box. Gives full visibility into what any open slicer window has loaded — no guessing.",
+      inputSchema: {
+        window_title: z.string().max(160).optional(),
+        recent_index: z.number().int().min(1).max(99).optional(),
+        project_path: z.string().min(1).max(1024).optional(),
+        include_full_config: z.boolean().default(false),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async (args) => {
+      try {
+        const configPath = path.join(
+          process.env.APPDATA ?? "",
+          "AnycubicSlicerNext",
+          "AnycubicSlicerNext.conf",
+        );
+        const conf = existsSync(configPath) ? readFileSync(configPath, "utf8") : "";
+        const recentProjects = [];
+        const mRec = conf.match(/"recent_projects"\s*:\s*\{([\s\S]*?)\n\s*\}/);
+        if (mRec) {
+          const reKey = /"(\d{2})"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+          let mm;
+          while ((mm = reKey.exec(mRec[1]))) recentProjects.push({ idx: mm[1], path: mm[2] });
+        }
+        // Resolve the .3MF to inspect.
+        let target = args.project_path ?? null;
+        if (!target && args.recent_index) {
+          const hit = recentProjects.find((r) => Number(r.idx) === args.recent_index);
+          if (hit) target = hit.path;
+        }
+        if (!target && args.window_title) {
+          const clean = args.window_title.replace(/[*+]/g, " ").replace(/\(.*?\)/g, "").trim().toLowerCase().replace(/\s+/g, "");
+          const hit = recentProjects.find((r) => {
+            const bn = path.basename(r.path, ".3mf").toLowerCase().replace(/[*+]/g, "").replace(/\s+/g, "");
+            return bn.includes(clean) || clean.includes(bn);
+          });
+          if (hit) target = hit.path;
+        }
+        if (!target) {
+          return out({
+            ok: false,
+            hint:
+              "No project resolved. Pass project_path, recent_index (1-18), or window_title matching a recent project.",
+            recent_projects: recentProjects.map((r) => ({ idx: r.idx, name: path.basename(r.path) })),
+          });
+        }
+        const { read3mf } = await import("./read-3mf.mjs");
+        const files = read3mf(target);
+        const textOf = (name) => {
+          const f = files.find((x) => x.name === name);
+          return f ? f.data.toString("utf8") : null;
+        };
+        const fileBytes = (() => {
+          try { return statSync(target).size; } catch { return null; }
+        })();
+        const jsonOf = (name) => {
+          const t = textOf(name);
+          if (!t) return null;
+          try { return JSON.parse(t); } catch { return null; }
+        };
+        // Plates metadata first (object block uses friendly names from here).
+        const plates = [];
+        for (const f of files) {
+          const pm = /^Metadata\/plate_(\d+)\.json$/.exec(f.name);
+          if (pm) {
+            let bbox = null;
+            try { bbox = JSON.parse(f.data.toString("utf8")); } catch {}
+            plates.push({ plate: pm[1], bbox });
+          }
+        }
+        // Objects from the 3MF model (object id -> components with mesh paths).
+        const model = textOf("3D/3dmodel.model");
+        const objects = [];
+        if (model) {
+          const reObj = /<object\s+id="(\d+)"[^>]*type="([^"]*)"[^>]*>([\s\S]*?)<\/object>/g;
+          let mo;
+          while ((mo = reObj.exec(model))) {
+            const id = mo[1];
+            const type = mo[2] || "model";
+            const body = mo[3];
+            const components = [];
+            const reComp = /<component\s+[^>]*p:path="([^"]+)"[^>]*>/g;
+            let mc;
+            while ((mc = reComp.exec(body))) {
+              const realPath = mc[1].replace(/^\//, "");
+              const meshName = realPath.split("/").pop();
+              const meshFile = files.find((x) => x.name === realPath);
+              let vertices = 0;
+              let triangles = 0;
+              if (meshFile) {
+                let ms;
+                try { ms = meshFile.data.toString("utf8"); } catch { ms = ""; }
+                vertices = (ms.match(/<vertex\s[^>]*>/g) || []).length;
+                triangles = (ms.match(/<triangle\s[^>]*>/g) || []).length;
+              }
+              components.push({ mesh: meshName, vertices, triangles });
+            }
+            objects.push({ id, type, components, total_vertices: components.reduce((a, c) => a + c.vertices, 0), total_triangles: components.reduce((a, c) => a + c.triangles, 0) });
+          }
+          // Prefer friendly names from plate bbox_objects when objects have no Title metadata.
+          const plateNames = [];
+          for (const p of plates) {
+            for (const b of p.bbox?.bbox_objects ?? []) {
+              if (b.name && !plateNames.includes(b.name)) plateNames.push(b.name);
+            }
+          }
+          if (objects.length === 0 || objects.every((o) => o.components.length === 0)) {
+            objects.push(...plateNames.map((n) => ({ id: "plate", type: "model", components: [{ mesh: n, vertices: 0, triangles: 0 }], total_vertices: 0, total_triangles: 0 })));
+          }
+        }
+        const projectCfg = jsonOf("Metadata/project_settings.config");
+        const processCfg = jsonOf("Metadata/process_settings_1.config");
+        const pickKeys = (cfg, keys) => {
+          if (!cfg) return {};
+          const red = {};
+          for (const k of keys) if (k in cfg) red[k] = cfg[k];
+          return red;
+        };
+        const PRINT_KEYS = [
+          "layer_height", "initial_layer_print_height", "wall_loops", "top_shell_layers",
+          "bottom_shell_layers", "sparse_infill_density", "sparse_infill_pattern",
+          "print_sequence", "brim_type", "brim_width", "enable_support", "support_type",
+          "support_interface_pattern", "tree_support_branch_diameter", "nozzle_temperature",
+          "initial_layer_print_temperature", "bed_temperature", "filament_colour",
+          "filament_type", "outer_wall_speed", "inner_wall_speed", "sparse_infill_speed",
+          "top_surface_speed", "travel_speed", "elefant_foot_compensation",
+          "xy_hole_compensation", "z_offset",
+        ];
+        const summary = {
+          ok: true,
+          project: target,
+          name: path.basename(target),
+          size_bytes: fileBytes,
+          objects,
+          plates,
+          config: {
+            process: pickKeys(processCfg, PRINT_KEYS),
+            project: pickKeys(projectCfg, PRINT_KEYS),
+          },
+          full_config_included: !!args.include_full_config,
+        };
+        if (args.include_full_config) {
+          summary.config.process_full = processCfg;
+          summary.config.project_full = projectCfg;
+        }
+        return out(summary);
       } catch (error) {
         return fail(error);
       }

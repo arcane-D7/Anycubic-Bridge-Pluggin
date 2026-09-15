@@ -152,13 +152,14 @@ function fakeServer() {
   };
 }
 
-test("registerSlicerTools registers the 4 tools with correct gating", async () => {
+test("registerSlicerTools registers the 5 tools with correct gating", async () => {
   const server = fakeServer();
   registerSlicerTools(server, z);
   const names = server.tools.map((t) => t.name).sort();
   assert.deepEqual(names, [
     "slicer_export_3mf",
     "slicer_profiles",
+    "slicer_project_state",
     "slicer_settings",
     "slicer_slice",
   ]);

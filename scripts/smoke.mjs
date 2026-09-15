@@ -99,6 +99,7 @@ try {
     "slicer_component_inventory",
     "slicer_export_3mf",
     "slicer_profiles",
+    "slicer_project_state",
     "slicer_settings",
     "slicer_slice",
     "spool_bind",
