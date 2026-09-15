@@ -118,6 +118,8 @@ const SKIP_FILES = new Set([
   "plugin.json",
   ".mcp.json",
   "README.md",
+  "AGENTS.md", // documents the convention with literal examples — must stay readable
+  "agnostic-development.md", // same: reference doc with real-looking examples
   "sanitize-repo.mjs",
   "redact-evidence-json.mjs", // contains <PRINTER_ID> etc. as literal lookup strings
   ".lan-creds.json", // local runtime config for THIS machine (gitignored); must keep functional

@@ -2,7 +2,8 @@
   "mcpServers": {
     "anycubic-slicer-next": {
       "command": "node",
-      "args": ["${workspaceFolder}/dist/server.mjs"],
+      "args": ["${workspaceFolder}/scripts/mcp-entry.mjs"],
+      "cwd": "${workspaceFolder}",
       "env": {
         "ANYCUBIC_ACCESS_CODE": "${env:ANYCUBIC_ACCESS_CODE:}",
         "ANYCUBIC_PRINTER_IPS": "${env:ANYCUBIC_PRINTER_IPS:}",

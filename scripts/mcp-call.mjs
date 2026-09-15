@@ -24,7 +24,7 @@ if (argsJson) {
 
 const transport = new StdioClientTransport({
   command: process.execPath,
-  args: [fileURLToPath(new URL("../dist/server.mjs", import.meta.url))],
+  args: [fileURLToPath(new URL("./mcp-entry.mjs", import.meta.url))],
   stderr: "pipe",
 });
 const client = new Client({ name: "mcp-call", version: "1.0.0" });
