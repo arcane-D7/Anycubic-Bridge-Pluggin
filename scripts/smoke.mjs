@@ -98,6 +98,7 @@ try {
     "slice_via_app",
     "slicer_component_inventory",
     "slicer_export_3mf",
+    "slicer_multimaterial",
     "slicer_profiles",
     "slicer_project_state",
     "slicer_settings",

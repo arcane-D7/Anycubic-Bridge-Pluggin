@@ -18,12 +18,25 @@
  * no secrets by construction).
  */
 import path from "node:path";
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
 import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import {
+  analyzeMultimaterialGcode,
+  buildFilamentIdsArg,
   buildSliceArgs,
   collectArtifacts,
   discoverSlicerExecutable,
+  extractGcodeFrom3mf,
   inspectCompatibility,
+  overlayMultiMaterialKeys,
+  resolvePreset,
   resolvePresets,
   runSlicer,
 } from "./slicer-cli.mjs";
@@ -233,6 +246,200 @@ export function registerSlicerTools(server, z) {
             "Send the 3MF to the printer with send_to_printer, then start_print over LAN.",
             "Or upload via the cloud and use account_print (contract not fully validated).",
           ],
+        });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  // ---- slicer_multimaterial ------------------------------------------------
+  server.registerTool(
+    "slicer_multimaterial",
+    {
+      title: "Slice with multi-material/flush-zero preset (marble mixing)",
+      description:
+        "Write (gated). Drives the Anycubic Slicer Next CLI to produce a multi-material slice WITHOUT relying on the GUI: (1) writes a temporary process preset into the user profile that maps roles (outer_wall/inner_wall/infill/top/bottom/support) to specific extruders and ZEROS all flush volumes (leaving intentional contamination for a marble/mixed-color surface), (2) loads N filaments + optional per-object filament ids (--load-filament-ids), (3) slices and exports 3MF, and (4) analyzes the resulting G-code for real tool switches (T0/T1...) and purge evidence, proving contamination is preserved. Requires confirm:true.",
+      inputSchema: {
+        input_file: z.string().min(1),
+        machine: z.string().max(120).optional(),
+        filaments: z.array(z.string().max(120)).min(1).max(8),
+        filament_ids_per_object: z.array(z.number().int().min(1).max(16)).optional(),
+        roles: z
+          .object({
+            outer_wall: z.string().regex(/^\d+$/).default("0"),
+            inner_wall: z.string().regex(/^\d+$/).default("0"),
+            infill: z.string().regex(/^\d+$/).default("0"),
+            solid_infill: z.string().regex(/^\d+$/).default("0"),
+            top_surface: z.string().regex(/^\d+$/).default("0"),
+            bottom_surface: z.string().regex(/^\d+$/).default("0"),
+            support: z.string().regex(/^\d+$/).default("0"),
+            support_interface: z.string().regex(/^\d+$/).default("0"),
+            flush_multiplier: z.string().regex(/^\d+$/).default("0"),
+            printer_flush_multiplier: z.string().regex(/^\d+$/).default("0"),
+            minimal_purge: z.string().regex(/^\d+$/).default("15"),
+          })
+          .optional(),
+        output_dir: z.string().optional(),
+        plate: z.number().int().min(0).max(64).default(0),
+        output_name: z.string().max(180).optional(),
+        analyze_gcode: z.boolean().default(true),
+        confirm: z.boolean().default(false),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    async (args) => {
+      try {
+        if (args.confirm !== true)
+          throw new Error(
+            "slicer_multimaterial requires confirm: true. Nothing was sliced.",
+          );
+        const exe = discoverSlicerExecutable();
+        if (!exe) throw new Error("Anycubic Slicer Next executable was not found.");
+        const inputFile = path.resolve(args.input_file);
+        if (!existsSync(inputFile)) throw new Error(`Input file not found: ${inputFile}`);
+
+        const roles = args.roles ?? {};
+        // Resolve the base process preset path from the system resources.
+        // Default to the project's printer (Kobra S1 0.4) so the preset family
+        // matching never falls back to a different machine (e.g. Kobra 1),
+        // which would produce a "…Kobra 1…" process and abort exit -17.
+        const machineName = args.machine ?? "Kobra S1 0.4";
+        const machineFamily = machineName.includes("0.")
+          ? machineName.replace(/\s+0\.\d+.*$/, "")
+          : machineName;
+        const baseDegree = args.process ?? "0.20mm Standard";
+        const baseProcessMatch = baseDegree.includes("@Anycubic")
+          ? baseDegree
+          : `${baseDegree} @Anycubic ${machineFamily}`;
+        const presets = resolvePresets({
+          slicerExe: exe,
+          machine: machineName,
+          process: baseProcessMatch,
+        });
+        if (!presets.machine || !presets.process)
+          throw new Error("Unable to resolve machine/process presets.");
+        const baseProcess =
+          JSON.parse(readFileSync(presets.process, "utf8"));
+        const baseName = String(baseProcess.name ?? "0.20mm Standard");
+        const mm = overlayMultiMaterialKeys(baseProcess, roles);
+        mm.type = "process";
+        // Keep the standard "…Kobra S1 0.4 nozzle" family so the CLI matches
+        // this temporary preset against the machine; a custom display name
+        // (e.g. "MarbleMix CLI") breaks preset-family matching and the slicer
+        // aborts with exit -17 ("process not compatible").
+        mm.name = baseName.replace(" Standard", " Standard MM");
+
+        // Temporary preset in the USER profile (never touches system resources,
+        // removed by runSlicer's promise cleanup below).
+        const userProcessDir = path.join(
+          process.env.APPDATA ?? "",
+          "AnycubicSlicerNext",
+          "user",
+          "834765",
+          "process",
+        );
+        mkdirSync(userProcessDir, { recursive: true });
+        const tmpPreset = path.join(
+          userProcessDir,
+          `${baseName.replace(" Standard", " Standard MM")}.json`,
+        );
+        writeFileSync(tmpPreset, JSON.stringify(mm, null, 2), "utf8");
+        let cleaned = false;
+        const cleanUp = () => {
+          if (!cleaned) {
+            cleaned = true;
+            try {
+              if (existsSync(tmpPreset)) rmSync(tmpPreset, { force: true });
+            } catch {
+              /* best effort */
+            }
+          }
+        };
+
+        const outputRoot = args.output_dir
+          ? path.resolve(args.output_dir)
+          : (process.env.ANYCUBIC_CONTROL_OUTPUT_ROOT ??
+            path.join(process.env.LOCALAPPDATA ?? "", "AnycubicSlicerNextControl"));
+        mkdirSync(outputRoot, { recursive: true, mode: 0o700 });
+
+        // Filament files must all resolve.
+        const filaments = (args.filaments ?? []).map((name) => {
+          const filDir = path.join(
+            path.dirname(exe),
+            "resources",
+            "profiles",
+            "Anycubic",
+            "filament",
+          );
+          const f = resolvePreset(filDir, name) ?? resolvePreset(filDir, "");
+          if (!f) throw new Error(`Filament preset not found for "${name}"`);
+          return f;
+        });
+
+        // Build argv: machine + process (user temp) + filaments + optional ids
+        const base = buildSliceArgs({
+          slicerExe: exe,
+          inputFile,
+          presets: { machine: presets.machine, process: tmpPreset },
+          outputRoot,
+          target3mf: args.output_name,
+          slice: args.plate,
+          type: "gcode_3mf",
+        });
+        const argv = [];
+        argv.push("--load-settings", presets.machine, "--load-settings", tmpPreset);
+        if (filaments.length) argv.push("--load-filaments", filaments.join(";"));
+        if (args.filament_ids_per_object?.length) {
+          argv.push(
+            "--load-filament-ids",
+            buildFilamentIdsArg(args.filament_ids_per_object),
+          );
+        }
+        // Copy the tail of base.args (--slice ... --export-3mf ... input) but
+        // drop the leading --load-settings / --load-settings <machine/process>,
+        // and use the ABSOLUTE input path (the CLI runs with cwd=outputRoot).
+        const firstSlice = base.args.indexOf("--slice");
+        const tailStart = firstSlice === -1 ? 0 : firstSlice;
+        const tail = base.args.slice(tailStart);
+        const inputIdx = tail.indexOf(inputFile);
+        if (inputIdx !== -1) tail[inputIdx] = path.resolve(inputFile);
+        argv.push(...tail);
+
+        const res = await runSlicer(exe, argv, { cwd: base.cwd, timeoutMs: 6e5 });
+        cleanUp();
+        if (res.exitCode !== 0) {
+          return fail(
+            new Error(`Slicer exited ${res.exitCode}: ${res.stderr.slice(0, 500)}`),
+          );
+        }
+        const artifacts = collectArtifacts(base.cwd).map((file) => ({
+          file,
+          compatibility: inspectCompatibility(file),
+        }));
+        if (!artifacts.length) throw new Error("No artifacts produced by the slicer CLI.");
+
+        // Best-effort G-code analysis.
+        let gcode_analysis = null;
+        if (args.analyze_gcode) {
+          const gcode = await extractGcodeFrom3mf(artifacts[0].file);
+          if (gcode) gcode_analysis = analyzeMultimaterialGcode(gcode);
+        }
+
+        return out({
+          ok: true,
+          exit_code: res.exitCode,
+          output_dir: base.cwd,
+          artifacts,
+          gcode_analysis,
+          used_roles: roles,
+          note:
+            "flush_volumes_matrix/vector and flush multipliers are zeroed — tool changes leave intentional contamination (marble mixing).",
         });
       } catch (error) {
         return fail(error);

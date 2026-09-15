@@ -193,6 +193,94 @@ export function buildSliceArgs({
   return { args, cwd: outputRoot };
 }
 
+/**
+ * Analyze a sliced G-code for multi-material behavior. Extracts the toolhead
+ * change lines (`T0/T1/...`), counts wall-layer per extruder, and reports
+ * purge/flush evidence. Pure — reads a string, no I/O.
+ */
+export function analyzeMultimaterialGcode(gcode) {
+  const lines = String(gcode ?? "").split(/\r?\n/);
+  const toolChanges = [];
+  const flushStart = [];
+  const flushEnd = [];
+  const purgeLines = [];
+  let sawWipeStart = 0;
+  let sawWipeEnd = 0;
+  lines.forEach((line, i) => {
+    const trimmed = line.trim();
+    if (/^T\d+/.test(trimmed)) toolChanges.push({ line: i, tool: trimmed.match(/^T(\d+)/)?.[1] });
+    if (trimmed.includes("FLUSH_START")) flushStart.push(i);
+    if (trimmed.includes("FLUSH_END")) flushEnd.push(i);
+    if (trimmed.includes("PURGE LINE")) purgeLines.push(i);
+    if (trimmed.includes("WIPE_START")) sawWipeStart++;
+    if (trimmed.includes("WIPE_END")) sawWipeEnd++;
+  });
+  const uniqueTools = [...new Set(toolChanges.map((t) => t.tool))].sort();
+  return {
+    line_count: lines.length,
+    tool_changes: toolChanges.length,
+    unique_tools: uniqueTools,
+    flush_start: flushStart.length,
+    flush_end: flushEnd.length,
+    purge_lines: purgeLines.length,
+    wipe_start: sawWipeStart,
+    wipe_end: sawWipeEnd,
+    // A color-change (flush) is only "real" when the tool actually switched.
+    // Zero-flush should STILL switch tools but with no purge between them.
+    real_tool_switches: toolChanges.filter(
+      (t, idx) => idx > 0 && t.tool !== toolChanges[idx - 1]?.tool,
+    ).length,
+  };
+}
+
+/** Per-object filament IDs from `--load-filament-ids` (1-based, e.g. "1,2,3,1"). */
+export function buildFilamentIdsArg(ids) {
+  if (!Array.isArray(ids) || ids.length === 0) return "";
+  return ids
+    .map((v) => {
+      const n = Number.parseInt(String(v), 10);
+      if (!Number.isInteger(n) || n < 1 || n > 16) throw new Error(`Invalid filament id: ${v}`);
+      return String(n);
+    })
+    .join(",");
+}
+
+/**
+ * Load the base system process preset JSON and overlay a set of known
+ * multi-material keys (wall roles, flush volumes/vector, priming, wipe tower).
+ * Returns a plain object ready to JSON.stringify into a user-profile preset.
+ * Never mutates the system file.
+ */
+export function overlayMultiMaterialKeys(processJson, mmKeys = {}) {
+  const base = typeof processJson === "string" ? JSON.parse(processJson) : { ...processJson };
+  const overrides = {
+    // Role -> extruder mapping (Bambu-style process keys).
+    wall_filament: mmKeys.outer_wall ?? "0",
+    sparse_infill_filament: mmKeys.infill ?? "0",
+    solid_infill_filament: mmKeys.solid_infill ?? "0",
+    support_filament: mmKeys.support ?? "0",
+    support_interface_filament: mmKeys.support_interface ?? "0",
+    // Modern .3MF role keys (accepted by --export-settings, proven above).
+    outer_wall_filament_id: mmKeys.outer_wall ?? "0",
+    inner_wall_filament_id: mmKeys.inner_wall ?? "0",
+    top_surface_filament_id: mmKeys.top_surface ?? "0",
+    bottom_surface_filament_id: mmKeys.bottom_surface ?? "0",
+    sparse_infill_filament_id: mmKeys.infill ?? "0",
+    internal_solid_filament_id: mmKeys.solid_infill ?? "0",
+    // Flush control — ZERO to leave contamination (marble effect).
+    flush_into_infill: mmKeys.flush_into_infill ?? "0",
+    flush_into_objects: mmKeys.flush_into_objects ?? "0",
+    flush_into_support: mmKeys.flush_into_support ?? "0",
+    flush_multiplier: mmKeys.flush_multiplier ?? "0",
+    printer_flush_multiplier: mmKeys.printer_flush_multiplier ?? "0",
+    filament_minimal_purge_on_wipe_tower: mmKeys.minimal_purge ?? "15",
+    wiping_volumes_extruders: Array(10).fill("0"),
+    flush_volumes_matrix: Array(16).fill("0"),
+    flush_volumes_vector: Array(8).fill("0"),
+  };
+  return { ...base, ...overrides };
+}
+
 /** Spawn the slicer binary with a controlled cwd and capture output. */
 export function runSlicer(executable, args, { cwd, timeoutMs = 6e5 } = {}) {
   return new Promise((resolve, reject) => {
@@ -241,6 +329,18 @@ export function collectArtifacts(dir) {
         return 0;
       }
     });
+}
+
+/** Extract the first embedded .gcode member of a sliced 3MF (empty string if none). */
+export async function extractGcodeFrom3mf(file) {
+  try {
+    const { read3mf } = await import("./read-3mf.mjs");
+    const members = read3mf(file);
+    const gcode = members.find((m) => /\.gcode$/i.test(m.name));
+    return gcode ? gcode.data.toString("utf8") : "";
+  } catch {
+    return "";
+  }
 }
 
 /** Inspect a produced 3MF/GCcode for the firmware markers the printer needs

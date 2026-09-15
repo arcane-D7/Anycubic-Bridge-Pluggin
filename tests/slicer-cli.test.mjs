@@ -6,11 +6,14 @@ import path from "node:path";
 import { mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
 
 import {
+  analyzeMultimaterialGcode,
+  buildFilamentIdsArg,
   buildLoadArgs,
   buildSliceArgs,
   collectArtifacts,
   discoverSlicerExecutable,
   inspectCompatibility,
+  overlayMultiMaterialKeys,
   profileRootsFor,
   resolvePreset,
   resolvePresets,
@@ -138,6 +141,63 @@ test("runSlicer resolves exit code and captures output", async () => {
   assert.match(res.stderr, /stderr-line/);
 });
 
+test("analyzeMultimaterialGcode counts tool switches and purge evidence", () => {
+  const gcode = [
+    "; sliced",
+    "T0",
+    ";WIPE_START",
+    ";WIPE_END",
+    "; FLUSH_START",
+    "T1 ; change extruder",
+    "; FLUSH_END",
+    "; PURGE LINE",
+    "T0 ; change extruder",
+    "T1",
+  ].join("\n");
+  const a = analyzeMultimaterialGcode(gcode);
+  assert.equal(a.tool_changes, 4);
+  assert.deepEqual(a.unique_tools, ["0", "1"]);
+  assert.equal(a.flush_start, 1);
+  assert.equal(a.flush_end, 1);
+  assert.equal(a.purge_lines, 1);
+  assert.equal(a.wipe_start, 1);
+  assert.equal(a.wipe_end, 1);
+  // T0->T1->T0->T1 -> 3 real switches (first T0 is not counted as a switch).
+  assert.equal(a.real_tool_switches, 3);
+});
+
+test("buildFilamentIdsArg validates 1..16 and joins", () => {
+  assert.equal(buildFilamentIdsArg([1, 2, 1, 2]), "1,2,1,2");
+  assert.equal(buildFilamentIdsArg([]), "");
+  assert.throws(() => buildFilamentIdsArg([0]), /Invalid/);
+  assert.throws(() => buildFilamentIdsArg([17]), /Invalid/);
+});
+
+test("overlayMultiMaterialKeys zeroes flush and maps roles", () => {
+  const base = { wall_filament: "1", sparse_infill_filament: "1", some_key: "keep" };
+  const mm = overlayMultiMaterialKeys(base, {
+    outer_wall: "2",
+    inner_wall: "0",
+    infill: "0",
+    top_surface: "1",
+    flush_multiplier: "0",
+  });
+  assert.equal(mm.wall_filament, "2"); // legacy role
+  assert.equal(mm.outer_wall_filament_id, "2"); // modern role
+  assert.equal(mm.inner_wall_filament_id, "0");
+  assert.equal(mm.sparse_infill_filament_id, "0");
+  assert.equal(mm.top_surface_filament_id, "1");
+  assert.equal(mm.some_key, "keep"); // untouched keys preserved
+  assert.deepEqual(mm.flush_volumes_matrix, Array(16).fill("0"));
+  assert.deepEqual(mm.flush_volumes_vector, Array(8).fill("0"));
+  assert.deepEqual(mm.wiping_volumes_extruders, Array(10).fill("0"));
+  assert.equal(mm.flush_multiplier, "0");
+  assert.equal(mm.printer_flush_multiplier, "0");
+  // defaults: non-specified roles fall back to "0"
+  assert.equal(mm.support_filament, "0");
+  assert.equal(mm.bottom_surface_filament_id, "0");
+});
+
 // --- MCP registration smoke (offline) -------------------------------------
 
 import { registerSlicerTools } from "../scripts/slicer-tools.mjs";
@@ -152,12 +212,13 @@ function fakeServer() {
   };
 }
 
-test("registerSlicerTools registers the 5 tools with correct gating", async () => {
+test("registerSlicerTools registers the 6 tools with correct gating", async () => {
   const server = fakeServer();
   registerSlicerTools(server, z);
   const names = server.tools.map((t) => t.name).sort();
   assert.deepEqual(names, [
     "slicer_export_3mf",
+    "slicer_multimaterial",
     "slicer_profiles",
     "slicer_project_state",
     "slicer_settings",
