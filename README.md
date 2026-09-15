@@ -80,6 +80,92 @@ Também é possível colocar a configuração em `%USERPROFILE%\.copilot\mcp-con
 
 Claude Code e Copilot usarão as tools MCP, mas não a skill Codex nem o manifesto `.codex-plugin`. O cliente precisa rodar no Windows onde o Anycubic Slicer Next está instalado; agentes cloud/remotos não conseguem controlar esse aplicativo local sem uma ponte explícita.
 
+## Como usar o MCP (guia de utilização)
+
+O servidor expõe **86 tools MCP** (ver `schemas/tools.json`) que cobrem o ciclo completo: inspecionar → abrir → fatiar → exportar → imprimir. Todas as tools são chamadas pelo agente (Codex, Claude, Copilot, …) através do protocolo MCP stdio; o fluxo é sempre o mesmo:
+
+### 1. Modelo de confirmação (gating)
+
+O servidor é **local-first e "least privilege"**: nenhuma tool que tenha consequências (mover eixos, aquecer, iniciar impressão, enviar comandos, escrever ficheiros) executa sem aprovação explícita.
+
+| Classe de segurança | Exemplos | Exigências |
+| --- | --- | --- |
+| `read` | `inspect_slicer`, `printer_status`, `account_cloud_diagnostics`, `printer_read_all`, `slicer_profiles` | nenhuma — executam de imediato |
+| `state` | `printer_connection_close`, `ace_feed_finish`, `ace_refresh_slot`, `printer_rename` | `confirm: true` |
+| `thermal` | `temperature_set` (via `printer_command_send`) | `confirm: true` |
+| `motion` / `job` | mover eixos, `printer_command_send` (motion), `printer_print_start`, `printer_edge_stop`, `account_print_local` | `confirm: true` **e** `confirm_word: "EXECUTE"` |
+
+Regra prática: se a tool pedir `confirm`, o agente deve mostrar o plano/parâmetros ao utilizador e **aguardar aprovação explícita** antes de chamar. Um default de schema (`confirm: false`) nunca dispara uma ação.
+
+### 2. Jornada típica — fatiar e exportar
+
+```
+1. inspect_slicer({})                    → confirma instalação, processo e roots permitidos
+2. slicer_profiles({ kind: "machine", query: "Kobra S1" })
+3. open_model_in_slicer({ path: "<abs>\\modelo.stl|3mf", confirmation: "RUN" })
+4. prepare_slice_job(...)                → devolve o plano (camada, infill, walls, suportes)
+5. run_slice_job({ job_id, confirmation: "RUN" })
+```
+
+- O fluxo **recomendado** para exportar um ficheiro que o firmware aceita é `slice_via_app` (o app gera thumbnails, `print_sequence`, `paint_info` — a CLI não gera esses metadados e a impressora rejeita o ficheiro com erro 10115).
+- A CLI é usada apenas como via secundária para G-code local (`--slice`, `--export-3mf`). Não assuma que o resultado CLI é imprimível sem a validação do app.
+- **Nunca imprima G-code sem verificar** no preview/estado: impressora, nozzle, filamento, temperaturas, tipo de mesa e limites físicos.
+
+### 3. Jornada típica — imprimir via LAN
+
+```
+1. discover_printers({})                 → ou fixar ANYCUBIC_PRINTER_IPS
+2. printer_status({ dev_id, dev_ip, access_code })
+3. send_to_printer({ ... local_file })   → envia .gcode/.3mf para sdcard/ via FTP/TLS
+4. start_print({ ... })                  → inicia o trabalho (project_file)
+5. printer_status(...)                   → confirmar gcode_state / mc_percent
+```
+
+### 4. Jornada típica — imprimir via cloud (por conta)
+
+```
+1. account_capture_token({})             → captura o JWT do app em memória (requer sessão iniciada)
+2. account_token_status({})              → confirma dono/expiração sem ecoar segredo
+3. account_login({})                     → troca token por sessão cloud (XX-Token)
+4. account_devices({})                   → obter printer_key
+5. account_file_upload({ local_file })   → sobe o .gcode/.3mf para a cloud
+   (ou account_cloud_files({}) para escolher um ficheiro já existente)
+6. printer_print_start(...)            → ordem 1 int live-validated (contrato correto)
+```
+
+> **Atenção:** `account_print` está **legado/obsoleto** (ordem 1/filetype 1, o contrato que causou o erro 10115). Para ficheiros novos use `slice_via_app` + upload + `printer_print_start`/`account_print_local`. Ver [incidente de 2026-09-07](docs/cloud-history-reprint-incident-2026-09-07.md).
+
+### 5. Ler o estado antes de agir
+
+O servidor privilegia **leitura antes de escrita**. Antes de qualquer comando de controle, use:
+
+- `printer_status` / `printer_status_snapshot` — temperaturas, estado, progresso, slots ACE
+- `printer_read_all` — leitura exaustiva de todas as fontes (12 MQTT + catálogo HTTP, 434 campos)
+- `printer_connection_status` — saúde da sessão MQTT cloud persistente
+- `printer_property_catalog` — o que cada propriedade significa (offline)
+- `printer_hidden_command_map` — todos os canais de escrita e a sua classe de segurança
+
+O `printer_command_send` aceita `light`, `fan`, `temperature`, `ace_*`, `ai_settings`, `axis`, `camera`, `print_update`, pause/resume/stop — mas cada classe respeita o gating da tabela acima.
+
+### 6. CAD e ferramentas criativas
+
+```
+cad_open_workspace({})                   → abre o editor 3D web local (127.0.0.1, token por sessão)
+cad_generate_parametric(...)             → script paramétrico (manifold) → malha
+cad_generate_from_prompt({ prompt, dry_run: true })  → AI texto→CAD (sem chamar o provedor)
+cad_v2_boolean({ ... })                  → booleanos CSG watertight (subtract/union/intersect)
+cad_export(...) → slice_via_app(...)     → fluxo completo modelar→fatiar
+cad_close_workspace()                    → para o servidor local
+```
+
+### 7. Boas práticas / segurança
+
+- **Caminhos absolutos sempre.** Roots permitidos: `ANYCUBIC_CONTROL_ALLOWED_INPUT_ROOTS` / `ANYCUBIC_CONTROL_ALLOWED_OUTPUT_ROOTS`.
+- **`confirm` por omissão é `false`** — o utilizador aprova em cada passo consequente.
+- **Nunca colar access codes / tokens** no chat: o servidor usa env vars ou ficheiros DPAPI-protected. Logs redigem tokens automaticamente.
+- **Lê o estado antes de agir**: use as tools `read` acima antes de qualquer `printer_command_send` / `printer_print_start`.
+- Workflows de ficheiros: outputs em pasta nova por UUID (`ANYCUBIC_CONTROL_OUTPUT_ROOT`), nada é sobrescrito.
+
 ## Tools
 
 | Tool                                                                     | Efeito                                                                                                                                                                                                                                                                                                                                                                                 |
