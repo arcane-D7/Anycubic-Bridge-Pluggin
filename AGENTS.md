@@ -29,13 +29,13 @@ NUNCA escrever, gerar ou commitar:
 
 ## 2. Paths — como fazer certo
 
-| Precisas de… | Usa |
-|---|---|
-| Raiz do repo (em scripts `.mjs`) | `path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")` |
-| Raiz do repo (em scripts `.ps1`) | `Split-Path -Parent $PSScriptRoot` (se o script está em `scripts/`) |
-| Raiz do repo (`.mcp.json`, UI) | `${workspaceFolder}` — **mas** nunca o ponhas no caminho real de execução de um entry `node`; usa `scripts/mcp-entry.mjs` |
-| AppData do utilizador | `process.env.APPDATA` (Windows) / `${env:APPDATA}` — **nunca** o caminho expandido |
-| Config local da máquina | variável de ambiente (ver secção 4) ou ficheiro gitignored |
+| Precisas de…                     | Usa                                                                                                                       |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Raiz do repo (em scripts `.mjs`) | `path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")`                                                        |
+| Raiz do repo (em scripts `.ps1`) | `Split-Path -Parent $PSScriptRoot` (se o script está em `scripts/`)                                                       |
+| Raiz do repo (`.mcp.json`, UI)   | `${workspaceFolder}` — **mas** nunca o ponhas no caminho real de execução de um entry `node`; usa `scripts/mcp-entry.mjs` |
+| AppData do utilizador            | `process.env.APPDATA` (Windows) / `${env:APPDATA}` — **nunca** o caminho expandido                                        |
+| Config local da máquina          | variável de ambiente (ver secção 4) ou ficheiro gitignored                                                                |
 
 NUNCA referencies `"C:\Users\..."`, `"C:\\Users\\..."` (escapes JS) nem `"/Users/..."` —
 mesmo em comentários ou exemplos. Em docs, usa `<USER_HOME>` / `<APPDATA>`.
@@ -98,9 +98,9 @@ Usa sempre:
     "anycubic-slicer-next": {
       "command": "node",
       "args": ["${workspaceFolder}/scripts/mcp-entry.mjs"],
-      "cwd": "${workspaceFolder}"
-    }
-  }
+      "cwd": "${workspaceFolder}",
+    },
+  },
 }
 ```
 

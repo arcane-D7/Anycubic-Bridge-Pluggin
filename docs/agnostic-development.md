@@ -26,29 +26,29 @@ próprias** credenciais/impressora, sem herdar as nossas, e sem expor as nossas.
 
 ### Em markdown (texto livre)
 
-| Placeholder | Significado |
-|---|---|
-| `<REPO_ROOT>` | raiz do repositório clonado |
-| `<APPDATA>` | `%APPDATA%` (config do slicer) |
-| `<EXPORT_ROOT>` | diretório de export configurado |
-| `<USER_HOME>` | home do utilizador atual |
-| `<DEVICE_KEY>` | device key da impressora |
-| `<PRINTER_ID>` | id cloud da impressora |
-| `<MACHINE_TYPE>` | machine type id (ex `20025`) |
-| `<ACE_MODEL_ID>` | ACE box model id (ex `40002`) |
-| `<LAN_IP>` | IP da impressora na LAN |
-| `<FW_VERSION>` | firmware observado |
-| `<MD5>` | hash md5 |
-| `<TASK_ID>` | task id cloud de uma impressão |
+| Placeholder      | Significado                     |
+| ---------------- | ------------------------------- |
+| `<REPO_ROOT>`    | raiz do repositório clonado     |
+| `<APPDATA>`      | `%APPDATA%` (config do slicer)  |
+| `<EXPORT_ROOT>`  | diretório de export configurado |
+| `<USER_HOME>`    | home do utilizador atual        |
+| `<DEVICE_KEY>`   | device key da impressora        |
+| `<PRINTER_ID>`   | id cloud da impressora          |
+| `<MACHINE_TYPE>` | machine type id (ex `20025`)    |
+| `<ACE_MODEL_ID>` | ACE box model id (ex `40002`)   |
+| `<LAN_IP>`       | IP da impressora na LAN         |
+| `<FW_VERSION>`   | firmware observado              |
+| `<MD5>`          | hash md5                        |
+| `<TASK_ID>`      | task id cloud de uma impressão  |
 
 ### Em JSON (tem de continuar parseável)
 
-| Valor real | Valor sintético |
-|---|---|
-| id numérico (`688972`, `120622460`) | `0` |
-| string de chave/device key | `""` ou `"redacted"` |
-| IP real | `"127.0.0.1"` |
-| md5 | `"md5-redacted"` |
+| Valor real                          | Valor sintético      |
+| ----------------------------------- | -------------------- |
+| id numérico (`688972`, `120622460`) | `0`                  |
+| string de chave/device key          | `""` ou `"redacted"` |
+| IP real                             | `"127.0.0.1"`        |
+| md5                                 | `"md5-redacted"`     |
 
 ### Em código
 
@@ -107,17 +107,17 @@ Porque `scripts/mcp-entry.mjs`:
 
 ## 4. Variáveis de ambiente (fonte única de verdade por máquina)
 
-| Variável | Uso | Onde é lida |
-|---|---|---|
-| `ANYCUBIC_ACCESS_CODE` | access code da impressora LAN | `.mcp.json` env |
-| `ANYCUBIC_PRINTER_IPS` | IP(s) da impressora | `.mcp.json` env |
-| `ANYCUBIC_CLOUD_TOKEN` | JWT cloud capturado | `.mcp.json` env |
-| `ANYCUBIC_CLOUD_REGION` | região cloud (`en`/`cn`) | `.mcp.json` env |
-| `ANYCUBIC_SLICER_EXE` | override do executável do slicer | `slicer-cli.mjs` |
-| `ANYCUBIC_CONTROL_OUTPUT_ROOT` | root de output | slicer CLI tools |
-| `ANYCUBIC_FW_VERSION` | firmware observado (relatório) | `printer-property-catalog.mjs` |
-| `ANYCUBIC_PRINTER_ID` | printer id cloud (relatório) | `printer-property-catalog.mjs` |
-| `CAD_AI_API_KEY` / `CAD_AI_BASE_URL` / `CAD_AI_MODEL` | AI text-to-CAD | `cad-ai-translator.mjs` |
+| Variável                                              | Uso                              | Onde é lida                    |
+| ----------------------------------------------------- | -------------------------------- | ------------------------------ |
+| `ANYCUBIC_ACCESS_CODE`                                | access code da impressora LAN    | `.mcp.json` env                |
+| `ANYCUBIC_PRINTER_IPS`                                | IP(s) da impressora              | `.mcp.json` env                |
+| `ANYCUBIC_CLOUD_TOKEN`                                | JWT cloud capturado              | `.mcp.json` env                |
+| `ANYCUBIC_CLOUD_REGION`                               | região cloud (`en`/`cn`)         | `.mcp.json` env                |
+| `ANYCUBIC_SLICER_EXE`                                 | override do executável do slicer | `slicer-cli.mjs`               |
+| `ANYCUBIC_CONTROL_OUTPUT_ROOT`                        | root de output                   | slicer CLI tools               |
+| `ANYCUBIC_FW_VERSION`                                 | firmware observado (relatório)   | `printer-property-catalog.mjs` |
+| `ANYCUBIC_PRINTER_ID`                                 | printer id cloud (relatório)     | `printer-property-catalog.mjs` |
+| `CAD_AI_API_KEY` / `CAD_AI_BASE_URL` / `CAD_AI_MODEL` | AI text-to-CAD                   | `cad-ai-translator.mjs`        |
 
 Padrão obrigatório:
 
@@ -138,11 +138,13 @@ node scripts/sanitize-repo.mjs --apply     # aplica substituições
 ```
 
 Cobre (data-driven, derivado de `os.homedir()`):
+
 - paths do utilizador real → `<APPDATA>`/`<USER_HOME>`/`<REPO_ROOT>`/`<EXPORT_ROOT>`
 - device key, printer id, LAN IP, firmware → placeholders
 - (apenas em `docs/evidence` + `poc-output`) machine type, ACE model, md5 de 32 hex
 
 **Avisos importantes**:
+
 - `tests/`, `dist/`, `node_modules/` estão em `SKIP_DIRS` — fixtures ficam intactas.
 - `sanitize-repo.mjs` e `redact-evidence-json.mjs` estão em `SKIP_FILES` — não os
   quebres acidentalmente ao correr `--apply` (contêm literais de lookup).
