@@ -208,13 +208,21 @@ export function registerPrinterCommands(server, z, { manager, resolvePrinter } =
         }
         const cloud = await ensureSession(args);
         const printer = await resolvePrinter(cloud, args.printer_id);
+        // MCP schema exposes ams_box_mapping as a record (paint_index -> info)
+        // while the runtime contract expects an array of {paint_index, ...}.
+        const amsMapping = args.ams_box_mapping
+          ? Object.entries(args.ams_box_mapping).map(([paintIndex, info]) => ({
+              paint_index: Number(paintIndex),
+              ...(typeof info === "object" && info ? info : {}),
+            }))
+          : undefined;
         const result = await cloudPrintStart(
           manager,
           cloud,
           printer,
           {
             ...args,
-            ams: args.use_ams ? { ams_box_mapping: args.ams_box_mapping } : null,
+            ams: args.use_ams ? { ams_box_mapping: amsMapping } : null,
           },
           { verifyTimeoutMs: args.verify_timeout_ms ?? 25000 },
         );

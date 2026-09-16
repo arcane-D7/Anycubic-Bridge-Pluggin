@@ -364,7 +364,16 @@ export function registerAuditGapTools(server, z, { manager, resolvePrinter } = {
             ai_detect: args.ai_detect,
             camera_timelapse: args.camera_timelapse,
             live_state: args.live_state,
-            ams: args.use_ams ? { ams_box_mapping: args.ams_box_mapping } : null,
+            ams: args.use_ams
+              ? {
+                  ams_box_mapping: args.ams_box_mapping
+                    ? Object.entries(args.ams_box_mapping).map(([paintIndex, info]) => ({
+                        paint_index: Number(paintIndex),
+                        ...(typeof info === "object" && info ? info : {}),
+                      }))
+                    : undefined,
+                }
+              : null,
           },
           { verifyTimeoutMs: args.verify_timeout_ms ?? 30000 },
         );
