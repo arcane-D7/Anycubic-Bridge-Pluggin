@@ -59,6 +59,7 @@ try {
     "get_slice_job",
     "inspect_slicer",
     "list_slicer_profiles",
+    "marble_presets_list",
     "nfc_tag_decode",
     "nfc_tag_plan",
     "open_model_in_slicer",
