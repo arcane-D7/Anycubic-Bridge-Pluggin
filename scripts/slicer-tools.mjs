@@ -277,8 +277,13 @@ export function registerSlicerTools(server, z) {
         "Write (gated). Drives the Anycubic Slicer Next CLI to produce a multi-material slice WITHOUT relying on the GUI: (1) writes a temporary process preset into the user profile that maps roles (outer_wall/inner_wall/infill/top/bottom/support) to specific extruders and ZEROS all flush volumes (leaving intentional contamination for a marble/mixed-color surface), (2) loads N filaments + optional per-object filament ids (--load-filament-ids), (3) slices and exports 3MF, and (4) analyzes the resulting G-code for real tool switches (T0/T1...) and purge evidence, proving contamination is preserved. Requires confirm:true.",
       inputSchema: {
         input_file: z.string().min(1),
+        // Optional catalog preset (presets/catalog.json). When provided, its
+        // roles / flush matrix / filaments act as DEFAULTS; any explicit
+        // argument overrides them. Use marble_presets_list to see available.
+        preset: z.string().max(120).optional(),
         machine: z.string().max(120).optional(),
-        filaments: z.array(z.string().max(120)).min(1).max(8),
+        // Optional when preset provides the filaments (catalog).
+        filaments: z.array(z.string().max(120)).min(1).max(8).optional(),
         filament_ids_per_object: z.array(z.number().int().min(1).max(16)).optional(),
         roles: z
           .object({
@@ -353,7 +358,21 @@ export function registerSlicerTools(server, z) {
         const inputFile = path.resolve(args.input_file);
         if (!existsSync(inputFile)) throw new Error(`Input file not found: ${inputFile}`);
 
-        const roles = args.roles ?? {};
+        // Optional catalog preset: fills roles/filaments/flush defaults
+        // (preset wins only when the caller does not pass them explicitly).
+        let presetResolved = null;
+        if (args.preset) {
+          const { loadCatalog, findPreset } = await import("./presets-tools.mjs");
+          const loaded = loadCatalog();
+          if (!loaded.ok) throw new Error(loaded.error);
+          presetResolved = findPreset(loaded.catalog, args.preset);
+          if (!presetResolved)
+            throw new Error(
+              `Unknown preset '${args.preset}'. Use marble_presets_list to see available ones.`,
+            );
+        }
+
+        const roles = { ...(presetResolved?.roles ?? {}), ...(args.roles ?? {}) };
         // Resolve the base process preset path from the system resources.
         // Default to the project's printer (Kobra S1 0.4) so the preset family
         // matching never falls back to a different machine (e.g. Kobra 1),
@@ -383,8 +402,8 @@ export function registerSlicerTools(server, z) {
           flush_multiplier: roles?.flush_multiplier ?? "0",
           printer_flush_multiplier: roles?.printer_flush_multiplier ?? "0",
           minimal_purge: roles?.minimal_purge ?? "15",
-          flush_volumes_matrix: args.flush_volumes_matrix?.map((v) => String(v)),
-          flush_volumes_vector: args.flush_volumes_vector?.map((v) => String(v)),
+          flush_volumes_matrix: (args.flush_volumes_matrix ?? presetResolved?.flush_volumes_matrix)?.map((v) => String(v)),
+          flush_volumes_vector: (args.flush_volumes_vector ?? presetResolved?.flush_volumes_vector)?.map((v) => String(v)),
           enable_prime_tower: args.enable_prime_tower ? "1" : "0",
           prime_tower_x: args.prime_tower_x != null ? String(args.prime_tower_x) : undefined,
           prime_tower_y: args.prime_tower_y != null ? String(args.prime_tower_y) : undefined,
@@ -458,7 +477,10 @@ export function registerSlicerTools(server, z) {
         // copy that adds the marker, cleaned up after the run — the same
         // pattern as the temp process preset above.
         const tmpFilaments = [];
-        for (const name of args.filaments ?? []) {
+        const filamentNames = args.filaments?.length
+          ? args.filaments
+          : (presetResolved?.filaments ?? []);
+        for (const name of filamentNames) {
           const userFilDir = path.join(profileRoot, "filament");
           const systemFilDir = path.join(
             path.dirname(exe),

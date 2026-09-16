@@ -43,7 +43,9 @@ registerCadAiTool(server, z2);`;
 
 // Slicer CLI control: wire the native CLI tools right after edge tools.
 const SLICER_WIRING = `const { registerSlicerTools } = await import("../scripts/slicer-tools.mjs");
-registerSlicerTools(server, z2);`;
+registerSlicerTools(server, z2);
+const { registerPresetTools } = await import("../scripts/presets-tools.mjs");
+registerPresetTools(server, z2);`;
 
 // Anchor right before the transport is instantiated so wiring is stable.
 const TRANSPORT_ANCHOR = "var transport = new StdioServerTransport();";
@@ -87,6 +89,14 @@ async function build() {
       `registerEdgeTools(server, z2, { manager: commandManager });\n${SLICER_WIRING}`,
     );
   }
+  // 2c) Ensure the preset catalog wiring is present on top of existing slicer
+  //     wiring (idempotent — safe when the base already has slicer tools).
+  if (out.includes("registerSlicerTools") && !out.includes("registerPresetTools")) {
+    out = out.replace(
+      /registerSlicerTools\(server, z2\);/,
+      `registerSlicerTools(server, z2);\nconst { registerPresetTools } = await import("../scripts/presets-tools.mjs");\nregisterPresetTools(server, z2);`,
+    );
+  }
   // 3) Copy the built file over.
   await rm(outFile, { force: true });
   await copyFile(vendorBase, outFile);
@@ -97,6 +107,7 @@ async function build() {
   assert.ok(out.includes("registerCadParametricTool"), "cad parametric wiring missing");
   assert.ok(out.includes("registerCadAiTool"), "cad ai wiring missing");
   assert.ok(out.includes("registerSlicerTools"), "slicer CLI tools wiring missing");
+  assert.ok(out.includes("registerPresetTools"), "preset catalog tools wiring missing");
   assert.ok(out.includes('case "ai_prompt":'), "ai_prompt case missing");
   assert.ok(out.includes('case "parametric":'), "parametric case missing");
   assert.ok(out.includes(TRANSPORT_ANCHOR), "transport connect anchor missing");

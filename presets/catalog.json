@@ -1,0 +1,69 @@
+{
+  "$schema": "preset-catalog.schema.json",
+  "version": 1,
+  "machine": "Anycubic Kobra S1",
+  "nozzle_note": "0.20mm in preset names is the LAYER HEIGHT (0.2mm); the nozzle is 0.4mm (see 0.20mm Standard @Anycubic Kobra S1 0.4 nozzle). The MCP slicer tools always resolve the 0.4 nozzle family.",
+  "defaults": {
+    "machine": "Kobra S1 0.4",
+    "base_process": "0.20mm Standard",
+    "layers": 11,
+    "estimated_time_s": 1749
+  },
+  "presets": [
+    {
+      "id": "marble-mix-2-colors",
+      "name": "0.20mm Marble Mix 2 Colors",
+      "alias": ["marble mix", "marble-mix", "v4", "marble mix v4"],
+      "base": "0.20mm Standard @Anycubic Kobra S1 0.4 nozzle",
+      "filaments": ["PLA Basico Precisao", "Anycubic PLA Gold HQ"],
+      "roles": {
+        "outer_wall": "1",
+        "inner_wall": "2",
+        "infill": "2",
+        "solid_infill": "1",
+        "top_surface": "1",
+        "bottom_surface": "1",
+        "minimal_purge": "0"
+      },
+      "flush_volumes_matrix": [0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "flush_volumes_vector": [0, 0, 0, 0, 0, 0, 0, 0],
+      "behavior": {
+        "surface": "marble (extruder 1, dark) with beige veining from residual contamination",
+        "core": "beige (extruder 2)",
+        "top_bottom": "marble (extruder 1)",
+        "switches_per_print": 12,
+        "switch_time_s": "~3-5s per switch (ACE load/unload, not in gcode)",
+        "marble_effect": "via intentional residual contamination (flush into wipe only for dirty->clean, e.g. [T1->T0]=8mm3)"
+      },
+      "test_history": [
+        {
+          "version": "v1",
+          "date": "2026-09-10",
+          "slice": "cube-marble-final.gcode.3mf",
+          "outcome": "marble only on first layer; last layer 100% beige; almost no contamination visible"
+        },
+        {
+          "version": "v3",
+          "date": "2026-09-16",
+          "slice": "cube-marble-v3-flush.gcode.3mf",
+          "config": "flush_volumes_matrix [T1->T0]=15mm3",
+          "outcome": "REAL purge activated (12 FLUSH_START/END, 155mm G1 E); nozzle cleaned — no marble on exterior"
+        },
+        {
+          "version": "v4",
+          "date": "2026-09-16",
+          "slice": "cube-marble-v4-veins.gcode.3mf",
+          "config": "flush [T1->T0]=8mm3, roles outer/top/bottom=1(marble), core=2(beige)",
+          "outcome": "INCREDIBLE — beige veining on marble exterior, marble top/bottom, beige core. USER APPROVED PRINT"
+        }
+      ],
+      "notes": [
+        "Sliced via slicer_multimaterial (CLI, not GUI) — write tools require confirm:true",
+        "Preset DISPLAY NAME includes a per-run hash suffix to avoid CLI cache reuse (fixed names silently reuse previous run's roles)",
+        "0.20mm = layer height; nozzle is 0.4mm",
+        "Switches are deterministic (role boundaries, never random)",
+        "To make exterior ALL beige and core marble, swap roles: outer_wall=2, inner_wall=1, infill=1, solid/top/bottom=2"
+      ]
+    }
+  ]
+}
