@@ -45,6 +45,21 @@ function redactPlain(value) {
   return value; // no secrets in slicer CLI surface; kept for parity
 }
 
+/** First non-`default` per-account profile dir under
+ *  %APPDATA%\AnycubicSlicerNext\user — machines keep machine-specific user
+ *  presets here (user-created filament/process profiles). Returns null if
+ *  none exists. */
+function userProfileDir() {
+  const root = path.join(process.env.APPDATA ?? "", "AnycubicSlicerNext", "user");
+  if (!existsSync(root)) return null;
+  const dirs = readdirSync(root, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && d.name !== "default")
+    .map((d) => d.name)
+    .sort();
+  if (!dirs.length) return null;
+  return path.join(root, dirs[0]);
+}
+
 export function registerSlicerTools(server, z) {
   const out = (data) => ({
     content: [{ type: "text", text: JSON.stringify(redactPlain(data)) }],
@@ -280,6 +295,40 @@ export function registerSlicerTools(server, z) {
             minimal_purge: z.string().regex(/^\d+$/).default("15"),
           })
           .optional(),
+        // Flush volumes matrix/vector (16/8 cells, mm³ per extruder pair) —
+        // the REAL flush control. Zeros = no purge (contamination). A
+        // non-zero cell (e.g. 15) = purge that volume into the wipe/prime
+        // location on every color transition. This is what creates visible
+        // marble veining; `minimal_purge` alone does NOT when the prime
+        // tower is off.
+        flush_volumes_matrix: z
+          .array(z.number().min(0))
+          .length(16)
+          .optional(),
+        flush_volumes_vector: z
+          .array(z.number().min(0))
+          .length(8)
+          .optional(),
+        // Prime tower: off by default (flush goes nowhere visible). Turn on
+        // to give the purge a real destination and avoid dropping blobs on
+        // the bed.
+        enable_prime_tower: z.boolean().default(false),
+        prime_tower_x: z.number().min(0).max(400).optional(),
+        prime_tower_y: z.number().min(0).max(400).optional(),
+        prime_tower_width: z.number().min(1).max(200).optional(),
+        prime_tower_brim_width: z.number().min(0).max(50).optional(),
+        prime_volume: z.number().int().min(0).max(1000).optional(),
+        // Flush destinations (into infill / supports / other objects).
+        flush_into_infill: z.boolean().default(false),
+        flush_into_objects: z.boolean().default(false),
+        flush_into_support: z.boolean().default(false),
+        // Classic options surfaced for multi-material tuning.
+        bed_adhesion: z.enum(["none", "brim", "skirt", "raft"]).optional(),
+        support_enable: z.boolean().optional(),
+        support_type: z.enum(["normal", "tree", "organic"]).optional(),
+        sparse_infill_density: z.number().min(0).max(100).optional(),
+        print_sequence: z.enum(["by_layer", "by_object"]).optional(),
+        detect_thin_wall: z.boolean().optional(),
         output_dir: z.string().optional(),
         plate: z.number().int().min(0).max(64).default(0),
         output_name: z.string().max(180).optional(),
@@ -327,27 +376,58 @@ export function registerSlicerTools(server, z) {
         const baseProcess =
           JSON.parse(readFileSync(presets.process, "utf8"));
         const baseName = String(baseProcess.name ?? "0.20mm Standard");
-        const mm = overlayMultiMaterialKeys(baseProcess, roles);
+        // Merge role mapping + flush matrix + prime tower + classic options
+        // into a single mmKeys object consumed by overlayMultiMaterialKeys.
+        const mmKeys = {
+          ...(roles ?? {}),
+          flush_multiplier: roles?.flush_multiplier ?? "0",
+          printer_flush_multiplier: roles?.printer_flush_multiplier ?? "0",
+          minimal_purge: roles?.minimal_purge ?? "15",
+          flush_volumes_matrix: args.flush_volumes_matrix?.map((v) => String(v)),
+          flush_volumes_vector: args.flush_volumes_vector?.map((v) => String(v)),
+          enable_prime_tower: args.enable_prime_tower ? "1" : "0",
+          prime_tower_x: args.prime_tower_x != null ? String(args.prime_tower_x) : undefined,
+          prime_tower_y: args.prime_tower_y != null ? String(args.prime_tower_y) : undefined,
+          prime_tower_width: args.prime_tower_width != null ? String(args.prime_tower_width) : undefined,
+          prime_tower_brim_width: args.prime_tower_brim_width != null ? String(args.prime_tower_brim_width) : undefined,
+          prime_volume: args.prime_volume != null ? String(args.prime_volume) : undefined,
+          flush_into_infill: args.flush_into_infill ? "1" : "0",
+          flush_into_objects: args.flush_into_objects ? "1" : "0",
+          flush_into_support: args.flush_into_support ? "1" : "0",
+          bed_adhesion: args.bed_adhesion,
+          support_enable: args.support_enable ? "1" : "0",
+          support_type: args.support_type,
+          sparse_infill_density: args.sparse_infill_density != null ? String(args.sparse_infill_density) : undefined,
+          print_sequence: args.print_sequence,
+          detect_thin_wall: args.detect_thin_wall ? "1" : "0",
+        };
+        const mm = overlayMultiMaterialKeys(baseProcess, mmKeys);
         mm.type = "process";
         // Keep the standard "…Kobra S1 0.4 nozzle" family so the CLI matches
         // this temporary preset against the machine; a custom display name
         // (e.g. "MarbleMix CLI") breaks preset-family matching and the slicer
         // aborts with exit -17 ("process not compatible").
-        mm.name = baseName.replace(" Standard", " Standard MM");
+        // IMPORTANT: the DISPLAY NAME must stay unique per run so the slicer
+        // CLI never reuses a cached preset from a previous run with different
+        // roles/flush. We append a short hash of the effective mmKeys (hash
+        // stays inside the family suffix so matching still works).
+        const { createHash } = await import("node:crypto");
+        const mmHash = createHash("sha1")
+          .update(JSON.stringify(mmKeys))
+          .digest("hex")
+          .slice(0, 8);
+        mm.name = `${baseName.replace(" Standard", " Standard MM")}-${mmHash}`;
 
         // Temporary preset in the USER profile (never touches system resources,
         // removed by runSlicer's promise cleanup below).
-        const userProcessDir = path.join(
-          process.env.APPDATA ?? "",
-          "AnycubicSlicerNext",
-          "user",
-          "834765",
-          "process",
-        );
+        const profileRoot =
+          userProfileDir() ??
+          path.join(process.env.APPDATA ?? "", "AnycubicSlicerNext", "user", "default");
+        const userProcessDir = path.join(profileRoot, "process");
         mkdirSync(userProcessDir, { recursive: true });
         const tmpPreset = path.join(
           userProcessDir,
-          `${baseName.replace(" Standard", " Standard MM")}.json`,
+          `${baseName.replace(" Standard", ` Standard MM-${mmHash}`)}.json`,
         );
         writeFileSync(tmpPreset, JSON.stringify(mm, null, 2), "utf8");
         let cleaned = false;
@@ -356,6 +436,9 @@ export function registerSlicerTools(server, z) {
             cleaned = true;
             try {
               if (existsSync(tmpPreset)) rmSync(tmpPreset, { force: true });
+              for (const tmpFil of tmpFilaments) {
+                if (existsSync(tmpFil)) rmSync(tmpFil, { force: true });
+              }
             } catch {
               /* best effort */
             }
@@ -368,19 +451,48 @@ export function registerSlicerTools(server, z) {
             path.join(process.env.LOCALAPPDATA ?? "", "AnycubicSlicerNextControl"));
         mkdirSync(outputRoot, { recursive: true, mode: 0o700 });
 
-        // Filament files must all resolve.
-        const filaments = (args.filaments ?? []).map((name) => {
-          const filDir = path.join(
+        // Filament files must all resolve AND carry the CLI-required
+        // `type: filament` marker. USER presets (per-machine marble/beige
+        // pair) do NOT include a `type` field, so the CLI rejects them with
+        // "unknown config type ... in load-filaments". Wrap them in a temp
+        // copy that adds the marker, cleaned up after the run — the same
+        // pattern as the temp process preset above.
+        const tmpFilaments = [];
+        for (const name of args.filaments ?? []) {
+          const userFilDir = path.join(profileRoot, "filament");
+          const systemFilDir = path.join(
             path.dirname(exe),
             "resources",
             "profiles",
             "Anycubic",
             "filament",
           );
-          const f = resolvePreset(filDir, name) ?? resolvePreset(filDir, "");
+          const f =
+            resolvePreset(userFilDir, name) ??
+            resolvePreset(systemFilDir, name) ??
+            resolvePreset(systemFilDir, "");
           if (!f) throw new Error(`Filament preset not found for "${name}"`);
-          return f;
-        });
+          let file = f;
+          try {
+            const parsed = JSON.parse(readFileSync(f, "utf8"));
+            if (parsed && parsed.type !== "filament") {
+              const tmp = path.join(
+                userProcessDir,
+                `${path.basename(f, ".json")}.mm-tmp.json`,
+              );
+              writeFileSync(
+                tmp,
+                JSON.stringify({ ...parsed, type: "filament" }, null, 2),
+                "utf8",
+              );
+              file = tmp;
+            }
+          } catch {
+            /* fall through to the original file */
+          }
+          tmpFilaments.push(file);
+        }
+        const filaments = tmpFilaments;
 
         // Build argv: machine + process (user temp) + filaments + optional ids
         const base = buildSliceArgs({
@@ -438,8 +550,16 @@ export function registerSlicerTools(server, z) {
           artifacts,
           gcode_analysis,
           used_roles: roles,
+          used_flush: {
+            flush_volumes_matrix: mmKeys.flush_volumes_matrix,
+            flush_volumes_vector: mmKeys.flush_volumes_vector,
+            enable_prime_tower: mmKeys.enable_prime_tower,
+            flush_into_infill: mmKeys.flush_into_infill,
+            flush_into_objects: mmKeys.flush_into_objects,
+            flush_into_support: mmKeys.flush_into_support,
+          },
           note:
-            "flush_volumes_matrix/vector and flush multipliers are zeroed — tool changes leave intentional contamination (marble mixing).",
+            "flush_volumes_matrix/vector are zeroed unless provided — tool changes leave intentional contamination (marble mixing). To get visible veining, pass a non-zero flush_volumes_matrix cell (e.g. 15) for the dirty→clean transition.",
         });
       } catch (error) {
         return fail(error);

@@ -275,9 +275,41 @@ export function overlayMultiMaterialKeys(processJson, mmKeys = {}) {
     printer_flush_multiplier: mmKeys.printer_flush_multiplier ?? "0",
     filament_minimal_purge_on_wipe_tower: mmKeys.minimal_purge ?? "15",
     wiping_volumes_extruders: Array(10).fill("0"),
-    flush_volumes_matrix: Array(16).fill("0"),
-    flush_volumes_vector: Array(8).fill("0"),
+    flush_volumes_matrix: Array.isArray(mmKeys.flush_volumes_matrix)
+      ? mmKeys.flush_volumes_matrix.map((v) => String(v)).slice(0, 16)
+      : Array(16).fill("0"),
+    flush_volumes_vector: Array.isArray(mmKeys.flush_volumes_vector)
+      ? mmKeys.flush_volumes_vector.map((v) => String(v)).slice(0, 8)
+      : Array(8).fill("0"),
+    // Prime tower (off by default; turning it on changes flush destinations).
+    enable_prime_tower: mmKeys.enable_prime_tower ?? "0",
+    prime_tower_x: mmKeys.prime_tower_x ?? "15",
+    prime_tower_y: mmKeys.prime_tower_y ?? "220",
+    prime_tower_width: mmKeys.prime_tower_width ?? "30",
+    prime_tower_brim_width: mmKeys.prime_tower_brim_width ?? "5",
+    prime_volume: mmKeys.prime_volume ?? "30",
   };
+  // Classic single-value options only present when the caller wants them.
+  const classic = {
+    bed_adhesion: mmKeys.bed_adhesion,
+    support_type: mmKeys.support_type,
+    sparse_infill_density: mmKeys.sparse_infill_density,
+    print_sequence: mmKeys.print_sequence,
+    detect_thin_wall: mmKeys.detect_thin_wall,
+  };
+  for (const [key, val] of Object.entries(classic)) {
+    if (val === undefined || val === null || val === "") continue;
+    if (key === "bed_adhesion") {
+      // bed_adhesion is a composite: brim / skirt / raft + widths.
+      const v = String(val);
+      if (v === "none") { overrides.brim_type = "no_brim"; overrides.skirt_loops = "0"; overrides.raft_layers = "0"; }
+      else if (v === "brim") { overrides.brim_type = "brim"; overrides.brim_width = mmKeys.brim_width ?? "5"; overrides.raft_layers = "0"; }
+      else if (v === "skirt") { overrides.brim_type = "no_brim"; overrides.skirt_loops = "2"; overrides.raft_layers = "0"; }
+      else if (v === "raft") { overrides.brim_type = "no_brim"; overrides.skirt_loops = "0"; overrides.raft_layers = "1"; }
+    } else {
+      overrides[key] = String(val);
+    }
+  }
   return { ...base, ...overrides };
 }
 
