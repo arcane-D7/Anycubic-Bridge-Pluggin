@@ -64,6 +64,74 @@
         "Switches are deterministic (role boundaries, never random)",
         "To make exterior ALL beige and core marble, swap roles: outer_wall=2, inner_wall=1, infill=1, solid/top/bottom=2"
       ]
+    },
+    {
+      "id": "marble-mix-4-colors",
+      "name": "0.20mm Marble Mix 4 Colors",
+      "alias": ["marble mix 4", "marble-mix-4", "v5", "veins", "veios", "marble veins"],
+      "base": "0.20mm Standard @Anycubic Kobra S1 0.4 nozzle",
+      "filaments": [
+        "PLA Basico Precisao",
+        "Anycubic PLA Gold HQ",
+        "Anycubic PLA Silk Gold",
+        "Anycubic PLA Black"
+      ],
+      "roles": {
+        "outer_wall": "1",
+        "inner_wall": "3",
+        "infill": "4",
+        "solid_infill": "2",
+        "top_surface": "1",
+        "bottom_surface": "1",
+        "minimal_purge": "0"
+      },
+      "flush_volumes_matrix": [0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0],
+      "flush_volumes_vector": [0, 0, 0, 0, 0, 0, 0, 0],
+      "behavior": {
+        "surface": "marble (extruder 1, dark) with sparse GOLD + BLACK veins from gold inner-wall (extruder 3) and black infill (extruder 4) residue",
+        "core": "beige (extruder 2) solid infill, black sparse infill — v4 base preserved",
+        "top_bottom": "marble (extruder 1)",
+        "switches_per_print": 23,
+        "switch_time_s": "~3-5s per switch (ACE load/unload, not in gcode)",
+        "vein_effect": "T2/T3 never take a full wall role; gold/black show as residual contamination (directed T2->T0=8mm3 and T3->T0=8mm3), identical mechanism to the v4-approved beige veins"
+      },
+      "test_history": [
+        {
+          "version": "v5 base",
+          "date": "2026-09-16",
+          "slice": "cube-marble-v5-base.gcode.3mf",
+          "config": "4 filaments loaded, v4 roles: only T0/T1 used (12 switches) — filaments 3/4 idle without a role",
+          "outcome": "baseline: 4 filaments declared in header (density 1.24x4, colors ;;#FFD700;#000000) but gcode uses T0/T1 only"
+        },
+        {
+          "version": "v5b",
+          "date": "2026-09-16",
+          "slice": "cube-marble-v5b.gcode.3mf",
+          "config": "infill=3(gold), solid_infill=4(black), residue T2->T0/T3->T0=5mm3",
+          "outcome": "all 4 tools used (22 switches); outer wall stays T0 marble with tiny gold 1.6mm + black 0.8mm residue veins; solid core black"
+        },
+        {
+          "version": "v5e",
+          "date": "2026-09-16",
+          "slice": "cube-marble-v5e.gcode.3mf",
+          "config": "inner_wall=3(gold), residue T2->T0=8mm3, beige core",
+          "outcome": "OUTER WALL gold veins 4.8mm (~12% perimeter, 3x v5b); beige core intact (v4)"
+        },
+        {
+          "version": "v5f",
+          "date": "2026-09-16",
+          "slice": "cube-marble-v5f.gcode.3mf",
+          "config": "inner_wall=3(gold), infill=4(black), solid=2(beige), residue 8mm3 both",
+          "outcome": "BOTH gold 2.4mm + black 1.6mm veins on marble wall; beige solid core + black sparse infill; 23 switches — most faithful to request"
+        }
+      ],
+      "notes": [
+        "4 filaments (marble/beige/gold-silk/black) — ACE slots: 0=PLA creme, 1=PLA beige, 2=PLA Silk gold, 3=PLA black",
+        "Requires Anycubic PLA Silk Gold + Anycubic PLA Black filament presets in user profile (created 2026-09-16)",
+        "Veins come from residual hotend contamination, NOT full wall roles (engine assigns one tool per role; sparse multi-color walls need residual)",
+        "To make ONLY gold veins (cleaner): drop the infill=4 -> infill=2 (v5e config)",
+        "To make ONLY black veins: inner_wall=4 + infill=2"
+      ]
     }
   ]
 }
