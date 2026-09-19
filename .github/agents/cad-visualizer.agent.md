@@ -64,13 +64,14 @@ No GUI, no full CAD app install. Pipeline:
    object(s) to `STL`/`3MF` under the project (e.g. `poc-output/` or a
    `renders/` folder the user names). Confirm the export path exists.
 2. **Render headless.** Run the project renderer script in a terminal:
-   - Preferred: `node tools/render-headless.mjs <mesh.stl> --out render.png`
-     (Node + three.js in a headless browser; light, no CAD install).
-   - If `tools/render-headless.mjs` does not exist yet, say so and offer to
-     create it. Do NOT silently fall back to the concept path for a fidelity
-     request.
-   - If Blender happens to be installed (`blender -b file.stl -o //render.png
-     -F PNG`), it is an acceptable heavier alternative; check first.
+   - **Verified working**: `node tools/render-headless.mjs <mesh.stl> --out render.png`
+     (Blender 5.2.2 LTS via the MSIX app-execution alias, discovered
+     automatically; classic installs also supported via `BLENDER_EXE`).
+     Writes the PNG plus a `_report.json` with the exact bounding box (mm),
+     engine, view and timings — include those dimensions in your reply as
+     fidelity evidence.
+   - See `tools/HEADLESS-RENDER.md` for flags (views, engines, zoom, bg).
+   - Do NOT silently fall back to the concept path for a fidelity request.
 3. **Report** the render alongside the source mesh path and bounding box so
    fidelity is auditable.
 
