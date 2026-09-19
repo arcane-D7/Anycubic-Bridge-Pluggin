@@ -1,6 +1,11 @@
 ---
 name: anycubic-slicer-control
 description: Safely inspect Anycubic Slicer Next, choose local profiles, prepare a slicing plan, export local G-code or G-code 3MF, and optionally upload/start a print on a LAN or cloud (account) Anycubic printer through the bundled MCP tools.
+license: MIT
+metadata:
+  version: "1.0"
+  skill-author: "This repository (original skill)"
+  note: "Own skill — MIT, aligned with the repository license (package.json)"
 ---
 
 # Anycubic Slicer Next Control
