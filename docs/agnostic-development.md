@@ -54,7 +54,7 @@ próprias** credenciais/impressora, sem herdar as nossas, e sem expor as nossas.
 
 Código **nunca** deve conter placeholders — deve ler de env vars com defaults
 agnósticos (ver secção 4). Placeholders em código só são aceitáveis em
-`scripts/archive/**` (debug descartado).
+`local-scripts/**` (debug descartado e ignorado pelo Git).
 
 ---
 

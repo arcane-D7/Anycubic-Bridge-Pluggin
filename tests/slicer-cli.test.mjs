@@ -212,11 +212,12 @@ function fakeServer() {
   };
 }
 
-test("registerSlicerTools registers the 6 tools with correct gating", async () => {
+test("registerSlicerTools registers the 7 tools with correct gating", async () => {
   const server = fakeServer();
   registerSlicerTools(server, z);
   const names = server.tools.map((t) => t.name).sort();
   assert.deepEqual(names, [
+    "slicer_apply_project_settings",
     "slicer_export_3mf",
     "slicer_multimaterial",
     "slicer_profiles",
@@ -242,4 +243,10 @@ test("registerSlicerTools registers the 6 tools with correct gating", async () =
       (typeof res.content?.[0]?.text === "string" &&
         res.content[0].text.includes("requires confirm")),
   );
+
+  const apply = server.tools.find((t) => t.name === "slicer_apply_project_settings");
+  assert.equal(apply.meta.annotations.readOnlyHint, false);
+  const applyShape = apply.meta.inputSchema.shape ?? apply.meta.inputSchema;
+  assert.ok(applyShape.settings, "project settings tool must declare settings");
+  assert.ok(applyShape.confirm, "project settings tool must declare confirm");
 });

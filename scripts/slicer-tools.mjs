@@ -27,6 +27,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import { applyLiveSlicerSettings } from "./slicer-live-settings.mjs";
 import {
   analyzeMultimaterialGcode,
   buildFilamentIdsArg,
@@ -306,14 +307,8 @@ export function registerSlicerTools(server, z) {
         // location on every color transition. This is what creates visible
         // marble veining; `minimal_purge` alone does NOT when the prime
         // tower is off.
-        flush_volumes_matrix: z
-          .array(z.number().min(0))
-          .length(16)
-          .optional(),
-        flush_volumes_vector: z
-          .array(z.number().min(0))
-          .length(8)
-          .optional(),
+        flush_volumes_matrix: z.array(z.number().min(0)).length(16).optional(),
+        flush_volumes_vector: z.array(z.number().min(0)).length(8).optional(),
         // Prime tower: off by default (flush goes nowhere visible). Turn on
         // to give the purge a real destination and avoid dropping blobs on
         // the bed.
@@ -350,9 +345,7 @@ export function registerSlicerTools(server, z) {
     async (args) => {
       try {
         if (args.confirm !== true)
-          throw new Error(
-            "slicer_multimaterial requires confirm: true. Nothing was sliced.",
-          );
+          throw new Error("slicer_multimaterial requires confirm: true. Nothing was sliced.");
         const exe = discoverSlicerExecutable();
         if (!exe) throw new Error("Anycubic Slicer Next executable was not found.");
         const inputFile = path.resolve(args.input_file);
@@ -392,8 +385,7 @@ export function registerSlicerTools(server, z) {
         });
         if (!presets.machine || !presets.process)
           throw new Error("Unable to resolve machine/process presets.");
-        const baseProcess =
-          JSON.parse(readFileSync(presets.process, "utf8"));
+        const baseProcess = JSON.parse(readFileSync(presets.process, "utf8"));
         const baseName = String(baseProcess.name ?? "0.20mm Standard");
         // Merge role mapping + flush matrix + prime tower + classic options
         // into a single mmKeys object consumed by overlayMultiMaterialKeys.
@@ -402,13 +394,19 @@ export function registerSlicerTools(server, z) {
           flush_multiplier: roles?.flush_multiplier ?? "0",
           printer_flush_multiplier: roles?.printer_flush_multiplier ?? "0",
           minimal_purge: roles?.minimal_purge ?? "15",
-          flush_volumes_matrix: (args.flush_volumes_matrix ?? presetResolved?.flush_volumes_matrix)?.map((v) => String(v)),
-          flush_volumes_vector: (args.flush_volumes_vector ?? presetResolved?.flush_volumes_vector)?.map((v) => String(v)),
+          flush_volumes_matrix: (
+            args.flush_volumes_matrix ?? presetResolved?.flush_volumes_matrix
+          )?.map((v) => String(v)),
+          flush_volumes_vector: (
+            args.flush_volumes_vector ?? presetResolved?.flush_volumes_vector
+          )?.map((v) => String(v)),
           enable_prime_tower: args.enable_prime_tower ? "1" : "0",
           prime_tower_x: args.prime_tower_x != null ? String(args.prime_tower_x) : undefined,
           prime_tower_y: args.prime_tower_y != null ? String(args.prime_tower_y) : undefined,
-          prime_tower_width: args.prime_tower_width != null ? String(args.prime_tower_width) : undefined,
-          prime_tower_brim_width: args.prime_tower_brim_width != null ? String(args.prime_tower_brim_width) : undefined,
+          prime_tower_width:
+            args.prime_tower_width != null ? String(args.prime_tower_width) : undefined,
+          prime_tower_brim_width:
+            args.prime_tower_brim_width != null ? String(args.prime_tower_brim_width) : undefined,
           prime_volume: args.prime_volume != null ? String(args.prime_volume) : undefined,
           flush_into_infill: args.flush_into_infill ? "1" : "0",
           flush_into_objects: args.flush_into_objects ? "1" : "0",
@@ -416,7 +414,8 @@ export function registerSlicerTools(server, z) {
           bed_adhesion: args.bed_adhesion,
           support_enable: args.support_enable ? "1" : "0",
           support_type: args.support_type,
-          sparse_infill_density: args.sparse_infill_density != null ? String(args.sparse_infill_density) : undefined,
+          sparse_infill_density:
+            args.sparse_infill_density != null ? String(args.sparse_infill_density) : undefined,
           print_sequence: args.print_sequence,
           detect_thin_wall: args.detect_thin_wall ? "1" : "0",
         };
@@ -431,10 +430,7 @@ export function registerSlicerTools(server, z) {
         // roles/flush. We append a short hash of the effective mmKeys (hash
         // stays inside the family suffix so matching still works).
         const { createHash } = await import("node:crypto");
-        const mmHash = createHash("sha1")
-          .update(JSON.stringify(mmKeys))
-          .digest("hex")
-          .slice(0, 8);
+        const mmHash = createHash("sha1").update(JSON.stringify(mmKeys)).digest("hex").slice(0, 8);
         mm.name = `${baseName.replace(" Standard", " Standard MM")}-${mmHash}`;
 
         // Temporary preset in the USER profile (never touches system resources,
@@ -498,15 +494,8 @@ export function registerSlicerTools(server, z) {
           try {
             const parsed = JSON.parse(readFileSync(f, "utf8"));
             if (parsed && parsed.type !== "filament") {
-              const tmp = path.join(
-                userProcessDir,
-                `${path.basename(f, ".json")}.mm-tmp.json`,
-              );
-              writeFileSync(
-                tmp,
-                JSON.stringify({ ...parsed, type: "filament" }, null, 2),
-                "utf8",
-              );
+              const tmp = path.join(userProcessDir, `${path.basename(f, ".json")}.mm-tmp.json`);
+              writeFileSync(tmp, JSON.stringify({ ...parsed, type: "filament" }, null, 2), "utf8");
               file = tmp;
             }
           } catch {
@@ -530,10 +519,7 @@ export function registerSlicerTools(server, z) {
         argv.push("--load-settings", presets.machine, "--load-settings", tmpPreset);
         if (filaments.length) argv.push("--load-filaments", filaments.join(";"));
         if (args.filament_ids_per_object?.length) {
-          argv.push(
-            "--load-filament-ids",
-            buildFilamentIdsArg(args.filament_ids_per_object),
-          );
+          argv.push("--load-filament-ids", buildFilamentIdsArg(args.filament_ids_per_object));
         }
         // Copy the tail of base.args (--slice ... --export-3mf ... input) but
         // drop the leading --load-settings / --load-settings <machine/process>,
@@ -548,9 +534,7 @@ export function registerSlicerTools(server, z) {
         const res = await runSlicer(exe, argv, { cwd: base.cwd, timeoutMs: 6e5 });
         cleanUp();
         if (res.exitCode !== 0) {
-          return fail(
-            new Error(`Slicer exited ${res.exitCode}: ${res.stderr.slice(0, 500)}`),
-          );
+          return fail(new Error(`Slicer exited ${res.exitCode}: ${res.stderr.slice(0, 500)}`));
         }
         const artifacts = collectArtifacts(base.cwd).map((file) => ({
           file,
@@ -580,8 +564,7 @@ export function registerSlicerTools(server, z) {
             flush_into_objects: mmKeys.flush_into_objects,
             flush_into_support: mmKeys.flush_into_support,
           },
-          note:
-            "flush_volumes_matrix/vector are zeroed unless provided — tool changes leave intentional contamination (marble mixing). To get visible veining, pass a non-zero flush_volumes_matrix cell (e.g. 15) for the dirty→clean transition.",
+          note: "flush_volumes_matrix/vector are zeroed unless provided — tool changes leave intentional contamination (marble mixing). To get visible veining, pass a non-zero flush_volumes_matrix cell (e.g. 15) for the dirty→clean transition.",
         });
       } catch (error) {
         return fail(error);
@@ -655,6 +638,50 @@ export function registerSlicerTools(server, z) {
     },
   );
 
+  // ---- slicer_apply_project_settings --------------------------------------
+  server.registerTool(
+    "slicer_apply_project_settings",
+    {
+      title: "Apply print settings to a 3MF without changing geometry",
+      description:
+        "Write (gated). Updates the project settings file belonging to the currently running Anycubic Slicer Next session, selected by process_id or window_title. It does not copy/open a 3MF and never touches meshes or transforms.",
+      inputSchema: {
+        process_id: z.number().int().positive().optional(),
+        window_title: z.string().max(160).optional(),
+        settings: z.record(z.string(), z.unknown()),
+        save: z.boolean().default(true),
+        confirm: z.boolean().default(false),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async (args) => {
+      try {
+        if (args.confirm !== true)
+          throw new Error(
+            "slicer_apply_project_settings requires confirm: true. Nothing was changed.",
+          );
+        const result = applyLiveSlicerSettings({
+          process_id: args.process_id,
+          window_title: args.window_title,
+          settings: args.settings,
+          save: args.save,
+        });
+        return out({
+          ok: true,
+          ...result,
+          note: "The active session state was updated directly; no 3MF was copied, opened, scaled, moved, rotated, or rewritten.",
+        });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
   // ---- slicer_project_state ------------------------------------------------
   server.registerTool(
     "slicer_project_state",
@@ -697,9 +724,18 @@ export function registerSlicerTools(server, z) {
           if (hit) target = hit.path;
         }
         if (!target && args.window_title) {
-          const clean = args.window_title.replace(/[*+]/g, " ").replace(/\(.*?\)/g, "").trim().toLowerCase().replace(/\s+/g, "");
+          const clean = args.window_title
+            .replace(/[*+]/g, " ")
+            .replace(/\(.*?\)/g, "")
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, "");
           const hit = recentProjects.find((r) => {
-            const bn = path.basename(r.path, ".3mf").toLowerCase().replace(/[*+]/g, "").replace(/\s+/g, "");
+            const bn = path
+              .basename(r.path, ".3mf")
+              .toLowerCase()
+              .replace(/[*+]/g, "")
+              .replace(/\s+/g, "");
             return bn.includes(clean) || clean.includes(bn);
           });
           if (hit) target = hit.path;
@@ -707,9 +743,11 @@ export function registerSlicerTools(server, z) {
         if (!target) {
           return out({
             ok: false,
-            hint:
-              "No project resolved. Pass project_path, recent_index (1-18), or window_title matching a recent project.",
-            recent_projects: recentProjects.map((r) => ({ idx: r.idx, name: path.basename(r.path) })),
+            hint: "No project resolved. Pass project_path, recent_index (1-18), or window_title matching a recent project.",
+            recent_projects: recentProjects.map((r) => ({
+              idx: r.idx,
+              name: path.basename(r.path),
+            })),
           });
         }
         const { read3mf } = await import("./read-3mf.mjs");
@@ -719,12 +757,20 @@ export function registerSlicerTools(server, z) {
           return f ? f.data.toString("utf8") : null;
         };
         const fileBytes = (() => {
-          try { return statSync(target).size; } catch { return null; }
+          try {
+            return statSync(target).size;
+          } catch {
+            return null;
+          }
         })();
         const jsonOf = (name) => {
           const t = textOf(name);
           if (!t) return null;
-          try { return JSON.parse(t); } catch { return null; }
+          try {
+            return JSON.parse(t);
+          } catch {
+            return null;
+          }
         };
         // Plates metadata first (object block uses friendly names from here).
         const plates = [];
@@ -732,7 +778,9 @@ export function registerSlicerTools(server, z) {
           const pm = /^Metadata\/plate_(\d+)\.json$/.exec(f.name);
           if (pm) {
             let bbox = null;
-            try { bbox = JSON.parse(f.data.toString("utf8")); } catch {}
+            try {
+              bbox = JSON.parse(f.data.toString("utf8"));
+            } catch {}
             plates.push({ plate: pm[1], bbox });
           }
         }
@@ -757,13 +805,23 @@ export function registerSlicerTools(server, z) {
               let triangles = 0;
               if (meshFile) {
                 let ms;
-                try { ms = meshFile.data.toString("utf8"); } catch { ms = ""; }
+                try {
+                  ms = meshFile.data.toString("utf8");
+                } catch {
+                  ms = "";
+                }
                 vertices = (ms.match(/<vertex\s[^>]*>/g) || []).length;
                 triangles = (ms.match(/<triangle\s[^>]*>/g) || []).length;
               }
               components.push({ mesh: meshName, vertices, triangles });
             }
-            objects.push({ id, type, components, total_vertices: components.reduce((a, c) => a + c.vertices, 0), total_triangles: components.reduce((a, c) => a + c.triangles, 0) });
+            objects.push({
+              id,
+              type,
+              components,
+              total_vertices: components.reduce((a, c) => a + c.vertices, 0),
+              total_triangles: components.reduce((a, c) => a + c.triangles, 0),
+            });
           }
           // Prefer friendly names from plate bbox_objects when objects have no Title metadata.
           const plateNames = [];
@@ -773,7 +831,15 @@ export function registerSlicerTools(server, z) {
             }
           }
           if (objects.length === 0 || objects.every((o) => o.components.length === 0)) {
-            objects.push(...plateNames.map((n) => ({ id: "plate", type: "model", components: [{ mesh: n, vertices: 0, triangles: 0 }], total_vertices: 0, total_triangles: 0 })));
+            objects.push(
+              ...plateNames.map((n) => ({
+                id: "plate",
+                type: "model",
+                components: [{ mesh: n, vertices: 0, triangles: 0 }],
+                total_vertices: 0,
+                total_triangles: 0,
+              })),
+            );
           }
         }
         const projectCfg = jsonOf("Metadata/project_settings.config");
@@ -785,14 +851,33 @@ export function registerSlicerTools(server, z) {
           return red;
         };
         const PRINT_KEYS = [
-          "layer_height", "initial_layer_print_height", "wall_loops", "top_shell_layers",
-          "bottom_shell_layers", "sparse_infill_density", "sparse_infill_pattern",
-          "print_sequence", "brim_type", "brim_width", "enable_support", "support_type",
-          "support_interface_pattern", "tree_support_branch_diameter", "nozzle_temperature",
-          "initial_layer_print_temperature", "bed_temperature", "filament_colour",
-          "filament_type", "outer_wall_speed", "inner_wall_speed", "sparse_infill_speed",
-          "top_surface_speed", "travel_speed", "elefant_foot_compensation",
-          "xy_hole_compensation", "z_offset",
+          "layer_height",
+          "initial_layer_print_height",
+          "wall_loops",
+          "top_shell_layers",
+          "bottom_shell_layers",
+          "sparse_infill_density",
+          "sparse_infill_pattern",
+          "print_sequence",
+          "brim_type",
+          "brim_width",
+          "enable_support",
+          "support_type",
+          "support_interface_pattern",
+          "tree_support_branch_diameter",
+          "nozzle_temperature",
+          "initial_layer_print_temperature",
+          "bed_temperature",
+          "filament_colour",
+          "filament_type",
+          "outer_wall_speed",
+          "inner_wall_speed",
+          "sparse_infill_speed",
+          "top_surface_speed",
+          "travel_speed",
+          "elefant_foot_compensation",
+          "xy_hole_compensation",
+          "z_offset",
         ];
         const summary = {
           ok: true,

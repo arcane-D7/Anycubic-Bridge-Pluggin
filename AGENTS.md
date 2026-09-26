@@ -26,6 +26,8 @@ NUNCA escrever, gerar ou commitar:
 - **Firmware/versões reais observadas** como se fossem defaults de protocolo.
 - **Screenshots/captures** com dados reais fora de `docs/evidence/` (e mesmo aí,
   redigidos). `poc-output/` está gitignored por isso.
+- Scripts locais de investigação, UI automation e projetos específicos ficam em
+  `local-scripts/`, que é gitignored e excluído do sanitizer.
 
 ## 2. Paths — como fazer certo
 
@@ -84,6 +86,9 @@ node scripts/sanitize-repo.mjs --apply     # aplica
 **fixtures fictícias deliberadas** — são obviamente falsos e necessários aos testes.
 Não há problema em mantê-los. Mas **nunca** copies esses valores para código de
 produção ou docs como se fossem reais.
+
+`local-scripts/` e `renders/` também ficam em `SKIP_DIRS`: são áreas locais
+ignoradas pelo Git para experimentos e artefatos gerados.
 
 ## 7. Entry point MCP (como arrancar o servidor)
 

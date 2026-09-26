@@ -7,7 +7,7 @@
  * bruto a gravar — o ACE lê a tag como `edit_status: 0` e decrementa
  * nativamente o consumibles_percent.
  *
- * ⚠ Regra do projeto (docs/expansion-research.md §4): nunca tags de fábrica
+ * ⚠ Regra do projeto (docs/research/expansion-research.md §4): nunca tags de fábrica
  * Anycubic; apenas NTAG virgens escritas pel(a/o) utilizador(a). O formato
  * aqui é reproduzido a partir do decoder N13 + padrão observado no report do
  * ACE (SKU 17 chars, tipo material, cor RGB). O byte layout exato de fábrica

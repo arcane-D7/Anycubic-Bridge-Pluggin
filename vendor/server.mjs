@@ -1080,6 +1080,8 @@ async function inspectUia(pluginRoot3) {
   return runUiaBridge(pluginRoot3, ["-Action", "inspect"]);
 }
 var SAFE_CLICK_ALIASES = [
+  "Preparar",
+  "Prepare",
   "Fatiar Disco \xDAnico",
   "Fatiar todos",
   "Slice plate",

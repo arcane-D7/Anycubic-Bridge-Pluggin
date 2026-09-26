@@ -15,6 +15,12 @@ AnycubicSlicerNextControl/
 # POC captures — never commit account/device data (use docs/evidence for curated fixtures)
 poc-output/
 
+# Local experiments, UI automation, probes, and user-specific recovery scripts
+local-scripts/
+
+# Local CAD/render outputs
+renders/
+
 # POC captures — never commit account/device data (use docs/evidence for curated fixtures)
 poc-output/
 

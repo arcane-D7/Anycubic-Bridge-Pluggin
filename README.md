@@ -273,7 +273,7 @@ ou para perfis portáteis.
 
 Diagnóstico read-only consolidado: `node scripts/diagnose.mjs
 [--cloud|--lan <ip>|--http|--printers]` (substitui os antigos `probe-*.mjs`,
-arquivados em `scripts/archive/`).
+mantidos fora do repositório em `local-scripts/archive/`).
 
 ## Módulo CAD (modelação 3D web)
 

@@ -1,6 +1,6 @@
 # Blender headless — PoC de renderização fiel de modelos 3D
 
-> Status: **funcional** (validado em 2026-09-19 com Blender 5.2.2 LTS MSIX).
+> Status: **funcional** (validado com Blender 5.2.2 LTS MSIX).
 > Gera uma imagem PNG **geometricamente exata** de um mesh STL/OBJ/3MF — sem IA,
 > sem GUI, 100% headless. A imagem é o próprio mesh: dimensões exatas.
 
@@ -20,27 +20,27 @@
 O Blender instalado é a versão **Microsoft Store** (MSIX), o que traz duas
 peculiaridades que o PoC já trata:
 
-- O `blender.exe` dentro de `C:\Program Files\WindowsApps\...` **não pode ser
+- O `blender.exe` dentro de uma pasta `WindowsApps` **não pode ser
   executado diretamente** (Access denied — precisa de package identity).
 - O ponto de entrada correto é o **app execution alias**:
-  `C:\Users\mafsc\AppData\Local\Microsoft\WindowsApps\blender-launcher.exe`
+  `%LOCALAPPDATA%\Microsoft\WindowsApps\blender-launcher.exe`
 - O alias **não devolve stdout** quando capturado pelo PowerShell; a forma
   fiável de verificar execução é **fazer o Blender escrever ficheiros**.
   O PoC usa esse mecanismo (o PNG e o JSON de relatório são escritos pelo
   próprio Blender).
 
-### Caminho para o PoC (detetado em 2026-09-19)
+### Caminho para o PoC
 
 ```
 alias:   %LOCALAPPDATA%\Microsoft\WindowsApps\blender-launcher.exe
-pacote:  C:\Program Files\WindowsApps\BlenderFoundation.Blender_5.2.2.0_x64__ppwjx1n5r4v9t\Blender\blender.exe (inacessível diretamente)
+pacote:  instalação MSIX do Blender (inacessível diretamente em algumas versões)
 versão:  5.2.2 LTS
 ```
 
 > O `render-headless.mjs` resolve o caminho automaticamente nesta ordem:
 > 1. `BLENDER_EXE` (env var)
 > 2. `%LOCALAPPDATA%\Microsoft\WindowsApps\blender-launcher.exe` (Store)
-> 3. `C:\Program Files\Blender Foundation\Blender*\blender.exe` (instalação clássica)
+> 3. uma instalação clássica do Blender em `Program Files`
 > 4. `blender` no `PATH`
 
 ## 3. Uso

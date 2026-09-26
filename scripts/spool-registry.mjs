@@ -7,7 +7,7 @@
  * we compute remaining = initial_weight_g - Σ used_g (from cloud slice data or
  * manual entry), because the printer has no writable spool-weight field.
  *
- * Schema per spool (aligned with docs/expansion-research.md §4):
+ * Schema per spool (aligned with docs/research/expansion-research.md §4):
  *   { vendor, material, color_hex, weight_g, density, diameter, sku,
  *     tag_uid, spool_id: uuid, box_id, slot_index, notes, events[] }
  *

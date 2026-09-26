@@ -68,7 +68,7 @@ chat; apenas abre o portal e devolve instruções).
 
 Se o objetivo for só controlar uma impressora em rede local sem conta:
 `discover_printers` / `printer_status` já suportam o handshake 18910 nativo.
-Consulte `docs/expansion-research.md` (fase 1).
+Consulte `docs/research/expansion-research.md` (fase 1).
 
 ## 3. Fluxo no terminal (`node scripts/auth-login.mjs`)
 

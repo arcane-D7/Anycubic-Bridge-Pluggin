@@ -4,6 +4,7 @@
     [string]$ClickName = '',
     [string]$Text = '',
     [string]$Key = '',
+    [int]$ProcessId = 0,
     [int]$MaxDepth = 8,
     [int]$MaxChildren = 200
 )
@@ -42,7 +43,7 @@ public static class AnycubicWindowApi {
 }
 '@
 
-$processes = @(Get-Process -Name 'AnycubicSlicerNext' -ErrorAction SilentlyContinue)
+$processes = @(Get-Process -Name 'AnycubicSlicerNext' -ErrorAction SilentlyContinue | Where-Object { $ProcessId -eq 0 -or $_.Id -eq $ProcessId })
 if ($processes.Count -eq 0) {
     [pscustomobject]@{
         available = $true
@@ -249,6 +250,7 @@ switch ($Action) {
         # Safe list is ASCII-folded so "Fatiar Disco Unico" (env-var/decode
         # mangled) matches the intended "Fatiar Disco Único" (true UIA name).
         $safeFolded = @(
+            'preparar', 'prepare',
             'fatiar disco unico', 'fatiar todos',
             'fatiar 1 placa', 'fatiar todas as placas',
             'slice plate', 'slice all',
@@ -367,4 +369,3 @@ switch ($Action) {
         [pscustomobject]@{ available = $true; running = $true; error = "Unknown action: $Action" } | ConvertTo-Json -Compress
     }
 }
-

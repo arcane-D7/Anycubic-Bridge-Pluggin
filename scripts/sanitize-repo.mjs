@@ -107,7 +107,15 @@ const EVIDENCE_ONLY = [
   [/[0-9a-f]{32}(?=[^0-9a-f]|$)/gi, "<MD5>"],
 ];
 
-const SKIP_DIRS = new Set(["node_modules", "dist", ".git", "poc-output", "tests"]);
+const SKIP_DIRS = new Set([
+  "node_modules",
+  "dist",
+  ".git",
+  "poc-output",
+  "local-scripts",
+  "renders",
+  "tests",
+]);
 const SKIP_FILES = new Set([
   "package.json",
   "pnpm-lock.yaml",

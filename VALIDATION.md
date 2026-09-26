@@ -43,7 +43,7 @@ scripts/mcp-call.mjs`): all 8 new read-only tools answered against the real
 ## Expansion Batch 0 (read-only, live-validated 2026-09-11)
 
 The deep-investigation (P1–P5 → N1–N16, see
-`docs/expansion-deep-investigation-2026-09-11.md`) delivered **8 new read-only
+`docs/research/expansion-deep-investigation-2026-09-11.md`) delivered **8 new read-only
 MCP tools** in `scripts/printer-expansion-tools.mjs`:
 
 | Tool                       | Endpoint(s) used                                             | Purpose                                                    |

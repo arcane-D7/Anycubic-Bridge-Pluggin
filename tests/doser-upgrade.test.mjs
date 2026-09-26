@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { generateAll } from "../scripts/doser-precision-tool.mjs";
+import { generateAll } from "../tools/cad/doser-precision-tool.mjs";
 
 // ---------------------------------------------------------------------------
 // doser precision-upgrade parts — generation contract tests

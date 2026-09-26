@@ -12,7 +12,7 @@ disposition of everything else.
 3. Cross-check of MQTT type strings, HTTP endpoints and order ids against the
    catalogs.
 4. Comparison of the documented validated-command table
-   (`docs/expansion-research.md` §2) against the executable bus.
+   (`docs/research/expansion-research.md` §2) against the executable bus.
 
 ## Gaps found and EXPOSED (this iteration)
 
