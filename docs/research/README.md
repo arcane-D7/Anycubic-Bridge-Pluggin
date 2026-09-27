@@ -11,3 +11,6 @@ Current research areas:
 - Slicer CLI compatibility and export behavior.
 - Recovery and incident analysis.
 - Historical protocol and architecture research.
+- Native Anycubic Slicer Next, Workbench, MQTT and request-layer analysis.
+
+The native analysis report is [ghidra-slicer-analysis-2026-09-27.md](ghidra-slicer-analysis-2026-09-27.md).
