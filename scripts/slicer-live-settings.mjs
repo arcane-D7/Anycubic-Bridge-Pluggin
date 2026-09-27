@@ -146,6 +146,25 @@ export function readLiveSlicerSettings({ process_id, window_title } = {}) {
   }));
 }
 
+export function snapshotLiveSlicerSettings({ process_id, window_title } = {}) {
+  return readLiveSlicerSettings({ process_id, window_title });
+}
+
+export function rollbackLiveSlicerSettings({ process_id, window_title, snapshot }) {
+  if (!snapshot || !Array.isArray(snapshot.sessions) || !snapshot.sessions.length)
+    throw new Error("A live slicer snapshot with at least one session is required.");
+  const processes = listLiveSlicerSessions({ process_id, window_title });
+  const process = processes[0];
+  if (!process) throw new Error("No matching Anycubic Slicer Next process is running.");
+  const target = process.sessions[0];
+  const source = snapshot.sessions[0]?.sessions?.[0] ?? snapshot.sessions[0];
+  if (!target || !source?.settings) throw new Error("Snapshot does not contain restorable settings.");
+  saveSessionConfig(target.settings_file, source.settings);
+  refreshLiveSlicerProject(process.process_id);
+  const verified = readLiveSlicerSettings({ process_id: process.process_id });
+  return { process_id: process.process_id, settings_file: target.settings_file, verified };
+}
+
 function setLayerHeightViaUi(processId, value) {
   const script = path.join(process.cwd(), "scripts", "set-live-field.ps1");
   execFileSync(

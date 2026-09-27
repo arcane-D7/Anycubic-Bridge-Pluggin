@@ -11,6 +11,8 @@ The slicer control surface now distinguishes the live application session from t
 - `slicer_apply_project_settings` — gated write that updates the active session config, verifies the written keys, optionally refreshes the UI, and does not save with `Ctrl+S` by default.
 - `slicer_refresh_project` — gated `F5` refresh of the selected slicer window without saving, slicing, exporting or modifying geometry.
 - `slicer_agentic_slice` — gated workflow that synchronizes optional live settings, refreshes and reads them back, invokes the native CLI, and validates the produced 3MF before any printer operation.
+- `slicer_live_snapshot` / `slicer_live_rollback` — verified session transaction primitives.
+- `slicer_preflight` — read-only input/profile readiness check before slicing.
 
 The live settings writer accepts `_temp_1.config`, `_temp_2.config`, `_temp_3.config` and other numbered session files. It no longer assumes `_temp_3.config`.
 

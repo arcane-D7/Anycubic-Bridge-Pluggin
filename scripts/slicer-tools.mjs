@@ -31,6 +31,8 @@ import {
   applyLiveSlicerSettings,
   listLiveSlicerSessions,
   readLiveSlicerSettings,
+  rollbackLiveSlicerSettings,
+  snapshotLiveSlicerSettings,
   refreshLiveSlicerProject,
 } from "./slicer-live-settings.mjs";
 import {
@@ -680,6 +682,84 @@ export function registerSlicerTools(server, z) {
     async (args) => {
       try {
         return out({ ok: true, sessions: readLiveSlicerSettings(args) });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "slicer_live_snapshot",
+    {
+      title: "Snapshot live slicer settings",
+      description: "Read-only. Captures the current live slicer session settings for a later verified rollback.",
+      inputSchema: {
+        process_id: z.number().int().positive().optional(),
+        window_title: z.string().max(160).optional(),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    },
+    async (args) => {
+      try {
+        return out({ ok: true, snapshot: snapshotLiveSlicerSettings(args) });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "slicer_live_rollback",
+    {
+      title: "Rollback live slicer settings",
+      description: "Write (gated). Restores a snapshot from slicer_live_snapshot, refreshes the UI and verifies the restored settings. It does not save or slice.",
+      inputSchema: {
+        process_id: z.number().int().positive().optional(),
+        window_title: z.string().max(160).optional(),
+        snapshot: z.record(z.string(), z.unknown()),
+        confirm: z.boolean().default(false),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async (args) => {
+      try {
+        if (args.confirm !== true) throw new Error("slicer_live_rollback requires confirm: true. Nothing was changed.");
+        return out({ ok: true, ...rollbackLiveSlicerSettings(args) });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "slicer_preflight",
+    {
+      title: "Preflight a slicer job",
+      description: "Read-only. Verifies the input project exists, resolves machine/process/filament profiles and reports compatibility assumptions before slicing.",
+      inputSchema: {
+        input_file: z.string().min(1),
+        machine: z.string().max(120).optional(),
+        process: z.string().max(120).optional(),
+        filament: z.string().max(120).optional(),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async (args) => {
+      try {
+        const inputFile = path.resolve(args.input_file);
+        const exe = discoverSlicerExecutable();
+        if (!exe) throw new Error("Anycubic Slicer Next executable was not found.");
+        const presets = resolvePresets({ slicerExe: exe, machine: args.machine ?? "", process: args.process ?? "", filament: args.filament ?? "" });
+        return out({
+          ok: existsSync(inputFile) && !!presets.machine && !!presets.process,
+          input_file: inputFile,
+          input_exists: existsSync(inputFile),
+          executable: exe,
+          machine_profile: presets.machine,
+          process_profile: presets.process,
+          filament_profile: presets.filament ?? null,
+          ready_for_slice: existsSync(inputFile) && !!presets.machine && !!presets.process,
+        });
       } catch (error) {
         return fail(error);
       }
