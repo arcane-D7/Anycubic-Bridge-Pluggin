@@ -14,3 +14,10 @@ Current research areas:
 - Native Anycubic Slicer Next, Workbench, MQTT and request-layer analysis.
 
 The native analysis report is [ghidra-slicer-analysis-2026-09-27.md](ghidra-slicer-analysis-2026-09-27.md).
+
+- Custom slicer/editor architecture: React/Tauri shell, Blender-style object editing, non-planar
+  slicing stages, headless-Blender backend, BYOK agent harness, sandbox tiers, chat/context/global
+  memory UI, separate auth database.
+
+The custom slicer/editor investigation is
+[custom-slicer-editor-investigation-2026-09-27.md](custom-slicer-editor-investigation-2026-09-27.md).
