@@ -97,6 +97,7 @@ try {
     "run_slice_job",
     "send_to_printer",
     "slice_via_app",
+    "slicer_agentic_slice",
     "slicer_apply_project_settings",
     "slicer_component_inventory",
     "slicer_export_3mf",

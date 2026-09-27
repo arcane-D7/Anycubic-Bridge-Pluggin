@@ -217,6 +217,7 @@ test("registerSlicerTools registers the live session tools with correct gating",
   registerSlicerTools(server, z);
   const names = server.tools.map((t) => t.name).sort();
   assert.deepEqual(names, [
+    "slicer_agentic_slice",
     "slicer_apply_project_settings",
     "slicer_export_3mf",
     "slicer_live_sessions",

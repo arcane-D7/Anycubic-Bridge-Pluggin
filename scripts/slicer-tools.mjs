@@ -715,6 +715,111 @@ export function registerSlicerTools(server, z) {
   );
 
   server.registerTool(
+    "slicer_agentic_slice",
+    {
+      title: "Synchronize, verify and slice an Anycubic project",
+      description:
+        "Write (gated). Agentic workflow: resolves the live slicer session, optionally applies settings, refreshes the UI, verifies the live config, slices through the native CLI, and validates the resulting 3MF/G-code compatibility. It never sends the result to a printer.",
+      inputSchema: {
+        process_id: z.number().int().positive().optional(),
+        window_title: z.string().max(160).optional(),
+        input_file: z.string().min(1).optional(),
+        machine: z.string().max(120).optional(),
+        process: z.string().max(120).optional(),
+        filament: z.string().max(120).optional(),
+        settings: z.record(z.string(), z.unknown()).default({}),
+        output_dir: z.string().optional(),
+        plate: z.number().int().min(0).max(64).default(0),
+        output_name: z.string().max(180).optional(),
+        confirm: z.boolean().default(false),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    async (args) => {
+      try {
+        if (args.confirm !== true)
+          throw new Error("slicer_agentic_slice requires confirm: true. Nothing was changed or sliced.");
+        const sessions = listLiveSlicerSessions(args);
+        const liveProcess = sessions[0];
+        if (!liveProcess) throw new Error("No matching Anycubic Slicer Next process is running.");
+        const liveSession = liveProcess.sessions[0];
+        if (!liveSession) throw new Error("No active project session was found for the slicer process.");
+
+        let liveApply = null;
+        if (Object.keys(args.settings ?? {}).length) {
+          liveApply = applyLiveSlicerSettings({
+            process_id: liveProcess.process_id,
+            settings: args.settings,
+            save: false,
+            refresh: true,
+          });
+        } else {
+          refreshLiveSlicerProject(liveProcess.process_id);
+        }
+        const liveReadback = readLiveSlicerSettings({ process_id: liveProcess.process_id });
+        const inputFile = path.resolve(args.input_file ?? liveSession.project_origin ?? "");
+        if (!inputFile || inputFile === path.parse(inputFile).root || !existsSync(inputFile))
+          throw new Error(`Agentic workflow input project not found: ${inputFile}`);
+
+        const exe = discoverSlicerExecutable();
+        if (!exe) throw new Error("Anycubic Slicer Next executable was not found.");
+        const outputRoot = args.output_dir
+          ? path.resolve(args.output_dir)
+          : (process.env.ANYCUBIC_CONTROL_OUTPUT_ROOT ??
+            path.join(process.env.LOCALAPPDATA ?? "", "AnycubicSlicerNextControl"));
+        mkdirSync(outputRoot, { recursive: true, mode: 0o700 });
+        const presets = resolvePresets({
+          slicerExe: exe,
+          machine: args.machine ?? "",
+          process: args.process ?? "",
+          filament: args.filament ?? "",
+        });
+        if (!presets.machine || !presets.process)
+          throw new Error("Unable to resolve machine/process presets for the agentic slice.");
+        const { args: sliceArgs, cwd } = buildSliceArgs({
+          slicerExe: exe,
+          inputFile,
+          presets,
+          outputRoot,
+          target3mf: args.output_name,
+          slice: args.plate,
+          type: "gcode_3mf",
+        });
+        const res = await runSlicer(exe, sliceArgs, { cwd, timeoutMs: 6e5 });
+        if (res.exitCode !== 0)
+          return fail(new Error(`Slicer exited ${res.exitCode}: ${res.stderr.slice(0, 500)}`));
+        const artifacts = collectArtifacts(cwd).map((file) => ({
+          file,
+          compatibility: inspectCompatibility(file),
+        }));
+        if (!artifacts.length) throw new Error("Agentic slice produced no artifacts.");
+        const incompatible = artifacts.filter((artifact) => artifact.compatibility.compatible !== true);
+        return out({
+          ok: incompatible.length === 0,
+          workflow: "synchronize_verify_slice",
+          input_file: inputFile,
+          live_apply: liveApply,
+          live_readback: liveReadback,
+          exit_code: res.exitCode,
+          output_dir: cwd,
+          artifacts,
+          ready_for_printer: incompatible.length === 0,
+          warning: incompatible.length
+            ? "The slice completed, but at least one artifact failed compatibility validation. Nothing was sent to a printer."
+            : "Validated locally only. Nothing was sent to a printer.",
+        });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
     "slicer_apply_project_settings",
     {
       title: "Apply print settings to a 3MF without changing geometry",
