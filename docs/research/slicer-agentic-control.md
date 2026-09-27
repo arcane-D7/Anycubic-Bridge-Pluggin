@@ -15,6 +15,7 @@ The slicer control surface now distinguishes the live application session from t
 - `slicer_preflight` — read-only input/profile readiness check before slicing.
 - `slicer_agentic_plan` — read-only workflow planner with risk, confirmation and rollback metadata.
 - `slicer_operation_history` — read-only redacted operation history for workflow auditing.
+- `slicer_capability_catalog` — read-only distinction between confirmed surfaces and unresolved native Workbench ABI.
 
 The live settings writer accepts `_temp_1.config`, `_temp_2.config`, `_temp_3.config` and other numbered session files. It no longer assumes `_temp_3.config`.
 

@@ -846,6 +846,37 @@ export function registerSlicerTools(server, z) {
   );
 
   server.registerTool(
+    "slicer_capability_catalog",
+    {
+      title: "Describe Anycubic slicer control capabilities",
+      description: "Read-only. Returns the verified MCP/CLI/UIA surface and native binary evidence, separating confirmed capabilities from unresolved Workbench ABI items.",
+      inputSchema: {},
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async () => out({
+      ok: true,
+      confirmed: {
+        cli: ["load-settings", "load-filaments", "load-filament-ids", "slice", "export-3mf", "export-settings", "arrange", "orient"],
+        live_session: ["slicer_live_sessions", "slicer_live_settings", "slicer_live_snapshot", "slicer_apply_project_settings", "slicer_refresh_project", "slicer_live_rollback"],
+        workflows: ["slicer_preflight", "slicer_agentic_plan", "slicer_agentic_slice", "slicer_operation_history"],
+        uia: ["uia_tree", "uia_read", "uia_click", "uia_type", "uia_key"],
+        native_evidence: ["Workbench.getPackageInfo", "Workbench.registerHandler", "CloudMqtt.CreateTopic", "CloudMqtt.PushMessage", "MachMqtt_CreateClient", "mqtt_publish", "mqtt_subscribe"],
+      },
+      unresolved: [
+        "Workbench.registerHandler ABI",
+        "Workbench project apply/reload event",
+        "native in-memory preset mutation contract",
+        "native save transaction contract",
+      ],
+      safety: {
+        printer_dispatch: "separate confirmation-gated tools only",
+        native_binary_mutation: "not exposed",
+        cli_slice: "confirmation-gated and locally compatibility-validated",
+      },
+    }),
+  );
+
+  server.registerTool(
     "slicer_refresh_project",
     {
       title: "Refresh the live slicer project",

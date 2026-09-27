@@ -100,6 +100,7 @@ try {
     "slicer_agentic_plan",
     "slicer_agentic_slice",
     "slicer_apply_project_settings",
+    "slicer_capability_catalog",
     "slicer_component_inventory",
     "slicer_export_3mf",
     "slicer_live_rollback",
