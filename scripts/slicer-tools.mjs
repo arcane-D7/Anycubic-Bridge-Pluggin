@@ -767,6 +767,66 @@ export function registerSlicerTools(server, z) {
   );
 
   server.registerTool(
+    "slicer_agentic_plan",
+    {
+      title: "Plan an agentic slicer workflow",
+      description:
+        "Read-only. Produces a deterministic plan for a slicer workflow, including resolved profiles, live-session state, risk, confirmation gates, rollback availability and expected artifacts. It does not write settings, refresh the UI or slice.",
+      inputSchema: {
+        input_file: z.string().min(1),
+        process_id: z.number().int().positive().optional(),
+        window_title: z.string().max(160).optional(),
+        machine: z.string().max(120).optional(),
+        process: z.string().max(120).optional(),
+        filament: z.string().max(120).optional(),
+        settings: z.record(z.string(), z.unknown()).default({}),
+        output_dir: z.string().optional(),
+        plate: z.number().int().min(0).max(64).default(0),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async (args) => {
+      try {
+        const inputFile = path.resolve(args.input_file);
+        const exe = discoverSlicerExecutable();
+        if (!exe) throw new Error("Anycubic Slicer Next executable was not found.");
+        const presets = resolvePresets({ slicerExe: exe, machine: args.machine ?? "", process: args.process ?? "", filament: args.filament ?? "" });
+        const sessions = listLiveSlicerSessions({ process_id: args.process_id, window_title: args.window_title });
+        const live = sessions[0] ?? null;
+        const requestedSettings = Object.keys(args.settings ?? {});
+        const steps = [
+          "snapshot live session settings",
+          requestedSettings.length ? "apply requested settings" : "keep existing settings",
+          "refresh slicer project",
+          "read back and verify effective settings",
+          "run native slicer CLI",
+          "validate 3MF/G-code compatibility",
+        ];
+        return out({
+          ok: existsSync(inputFile) && !!presets.machine && !!presets.process,
+          workflow: "synchronize_verify_slice",
+          input_file: inputFile,
+          input_exists: existsSync(inputFile),
+          executable: exe,
+          profiles: { machine: presets.machine, process: presets.process, filament: presets.filament ?? null },
+          live_session_available: !!live,
+          live_process_id: live?.process_id ?? null,
+          requested_settings: requestedSettings,
+          output_dir: args.output_dir ? path.resolve(args.output_dir) : null,
+          plate: args.plate,
+          risk: requestedSettings.length ? "medium" : "low",
+          requires_confirm: true,
+          rollback_available: !!live,
+          steps,
+          ready: existsSync(inputFile) && !!presets.machine && !!presets.process,
+        });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
     "slicer_refresh_project",
     {
       title: "Refresh the live slicer project",

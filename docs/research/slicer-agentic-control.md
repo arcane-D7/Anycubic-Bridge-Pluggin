@@ -13,6 +13,7 @@ The slicer control surface now distinguishes the live application session from t
 - `slicer_agentic_slice` — gated workflow that synchronizes optional live settings, refreshes and reads them back, invokes the native CLI, and validates the produced 3MF before any printer operation.
 - `slicer_live_snapshot` / `slicer_live_rollback` — verified session transaction primitives.
 - `slicer_preflight` — read-only input/profile readiness check before slicing.
+- `slicer_agentic_plan` — read-only workflow planner with risk, confirmation and rollback metadata.
 
 The live settings writer accepts `_temp_1.config`, `_temp_2.config`, `_temp_3.config` and other numbered session files. It no longer assumes `_temp_3.config`.
 
