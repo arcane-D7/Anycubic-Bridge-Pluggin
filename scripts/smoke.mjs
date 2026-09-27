@@ -107,6 +107,7 @@ try {
     "slicer_live_settings",
     "slicer_live_snapshot",
     "slicer_multimaterial",
+    "slicer_operation_history",
     "slicer_preflight",
     "slicer_profiles",
     "slicer_project_state",

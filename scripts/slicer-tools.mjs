@@ -18,6 +18,7 @@
  * no secrets by construction).
  */
 import path from "node:path";
+import crypto from "node:crypto";
 import {
   existsSync,
   mkdirSync,
@@ -48,6 +49,7 @@ import {
   resolvePresets,
   runSlicer,
 } from "./slicer-cli.mjs";
+import { appendSlicerOperation, readSlicerOperations } from "./slicer-operation-log.mjs";
 
 function redactPlain(value) {
   return value; // no secrets in slicer CLI surface; kept for parity
@@ -827,6 +829,23 @@ export function registerSlicerTools(server, z) {
   );
 
   server.registerTool(
+    "slicer_operation_history",
+    {
+      title: "Read slicer agentic operation history",
+      description: "Read-only. Returns recent redacted agentic slicer operations, outcomes, artifacts and compatibility results.",
+      inputSchema: {
+        limit: z.number().int().min(1).max(500).default(50),
+        operation: z.string().max(80).optional(),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async (args) => {
+      try { return out({ ok: true, ...readSlicerOperations(args) }); }
+      catch (error) { return fail(error); }
+    },
+  );
+
+  server.registerTool(
     "slicer_refresh_project",
     {
       title: "Refresh the live slicer project",
@@ -889,6 +908,8 @@ export function registerSlicerTools(server, z) {
         if (!liveProcess) throw new Error("No matching Anycubic Slicer Next process is running.");
         const liveSession = liveProcess.sessions[0];
         if (!liveSession) throw new Error("No active project session was found for the slicer process.");
+        const workflowId = crypto.randomUUID();
+        appendSlicerOperation({ operation: "slicer_agentic_slice", workflow_id: workflowId, phase: "started", input_file: args.input_file, settings: args.settings, process_id: liveProcess.process_id });
 
         let liveApply = null;
         if (Object.keys(args.settings ?? {}).length) {
@@ -939,8 +960,9 @@ export function registerSlicerTools(server, z) {
         }));
         if (!artifacts.length) throw new Error("Agentic slice produced no artifacts.");
         const incompatible = artifacts.filter((artifact) => artifact.compatibility.compatible !== true);
-        return out({
+        const result = {
           ok: incompatible.length === 0,
+          workflow_id: workflowId,
           workflow: "synchronize_verify_slice",
           input_file: inputFile,
           live_apply: liveApply,
@@ -952,8 +974,11 @@ export function registerSlicerTools(server, z) {
           warning: incompatible.length
             ? "The slice completed, but at least one artifact failed compatibility validation. Nothing was sent to a printer."
             : "Validated locally only. Nothing was sent to a printer.",
-        });
+        };
+        appendSlicerOperation({ operation: "slicer_agentic_slice", workflow_id: workflowId, phase: "completed", result });
+        return out(result);
       } catch (error) {
+        try { appendSlicerOperation({ operation: "slicer_agentic_slice", phase: "failed", error: error.message }); } catch {}
         return fail(error);
       }
     },
