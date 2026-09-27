@@ -212,16 +212,19 @@ function fakeServer() {
   };
 }
 
-test("registerSlicerTools registers the 7 tools with correct gating", async () => {
+test("registerSlicerTools registers the live session tools with correct gating", async () => {
   const server = fakeServer();
   registerSlicerTools(server, z);
   const names = server.tools.map((t) => t.name).sort();
   assert.deepEqual(names, [
     "slicer_apply_project_settings",
     "slicer_export_3mf",
+    "slicer_live_sessions",
+    "slicer_live_settings",
     "slicer_multimaterial",
     "slicer_profiles",
     "slicer_project_state",
+    "slicer_refresh_project",
     "slicer_settings",
     "slicer_slice",
   ]);

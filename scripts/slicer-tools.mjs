@@ -27,7 +27,12 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { applyLiveSlicerSettings } from "./slicer-live-settings.mjs";
+import {
+  applyLiveSlicerSettings,
+  listLiveSlicerSessions,
+  readLiveSlicerSettings,
+  refreshLiveSlicerProject,
+} from "./slicer-live-settings.mjs";
 import {
   analyzeMultimaterialGcode,
   buildFilamentIdsArg,
@@ -640,6 +645,76 @@ export function registerSlicerTools(server, z) {
 
   // ---- slicer_apply_project_settings --------------------------------------
   server.registerTool(
+    "slicer_live_sessions",
+    {
+      title: "List live Anycubic slicer sessions",
+      description:
+        "Read-only. Lists running Anycubic Slicer Next processes, their temporary project sessions, origin 3MF paths and effective _temp_*.config files.",
+      inputSchema: {
+        process_id: z.number().int().positive().optional(),
+        window_title: z.string().max(160).optional(),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async (args) => {
+      try {
+        return out({ ok: true, sessions: listLiveSlicerSessions(args) });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "slicer_live_settings",
+    {
+      title: "Read effective live slicer settings",
+      description:
+        "Read-only. Returns the settings currently persisted in the live slicer session, including the selected process, project origin and _temp_*.config metadata.",
+      inputSchema: {
+        process_id: z.number().int().positive().optional(),
+        window_title: z.string().max(160).optional(),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async (args) => {
+      try {
+        return out({ ok: true, sessions: readLiveSlicerSettings(args) });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "slicer_refresh_project",
+    {
+      title: "Refresh the live slicer project",
+      description:
+        "Write (gated). Brings the selected Anycubic Slicer Next window to the foreground and sends F5 so the UI reloads the current project/session state. It does not save, slice, export or touch geometry.",
+      inputSchema: {
+        process_id: z.number().int().positive().optional(),
+        window_title: z.string().max(160).optional(),
+        confirm: z.boolean().default(false),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async (args) => {
+      try {
+        if (args.confirm !== true)
+          throw new Error("slicer_refresh_project requires confirm: true. Nothing was refreshed.");
+        const sessions = listLiveSlicerSessions(args);
+        const process = sessions[0];
+        if (!process) throw new Error("No matching Anycubic Slicer Next process is running.");
+        refreshLiveSlicerProject(process.process_id);
+        return out({ ok: true, process_id: process.process_id, refreshed: true });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
     "slicer_apply_project_settings",
     {
       title: "Apply print settings to a 3MF without changing geometry",
@@ -649,7 +724,8 @@ export function registerSlicerTools(server, z) {
         process_id: z.number().int().positive().optional(),
         window_title: z.string().max(160).optional(),
         settings: z.record(z.string(), z.unknown()),
-        save: z.boolean().default(true),
+        save: z.boolean().default(false),
+        refresh: z.boolean().default(true),
         confirm: z.boolean().default(false),
       },
       annotations: {
@@ -670,11 +746,12 @@ export function registerSlicerTools(server, z) {
           window_title: args.window_title,
           settings: args.settings,
           save: args.save,
+          refresh: args.refresh,
         });
         return out({
           ok: true,
           ...result,
-          note: "The active session state was updated directly; no 3MF was copied, opened, scaled, moved, rotated, or rewritten.",
+          note: "The active session state was updated and verified in the live _temp_*.config. UI refresh is separately reported; saving is opt-in because Ctrl+S can reapply stale in-memory values.",
         });
       } catch (error) {
         return fail(error);
