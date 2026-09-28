@@ -1,0 +1,24 @@
+# Generated / vendored / local files — never run Prettier on these
+vendor/
+dist/
+node_modules/
+poc-output/
+local-scripts/
+renders/
+reports/
+3D-Projects/
+AnycubicSlicerNextControl/
+resources/
+assets/
+*.stl
+*.3mf
+*.gcode
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.ico
+*.svg
+*.gz
+*.zip
+pnpm-lock.yaml

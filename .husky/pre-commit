@@ -1,0 +1,5 @@
+# Pre-commit: format staged files (Prettier via lint-staged) and run safety gates.
+# Fails the commit if formatting fails or the repo sanitizer flags personal data.
+pnpm exec lint-staged
+node scripts/sanitize-repo.mjs --dry-run
+git diff --check --cached
