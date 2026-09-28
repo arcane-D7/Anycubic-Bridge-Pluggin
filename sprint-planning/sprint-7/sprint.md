@@ -57,7 +57,7 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Type**             | Feature                                                                                                                                            |
 | **Estimated Effort** | M                                                                                                                                                  |
 | **Source Finding**   | Invest. Rev 2.0 §4.1 (required dep), §4.3(a) baseline, `tools/HEADLESS-RENDER.md`, §8.2 T2 row (fault containment, firewall egress deny, watchdog) |
-| **Status**           | ⏳ Planned                                                                                                                                         |
+| **Status**           | ✅ Done (commit `e7920df`, 2026-09-28)                                                                                                             |
 
 #### Context
 
@@ -69,11 +69,11 @@ external watchdog — §8.2).
 
 #### Acceptance Criteria
 
-- [ ] `crates/blender-bridge` discovery: finds pinned Blender (MSIX alias path per HEADLESS-RENDER.md, then classic install); version check against `BLENDER_VERSION` fails hard (declared requirement, not optional) with a clear UI message.
-- [ ] Transport selection: alias → JSON-over-file/binary-artifact channel fallback; classic → framed stdio preferred (`[?]` lifecycle validation pending per §4.6 — must be carried out here before the contract is declared).
-- [ ] Spawn wrapper enforces: wall-clock cap, output-size cap, killable process group, no secrets in env, scratch dir via junction, egress blocked by host firewall (documented; no self-claimed sandbox).
-- [ ] **External watchdog** process attached to every spawned Blender (mandatory §8.2) — kills on heartbeat loss; integration test kills the watchdog and asserts the child is reaped.
-- [ ] Health gate green (+ watchdog and discovery unit tests).
+- [x] `crates/blender-bridge` discovery: finds pinned Blender (MSIX alias path per HEADLESS-RENDER.md, then classic install); version check against `BLENDER_VERSION` fails hard (declared requirement, not optional) with a clear UI message.
+- [x] Transport selection: alias → JSON-over-file/binary-artifact channel fallback; classic → framed stdio preferred (`[?]` lifecycle validation pending per §4.6 — must be carried out here before the contract is declared).
+- [x] Spawn wrapper enforces: wall-clock cap, output-size cap, killable process group, no secrets in env, scratch dir via junction, egress blocked by host firewall (documented; no self-claimed sandbox).
+- [x] **External watchdog** process attached to every spawned Blender (mandatory §8.2) — kills on heartbeat loss; integration test kills the watchdog and asserts the child is reaped.
+- [x] Health gate green (+ watchdog and discovery unit tests).
 
 ### S7-002 — Framed stdio/IPC command contract (modal lifecycle + stale revisions)
 
@@ -85,7 +85,7 @@ external watchdog — §8.2).
 | **Type**             | Feature                                                                                                   |
 | **Estimated Effort** | XL                                                                                                        |
 | **Source Finding**   | Invest. Rev 2.0 §4.6 (IPC contract), §4.2 selection invariants, §3.5 journal discipline                   |
-| **Status**           | ⏳ Planned                                                                                                |
+| **Status**           | ✅ Done (commits `37922b6` + `9e699d3`, 2026-09-28)                                                       |
 
 #### Context
 
@@ -97,13 +97,13 @@ versioned wire format and explicit backpressure.
 
 #### Acceptance Criteria
 
-- [ ] Wire format v1 documented and schema-tested: `{op, params, expected_revision, session}` → `{result, new_revision, remap_table, selection_state}`; length-framed records.
-- [ ] Modal lifecycle enforced: a direct topology op outside a modal session is **rejected** (unit test).
-- [ ] Stale-revision rejection: command with stale `expected_revision` → rejected with actual revision; UI re-base path tested (never force).
-- [ ] Topology remapping: after a topology-changing op the response carries the remap table; stable editor element IDs map onto session-local Blender indices; selection invariants re-validated per round-trip.
-- [ ] Binary delta channel: geometry payloads transferred as binary deltas (artifact channel), base64-of-binary in JSON envelope or file-backed; backpressure test (queue bound stalls issuing).
-- [ ] Out-of-band BLEND modification → session invalidated with hash mismatch; re-import offered, never silent merge.
-- [ ] Health gate green.
+- [x] Wire format v1 documented and schema-tested: `{op, params, expected_revision, session}` → `{result, new_revision, remap_table, selection_state}`; length-framed records.
+- [x] Modal lifecycle enforced: a direct topology op outside a modal session is **rejected** (unit test).
+- [x] Stale-revision rejection: command with stale `expected_revision` → rejected with actual revision; UI re-base path tested (never force).
+- [x] Topology remapping: after a topology-changing op the response carries the remap table; stable editor element IDs map onto session-local Blender indices; selection invariants re-validated per round-trip.
+- [x] Binary delta channel: geometry payloads transferred as binary deltas (artifact channel), base64-of-binary in JSON envelope or file-backed; backpressure test (queue bound stalls issuing).
+- [x] Out-of-band BLEND modification → session invalidated with hash mismatch; re-import offered, never silent merge.
+- [x] Health gate green (gate EXIT:0 twice — initial + post-AC-test re-run).
 
 ### S7-003 — Parity corpus v1 (≥3 meshes, ≥20 ops) + corpus runner
 
@@ -115,7 +115,7 @@ versioned wire format and explicit backpressure.
 | **Type**             | Test                                                                                   |
 | **Estimated Effort** | L                                                                                      |
 | **Source Finding**   | Invest. Rev 2.0 §4.2 (parity corpus [SPEC]), §7.4 (native snapshot wins over renderer) |
-| **Status**           | ⏳ Planned                                                                             |
+| **Status**           | ✅ Done (commit `1e9e86a`, 2026-09-28)                                                 |
 
 #### Context
 
@@ -126,11 +126,11 @@ Native snapshots are authoritative — a renderer mismatch is a renderer bug.
 
 #### Acceptance Criteria
 
-- [ ] Corpus v1 committed under `tests/corpus/` (or equivalent): ≥3 meshes; ≥20 recorded ops spanning object mode, edit-mode selection, extrude/inset/bevel/loop-cut/knife where supported, merge/dissolve/normal recalc, transforms.
-- [ ] Each op has: native BLEND snapshot (or evaluated BMesh hash), mesh hash, selection snapshot; snapshots are the authority.
-- [ ] Runner (`pnpm run corpus`) executes the sequence via contract, asserts hashes/selection invariants after every op; a stale-selection-from-deleted-element case is in the corpus and fails if the invariant breaks.
-- [ ] In CI without Blender: runner reports SKIP-with-journal (never false-green); locally with pinned `BLENDER_VERSION` it must pass, and the run result (hash of corpus, pass/fail) is journaled in docs/evidence.
-- [ ] Health gate green (corpus SKIP path) + local corpus run green (documented in the sprint notes).
+- [x] Corpus v1 committed under `tests/corpus/` (or equivalent): ≥3 meshes; ≥20 recorded ops spanning object mode, edit-mode selection, extrude/inset/bevel/loop-cut/knife where supported, merge/dissolve/normal recalc, transforms.
+- [x] Each op has: native BLEND snapshot (or evaluated BMesh hash), mesh hash, selection snapshot; snapshots are the authority.
+- [x] Runner (`pnpm run corpus`) executes the sequence via contract, asserts hashes/selection invariants after every op; a stale-selection-from-deleted-element case is in the corpus and fails if the invariant breaks.
+- [x] In CI without Blender: runner reports SKIP-with-journal (never false-green); locally with pinned `BLENDER_VERSION` it must pass, and the run result (hash of corpus, pass/fail) is journaled in docs/evidence.
+- [x] Health gate green (corpus SKIP path) + local corpus run green (documented in the sprint notes).
 
 ### S7-004 — Viewport as a view of the live Blender scene (R3F)
 
