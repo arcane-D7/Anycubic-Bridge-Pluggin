@@ -1,0 +1,28 @@
+# Normalize all text files to LF in the repository (Prettier writes LF).
+# Checkout stays LF: matches the formatter output and avoids CRLF churn.
+* text=auto eol=lf
+
+# Declare which files are text (the above `*` covers these, but be explicit
+# for large/vendor-adjacent extensions that git may guess as binary).
+*.mjs text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.jsonc text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+
+# Binary files — never touch.
+*.stl binary
+*.3mf binary
+*.gcode binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.svg -text
+*.zip binary
+*.gz binary
