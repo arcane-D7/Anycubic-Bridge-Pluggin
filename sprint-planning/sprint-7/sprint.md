@@ -14,6 +14,15 @@
 | **Depends On**        | Sprint 6 (R0)                                                                                                                                                                                                                                               |
 | **Status**            | ✅ Done (all 6 tickets, 2026-09-28)                                                                                                                                                                                                                         |
 
+## Sprint Execution Summary
+
+- **S7-001** Blender discovery + pinned version contract (T2 limits, watchdog) — ✅ Done, commit `e7920df` (2026-09-28)
+- **S7-002** Framed stdio/IPC command contract (modal lifecycle, stale revisions) — ✅ Done, commits `37922b6` + `9e699d3` (2026-09-28)
+- **S7-003** Parity corpus v1 (≥3 meshes, ≥20 ops) + runner — ✅ Done, commit `1e9e86a` (2026-09-28)
+- **S7-004** Viewport as view of live Blender scene (R3F) — ✅ Done, commit `0ce147b` + `3d4bcdc` (2026-09-28)
+- **S7-005** Journal-based undo/recovery — ✅ Done, commit `3b1c4ce` + docs `f898504` (2026-09-28)
+- **S7-006** Import/export STL/OBJ/3MF/glTF + OCCT conversion-only tier — ✅ Done, commit `9d89dd0` (2026-09-28)
+
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
 > **MANDATORY: 100% of the tickets in this sprint MUST be completed. The sprint will
@@ -197,7 +206,7 @@ the contract.
 | **Type**             | Feature                                                                                           |
 | **Estimated Effort** | L                                                                                                 |
 | **Source Finding**   | Invest. Rev 2.0 §10 R1 (import/export list), §4.4 (STEP/IGES conversion-only, degraded bbox path) |
-| **Status**           | ✅ Done (commit `feat(s7-006)`, 2026-09-28)                                                       |
+| **Status**           | ✅ Done (commit `9d89dd0`, 2026-09-28)                                                            |
 
 #### Context
 
@@ -212,6 +221,29 @@ bbox-cuboid path ([BUG] STEP bbox) and must not be presented as real mesh→STEP
 - [x] STEP/IGES: OCCT conversion service behind the contract, clearly labeled conversion-only; mesh→STEP fidelity budget documented; the bbox-cuboid path is deprecated with a warning (no silent output).
 - [x] E2E: import fixture → transform → export → import again; geometric identity asserted.
 - [x] Health gate green.
+
+#### Implementation Notes
+
+- **Rust codecs** (`crates/blender-bridge/src/io.rs`, pure `std`, zero new deps):
+  binary STL + ASCII STL + OBJ read/write are deterministic and never panic on
+  malformed input (`IoError` typed). STL is unindexed — read-back vertex count =
+  triangles × 3, asserted in `tests/io_roundtrip.rs`. OBJ supports 1-based,
+  negative and `i/t/n` slash-suffixed indices with n-gon fan triangulation.
+- **3MF write** (`scripts/write-3mf.mjs`): minimal spec-conforming v1.0 writer
+  (fixed DOS timestamp, RFC 1950 deflate, ZIP central dir) — deterministic,
+  byte-identical for identical geometry. R0 read-only becomes read/write.
+- **STEP/IGES** (`scripts/cad-step-export.mjs`): export is conversion-only,
+  returns `conversion_only: true` + `fidelity_budget` documenting the degraded
+  bbox-cuboid path (deprecation note, error label never silent).
+- **glTF**: coverage stub in Rust (`gltf_available() == false` + `parse_gltf`
+  → Unsupported) — deliberately deferred to the R3 harness; the E2E cannot
+  silently skip it.
+- **E2E** (`tests/integration/import-export.test.mjs`, 4 tests): reader-compatible
+  3MF archive, byte-determinism, import STL → rotate → export 3MF → import again
+  with geometric identity (bbox drift < 1e-4, vertex/triangle counts preserved),
+  STEP conversion-only fallback.
+- Health gate EXIT:0 (unit 199, integration 10, Rust 35+3, smoke 106 tools,
+  e2e:ui, licenses 38, architecture, sanitize dry-run 0).
 
 ## Sprint Commit
 

@@ -27,6 +27,13 @@ Rev 2.0 (R0–R7).
   contract v1 (3 ingestion paths, fail-closed), versioned project schema + content-addressed
   artifacts, read-only loopback bridge to the preserved Node MCP server, and the separable
   auth service skeleton — see [sprint-6/sprint.md](sprint-6/sprint.md) execution summary.
+- **Sprint 7 done (2026-09-28, commit `9d89dd0`)**: R1 Blender-primary editing core —
+  Blender discovery + pinned version contract with T2 worker limits + external watchdog
+  (S7-001), framed stdio/IPC modal command contract with stale-revision handling and binary
+  deltas (S7-002), parity corpus v1 + runner (S7-003), R3F viewport as a view of the live
+  Blender scene (S7-004), journal-based undo/recovery (S7-005), and import/export
+  STL/OBJ/3MF/glTF with a conversion-only STEP/IGES tier (S7-006) — see
+  [sprint-7/sprint.md](sprint-7/sprint.md) execution summary.
 
 - **License policy (user-confirmed 2026-09-28, binding)**: direct use/implementation
   = **Apache-2.0 and MIT only**. All other licenses (GPL, AGPL, BSD-3, LGPL, MPL…)
@@ -48,7 +55,7 @@ Rev 2.0 (R0–R7).
 |   4 |    P2    | Electron packaging (plan-only)                                     |       3 | M      | ✅ Done    | [sprint](sprint-4/sprint.md)  | docs commit |
 |   5 |    P0    | Architecture + code quality (SOLID/DRY, boundaries, licenses)      |       6 | M      | ✅ Done    | [sprint](sprint-5/sprint.md)  | `c06dfd6`   |
 |   6 |    P0    | R0 foundation (Tauri 2 shell, broker, machine contract, schemas)   |       6 | L      | ✅ Done    | [sprint](sprint-6/sprint.md)  | `ee62574`   |
-|   7 |    P0    | R1 Blender-primary editing core (parity corpus, IPC, undo)         |       6 | XL     | ⏳ Planned | [sprint](sprint-7/sprint.md)  | —           |
+|   7 |    P0    | R1 Blender-primary editing core (parity corpus, IPC, undo)         |       6 | XL     | ✅ Done    | [sprint](sprint-7/sprint.md)  | `9d89dd0`   |
 |   8 |    P0    | R2 own planar core (S1 spike, IR + independent validator, preview) |       5 | XL     | ⏳ Planned | [sprint](sprint-8/sprint.md)  | —           |
 |   9 |    P0    | R3 harness v1 (BYOK, WASI sandbox, tool lifecycle, journal, chat)  |       6 | XL     | ⏳ Planned | [sprint](sprint-9/sprint.md)  | —           |
 |  10 |    P1    | R4 separable auth service + memory (fail-closed sync)              |       5 | L      | ⏳ Planned | [sprint](sprint-10/sprint.md) | —           |
