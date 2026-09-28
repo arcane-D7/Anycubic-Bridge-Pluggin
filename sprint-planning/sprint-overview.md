@@ -15,10 +15,13 @@ ticket coverage, execution order, and roadmap.
 - All runtime deps are MIT/Apache-2.0 (three, three-mesh-bvh, three-bvh-csg,
   manifold-3d, replicad, replicad-opencascadejs).
 
-### New custom slicer/editor roadmap (Sprints 5–13) — planned
+### New custom slicer/editor roadmap (Sprints 5–13) — in progress
 
 Per [custom-slicer-editor-investigation-2026-09-27.md](../docs/research/custom-slicer-editor-investigation-2026-09-27.md)
 Rev 2.0 (R0–R7).
+
+- **Sprint 5 done (2026-09-22)**: architecture + code-quality foundations — see
+  [sprint-5/sprint.md](sprint-5/sprint.md) execution summary.
 
 - **License policy (user-confirmed 2026-09-28, binding)**: direct use/implementation
   = **Apache-2.0 and MIT only**. All other licenses (GPL, AGPL, BSD-3, LGPL, MPL…)
@@ -38,7 +41,7 @@ Rev 2.0 (R0–R7).
 |   2 |    P1    | Parametric engine (Manifold + Replicad)                            |       5 | L      | ✅ Done    | [sprint](sprint-2/sprint.md)  | `6739dfc`   |
 |   3 |    P1    | AI text-to-cad (prompt → parametric script → mesh)                 |       4 | L      | ✅ Done    | [sprint](sprint-3/sprint.md)  | `df28066`   |
 |   4 |    P2    | Electron packaging (plan-only)                                     |       3 | M      | ✅ Done    | [sprint](sprint-4/sprint.md)  | docs commit |
-|   5 |    P0    | Architecture + code quality (SOLID/DRY, boundaries, licenses)      |       6 | M      | ⏳ Planned | [sprint](sprint-5/sprint.md)  | —           |
+|   5 |    P0    | Architecture + code quality (SOLID/DRY, boundaries, licenses)      |       6 | M      | ✅ Done    | [sprint](sprint-5/sprint.md)  | `c06dfd6`   |
 |   6 |    P0    | R0 foundation (Tauri 2 shell, broker, machine contract, schemas)   |       6 | L      | ⏳ Planned | [sprint](sprint-6/sprint.md)  | —           |
 |   7 |    P0    | R1 Blender-primary editing core (parity corpus, IPC, undo)         |       6 | XL     | ⏳ Planned | [sprint](sprint-7/sprint.md)  | —           |
 |   8 |    P0    | R2 own planar core (S1 spike, IR + independent validator, preview) |       5 | XL     | ⏳ Planned | [sprint](sprint-8/sprint.md)  | —           |

@@ -12,7 +12,41 @@
 | **Primary Owner**     | platform-core                                                                                                                                                                                                        |
 | **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md), Rev 2.0 §2, §4, §5, §6, §7, §8, §9, §10 + user license policy (Apache/MIT direct-use only) |
 | **Depends On**        | Sprint 4 (legacy CAD sprints 1–4 history)                                                                                                                                                                            |
-| **Status**            | ⏳ Planned                                                                                                                                                                                                           |
+| **Status**            | ✅ Complete (2026-09-28)                                                                                                                                                                                             |
+
+## Execution Summary (2026-09-28)
+
+All 6 tickets delivered. Commits: `e798c03` (style: format normalization to pinned
+prettier config) + `c06dfd6` (feat: sprint-5 deliverables).
+
+- **S5-001** `docs/editor-architecture.md` — target architecture for the new editor:
+  C4 context/container Mermaid diagrams, Tauri 2 + React 19 + Rust broker process model,
+  framed stdio IPC, capability contract JSONC v1.0, module layout, retirement boundary,
+  health-gate order. Preserved root (`docs/architecture.md`) frozen and NOT replaced.
+- **S5-002** Workspace boundaries — `apps/*` workspace member added; preserved/retired
+  split documented; `tests/boundary-tools.test.mjs` asserts `schemas/tools.json` remains
+  a superset of the smoke tool list. Fix applied while executing: `tools.json` was drifted
+  (86 vs 106 live tools) → regenerated via `tools/regen-tools-catalog.mjs` from the live
+  server; 106 tools, zero missing.
+- **S5-003** Code-quality gates — `tsconfig.json` strict (apps/editor + tests/integration),
+  `eslint.config.mjs` flat config, `.prettierrc` pinned (printWidth 100; overrides a
+  machine-global `~/.prettierrc` that made the gate non-deterministic), `knip.json` v6,
+  unified `pnpm run check` (11 gates) in `package.json`; `pnpm peers check` clean.
+- **S5-004** SOLID/DRY doctrine — `docs/solid-dry-rules.md` (SRP/OCP/ISP/DIP/DRY rules) +
+  `scripts/check-architecture.mjs` (rules: UI→no DB import, register\*Tools→shared schemas,
+  secrets only in broker/keystore, banned duplicate marker). Green.
+- **S5-005** License registry — `docs/licenses.md` (Apache/MIT policy, 25 direct deps)
+  - `scripts/check-licenses.mjs`. Legacy pre-policy allowlist with migration rows:
+    `node-forge` (BSD-3/GPL-2.0, PKI verify in `scripts/anycubic-cloud.mjs`),
+    `replicad-opencascadejs` (LGPL-2.1, STEP export), `knip` (ISC, dev-only). Green.
+- **S5-006** Unified health gate + CI — `health.yml` (windows-latest, 11 steps mirroring
+  `pnpm run check`, agnostic ANYCUBIC_* env) + `tests/integration/broker-registry.test.mjs`
+  (JS mirror of Rust broker: declareCapability/registerTools/dispatch, DIP + fail-closed).
+  Health gate executed: 192 unit + 1 integration + smoke 106 tools + e2e all green.
+
+Health check result: **all 11 gates green** — `format:check`, `lint`, `typecheck`,
+`test:unit` (192), `test:integration`, `build`, `smoke` (106), `e2e:ui`, `check:licenses`,
+`check:architecture`, sanitize dry-run (0 files).
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
