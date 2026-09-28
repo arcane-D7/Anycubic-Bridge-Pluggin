@@ -1,0 +1,57 @@
+{
+  // Bundled reference machine profile — placeholders ONLY (sanitizer-clean).
+  // Never contains real machine/account data. Copy + edit for a real machine;
+  // qualification lifecycle demotes on hardware/firmware change events.
+  "id": "reference-<MACHINE_TYPE>",
+  "machine_type": "<MACHINE_TYPE>",
+  "firmware_version": "<FW_VERSION>",
+  "qualification": "unqualified",
+  "revoked_reason": null,
+  "capabilities": [
+    {
+      "name": "build_volume_x",
+      "value": null,
+      "source_class": "src",
+      "confidence": null,
+      "tolerance": null,
+      "provenance": null,
+      "unknown": true,
+    },
+    {
+      "name": "build_volume_y",
+      "value": null,
+      "source_class": "src",
+      "confidence": null,
+      "tolerance": null,
+      "provenance": null,
+      "unknown": true,
+    },
+    {
+      "name": "build_volume_z",
+      "value": null,
+      "source_class": "src",
+      "confidence": null,
+      "tolerance": null,
+      "provenance": null,
+      "unknown": true,
+    },
+    {
+      "name": "continuous_z",
+      "value": null,
+      "source_class": "src",
+      "confidence": null,
+      "tolerance": null,
+      "provenance": null,
+      "unknown": true,
+    },
+    {
+      "name": "nozzle_diameter_mm",
+      "value": null,
+      "source_class": "src",
+      "confidence": null,
+      "tolerance": null,
+      "provenance": null,
+      "unknown": true,
+    },
+  ],
+}

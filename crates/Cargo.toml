@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
-members = ["broker"]
-default-members = ["broker"]
+members = ["broker", "machine-profile"]
+default-members = ["broker", "machine-profile"]
 
 [workspace.package]
 version = "0.1.0"

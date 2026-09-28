@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anycubic-bridge.local/schemas/machine-profile.schema.json",
+  "title": "MachineProfile v1.0 (JSONC-capable)",
+  "description": "Machine capability contract v1.0 — single source of truth for what a machine can do. Unknowns are null/'unknown', never defaults that hide ignorance. JSONC tolerated by the loader (comments stripped before strict JSON parse).",
+  "type": "object",
+  "required": ["id", "qualification", "capabilities"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Profile id — sanitizer-clean (no machine-specific literals)."
+    },
+    "machine_type": {
+      "type": ["string", "null"],
+      "examples": ["<MACHINE_TYPE>"]
+    },
+    "firmware_version": {
+      "type": ["string", "null"],
+      "examples": ["<FW_VERSION>"]
+    },
+    "qualification": {
+      "enum": ["unqualified", "shadow", "qualified"],
+      "description": "unqualified → shadow → qualified lifecycle."
+    },
+    "revoked_reason": {
+      "type": ["string", "null"],
+      "description": "Set when a hardware/firmware change event demotes the profile."
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "value", "source_class", "unknown"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "value": {
+            "description": "null = unknown — never invent a default.",
+            "oneOf": [
+              { "type": "number" },
+              { "type": "string" },
+              { "type": "boolean" },
+              { "type": "null" }
+            ]
+          },
+          "source_class": {
+            "enum": ["src", "measured", "catalog"],
+            "description": "src = manual form; measured = API/property catalog; catalog = online (hash-checked)."
+          },
+          "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+          "tolerance": { "type": ["number", "string", "null"] },
+          "provenance": { "type": ["string", "null"] },
+          "unknown": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
