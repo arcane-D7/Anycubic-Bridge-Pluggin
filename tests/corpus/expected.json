@@ -1,0 +1,258 @@
+{
+  "version": "v1",
+  "pin": "5.2.2",
+  "ops": {
+    "reset_scene": {
+      "hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "sel": {
+        "mode": "object",
+        "names": []
+      },
+      "verts": 0,
+      "polys": 0
+    },
+    "create_meshes": {
+      "hash": "4e741a93b3043cd065658c6119bb42981e88222983ac0e8a82c9418e05538b2f",
+      "sel": {
+        "mode": "object",
+        "names": ["MeshC"]
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "obj_select_a": {
+      "hash": "4e741a93b3043cd065658c6119bb42981e88222983ac0e8a82c9418e05538b2f",
+      "sel": {
+        "mode": "object",
+        "names": ["MeshA"]
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "obj_translate_a": {
+      "hash": "c5b94eeff34166454ebf0ac33b21ad0c8efc86b3397d47bb23557cc2c5eef3d1",
+      "sel": {
+        "mode": "object",
+        "names": ["MeshA"]
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "obj_rotate_a": {
+      "hash": "c5b94eeff34166454ebf0ac33b21ad0c8efc86b3397d47bb23557cc2c5eef3d1",
+      "sel": {
+        "mode": "object",
+        "names": ["MeshA"]
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "obj_scale_a": {
+      "hash": "c5b94eeff34166454ebf0ac33b21ad0c8efc86b3397d47bb23557cc2c5eef3d1",
+      "sel": {
+        "mode": "object",
+        "names": ["MeshA"]
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "obj_apply_a": {
+      "hash": "8fcc073eac15ab3e78ac55ea6ce8b253433427fcd5510105807b288141199c82",
+      "sel": {
+        "mode": "object",
+        "names": ["MeshA"]
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "enter_edit_a": {
+      "hash": "8fcc073eac15ab3e78ac55ea6ce8b253433427fcd5510105807b288141199c82",
+      "sel": {
+        "mode": "edit",
+        "object": "MeshA",
+        "verts": [0, 1, 2, 3, 4, 5, 6, 7],
+        "faces": [0, 1, 2, 3, 4, 5],
+        "edges": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "edit_select_all": {
+      "hash": "8fcc073eac15ab3e78ac55ea6ce8b253433427fcd5510105807b288141199c82",
+      "sel": {
+        "mode": "edit",
+        "object": "MeshA",
+        "verts": [0, 1, 2, 3, 4, 5, 6, 7],
+        "faces": [0, 1, 2, 3, 4, 5],
+        "edges": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "edit_extrude": {
+      "hash": "8fcc073eac15ab3e78ac55ea6ce8b253433427fcd5510105807b288141199c82",
+      "sel": {
+        "mode": "edit",
+        "object": "MeshA",
+        "verts": [0, 1, 2, 3, 4, 5, 6, 7],
+        "faces": [0, 1, 2, 3, 4, 5],
+        "edges": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "edit_inset": {
+      "hash": "8fcc073eac15ab3e78ac55ea6ce8b253433427fcd5510105807b288141199c82",
+      "sel": {
+        "mode": "edit",
+        "object": "MeshA",
+        "verts": [0, 1, 2, 3, 4, 5, 6, 7],
+        "faces": [0, 1, 2, 3, 4, 5],
+        "edges": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "edit_bevel": {
+      "hash": "8fcc073eac15ab3e78ac55ea6ce8b253433427fcd5510105807b288141199c82",
+      "sel": {
+        "mode": "edit",
+        "object": "MeshA",
+        "verts": [],
+        "faces": [],
+        "edges": []
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "edit_loop_cut": {
+      "hash": "8fcc073eac15ab3e78ac55ea6ce8b253433427fcd5510105807b288141199c82",
+      "sel": {
+        "mode": "edit",
+        "object": "MeshA",
+        "verts": [],
+        "faces": [],
+        "edges": []
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "edit_merge_doubles": {
+      "hash": "8fcc073eac15ab3e78ac55ea6ce8b253433427fcd5510105807b288141199c82",
+      "sel": {
+        "mode": "edit",
+        "object": "MeshA",
+        "verts": [],
+        "faces": [],
+        "edges": []
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "edit_dissolve_edges": {
+      "hash": "8fcc073eac15ab3e78ac55ea6ce8b253433427fcd5510105807b288141199c82",
+      "sel": {
+        "mode": "edit",
+        "object": "MeshA",
+        "verts": [],
+        "faces": [],
+        "edges": []
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "edit_recalc_normals": {
+      "hash": "8fcc073eac15ab3e78ac55ea6ce8b253433427fcd5510105807b288141199c82",
+      "sel": {
+        "mode": "edit",
+        "object": "MeshA",
+        "verts": [],
+        "faces": [],
+        "edges": []
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "edit_select_subset": {
+      "hash": "8fcc073eac15ab3e78ac55ea6ce8b253433427fcd5510105807b288141199c82",
+      "sel": {
+        "mode": "edit",
+        "object": "MeshA",
+        "verts": [0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 16, 17, 20, 21, 25, 26, 27],
+        "faces": [],
+        "edges": []
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "edit_delete_verts": {
+      "hash": "8fcc073eac15ab3e78ac55ea6ce8b253433427fcd5510105807b288141199c82",
+      "sel": {
+        "mode": "edit",
+        "object": "MeshA",
+        "verts": [],
+        "faces": [],
+        "edges": []
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "edit_transform_selected": {
+      "hash": "8fcc073eac15ab3e78ac55ea6ce8b253433427fcd5510105807b288141199c82",
+      "sel": {
+        "mode": "edit",
+        "object": "MeshA",
+        "verts": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        "faces": [0, 1, 2],
+        "edges": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+      },
+      "verts": 538,
+      "polys": 544
+    },
+    "exit_edit_a": {
+      "hash": "0d6910bf3f88c01f07d7c55ca42b655e4bcdf08563b5389ee97cfaa71e136c17",
+      "sel": {
+        "mode": "object",
+        "names": ["MeshA"]
+      },
+      "verts": 541,
+      "polys": 541
+    },
+    "obj_duplicate_c": {
+      "hash": "aa5bc93dd7a35fcf9c5a417e95fd79ab6cede331c4dd0b161da035f5d2c36097",
+      "sel": {
+        "mode": "object",
+        "names": ["MeshC.001"]
+      },
+      "verts": 1023,
+      "polys": 1053
+    },
+    "obj_join_cc": {
+      "hash": "725735578f095ca574fa61de4a4bd62bb76b5c8a26f58d5a7f2c3ed85a269ca1",
+      "sel": {
+        "mode": "object",
+        "names": ["MeshC"]
+      },
+      "verts": 1023,
+      "polys": 1053
+    },
+    "obj_scale_b": {
+      "hash": "725735578f095ca574fa61de4a4bd62bb76b5c8a26f58d5a7f2c3ed85a269ca1",
+      "sel": {
+        "mode": "object",
+        "names": ["MeshB"]
+      },
+      "verts": 1023,
+      "polys": 1053
+    },
+    "final_snapshot": {
+      "hash": "725735578f095ca574fa61de4a4bd62bb76b5c8a26f58d5a7f2c3ed85a269ca1",
+      "sel": {
+        "mode": "object",
+        "names": ["MeshB"]
+      },
+      "verts": 1023,
+      "polys": 1053
+    }
+  }
+}

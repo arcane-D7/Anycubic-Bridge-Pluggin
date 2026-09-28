@@ -1,0 +1,39 @@
+{
+  "version": "v1",
+  "blender_pin": "5.2.2",
+  "description": "S7-003 parity corpus — R1-row matrix: object mode, edit-mode selection, extrude/inset/bevel/loop-cut/knife(bisect), merge/dissolve/normal recalc, transforms, delete-with-selection-invariant.",
+  "helpers": {
+    "canonical_hash": "sha256 over sorted per-object JSON {name, verts(rounded 6dp), polys, world_matrix(rounded 6dp)}; selection = sorted selected vert indices (edit) or sorted selected object names (object mode)"
+  },
+  "meshes": [
+    { "id": "MeshA", "generator": "cube", "size": 2 },
+    { "id": "MeshB", "generator": "cylinder", "radius": 1, "depth": 2, "segments": 24 },
+    { "id": "MeshC", "generator": "uv_sphere", "radius": 1, "segments": 32, "rings": 16 }
+  ],
+  "ops": [
+    { "id": "reset_scene", "kind": "object" },
+    { "id": "create_meshes", "kind": "object" },
+    { "id": "obj_select_a", "kind": "object" },
+    { "id": "obj_translate_a", "kind": "object" },
+    { "id": "obj_rotate_a", "kind": "object" },
+    { "id": "obj_scale_a", "kind": "object" },
+    { "id": "obj_apply_a", "kind": "object" },
+    { "id": "enter_edit_a", "kind": "edit" },
+    { "id": "edit_select_all", "kind": "edit_selection" },
+    { "id": "edit_extrude", "kind": "edit_topology", "distance": 0.3 },
+    { "id": "edit_inset", "kind": "edit_topology", "thickness": 0.2 },
+    { "id": "edit_bevel", "kind": "edit_topology", "offset": 0.1 },
+    { "id": "edit_loop_cut", "kind": "edit_topology", "z": 0.5 },
+    { "id": "edit_merge_doubles", "kind": "edit_topology", "distance": 0.001 },
+    { "id": "edit_dissolve_edges", "kind": "edit_topology" },
+    { "id": "edit_recalc_normals", "kind": "edit_topology" },
+    { "id": "edit_select_subset", "kind": "edit_selection", "z_min": 0.1 },
+    { "id": "edit_delete_verts", "kind": "edit_selection", "deleted": true },
+    { "id": "edit_transform_selected", "kind": "edit_topology", "dx": 0.3 },
+    { "id": "exit_edit_a", "kind": "object" },
+    { "id": "obj_duplicate_c", "kind": "object" },
+    { "id": "obj_join_cc", "kind": "object" },
+    { "id": "obj_scale_b", "kind": "object" },
+    { "id": "final_snapshot", "kind": "object" }
+  ]
+}

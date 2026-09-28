@@ -38,6 +38,8 @@ apps/*/src-tauri/target/
 
 # Blender scratch / external prerequisite artifacts — never commit
 *.blend
+# Transient corpus runner control file (recreated on each run)
+tests/corpus/.control.json
 *.blend1
 apps/*/dist/
 apps/*/node_modules/

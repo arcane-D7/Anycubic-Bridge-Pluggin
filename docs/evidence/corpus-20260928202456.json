@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "blender_version": "5.2.2 LTS",
+  "exe": "MsixAlias/blender-launcher.exe",
+  "ops": 24,
+  "final_hash": "725735578f095ca5",
+  "manifest_hash": "bc27e4ebd6c84f88"
+}
