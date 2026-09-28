@@ -124,8 +124,7 @@ impl ProfileStore {
         }
         for cap in &mut p.capabilities {
             cap.source_class = SourceClass::Catalog;
-            cap.provenance =
-                Some(format!("catalog@{catalog_version}#{}", &sha256[..8]));
+            cap.provenance = Some(format!("catalog@{catalog_version}#{}", &sha256[..8]));
             if cap.confidence.is_none() {
                 cap.confidence = Some(0.8);
             }
@@ -179,7 +178,10 @@ mod tests {
             .ingest_catalog(demo_profile(), "2026.09", &hs, false)
             .unwrap(); // verify-only: ok
         let err = store.ingest_catalog(demo_profile(), "2026.09", &hs, true);
-        assert!(matches!(err, Err(StoreError::Conflict(_))), "catalog must not silently override manual");
+        assert!(
+            matches!(err, Err(StoreError::Conflict(_))),
+            "catalog must not silently override manual"
+        );
     }
 
     #[test]

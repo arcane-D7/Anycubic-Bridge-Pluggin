@@ -3,14 +3,13 @@
 //! real Blender still exercises the watchdog path.
 
 use blender_bridge::discovery::{BlenderInstall, InstallKind};
-use blender_bridge::spawn::{SpawnError, SpawnOptions, spawn_blender};
+use blender_bridge::spawn::{spawn_blender, SpawnError, SpawnOptions};
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
 
 fn fake_blender_install(label: &str, heartbeat: bool) -> BlenderInstall {
-    let dir =
-        std::env::temp_dir().join(format!("bb-test-{label}-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("bb-test-{label}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).expect("create temp");
     let shim = dir.join("blender.cmd");
     let body = if heartbeat {
@@ -58,8 +57,7 @@ fn watchdog_reaps_child_on_heartbeat_loss() {
                     .map(|o| String::from_utf8_lossy(&o.stdout).to_string())
                     .unwrap_or_default();
                 // "INFO: No tasks are running" means not alive.
-                alive = out.contains(&format!("{pid}"))
-                    && !out.contains("No tasks are running");
+                alive = out.contains(&format!("{pid}")) && !out.contains("No tasks are running");
                 if !alive {
                     break;
                 }

@@ -71,7 +71,10 @@ pub enum ProfileError {
     /// Fail-closed: capability `{capability}` required by feature but not
     /// declared on profile `{profile_id}`.
     #[error("capability '{capability}' not declared on profile '{profile_id}'")]
-    MissingCapability { capability: String, profile_id: String },
+    MissingCapability {
+        capability: String,
+        profile_id: String,
+    },
     #[error("profile '{0}' has no capability named '{1}'")]
     UnnamedCapability(String, String),
 }
@@ -204,6 +207,13 @@ mod tests {
     fn build_volume_present_only_when_all_three() {
         let p = base_profile();
         let v = p.build_volume().unwrap();
-        assert_eq!(v, Volume { x: 220.0, y: 220.0, z: 250.0 });
+        assert_eq!(
+            v,
+            Volume {
+                x: 220.0,
+                y: 220.0,
+                z: 250.0
+            }
+        );
     }
 }

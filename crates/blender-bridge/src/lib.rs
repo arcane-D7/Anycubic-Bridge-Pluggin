@@ -15,8 +15,8 @@ pub mod discovery;
 pub mod ipc;
 pub mod spawn;
 
-pub use discovery::{BlenderInstall, DiscoveryError, InstallKind, resolve};
+pub use discovery::{resolve, BlenderInstall, DiscoveryError, InstallKind};
 pub use spawn::{
-    BlenderWorker, CapturedOutput, SpawnError, SpawnOptions, Transport, spawn_blender,
-    transport_for,
+    spawn_blender, transport_for, BlenderWorker, CapturedOutput, SpawnError, SpawnOptions,
+    Transport,
 };

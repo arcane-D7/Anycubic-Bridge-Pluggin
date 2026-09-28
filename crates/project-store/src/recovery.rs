@@ -46,7 +46,10 @@ impl RecoveryStore {
     /// Write a snapshot at the current revision.
     pub fn snapshot(&self, snap: &Snapshot) -> Result<(), SnapshotError> {
         let data = serde_json::to_vec_pretty(snap)?;
-        fs::write(self.snap_dir.join(format!("{}.json", snap.project_id)), data)?;
+        fs::write(
+            self.snap_dir.join(format!("{}.json", snap.project_id)),
+            data,
+        )?;
         Ok(())
     }
 
@@ -62,7 +65,12 @@ impl RecoveryStore {
 
     /// Replay: re-append journal ops that are newer than the snapshot revision.
     /// Returns ops appended during recovery (0 when snapshot is current).
-    pub fn replay_after(&self, project_id: &str, snapshot_rev: u64, op_types: &[&str]) -> Result<u64, SnapshotError> {
+    pub fn replay_after(
+        &self,
+        project_id: &str,
+        snapshot_rev: u64,
+        op_types: &[&str],
+    ) -> Result<u64, SnapshotError> {
         let current = self.journal.revision(project_id)?;
         if current <= snapshot_rev {
             return Ok(0);
@@ -116,8 +124,14 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let store = new_store(dir.path());
         // commit ops BEFORE the snapshot — they are the "last committed revision"
-        store.journal.append("proj-kill", "add_object", r#"{"id":"o1"}"#).unwrap();
-        store.journal.append("proj-kill", "add_object", r#"{"id":"o2"}"#).unwrap();
+        store
+            .journal
+            .append("proj-kill", "add_object", r#"{"id":"o1"}"#)
+            .unwrap();
+        store
+            .journal
+            .append("proj-kill", "add_object", r#"{"id":"o2"}"#)
+            .unwrap();
         // autosave snapshot at the current revision
         let rev = store.journal.revision("proj-kill").unwrap();
         store

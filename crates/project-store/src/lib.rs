@@ -97,7 +97,12 @@ impl Journal {
     }
 
     /// Append an op; returns its seq (next after current max).
-    pub fn append(&self, project_id: &str, op_type: &str, payload: &str) -> Result<u64, ProjectError> {
+    pub fn append(
+        &self,
+        project_id: &str,
+        op_type: &str,
+        payload: &str,
+    ) -> Result<u64, ProjectError> {
         let seq = self.db.max_op_seq(project_id)? + 1;
         self.db.append_op(project_id, seq, op_type, payload)?;
         Ok(seq)
@@ -154,7 +159,9 @@ mod tests {
         let seq = journal.append("p", "add_object", r#"{"id":"o1"}"#).unwrap();
         assert_eq!(seq, 1);
         assert_eq!(journal.revision("p").unwrap(), 1);
-        let seq2 = journal.append("p", "move_object", r#"{"id":"o1","dz":2}"#).unwrap();
+        let seq2 = journal
+            .append("p", "move_object", r#"{"id":"o1","dz":2}"#)
+            .unwrap();
         assert_eq!(seq2, 2);
     }
 }

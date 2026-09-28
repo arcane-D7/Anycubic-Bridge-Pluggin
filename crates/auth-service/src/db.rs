@@ -251,18 +251,31 @@ mod tests {
         let mut db = AuthDb::open(&path).unwrap();
         db.upsert_user("u1", "Editor User").unwrap();
         db.grant_scope("u1", Scope::CloudSynced).unwrap();
-        db.record_sync(&Principal::Local { user_id: "u1".into() }, "cloud", 7)
-            .unwrap();
+        db.record_sync(
+            &Principal::Local {
+                user_id: "u1".into(),
+            },
+            "cloud",
+            7,
+        )
+        .unwrap();
         // Reopen and prove persistence.
         let db2 = AuthDb::open(&path).unwrap();
         assert_eq!(
-            db2.scopes_for(&Principal::Local { user_id: "u1".into() })
-                .unwrap(),
+            db2.scopes_for(&Principal::Local {
+                user_id: "u1".into()
+            })
+            .unwrap(),
             vec![Scope::CloudSynced]
         );
         assert_eq!(
-            db2.sync_state(&Principal::Local { user_id: "u1".into() }, "cloud")
-                .unwrap(),
+            db2.sync_state(
+                &Principal::Local {
+                    user_id: "u1".into()
+                },
+                "cloud"
+            )
+            .unwrap(),
             SyncState::Synced { revision: 7 }
         );
     }
@@ -284,9 +297,14 @@ mod tests {
     fn unknown_scope_reads_empty_synced() {
         let mut db = AuthDb::open_in_memory().unwrap();
         db.upsert_user("u1", "Editor User").unwrap();
-        let principal = Principal::Local { user_id: "u1".into() };
+        let principal = Principal::Local {
+            user_id: "u1".into(),
+        };
         assert_eq!(db.scopes_for(&principal).unwrap(), vec![]);
-        assert_eq!(db.sync_state(&principal, "cloud").unwrap(), SyncState::Empty);
+        assert_eq!(
+            db.sync_state(&principal, "cloud").unwrap(),
+            SyncState::Empty
+        );
     }
 
     #[test]
@@ -313,9 +331,7 @@ mod tests {
         };
         let mut all: Vec<String> = Vec::new();
         for t in &tables {
-            let mut stmt = conn
-                .prepare(&format!("PRAGMA table_info({t})"))
-                .unwrap();
+            let mut stmt = conn.prepare(&format!("PRAGMA table_info({t})")).unwrap();
             let cols: Vec<String> = stmt
                 .query_map([], |r| r.get::<_, String>(1))
                 .unwrap()
@@ -326,9 +342,16 @@ mod tests {
         // Raw credential material patterns — note `_hash` columns are OK.
         let raw_credential = |c: &str| {
             let lower = c.to_lowercase();
-            ["password", "secret", "access_token", "cloud_token", "printer_key", "token"]
-                .iter()
-                .any(|pat| lower.contains(pat))
+            [
+                "password",
+                "secret",
+                "access_token",
+                "cloud_token",
+                "printer_key",
+                "token",
+            ]
+            .iter()
+            .any(|pat| lower.contains(pat))
                 && !lower.ends_with("_hash")
         };
         assert!(

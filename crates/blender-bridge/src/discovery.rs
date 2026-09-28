@@ -37,7 +37,10 @@ pub enum DiscoveryError {
         expected: String,
     },
     #[error("cannot stat candidate `{path}`: {source}")]
-    Stat { path: String, source: std::io::Error },
+    Stat {
+        path: String,
+        source: std::io::Error,
+    },
 }
 
 /// How the located Blender was installed; selects the transport.
@@ -115,12 +118,10 @@ pub fn candidates() -> Vec<PathBuf> {
 
     // MSIX app execution alias (Store). lstat-based presence (EACCES on stat).
     if let Ok(local_app_data) = env::var("LOCALAPPDATA") {
-        out.push(
-            PathBuf::from(format!(
-                "{}\\Microsoft\\WindowsApps\\blender-launcher.exe",
-                local_app_data.trim_end_matches('\\')
-            )),
-        );
+        out.push(PathBuf::from(format!(
+            "{}\\Microsoft\\WindowsApps\\blender-launcher.exe",
+            local_app_data.trim_end_matches('\\')
+        )));
     }
 
     // Classic installs under Program Files.
@@ -213,12 +214,10 @@ fn query_version(exe: &Path) -> Result<String, DiscoveryError> {
         .arg("--factory-startup")
         .arg("--python")
         .arg(&script);
-    let status = cmd
-        .status()
-        .map_err(|source| DiscoveryError::Spawn {
-            bin: exe.display().to_string(),
-            source,
-        })?;
+    let status = cmd.status().map_err(|source| DiscoveryError::Spawn {
+        bin: exe.display().to_string(),
+        source,
+    })?;
     if !status.success() {
         // On MSIX aliases the exit code is 0 but stdout is swallowed; the file
         // is the source of truth.
@@ -280,14 +279,16 @@ mod tests {
         env::set_var("LOCALAPPDATA", env::temp_dir());
         let cs = candidates();
         assert!(
-            cs.iter().any(|p| p.to_string_lossy().contains("blender-launcher.exe")),
+            cs.iter()
+                .any(|p| p.to_string_lossy().contains("blender-launcher.exe")),
             "expected msix alias candidate in {cs:?}"
         );
     }
 
     #[test]
     fn classify_distinguishes_alias_and_classic() {
-        let alias = Path::new("C:/Users/x/AppData/Local/Microsoft/WindowsApps/blender-launcher.exe");
+        let alias =
+            Path::new("C:/Users/x/AppData/Local/Microsoft/WindowsApps/blender-launcher.exe");
         assert_eq!(classify(alias), InstallKind::MsixAlias);
         let classic = Path::new("C:/Program Files/Blender Foundation/Blender 5.2/blender.exe");
         assert_eq!(classify(classic), InstallKind::Classic);

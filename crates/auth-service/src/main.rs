@@ -59,21 +59,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn handle(db: &mut AuthDb, op: &str, req: &serde_json::Value) -> serde_json::Value {
     match op {
-        "who" => json_ok(
-            match db.users() {
-                Ok(users) => users,
-                Err(e) => return json_err("who", &format!("{e}")),
-            },
-        ),
+        "who" => json_ok(match db.users() {
+            Ok(users) => users,
+            Err(e) => return json_err("who", &format!("{e}")),
+        }),
         "scopes" => {
             let principal = principal_of(req);
             match db.scopes_for(&principal) {
-                Ok(scopes) => json_ok(
-                    scopes
-                        .iter()
-                        .map(|s| scope_name(*s))
-                        .collect::<Vec<_>>(),
-                ),
+                Ok(scopes) => json_ok(scopes.iter().map(|s| scope_name(*s)).collect::<Vec<_>>()),
                 Err(e) => json_err("scopes", &format!("{e}")),
             }
         }
@@ -112,9 +105,13 @@ fn handle(db: &mut AuthDb, op: &str, req: &serde_json::Value) -> serde_json::Val
             if let Err(e) = db.upsert_user(user, user) {
                 return json_err("record_sync", &format!("{e}"));
             }
-            let principal = Principal::Local { user_id: user.to_string() };
+            let principal = Principal::Local {
+                user_id: user.to_string(),
+            };
             match db.record_sync(&principal, scope, revision) {
-                Ok(()) => serde_json::json!({ "ok": "recorded", "scope": scope, "revision": revision }),
+                Ok(()) => {
+                    serde_json::json!({ "ok": "recorded", "scope": scope, "revision": revision })
+                }
                 Err(e) => json_err("record_sync", &format!("{e}")),
             }
         }
@@ -124,7 +121,9 @@ fn handle(db: &mut AuthDb, op: &str, req: &serde_json::Value) -> serde_json::Val
 
 fn principal_of(req: &serde_json::Value) -> Principal {
     match req.get("user").and_then(|v| v.as_str()) {
-        Some(u) if !u.is_empty() => Principal::Local { user_id: u.to_string() },
+        Some(u) if !u.is_empty() => Principal::Local {
+            user_id: u.to_string(),
+        },
         _ => Principal::Anonymous,
     }
 }
@@ -160,10 +159,7 @@ fn sync_name(state: SyncState) -> &'static str {
     }
 }
 
-fn send(
-    out: &mut impl Write,
-    value: serde_json::Value,
-) -> Result<(), Box<dyn std::error::Error>> {
+fn send(out: &mut impl Write, value: serde_json::Value) -> Result<(), Box<dyn std::error::Error>> {
     writeln!(out, "{}", value)?;
     out.flush()?;
     Ok(())

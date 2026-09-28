@@ -199,7 +199,8 @@ fn knows_secret(key: &str, value: &str) -> bool {
 /// Create a junction-like scratch dir (temp, cleaned on drop of the worker).
 fn make_scratch(label: &str) -> Result<PathBuf, SpawnError> {
     let base = std::env::temp_dir().join(format!("blender-bridge-{label}-{}", std::process::id()));
-    std::fs::create_dir_all(&base).map_err(|e| SpawnError::Scratch(format!("{}: {e}", base.display())))?;
+    std::fs::create_dir_all(&base)
+        .map_err(|e| SpawnError::Scratch(format!("{}: {e}", base.display())))?;
     Ok(base)
 }
 
@@ -250,12 +251,10 @@ pub fn spawn_blender(
     }
 
     // 2. spawn (killable group handled on drop / watchdog)
-    let child = cmd
-        .spawn()
-        .map_err(|e| SpawnError::Io {
-            bin: install.exe.display().to_string(),
-            source: e,
-        })?;
+    let child = cmd.spawn().map_err(|e| SpawnError::Io {
+        bin: install.exe.display().to_string(),
+        source: e,
+    })?;
     let pid = child.id();
 
     // 3. external watchdog: the spawned worker MUST update the heartbeat file
@@ -381,7 +380,9 @@ impl BlenderWorker {
                     if start.elapsed().as_millis() as u64 > wall_clock_ms {
                         self.kill_tree();
                         self.child.wait().ok();
-                        return Err(SpawnError::WallClock { millis: wall_clock_ms });
+                        return Err(SpawnError::WallClock {
+                            millis: wall_clock_ms,
+                        });
                     }
                     if self.kill_flag.load(Ordering::SeqCst) {
                         self.kill_tree();

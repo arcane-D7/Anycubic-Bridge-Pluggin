@@ -16,7 +16,10 @@ pub enum MigrationError {
     #[error("schema is newer ({found}) than this build ({SCHEMA_VERSION})")]
     NewerSchema { found: i64 },
     #[error("failed to apply migration v{version}: {source}")]
-    Apply { version: i64, source: rusqlite::Error },
+    Apply {
+        version: i64,
+        source: rusqlite::Error,
+    },
 }
 
 /// A checked, single-writer handle to the workspace DB.
@@ -203,7 +206,11 @@ impl DbHandle {
     /// Look up an artifact path by hash.
     pub fn artifact_path(&self, sha256: &str) -> Result<Option<String>, rusqlite::Error> {
         self.conn
-            .query_row("SELECT path FROM artifacts WHERE sha256 = ?1", [sha256], |r| r.get(0))
+            .query_row(
+                "SELECT path FROM artifacts WHERE sha256 = ?1",
+                [sha256],
+                |r| r.get(0),
+            )
             .map(Some)
             .or_else(|e| match e {
                 rusqlite::Error::QueryReturnedNoRows => Ok(None),
@@ -228,7 +235,8 @@ mod tests {
         let db = DbHandle::open_in_memory().expect("migrate ok");
         assert_eq!(db.schema_version().unwrap(), 2);
         db.create_project("p-1", "demo").unwrap();
-        db.append_op("p-1", 1, "add_object", r#"{"id":"o-1"}"#).unwrap();
+        db.append_op("p-1", 1, "add_object", r#"{"id":"o-1"}"#)
+            .unwrap();
         assert_eq!(db.max_op_seq("p-1").unwrap(), 1);
         assert_eq!(db.slicing_mode("p-1").unwrap(), "standard"); // default
         assert!(db.set_slicing_mode("p-1", "bogus").is_err()); // validated
@@ -275,7 +283,10 @@ mod tests {
         assert_eq!(db.schema_version().unwrap(), 2);
         assert_eq!(db.slicing_mode("legacy-1").unwrap(), "standard");
         // data survived
-        let n: i64 = db.conn.query_row("SELECT count(*) FROM projects", [], |r| r.get(0)).unwrap();
+        let n: i64 = db
+            .conn
+            .query_row("SELECT count(*) FROM projects", [], |r| r.get(0))
+            .unwrap();
         assert_eq!(n, 1);
     }
 

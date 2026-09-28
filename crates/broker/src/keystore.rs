@@ -108,7 +108,10 @@ mod tests {
         assert_eq!(ks.get("anycubic-cloud").unwrap().0, "k-1");
         assert_eq!(ks.list(), vec!["anycubic-cloud".to_string()]);
         ks.delete("anycubic-cloud").unwrap();
-        assert!(matches!(ks.get("anycubic-cloud"), Err(KeystoreError::NotFound(_))));
+        assert!(matches!(
+            ks.get("anycubic-cloud"),
+            Err(KeystoreError::NotFound(_))
+        ));
     }
 
     #[test]
@@ -125,9 +128,9 @@ mod tests {
         let has_secrets_table: bool = {
             use rusqlite::Connection;
             let conn = Connection::open_in_memory().unwrap();
-            let mut stmt = conn.prepare(
-                "SELECT count(*) FROM sqlite_master WHERE type='table' AND name=?1",
-            ).unwrap();
+            let mut stmt = conn
+                .prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name=?1")
+                .unwrap();
             let n: i64 = stmt.query_row(["secrets"], |r| r.get(0)).unwrap();
             n > 0
         };
