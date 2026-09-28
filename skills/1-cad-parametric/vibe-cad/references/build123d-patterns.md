@@ -95,7 +95,7 @@ Trim leads/overhang with an intersect against a big box if a part pokes through
 
 **A photo can correct an EST a datasheet can't.** This session a board guessed at
 16×15 with the hole pair on the long edge turned out (from one clear board photo)
-to be **16×12 with the castellated pads on a *short* edge** — which flips the
+to be **16×12 with the castellated pads on a _short_ edge** — which flips the
 whole interior layout and the FOV axis mapping. When the user sends a real photo,
 re-measure the outline/feature edges off it and re-derive; don't keep the EST.
 
@@ -106,7 +106,7 @@ re-measure the outline/feature edges off it and re-derive; don't keep the EST.
 - The **dimensioned X–Z cross-section** is the real review view — it shows the
   stack-up and clearances unambiguously. Run the shipped
   `skills/vibe-cad/scripts/section.py <model>.py [--y <mm>]` — it slices the
-  *real* `fit_solids()` geometry to outlines (one color per solid), not a
+  _real_ `fit_solids()` geometry to outlines (one color per solid), not a
   param-block cartoon; a model-level `DIMS: dict[label, mm]` prints as a
   dimension table in the margin.
 - For interactive 3D, use the **CAD Viewer** (`references/cad-viewer.md`), not
@@ -114,7 +114,7 @@ re-measure the outline/feature edges off it and re-derive; don't keep the EST.
 - **Boolean-section the `build_fit()` compound** to eyeball internal stack-ups the
   2D `section.py` schematic can't show (a cover rib landing on a real connector, a
   screw-boss stack, lead clearance under a lid). Cut every child against a
-  half-space box and snapshot the cut — it slices the *real vendor geometry*, not a
+  half-space box and snapshot the cut — it slices the _real vendor geometry_, not a
   param-block cartoon:
 
   ```python
@@ -140,15 +140,15 @@ certain "the board doesn't cross the wall" answer.
 
 ## Design-for-fabrication gotchas (caught this session)
 
-- **Make the geometry self-locate the part (poka-yoke); let adhesive only *fix*,
-  never *locate*.** A hand assembler has no jig — the print must register the part
-  so it *can't* go in wrong. A bore sized to a round can (`OD_max + ~0.5` clearance)
+- **Make the geometry self-locate the part (poka-yoke); let adhesive only _fix_,
+  never _locate_.** A hand assembler has no jig — the print must register the part
+  so it _can't_ go in wrong. A bore sized to a round can (`OD_max + ~0.5` clearance)
   self-centers it on the window axis, and the part lands on the bore rim so the
-  **seat height comes for free**; an *asymmetric* stop wall against one board edge
+  **seat height comes for free**; an _asymmetric_ stop wall against one board edge
   fixes rotation (poka-yoke against a flipped sensor whose wide/tall FOV would
   transpose). Hot glue / VHB then just holds it — a glue-only mount with no locating
   feature drifts. (This replaced two flat glue rails that "made it hard to place.")
-- **Connector openings: size to the max *plug overmold*, and seat the receptacle
+- **Connector openings: size to the max _plug overmold_, and seat the receptacle
   ~flush with the inner wall.** A hole cut snug to the receptacle won't pass a
   molded cable — size to the standard's max overmold (USB-C: **12.35 × 6.5 mm**,
   USB-IF), as a **stadium slot** (rounded ends — cleaner look, no sharp internal
@@ -156,16 +156,16 @@ certain "the board doesn't cross the wall" answer.
   edge and the wall sits `m` from that edge, you need `p ≥ m` (receptacle ideally
   pokes slightly into the slot) or the plug bottoms on the wall before it seats.
   Verify it in `build_fit` with the real connector solid, not by eye.
-- **Size an FOV window to the *cone*, not to the render.** In a 3D view the sensor
-  *body* (e.g. a Ø9.3 can) fills the opening and looks cramped, but only the small
-  Ø2.6 *aperture* needs to see out — don't enlarge the window because the render
+- **Size an FOV window to the _cone_, not to the render.** In a 3D view the sensor
+  _body_ (e.g. a Ø9.3 can) fills the opening and looks cramped, but only the small
+  Ø2.6 _aperture_ needs to see out — don't enlarge the window because the render
   feels tight. Prove it numerically instead: the cone half-extent at height z is
   `tan(FOV/2)*(PUPIL_Z - z)`; assert the opening exceeds it + margin at **both**
   z=0 and the inner face. A bigger-than-needed window only weakens the thin front
   face and reads more "camera-like."
 - **Pull critical dims from the datasheet figure and cite it.** Replace EST guesses
   with the drawing's numbers where one exists (90642 can: `Ø9.30±0.15, h5.70±0.30,
-  aperture Ø2.60` from Fig.29) and name the source in the param comment so the next
+aperture Ø2.60` from Fig.29) and name the source in the param comment so the next
   person can check it. Caliper-EST only for what no drawing covers.
 - **Rectangular boss, round only the hole.** A free-standing cylindrical boss
   protruding into a cavity prints with a steep curved overhang and is sink-prone in
@@ -173,7 +173,7 @@ certain "the board doesn't cross the wall" answer.
   round.
 - **Heat-set insert bosses: pilot bore per the insert maker, ≥1.6 mm wall, ~1 mm
   melt relief.** Bore = the manufacturer's pilot diameter (≈ insert OD − 0.3–0.5 mm),
-  *not* the thread size; thinner than 1.6 mm wall splits when the insert melts in;
+  _not_ the thread size; thinner than 1.6 mm wall splits when the insert melts in;
   the extra bore depth gives displaced plastic and the screw tip somewhere to go.
   `patterns.heat_set_boss(insert_d, insert_l)` builds it (cuboid body, round bore,
   base at z=0 — union onto the wall).

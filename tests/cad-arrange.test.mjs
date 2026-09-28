@@ -9,14 +9,30 @@ import { arrangeObjects } from "../scripts/cad-arrange.mjs";
 /** Faz um box mesh {positions: Float32Array, tris} com centro em (cx,cy,cz). */
 function boxMesh(w, d, h, cx = 0, cy = 0, cz = 0) {
   const positions = Float32Array.from([
-    cx - w / 2, cy - d / 2, cz,
-    cx + w / 2, cy - d / 2, cz,
-    cx + w / 2, cy + d / 2, cz,
-    cx - w / 2, cy + d / 2, cz,
-    cx - w / 2, cy - d / 2, cz + h,
-    cx + w / 2, cy - d / 2, cz + h,
-    cx + w / 2, cy + d / 2, cz + h,
-    cx - w / 2, cy + d / 2, cz + h,
+    cx - w / 2,
+    cy - d / 2,
+    cz,
+    cx + w / 2,
+    cy - d / 2,
+    cz,
+    cx + w / 2,
+    cy + d / 2,
+    cz,
+    cx - w / 2,
+    cy + d / 2,
+    cz,
+    cx - w / 2,
+    cy - d / 2,
+    cz + h,
+    cx + w / 2,
+    cy - d / 2,
+    cz + h,
+    cx + w / 2,
+    cy + d / 2,
+    cz + h,
+    cx - w / 2,
+    cy + d / 2,
+    cz + h,
   ]);
   const tris = [];
   // 6 faces, 2 tris each (winding irrelevant for bbox tests)
@@ -36,12 +52,22 @@ function boxMesh(w, d, h, cx = 0, cy = 0, cz = 0) {
 }
 
 function bbox(mesh) {
-  let minX = Infinity, minY = Infinity, minZ = Infinity;
-  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    minZ = Infinity;
+  let maxX = -Infinity,
+    maxY = -Infinity,
+    maxZ = -Infinity;
   for (let i = 0; i < mesh.positions.length; i += 3) {
-    const x = mesh.positions[i], y = mesh.positions[i + 1], z = mesh.positions[i + 2];
-    minX = Math.min(minX, x); minY = Math.min(minY, y); minZ = Math.min(minZ, z);
-    maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); maxZ = Math.max(maxZ, z);
+    const x = mesh.positions[i],
+      y = mesh.positions[i + 1],
+      z = mesh.positions[i + 2];
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    minZ = Math.min(minZ, z);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+    maxZ = Math.max(maxZ, z);
   }
   return { min: { x: minX, y: minY, z: minZ }, max: { x: maxX, y: maxY, z: maxZ } };
 }
@@ -56,7 +82,11 @@ test("arrange: 3 objects placed without overlap, all minZ=0, block centered", ()
     ["small", boxMesh(10, 10, 5, 100, -100, -3)], // fora do plate + flutuando
     ["mid", boxMesh(20, 30, 8, -80, 70, 2)],
   ]);
-  const { objects: out, placed, warnings } = arrangeObjects(objects, {
+  const {
+    objects: out,
+    placed,
+    warnings,
+  } = arrangeObjects(objects, {
     plateW: 220,
     plateD: 220,
     gap: 2,
@@ -74,7 +104,8 @@ test("arrange: 3 objects placed without overlap, all minZ=0, block centered", ()
   const list = [...out.entries()].map(([name, m]) => ({ name, bb: bbox(m) }));
   for (let i = 0; i < list.length; i++) {
     for (let j = i + 1; j < list.length; j++) {
-      const a = list[i].bb, b = list[j].bb;
+      const a = list[i].bb,
+        b = list[j].bb;
       const ox = Math.min(a.max.x, b.max.x) - Math.max(a.min.x, b.min.x);
       const oy = Math.min(a.max.y, b.max.y) - Math.max(a.min.y, b.min.y);
       assert.ok(ox <= 1e-6 || oy <= 1e-6, `${list[i].name} overlaps ${list[j].name}`);
@@ -82,11 +113,16 @@ test("arrange: 3 objects placed without overlap, all minZ=0, block centered", ()
   }
 
   // Block centered: min/max symmetric-ish around 0 (allow small epsilon)
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    maxX = -Infinity,
+    minY = Infinity,
+    maxY = -Infinity;
   for (const [, m] of out) {
     const b = bbox(m);
-    minX = Math.min(minX, b.min.x); maxX = Math.max(maxX, b.max.x);
-    minY = Math.min(minY, b.min.y); maxY = Math.max(maxY, b.max.y);
+    minX = Math.min(minX, b.min.x);
+    maxX = Math.max(maxX, b.max.x);
+    minY = Math.min(minY, b.min.y);
+    maxY = Math.max(maxY, b.max.y);
   }
   assert.ok(Math.abs((minX + maxX) / 2) < 1, `block not X-centered: ${(minX + maxX) / 2}`);
   assert.ok(Math.abs((minY + maxY) / 2) < 1, `block not Y-centered: ${(minY + maxY) / 2}`);

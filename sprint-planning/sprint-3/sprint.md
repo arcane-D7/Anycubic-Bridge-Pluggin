@@ -2,18 +2,18 @@
 
 ## Sprint Metadata
 
-| Field                 | Value                                              |
-| --------------------- | -------------------------------------------------- |
-| **Sprint Name**       | AI Text-to-CAD                                     |
+| Field                 | Value                                                                                                                                                                                   |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sprint Name**       | AI Text-to-CAD                                                                                                                                                                          |
 | **Sprint Goal**       | Add an MCP tool that turns a natural-language prompt into a parametric script (text-to-cad skill, MIT), executes it on the Sprint 2 engine, and materializes the mesh in the workspace. |
-| **Duration Estimate** | ~2–3 days                                          |
-| **Priority**          | P1                                                 |
-| **Sprint Type**       | Feature + Test                                     |
-| **Primary Owner**     | cad-engine                                          |
-| **Source**            | [CAD research](../docs/cad-engine-research.md) finalist #5 (text-to-cad, MIT) |
-| **Depends On**        | Sprint 2                                           |
-| **Status**            | ✅ Complete · commit `df28066`                     |
-| **Health Gate**       | `pnpm run test` 155/155 · smoke 82 tools            |
+| **Duration Estimate** | ~2–3 days                                                                                                                                                                               |
+| **Priority**          | P1                                                                                                                                                                                      |
+| **Sprint Type**       | Feature + Test                                                                                                                                                                          |
+| **Primary Owner**     | cad-engine                                                                                                                                                                              |
+| **Source**            | [CAD research](../docs/cad-engine-research.md) finalist #5 (text-to-cad, MIT)                                                                                                           |
+| **Depends On**        | Sprint 2                                                                                                                                                                                |
+| **Status**            | ✅ Complete · commit `df28066`                                                                                                                                                          |
+| **Health Gate**       | `pnpm run test` 155/155 · smoke 82 tools                                                                                                                                                |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -47,15 +47,15 @@ node scripts/smoke.mjs
 
 ### S3-001 — Prompt→script translation module
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S3-001                    |
-| **Title**            | `scripts/cad-ai-translator.mjs` — prompt→parametric script |
-| **Priority**         | P0                        |
-| **Type**             | Feature                   |
-| **Estimated Effort** | L                         |
+| Field                | Value                                                               |
+| -------------------- | ------------------------------------------------------------------- |
+| **Ticket ID**        | S3-001                                                              |
+| **Title**            | `scripts/cad-ai-translator.mjs` — prompt→parametric script          |
+| **Priority**         | P0                                                                  |
+| **Type**             | Feature                                                             |
+| **Estimated Effort** | L                                                                   |
 | **Source Finding**   | text-to-cad agent-skill pattern (MIT) + prompt-engineering practice |
-| **Status**           | ⏳ Planned                |
+| **Status**           | ⏳ Planned                                                          |
 
 #### Context
 
@@ -79,15 +79,15 @@ never from tool input.
 
 ### S3-002 — Validation & sandbox reuse
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S3-002                    |
+| Field                | Value                                   |
+| -------------------- | --------------------------------------- |
+| **Ticket ID**        | S3-002                                  |
 | **Title**            | Reuse S2 sandbox + new script-validator |
-| **Priority**         | P1                        |
-| **Type**             | Refactor                   |
-| **Estimated Effort** | S                         |
-| **Source Finding**   | Sandbox implemented in S2-003 |
-| **Status**           | ⏳ Planned                |
+| **Priority**         | P1                                      |
+| **Type**             | Refactor                                |
+| **Estimated Effort** | S                                       |
+| **Source Finding**   | Sandbox implemented in S2-003           |
+| **Status**           | ⏳ Planned                              |
 
 #### Context
 
@@ -107,15 +107,15 @@ to strengthen it.
 
 ### S3-003 — Tool `cad_generate_from_prompt`
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S3-003                    |
-| **Title**            | MCP tool for AI CAD generation |
-| **Priority**         | P0                        |
-| **Type**             | Feature                   |
-| **Estimated Effort** | M                         |
+| Field                | Value                               |
+| -------------------- | ----------------------------------- |
+| **Ticket ID**        | S3-003                              |
+| **Title**            | MCP tool for AI CAD generation      |
+| **Priority**         | P0                                  |
+| **Type**             | Feature                             |
+| **Estimated Effort** | M                                   |
 | **Source Finding**   | AI capability request (text-to-cad) |
-| **Status**           | ⏳ Planned                |
+| **Status**           | ⏳ Planned                          |
 
 #### Context
 
@@ -135,15 +135,15 @@ no provider), so agents can preview. Timeouts and retry on the provider call.
 
 ### S3-004 — AI tests (unit/integration/e2e)
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S3-004                    |
+| Field                | Value                                   |
+| -------------------- | --------------------------------------- |
+| **Ticket ID**        | S3-004                                  |
 | **Title**            | Tests for translator, sandbox, tool, UI |
-| **Priority**         | P1                        |
-| **Type**             | Test                      |
-| **Estimated Effort** | M                         |
-| **Source Finding**   | test convention + skill |
-| **Status**           | ⏳ Planned                |
+| **Priority**         | P1                                      |
+| **Type**             | Test                                    |
+| **Estimated Effort** | M                                       |
+| **Source Finding**   | test convention + skill                 |
+| **Status**           | ⏳ Planned                              |
 
 #### Context
 

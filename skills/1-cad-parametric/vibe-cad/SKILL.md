@@ -20,7 +20,6 @@ metadata:
   version: "1.0"
   skill-author: "@luckiday"
   vendored: "2026-09-18"
-
 ---
 
 # Text → CAD (beginner + Claude Code → printable part)
@@ -36,7 +35,7 @@ exploded view, and a 0 mm³ interference check. The flagship
 [`examples/pager-buddy/cad/`](../../examples/pager-buddy/cad/) is currently a **stub**
 (only the `constraints.yaml` contract): the pager-buddy firmware runs on an off-the-shelf
 M5StickC S3, and this shell is the in-progress enclosure for the from-scratch board. This
-skill is the *method*; follow it to model that shell.
+skill is the _method_; follow it to model that shell.
 
 ## The model is ONE parametric file
 
@@ -57,7 +56,7 @@ so one bad edge doesn't crash the build) · `import_step` to load a real module 
 named solid via `max(solids, key=volume)` + `bounding_box()`) · `&` for the
 interference check · `Compound(children=[...])` to assemble. Two design rules worth
 naming up front: **the print should self-locate each part** (a bore/stop that makes
-hand-assembly foolproof — adhesive only *fixes*, never *locates*), and **add the
+hand-assembly foolproof — adhesive only _fixes_, never _locates_), and **add the
 back plate/cover to `build_fit()`** so a boolean section can prove its bosses/ribs
 clear the real parts. See `references/build123d-patterns.md`.
 
@@ -74,7 +73,7 @@ spec + fit numbers ─► model ─► review ─► fit-check ─► export
    (the cad↔pcb contract): board outline, mount-hole spacing, stack height, USB
    exit, aperture/FOV clearances, antenna placement. The model **imports** them
    via `scripts/cad_contract.py` (`C = load("../cad/constraints.yaml");
-   C.outline.l; C.port("usb_c")`) — **hand-typing a contract number into the
+C.outline.l; C.port("usb_c")`) — **hand-typing a contract number into the
    model is a bug**; one number, one place, both sides move together.
 2. **Model** — write/edit the param block + builders. For a module swap, usually
    only the param block + the affected `build_*` change.
@@ -105,7 +104,7 @@ skills/vibe-cad/scripts/cad_viewer.sh <abs-models-dir>   # prints the URL
 
 > **cwd resets between shell calls.** Each tool invocation may start in the repo
 > root, so a relative `$PY build_all.py` or `../structure/.venv/bin/python` fails
-> with *"no such file or directory"* on the next call. Always `cd <model-dir> && …`
+> with _"no such file or directory"_ on the next call. Always `cd <model-dir> && …`
 > in the **same** compound command (or use absolute paths). Bit us twice this session.
 
 ## The CAD Viewer — update + use (read `references/cad-viewer.md`)
@@ -181,7 +180,7 @@ Patterns a polished consumer enclosure uses — bake these into the param block 
 
 - Enclosure / bracket / mechanical fit → **here**.
 - The **board** inside it → `vibe-pcb` (the two share one set of fit numbers).
-- Just *viewing* an existing `.step`/`.stl`/`.gcode` → the `cad-viewer` skill
+- Just _viewing_ an existing `.step`/`.stl`/`.gcode` → the `cad-viewer` skill
   directly (this skill wraps it for the design loop).
 - Slicing a mesh to G-code / printing → `gcode` / `bambu-labs`.
 

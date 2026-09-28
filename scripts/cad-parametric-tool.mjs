@@ -35,7 +35,14 @@ async function engine() {
  * @param {{script:string, params?:object, export_format?:string,
  *          object_name?:string, url?:string, token?:string}} args
  */
-export async function runParametric({ script, params = {}, export_format = "none", object_name = "param", url, token }) {
+export async function runParametric({
+  script,
+  params = {},
+  export_format = "none",
+  object_name = "param",
+  url,
+  token,
+}) {
   const check = validateParametricScript(script ?? "");
   if (!check.ok) throw new Error(check.error);
 
@@ -55,7 +62,9 @@ export async function runParametric({ script, params = {}, export_format = "none
     throw new Error(`parametric script failed: ${error?.message ?? error}`);
   }
   if (!handle || typeof handle?._GetMeshJS !== "function") {
-    throw new Error("parametric script must return a manifold handle (e.g. `return box(10,10,10)`)");
+    throw new Error(
+      "parametric script must return a manifold handle (e.g. `return box(10,10,10)`)",
+    );
   }
 
   const mesh = e.meshFromHandle(handle, object_name);

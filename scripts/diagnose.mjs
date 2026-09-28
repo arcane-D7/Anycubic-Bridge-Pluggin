@@ -25,7 +25,10 @@ import {
 
 async function resolveCloud() {
   const accessToken = await findSlicerJwt();
-  if (!accessToken) throw new Error("Slicer token não encontrado — execute a tool auth_setup / auth_id_flow_start primeiro.");
+  if (!accessToken)
+    throw new Error(
+      "Slicer token não encontrado — execute a tool auth_setup / auth_id_flow_start primeiro.",
+    );
   return new AnycubicCloud({ accessToken });
 }
 
@@ -33,11 +36,13 @@ async function main() {
   const args = process.argv.slice(2);
   const outIdx = args.indexOf("--out");
   const outFile = outIdx >= 0 ? args[outIdx + 1] : null;
-  const mode =
-    args.includes("--lan") ? "lan"
-    : args.includes("--http") ? "http"
-    : args.includes("--printers") ? "printers"
-    : "cloud";
+  const mode = args.includes("--lan")
+    ? "lan"
+    : args.includes("--http")
+      ? "http"
+      : args.includes("--printers")
+        ? "printers"
+        : "cloud";
   const lanIp = args[args.indexOf("--lan") + 1];
 
   const cloud = await resolveCloud();
@@ -55,7 +60,13 @@ async function main() {
     if (!lanIp || !/^\d{1,3}(\.\d{1,3}){3}$/.test(lanIp))
       throw new Error("--lan requer um IPv4 válido (ex: --lan <LAN_IP>)");
     const handshake = await lanHandshake(lanIp, 6000);
-    report.handshake = { ok: true, brokerHost: redact(handshake.brokerHost), deviceId: redact(handshake.deviceId), modelId: handshake.modelId, serial: redact(handshake.serial) };
+    report.handshake = {
+      ok: true,
+      brokerHost: redact(handshake.brokerHost),
+      deviceId: redact(handshake.deviceId),
+      modelId: handshake.modelId,
+      serial: redact(handshake.serial),
+    };
     report.readings = await collectLanReadings({ ip: lanIp, timeoutMs: 15000 });
   } else if (mode === "http") {
     const devices = await cloud.getPrinters({ timeoutMs: 20000 });

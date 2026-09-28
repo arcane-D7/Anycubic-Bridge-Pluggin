@@ -167,4 +167,3 @@ node --test tests/printer-full-read.test.mjs
 
 The tests fail on any live field not present in the catalog, so a new firmware
 field surfaces as a test failure instead of silently disappearing.
-

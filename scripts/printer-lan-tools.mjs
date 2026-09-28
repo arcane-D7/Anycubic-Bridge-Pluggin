@@ -62,7 +62,9 @@ export function registerPrinterLanTools(server, z) {
       try {
         assertLanIp(ip);
         const handshake = await lanHandshake(ip, Math.min(timeout_ms ?? 6000, 15000));
-        const result = redactLanHandshake(handshake, { includeCredentials: include_credentials === true });
+        const result = redactLanHandshake(handshake, {
+          includeCredentials: include_credentials === true,
+        });
         return {
           content: [{ type: "text", text: JSON.stringify(result) }],
           structuredContent: result,

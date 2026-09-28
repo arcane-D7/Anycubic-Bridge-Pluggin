@@ -132,7 +132,13 @@ export async function callProvider({ prompt, params = {}, provider, timeoutMs = 
  *          timeoutMs?:number}} opts
  * @returns {Promise<{script:string, model:string, usage?:object, dryRun?:boolean}>}
  */
-export async function translatePromptToScript({ prompt, params = {}, dryRun = false, provider, timeoutMs }) {
+export async function translatePromptToScript({
+  prompt,
+  params = {},
+  dryRun = false,
+  provider,
+  timeoutMs,
+}) {
   if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
     throw new Error("prompt is required (non-empty string)");
   }

@@ -6,7 +6,6 @@ metadata:
   version: "1.0"
   skill-author: "Ben Caunt"
   vendored: "2026-09-18"
-
 ---
 
 # SynthCAD CAD Authoring

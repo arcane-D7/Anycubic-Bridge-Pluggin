@@ -144,7 +144,7 @@ change after the research date.
 
 - Source:
   [21 CFR Part 820](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-H/part-820)
-- Verified current title: *Quality Management System Regulation*.
+- Verified current title: _Quality Management System Regulation_.
 - Verified current structure: Subpart A contains current general provisions; Subpart B
   contains supplemental provisions; remaining legacy subparts are reserved.
 - Verified incorporation: ISO 13485:2016(E), Third edition, March 1, 2016, and
@@ -283,7 +283,7 @@ change after the research date.
   launching its own Multilateral Recognition Arrangement. Certificates and accredited
   results issued under the former IAF MLA / ILAC MRA continue to be recognized during
   the transition.
-- Operational rule: check the *current* recognition-arrangement wording, logo rules,
+- Operational rule: check the _current_ recognition-arrangement wording, logo rules,
   and document designations before reproducing any accreditation claim in a document.
   Legacy "ILAC MRA" / "IAF MLA" phrasing may be transitional rather than current.
 - Boundary: recognition arrangements concern accreditation bodies. They do not make an

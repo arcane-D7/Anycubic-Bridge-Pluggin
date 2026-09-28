@@ -53,8 +53,7 @@ export async function exportStep(mesh, targetPath, opts = {}) {
     if (!replicad) {
       return {
         ok: false,
-        error:
-          "OCCT WASM unavailable on this runtime — STEP export skipped (falling back to STL).",
+        error: "OCCT WASM unavailable on this runtime — STEP export skipped (falling back to STL).",
         engine: "replicad",
         fallback: "stl",
       };
@@ -87,17 +86,30 @@ export async function exportStep(mesh, targetPath, opts = {}) {
 
 /** Computes the bbox + centroid of a mesh (shared contract). */
 export function meshBounds(mesh) {
-  let minX = Infinity, minY = Infinity, minZ = Infinity;
-  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    minZ = Infinity;
+  let maxX = -Infinity,
+    maxY = -Infinity,
+    maxZ = -Infinity;
   for (let i = 0; i < mesh.positions.length; i += 3) {
-    const x = mesh.positions[i], y = mesh.positions[i + 1], z = mesh.positions[i + 2];
-    if (x < minX) minX = x; if (x > maxX) maxX = x;
-    if (y < minY) minY = y; if (y > maxY) maxY = y;
-    if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+    const x = mesh.positions[i],
+      y = mesh.positions[i + 1],
+      z = mesh.positions[i + 2];
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+    if (z < minZ) minZ = z;
+    if (z > maxZ) maxZ = z;
   }
   return {
-    x: maxX - minX, y: maxY - minY, z: maxZ - minZ,
-    cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, cz: (minZ + maxZ) / 2,
+    x: maxX - minX,
+    y: maxY - minY,
+    z: maxZ - minZ,
+    cx: (minX + maxX) / 2,
+    cy: (minY + maxY) / 2,
+    cz: (minZ + maxZ) / 2,
   };
 }
 

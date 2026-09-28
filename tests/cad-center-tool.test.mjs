@@ -54,10 +54,16 @@ test("centerOnPlateGeometry centers XY and floors Z at 0", () => {
   assert.ok(Math.abs(r.dy) < 1e-9); // already Y-centered
   assert.equal(r.dz, 4); // raise Z by 4 so min Z -> 0
   const m = { positions: r.positions, tris: box.tris };
-  let minX = Infinity, minY = Infinity, minZ = Infinity;
-  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    minZ = Infinity;
+  let maxX = -Infinity,
+    maxY = -Infinity,
+    maxZ = -Infinity;
   for (let i = 0; i < m.positions.length; i += 3) {
-    const x = m.positions[i], y = m.positions[i + 1], z = m.positions[i + 2];
+    const x = m.positions[i],
+      y = m.positions[i + 1],
+      z = m.positions[i + 2];
     if (x < minX) minX = x;
     if (y < minY) minY = y;
     if (z < minZ) minZ = z;
@@ -65,9 +71,9 @@ test("centerOnPlateGeometry centers XY and floors Z at 0", () => {
     if (y > maxY) maxY = y;
     if (z > maxZ) maxZ = z;
   }
-  assert.ok(Math.abs(minX - (-10)) < 1e-6);
+  assert.ok(Math.abs(minX - -10) < 1e-6);
   assert.ok(Math.abs(maxX - 10) < 1e-6);
-  assert.ok(Math.abs(minY - (-5)) < 1e-6);
+  assert.ok(Math.abs(minY - -5) < 1e-6);
   assert.ok(Math.abs(maxY - 5) < 1e-6);
   assert.ok(Math.abs(minZ - 0) < 1e-6); // sits on the plate
   assert.ok(Math.abs(maxZ - 4) < 1e-6);
@@ -78,10 +84,16 @@ test("centerOnPlateGeometry recenters an off-origin box", () => {
   const box = makeBox(72, 21.6, 10.1, 15, 25, 8.5);
   const r = centerOnPlateGeometry(box.positions);
   const m = { positions: r.positions, tris: box.tris };
-  let minX = Infinity, minY = Infinity, minZ = Infinity;
-  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    minZ = Infinity;
+  let maxX = -Infinity,
+    maxY = -Infinity,
+    maxZ = -Infinity;
   for (let i = 0; i < m.positions.length; i += 3) {
-    const x = m.positions[i], y = m.positions[i + 1], z = m.positions[i + 2];
+    const x = m.positions[i],
+      y = m.positions[i + 1],
+      z = m.positions[i + 2];
     if (x < minX) minX = x;
     if (y < minY) minY = y;
     if (z < minZ) minZ = z;
@@ -89,9 +101,9 @@ test("centerOnPlateGeometry recenters an off-origin box", () => {
     if (y > maxY) maxY = y;
     if (z > maxZ) maxZ = z;
   }
-  assert.ok(Math.abs(minX - (-36)) < 1e-6); // centered on X: x center 51 -> -36..36
+  assert.ok(Math.abs(minX - -36) < 1e-6); // centered on X: x center 51 -> -36..36
   assert.ok(Math.abs(maxX - 36) < 1e-6);
-  assert.ok(Math.abs(minY - (-10.8)) < 1e-6); // centered on Y: y center 35.8 -> -10.8..10.8
+  assert.ok(Math.abs(minY - -10.8) < 1e-6); // centered on Y: y center 35.8 -> -10.8..10.8
   assert.ok(Math.abs(maxY - 10.8) < 1e-6);
   assert.ok(Math.abs(minZ - 0) < 1e-6); // floor at 0
   assert.ok(Math.abs(maxZ - 10.1) < 1e-6);

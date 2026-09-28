@@ -60,12 +60,12 @@ passing.
 Read the request, classify it, and load **exactly one** family reference. Do not load all four —
 they are long, and mixing conventions between families is a common source of error.
 
-| If the part is | Load |
-| --- | --- |
-| A chip, mold, channel network, flow cell, gasket, or anything with fluid ports | `references/microfluidics.md` |
-| A mount, post, breadboard adapter, cage-system part, filter or sample holder in a beam path | `references/optomechanics.md` |
-| An adapter, insert, rack, or holder for plates, cuvettes, tubes, slides, or dishes | `references/labware-adapters.md` |
-| An arena, maze, head-fixation part, spout, tether, or extrusion-mounted enclosure for animal work | `references/behavior-rigs.md` |
+| If the part is                                                                                    | Load                             |
+| ------------------------------------------------------------------------------------------------- | -------------------------------- |
+| A chip, mold, channel network, flow cell, gasket, or anything with fluid ports                    | `references/microfluidics.md`    |
+| A mount, post, breadboard adapter, cage-system part, filter or sample holder in a beam path       | `references/optomechanics.md`    |
+| An adapter, insert, rack, or holder for plates, cuvettes, tubes, slides, or dishes                | `references/labware-adapters.md` |
+| An arena, maze, head-fixation part, spout, tether, or extrusion-mounted enclosure for animal work | `references/behavior-rigs.md`    |
 
 If the part genuinely spans two families — a microfluidic chip that bolts to an optical table —
 load the family that owns the **critical interface**, then read only the interface section of the
@@ -84,7 +84,7 @@ dimension from memory.** If the number is not in the standards file or the refer
 for the vendor drawing or the measurement rather than guessing. A guessed interface dimension is
 the single most expensive failure mode in this skill.
 
-A feature that must *receive* a standardised component is sized against that component's
+A feature that must _receive_ a standardised component is sized against that component's
 **maximum material condition** — nominal plus its plus-tolerance — and only then given clearance.
 Sized from nominal instead, it fits only the smaller half of conforming parts.
 
@@ -130,8 +130,8 @@ Requirements:
   `intent` is `"envelope"` when the feature must **accept** any conforming part (a pocket, bore,
   or slot — checked one-sided at maximum material condition plus your clearance) and `"match"`
   when this part must itself conform (symmetric band). `clearance` is the total intended
-  clearance in mm and must be non-negative. Declare only dimensions that constrain *this part's
-  mating features* — a property of the mating equipment (a table's edge border, a typical plate
+  clearance in mm and must be non-negative. Declare only dimensions that constrain _this part's
+  mating features_ — a property of the mating equipment (a table's edge border, a typical plate
   thickness) is not an interface of yours. If no bundled standard applies, return `[]`.
 - Declare a `checks()` function of **go/no-go gauges measured from the built solid**: a `clear`
   region for everything that must pass through or fit in (screw shafts, beam corridors, the
@@ -242,7 +242,7 @@ further.
 
 `check.py interfaces` evaluates every entry the model declared against the standards database
 and exits non-zero on failure. **Be clear about what it does and does not verify:** it checks the
-*declared numbers* — catching a transcribed dimension, the wrong standard, and
+_declared numbers_ — catching a transcribed dimension, the wrong standard, and
 nominal-instead-of-MMC sizing — but it never measures the built geometry, and a value computed
 from the same constants it is checked against passes with zero headroom by construction. Do not
 cite it as evidence the geometry is right; `facts` and the snapshot are the geometry checks.
@@ -317,11 +317,11 @@ accumulates to 1.6 mm over four holes.
 A nominal dimension is not a fit. Every mating dimension needs a deliberate clearance chosen from
 the process tolerance in `references/fabrication-limits.md`. Common defaults, per side:
 
-| Fit | FDM | SLA | CNC |
-| --- | --- | --- | --- |
-| Free-sliding (plate in a pocket) | 0.40 mm | 0.20 mm | 0.10 mm |
-| Located but removable | 0.25 mm | 0.10 mm | 0.05 mm |
-| Press / interference | -0.05 mm | -0.03 mm | -0.02 mm |
+| Fit                              | FDM      | SLA      | CNC      |
+| -------------------------------- | -------- | -------- | -------- |
+| Free-sliding (plate in a pocket) | 0.40 mm  | 0.20 mm  | 0.10 mm  |
+| Located but removable            | 0.25 mm  | 0.10 mm  | 0.05 mm  |
+| Press / interference             | -0.05 mm | -0.03 mm | -0.02 mm |
 
 These are starting points for a first article, not guarantees. Say so when you report them, and
 recommend printing a test coupon of the critical interface before committing to a full part.
@@ -342,31 +342,31 @@ recommend printing a test coupon of the critical interface before committing to 
 
 ## References
 
-| File | Contents |
-| --- | --- |
-| `references/microfluidics.md` | Channel cross-sections and aspect ratios, mold vs chip polarity, minimum features by process, port and tubing interfaces, bonding lands, dead volume |
-| `references/optomechanics.md` | Breadboard grids and screw clearances, post and pedestal heights, 30 mm cage geometry, SM lens-tube threads, beam height |
-| `references/labware-adapters.md` | ANSI/SLAS 1-4 microplate dimensions, cuvettes, tubes, slides, dishes, deck and stage constraints |
-| `references/behavior-rigs.md` | Arena and maze geometry, head-fixation interfaces, spouts and ports, T-slot extrusion, cleaning and durability |
-| `references/fabrication-limits.md` | Process tolerances, minimum walls and features, clearance and thread inserts, materials, autoclave and solvent and biocompatibility |
-| `references/validation.md` | Pre-fabrication checklist and the failure modes each item catches |
-| `references/build123d-patterns.md` | build123d 0.11.1 API cookbook: builder vs algebra, sketches, selectors, joints, exports |
+| File                               | Contents                                                                                                                                             |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `references/microfluidics.md`      | Channel cross-sections and aspect ratios, mold vs chip polarity, minimum features by process, port and tubing interfaces, bonding lands, dead volume |
+| `references/optomechanics.md`      | Breadboard grids and screw clearances, post and pedestal heights, 30 mm cage geometry, SM lens-tube threads, beam height                             |
+| `references/labware-adapters.md`   | ANSI/SLAS 1-4 microplate dimensions, cuvettes, tubes, slides, dishes, deck and stage constraints                                                     |
+| `references/behavior-rigs.md`      | Arena and maze geometry, head-fixation interfaces, spouts and ports, T-slot extrusion, cleaning and durability                                       |
+| `references/fabrication-limits.md` | Process tolerances, minimum walls and features, clearance and thread inserts, materials, autoclave and solvent and biocompatibility                  |
+| `references/validation.md`         | Pre-fabrication checklist and the failure modes each item catches                                                                                    |
+| `references/build123d-patterns.md` | build123d 0.11.1 API cookbook: builder vs algebra, sketches, selectors, joints, exports                                                              |
 
 ## Scripts
 
-| Command | Purpose |
-| --- | --- |
-| `gen.py <model.py> --outdir DIR` | Run `build()`, export STEP and STL, write the provenance manifest |
-| `gen.py <model.py> --dxf [--dxf-z MM]` | Also slice a 2D DXF profile for laser cutting (default plane: mid-height) |
-| `check.py facts <step>` | Validity, bounding box, volume, area, centre of mass, solid count |
-| `check.py interfaces <manifest\|model.py>` | Check every declared interface number against its standard; non-zero exit on failure |
-| `check.py geometry <model.py\|step --model M>` | Evaluate the model's `checks()` gauges against the built solid — measured, not declared |
-| `check.py probe <step> --cyl D\|--box X,Y,Z --at ...` | One ad-hoc gauge: is this region clear of material, or filled with it |
-| `check.py bores <step>` | Census of every cylindrical face: diameter, axis, position, span, sweep |
-| `check.py fit --standard ID --value DIM=MM` | Check one dimension by hand, or a part whose outer envelope is the interface |
-| `check.py clearance <a> <b> --min MM` | Minimum distance between two solids; detects interference |
-| `check.py standards [--list\|--show ID]` | Browse the bundled standards data (standard library only) |
-| `snapshot.py <step> --out PNG` | Six-view orthographic and isometric render for visual review |
+| Command                                               | Purpose                                                                                 |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `gen.py <model.py> --outdir DIR`                      | Run `build()`, export STEP and STL, write the provenance manifest                       |
+| `gen.py <model.py> --dxf [--dxf-z MM]`                | Also slice a 2D DXF profile for laser cutting (default plane: mid-height)               |
+| `check.py facts <step>`                               | Validity, bounding box, volume, area, centre of mass, solid count                       |
+| `check.py interfaces <manifest\|model.py>`            | Check every declared interface number against its standard; non-zero exit on failure    |
+| `check.py geometry <model.py\|step --model M>`        | Evaluate the model's `checks()` gauges against the built solid — measured, not declared |
+| `check.py probe <step> --cyl D\|--box X,Y,Z --at ...` | One ad-hoc gauge: is this region clear of material, or filled with it                   |
+| `check.py bores <step>`                               | Census of every cylindrical face: diameter, axis, position, span, sweep                 |
+| `check.py fit --standard ID --value DIM=MM`           | Check one dimension by hand, or a part whose outer envelope is the interface            |
+| `check.py clearance <a> <b> --min MM`                 | Minimum distance between two solids; detects interference                               |
+| `check.py standards [--list\|--show ID]`              | Browse the bundled standards data (standard library only)                               |
+| `snapshot.py <step> --out PNG`                        | Six-view orthographic and isometric render for visual review                            |
 
 All commands accept `--json` for machine-readable output and write progress to stderr.
 `check.py standards`, and `check.py interfaces` on a manifest, run without build123d installed.

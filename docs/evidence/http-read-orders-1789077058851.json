@@ -133,21 +133,10 @@
                   "index": 0,
                   "sku": "AHHSGY-107",
                   "type": "PLA High Speed",
-                  "color": [
-                    117,
-                    120,
-                    123
-                  ],
+                  "color": [117, 120, 123],
                   "edit_status": 0,
                   "status": 5,
-                  "color_group": [
-                    [
-                      117,
-                      120,
-                      123,
-                      255
-                    ]
-                  ],
+                  "color_group": [[117, 120, 123, 255]],
                   "icon_type": 0,
                   "consumables_percent": 13
                 },
@@ -155,21 +144,10 @@
                   "index": 1,
                   "sku": "AHPLLB-107",
                   "type": "PLA",
-                  "color": [
-                    212,
-                    185,
-                    150
-                  ],
+                  "color": [212, 185, 150],
                   "edit_status": 0,
                   "status": 5,
-                  "color_group": [
-                    [
-                      212,
-                      185,
-                      150,
-                      255
-                    ]
-                  ],
+                  "color_group": [[212, 185, 150, 255]],
                   "icon_type": 0,
                   "consumables_percent": 93
                 },
@@ -177,21 +155,10 @@
                   "index": 2,
                   "sku": "",
                   "type": "PLA Silk",
-                  "color": [
-                    255,
-                    215,
-                    0
-                  ],
+                  "color": [255, 215, 0],
                   "edit_status": 1,
                   "status": 5,
-                  "color_group": [
-                    [
-                      255,
-                      215,
-                      0,
-                      255
-                    ]
-                  ],
+                  "color_group": [[255, 215, 0, 255]],
                   "icon_type": 0,
                   "consumables_percent": 0
                 },
@@ -199,21 +166,10 @@
                   "index": 3,
                   "sku": "",
                   "type": "PLA",
-                  "color": [
-                    0,
-                    0,
-                    0
-                  ],
+                  "color": [0, 0, 0],
                   "edit_status": 1,
                   "status": 5,
-                  "color_group": [
-                    [
-                      0,
-                      0,
-                      0,
-                      255
-                    ]
-                  ],
+                  "color_group": [[0, 0, 0, 255]],
                   "icon_type": 0,
                   "consumables_percent": 0
                 }

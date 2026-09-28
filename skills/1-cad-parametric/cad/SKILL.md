@@ -6,7 +6,6 @@ metadata:
   version: "1.0"
   skill-author: "Thompson Labs LLC"
   vendored: "2026-09-18"
-
 ---
 
 # CAD modeling and inspection
@@ -18,16 +17,16 @@ Use the installed local skill files for the current interface.
 
 Read only the references needed for the request.
 
-| Task | First action | Reference |
-| --- | --- | --- |
-| **Create or edit a part or assembly** | Find the existing Python model, or create a decorated model below; edit source and run `python <model>.py`. | [Model contract](references/step-generation.md), [shape construction](references/build123d-modeling.md); [positioning](references/positioning.md) for assemblies |
-| **Organize a CAD project** | Follow its existing layout; for a new multi-model project use `src/`, format output folders, and a model catalog. | [Project layout](references/project-layout.md), [minimal starters](references/project-template.md) |
-| **Export STL, 3MF or GLB** | Add a mesh decorator for a maintained output, or run the format's `build INPUT.step OUT` command for a one-off export. | [Mesh exports](references/supported-exports.md) |
-| **Resolve a reference from a prompt** | Identify its saved STEP/STP document, open it with `read_scene`, and call `scene.resolve(ref)` as shown below. | [Reference syntax and inspection](references/inspection-and-validation.md#reference-syntax) |
-| **Measure or check geometry** | Write a Python check using native build123d geometry and, where useful, `cadgen.geometry`. | [Inspection and validation](references/inspection-and-validation.md) |
-| **Model from an image or drawing** | Extract the specified dimensions and record meaningful assumptions. | [Interpreting the request](references/cad-brief.md) |
-| **Review appearance or motion** | Snapshot the saved document; use declared kinematics or animation for poses and clips. | [Snapshots](references/snapshot-review.md), [kinematics](references/kinematics.md) |
-| **Diagnose a failure** | Read the error and check the relevant model, geometry or command contract. | [Repair loop](references/repair-loop.md), [version migration](references/migrations.md) |
+| Task                                  | First action                                                                                                           | Reference                                                                                                                                                        |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Create or edit a part or assembly** | Find the existing Python model, or create a decorated model below; edit source and run `python <model>.py`.            | [Model contract](references/step-generation.md), [shape construction](references/build123d-modeling.md); [positioning](references/positioning.md) for assemblies |
+| **Organize a CAD project**            | Follow its existing layout; for a new multi-model project use `src/`, format output folders, and a model catalog.      | [Project layout](references/project-layout.md), [minimal starters](references/project-template.md)                                                               |
+| **Export STL, 3MF or GLB**            | Add a mesh decorator for a maintained output, or run the format's `build INPUT.step OUT` command for a one-off export. | [Mesh exports](references/supported-exports.md)                                                                                                                  |
+| **Resolve a reference from a prompt** | Identify its saved STEP/STP document, open it with `read_scene`, and call `scene.resolve(ref)` as shown below.         | [Reference syntax and inspection](references/inspection-and-validation.md#reference-syntax)                                                                      |
+| **Measure or check geometry**         | Write a Python check using native build123d geometry and, where useful, `cadgen.geometry`.                             | [Inspection and validation](references/inspection-and-validation.md)                                                                                             |
+| **Model from an image or drawing**    | Extract the specified dimensions and record meaningful assumptions.                                                    | [Interpreting the request](references/cad-brief.md)                                                                                                              |
+| **Review appearance or motion**       | Snapshot the saved document; use declared kinematics or animation for poses and clips.                                 | [Snapshots](references/snapshot-review.md), [kinematics](references/kinematics.md)                                                                               |
+| **Diagnose a failure**                | Read the error and check the relevant model, geometry or command contract.                                             | [Repair loop](references/repair-loop.md), [version migration](references/migrations.md)                                                                          |
 
 For 2D DXF drawings use `$dxf`; this skill owns any 3D part the drawing projects.
 Use the corresponding robot-description skill for URDF, SRDF or SDF.

@@ -302,10 +302,23 @@ export function overlayMultiMaterialKeys(processJson, mmKeys = {}) {
     if (key === "bed_adhesion") {
       // bed_adhesion is a composite: brim / skirt / raft + widths.
       const v = String(val);
-      if (v === "none") { overrides.brim_type = "no_brim"; overrides.skirt_loops = "0"; overrides.raft_layers = "0"; }
-      else if (v === "brim") { overrides.brim_type = "brim"; overrides.brim_width = mmKeys.brim_width ?? "5"; overrides.raft_layers = "0"; }
-      else if (v === "skirt") { overrides.brim_type = "no_brim"; overrides.skirt_loops = "2"; overrides.raft_layers = "0"; }
-      else if (v === "raft") { overrides.brim_type = "no_brim"; overrides.skirt_loops = "0"; overrides.raft_layers = "1"; }
+      if (v === "none") {
+        overrides.brim_type = "no_brim";
+        overrides.skirt_loops = "0";
+        overrides.raft_layers = "0";
+      } else if (v === "brim") {
+        overrides.brim_type = "brim";
+        overrides.brim_width = mmKeys.brim_width ?? "5";
+        overrides.raft_layers = "0";
+      } else if (v === "skirt") {
+        overrides.brim_type = "no_brim";
+        overrides.skirt_loops = "2";
+        overrides.raft_layers = "0";
+      } else if (v === "raft") {
+        overrides.brim_type = "no_brim";
+        overrides.skirt_loops = "0";
+        overrides.raft_layers = "1";
+      }
     } else {
       overrides[key] = String(val);
     }

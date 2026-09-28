@@ -426,7 +426,7 @@ export function registerAuditGapTools(server, z, { manager, resolvePrinter } = {
     {
       title: "Watch the LAN camera by periodic snapshots (opt-in)",
       description:
-        'Read-only camera watchdog: takes snapshot(s) every interval_s from the LAN camera (port 18088) and saves them under a timestamped filename (or a fixed output_dir + tag). Stops after a bounded number of snapshots (snapshots, default 3) — it is not a continuous stream dump. Requires confirm:true because it writes files to disk repeatedly. Each snapshot is a single ffmpeg frame capture (argv fixed, no shell).',
+        "Read-only camera watchdog: takes snapshot(s) every interval_s from the LAN camera (port 18088) and saves them under a timestamped filename (or a fixed output_dir + tag). Stops after a bounded number of snapshots (snapshots, default 3) — it is not a continuous stream dump. Requires confirm:true because it writes files to disk repeatedly. Each snapshot is a single ffmpeg frame capture (argv fixed, no shell).",
       inputSchema: {
         ip: z.string().max(64),
         output_dir: z.string().min(1).max(1024),

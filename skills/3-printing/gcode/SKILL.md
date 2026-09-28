@@ -6,7 +6,6 @@ metadata:
   version: "1.0"
   skill-author: "Thompson Labs LLC"
   vendored: "2026-09-18"
-
 ---
 
 # G-code
@@ -98,13 +97,8 @@ For OrcaSlicer, use `native_settings` and `native_filaments` when the real profi
 {
   "backend": "orcaslicer",
   "native_config": "/absolute/path/to/machine-or-process.json",
-  "native_settings": [
-    "/absolute/path/to/machine.json",
-    "/absolute/path/to/process.json"
-  ],
-  "native_filaments": [
-    "/absolute/path/to/filament.json"
-  ],
+  "native_settings": ["/absolute/path/to/machine.json", "/absolute/path/to/process.json"],
+  "native_filaments": ["/absolute/path/to/filament.json"],
   "machine": {
     "name": "Example Printer",
     "bed_size_mm": [180, 180],

@@ -26,8 +26,12 @@ export function meshToBinaryStl(mesh, name = "model") {
     return { x: mesh.positions[i], y: mesh.positions[i + 1], z: mesh.positions[i + 2] };
   };
   const normal = (a, b, c) => {
-    const ux = b.x - a.x, uy = b.y - a.y, uz = b.z - a.z;
-    const vx = c.x - a.x, vy = c.y - a.y, vz = c.z - a.z;
+    const ux = b.x - a.x,
+      uy = b.y - a.y,
+      uz = b.z - a.z;
+    const vx = c.x - a.x,
+      vy = c.y - a.y,
+      vz = c.z - a.z;
     let nx = uy * vz - uz * vy;
     let ny = uz * vx - ux * vz;
     let nz = ux * vy - uy * vx;
@@ -35,7 +39,9 @@ export function meshToBinaryStl(mesh, name = "model") {
     return { x: nx / len, y: ny / len, z: nz / len };
   };
   for (const t of mesh.tris) {
-    const a = vertex(t.a), b = vertex(t.b), c = vertex(t.c);
+    const a = vertex(t.a),
+      b = vertex(t.b),
+      c = vertex(t.c);
     const n = normal(a, b, c);
     buffer.writeFloatLE(n.x, offset);
     buffer.writeFloatLE(n.y, offset + 4);
@@ -83,10 +89,7 @@ export async function importMesh(url, token, name, mesh) {
 /** Runs the boolean tool end-to-end. Exported for direct integration tests. */
 export async function runBoolean({ url, token, name_a, name_b, op, result_name = "result" }) {
   if (!url || !token) throw new Error("url and token are required (call cad_open_workspace first)");
-  const [a, b] = await Promise.all([
-    fetchMesh(url, token, name_a),
-    fetchMesh(url, token, name_b),
-  ]);
+  const [a, b] = await Promise.all([fetchMesh(url, token, name_a), fetchMesh(url, token, name_b)]);
   const result = booleanMesh(a, b, op);
   const imported = await importMesh(url, token, result_name, result);
   return {

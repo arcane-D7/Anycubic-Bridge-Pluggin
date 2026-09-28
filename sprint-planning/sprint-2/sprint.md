@@ -2,18 +2,18 @@
 
 ## Sprint Metadata
 
-| Field                 | Value                                              |
-| --------------------- | -------------------------------------------------- |
-| **Sprint Name**       | Parametric code-CAD engine                          |
+| Field                 | Value                                                                                                                                            |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Sprint Name**       | Parametric code-CAD engine                                                                                                                       |
 | **Sprint Goal**       | Add a Blender-like parametric modeling engine (manifold-3d WASM core; Replicad STEP export) exposed through a new MCP tool and reusable helpers. |
-| **Duration Estimate** | ~2–3 days                                          |
-| **Priority**          | P1                                                 |
-| **Sprint Type**       | Feature + Test                                     |
-| **Primary Owner**     | cad-engine                                          |
-| **Source**            | [CAD research](../docs/cad-engine-research.md) finalists #1 (Replicad) & manifold findings |
-| **Depends On**        | Sprint 1                                           |
-| **Status**            | ✅ Complete · commit `6739dfc`                      |
-| **Health Gate**       | `pnpm run test` 144/144 · smoke 80 tools            |
+| **Duration Estimate** | ~2–3 days                                                                                                                                        |
+| **Priority**          | P1                                                                                                                                               |
+| **Sprint Type**       | Feature + Test                                                                                                                                   |
+| **Primary Owner**     | cad-engine                                                                                                                                       |
+| **Source**            | [CAD research](../docs/cad-engine-research.md) finalists #1 (Replicad) & manifold findings                                                       |
+| **Depends On**        | Sprint 1                                                                                                                                         |
+| **Status**            | ✅ Complete · commit `6739dfc`                                                                                                                   |
+| **Health Gate**       | `pnpm run test` 144/144 · smoke 80 tools                                                                                                         |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -46,15 +46,15 @@ node scripts/smoke.mjs
 
 ### S2-001 — Parametric engine module (Manifold core)
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S2-001                    |
+| Field                | Value                                                    |
+| -------------------- | -------------------------------------------------------- |
+| **Ticket ID**        | S2-001                                                   |
 | **Title**            | `scripts/cad-parametric-engine.mjs` — pure modeling core |
-| **Priority**         | P0                        |
-| **Type**             | Feature                   |
-| **Estimated Effort** | L                         |
-| **Source Finding**   | manifold-3d validated CSG + getMesh in Node (WASM, MIT) |
-| **Status**           | ⏳ Planned                |
+| **Priority**         | P0                                                       |
+| **Type**             | Feature                                                  |
+| **Estimated Effort** | L                                                        |
+| **Source Finding**   | manifold-3d validated CSG + getMesh in Node (WASM, MIT)  |
+| **Status**           | ⏳ Planned                                               |
 
 #### Context
 
@@ -78,15 +78,15 @@ available. Pure module, no MCP dependency.
 
 ### S2-002 — Replicad STEP export helper
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S2-002                    |
+| Field                | Value                                                    |
+| -------------------- | -------------------------------------------------------- |
+| **Ticket ID**        | S2-002                                                   |
 | **Title**            | `scripts/cad-step-export.mjs` — STEP export via Replicad |
-| **Priority**         | P1                        |
-| **Type**             | Feature                   |
-| **Estimated Effort** | M                         |
-| **Source Finding**   | Replicad `blobSTEP()` API (MIT) |
-| **Status**           | ⏳ Planned                |
+| **Priority**         | P1                                                       |
+| **Type**             | Feature                                                  |
+| **Estimated Effort** | M                                                        |
+| **Source Finding**   | Replicad `blobSTEP()` API (MIT)                          |
+| **Status**           | ⏳ Planned                                               |
 
 #### Context
 
@@ -106,15 +106,15 @@ OCCT is unavailable on the user's machine.
 
 ### S2-003 — Parametric tool `cad_generate_parametric`
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S2-003                    |
-| **Title**            | MCP tool running parametric scripts |
-| **Priority**         | P0                        |
-| **Type**             | Feature                   |
-| **Estimated Effort** | L                         |
+| Field                | Value                                   |
+| -------------------- | --------------------------------------- |
+| **Ticket ID**        | S2-003                                  |
+| **Title**            | MCP tool running parametric scripts     |
+| **Priority**         | P0                                      |
+| **Type**             | Feature                                 |
+| **Estimated Effort** | L                                       |
 | **Source Finding**   | MCP tool registration pattern in bundle |
-| **Status**           | ⏳ Planned                |
+| **Status**           | ⏳ Planned                              |
 
 #### Context
 
@@ -138,15 +138,15 @@ engine is consumed but never mutated.
 
 ### S2-004 — Parametric UI section (cad.html)
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S2-004                    |
-| **Title**            | cad.html parametric panel |
-| **Priority**         | P2                        |
-| **Type**             | Feature                   |
-| **Estimated Effort** | S                         |
+| Field                | Value                                    |
+| -------------------- | ---------------------------------------- |
+| **Ticket ID**        | S2-004                                   |
+| **Title**            | cad.html parametric panel                |
+| **Priority**         | P2                                       |
+| **Type**             | Feature                                  |
+| **Estimated Effort** | S                                        |
 | **Source Finding**   | CAD workspace UI sections for primitives |
-| **Status**           | ⏳ Planned                |
+| **Status**           | ⏳ Planned                               |
 
 #### Context
 
@@ -164,15 +164,15 @@ the existing dark theme.
 
 ### S2-005 — Parametric tests (unit + integration + e2e)
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S2-005                    |
-| **Title**            | Tests for engine, export, tool, UI |
-| **Priority**         | P1                        |
-| **Type**             | Test                      |
-| **Estimated Effort** | L                         |
+| Field                | Value                                            |
+| -------------------- | ------------------------------------------------ |
+| **Ticket ID**        | S2-005                                           |
+| **Title**            | Tests for engine, export, tool, UI               |
+| **Priority**         | P1                                               |
+| **Type**             | Test                                             |
+| **Estimated Effort** | L                                                |
 | **Source Finding**   | Project test convention + skill sprint-execution |
-| **Status**           | ⏳ Planned                |
+| **Status**           | ⏳ Planned                                       |
 
 #### Context
 

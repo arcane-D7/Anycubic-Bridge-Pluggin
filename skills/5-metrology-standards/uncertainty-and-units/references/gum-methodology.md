@@ -1,21 +1,21 @@
 # GUM methodology
 
-The *Guide to the Expression of Uncertainty in Measurement* (JCGM 100:2008, "the GUM")
+The _Guide to the Expression of Uncertainty in Measurement_ (JCGM 100:2008, "the GUM")
 and its Supplement 1 (JCGM 101:2008, the Monte Carlo method) define how an uncertainty
 is evaluated, combined, and reported. This file covers the parts that decide whether a
 number is defensible.
 
 ## Vocabulary that has to stay straight
 
-| Term | Symbol | Meaning |
-| --- | --- | --- |
-| Measurand | Y | the quantity intended to be measured |
-| Estimate | y | the value obtained for it |
-| Standard uncertainty | u(x) | uncertainty of an input, expressed as a standard deviation |
-| Combined standard uncertainty | u_c(y) | standard uncertainty of the result |
-| Expanded uncertainty | U | k * u_c(y) |
-| Coverage factor | k | multiplier chosen for a stated coverage probability |
-| Coverage probability | p | probability that the interval contains the measurand |
+| Term                          | Symbol | Meaning                                                    |
+| ----------------------------- | ------ | ---------------------------------------------------------- |
+| Measurand                     | Y      | the quantity intended to be measured                       |
+| Estimate                      | y      | the value obtained for it                                  |
+| Standard uncertainty          | u(x)   | uncertainty of an input, expressed as a standard deviation |
+| Combined standard uncertainty | u_c(y) | standard uncertainty of the result                         |
+| Expanded uncertainty          | U      | k * u_c(y)                                                 |
+| Coverage factor               | k      | multiplier chosen for a stated coverage probability        |
+| Coverage probability          | p      | probability that the interval contains the measurand       |
 
 "Error" and "uncertainty" are not synonyms. An error is a single unknowable difference
 from the true value; an uncertainty is a dispersion. "Accuracy" and "precision" are
@@ -23,7 +23,7 @@ qualitative words in the GUM's vocabulary and never carry a number.
 
 ## Type A and Type B are methods, not qualities
 
-The distinction is only about *how the uncertainty was evaluated*. Neither is more
+The distinction is only about _how the uncertainty was evaluated_. Neither is more
 reliable than the other, and both produce a standard uncertainty on the same footing.
 
 **Type A** — evaluated from a statistical analysis of repeated observations.
@@ -34,7 +34,7 @@ For n independent readings with experimental standard deviation s(q):
 u(q_bar) = s(q) / sqrt(n)          degrees of freedom: nu = n - 1
 ```
 
-The standard uncertainty of the *mean* is what enters the budget when the reported
+The standard uncertainty of the _mean_ is what enters the budget when the reported
 value is a mean. Using s(q) itself overstates it by sqrt(n); using `numpy.std` without
 `ddof=1` understates s(q) itself. Both mistakes are common and neither is visible in
 the output.
@@ -48,14 +48,14 @@ specification, a handbook value, a previous measurement, or documented judgement
 The stated quantity is converted to a standard uncertainty by dividing by a factor that
 depends on what the statement means:
 
-| What the source states | Assumed density | Divisor | u |
-| --- | --- | --- | --- |
-| Expanded uncertainty U with coverage factor k | normal | k | U / k |
-| 95% confidence interval, no k given | normal | 1.96 | half-width / 1.96 |
-| A standard uncertainty | normal | 1 | as stated |
-| Limits ±a, any value equally likely | rectangular | sqrt(3) | a / sqrt(3) |
-| Limits ±a, centre far more likely | triangular | sqrt(6) | a / sqrt(6) |
-| Limits ±a, extremes more likely (sinusoidal drift, cyclic error) | arcsine | sqrt(2) | a / sqrt(2) |
+| What the source states                                           | Assumed density | Divisor | u                 |
+| ---------------------------------------------------------------- | --------------- | ------- | ----------------- |
+| Expanded uncertainty U with coverage factor k                    | normal          | k       | U / k             |
+| 95% confidence interval, no k given                              | normal          | 1.96    | half-width / 1.96 |
+| A standard uncertainty                                           | normal          | 1       | as stated         |
+| Limits ±a, any value equally likely                              | rectangular     | sqrt(3) | a / sqrt(3)       |
+| Limits ±a, centre far more likely                                | triangular      | sqrt(6) | a / sqrt(6)       |
+| Limits ±a, extremes more likely (sinusoidal drift, cyclic error) | arcsine         | sqrt(2) | a / sqrt(2)       |
 
 Rectangular is the default when a specification gives limits and says nothing about the
 distribution inside them. Digital resolution of one least significant digit d gives
@@ -104,14 +104,14 @@ Components evaluated as Type B from a specification are conventionally assigned
 infinite degrees of freedom and drop out of the denominator. A single Type A component
 from a handful of readings can pull nu_eff low enough that k rises well above 2:
 
-| nu_eff | k for p = 95% |
-| --- | --- |
-| 2 | 4.30 |
-| 5 | 2.57 |
-| 10 | 2.23 |
-| 20 | 2.09 |
-| 50 | 2.01 |
-| infinite | 1.96 |
+| nu_eff   | k for p = 95% |
+| -------- | ------------- |
+| 2        | 4.30          |
+| 5        | 2.57          |
+| 10       | 2.23          |
+| 20       | 2.09          |
+| 50       | 2.01          |
+| infinite | 1.96          |
 
 If the dominant component came from five readings, reporting k = 2 understates the
 interval by about a quarter. The formula assumes uncorrelated inputs; with correlation

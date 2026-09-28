@@ -3,11 +3,11 @@
 ## Clearance Holes and Edge Distances
 
 | Fastener | Hole dia | Min edge distance | Wrench clearance | Socket head OD | Socket head height |
-|----------|----------|-------------------|------------------|----------------|--------------------|
-| M3 | 3.4mm | 8.5mm | 7mm | 5.5mm | 3.0mm |
-| M4 | 4.5mm | 11mm | 8mm | 7.0mm | 4.0mm |
-| M5 | 5.5mm | 14mm | 10mm | 8.5mm | 5.0mm |
-| M6 | 6.6mm | 16.5mm | 12mm | 10.0mm | 6.0mm |
+| -------- | -------- | ----------------- | ---------------- | -------------- | ------------------ |
+| M3       | 3.4mm    | 8.5mm             | 7mm              | 5.5mm          | 3.0mm              |
+| M4       | 4.5mm    | 11mm              | 8mm              | 7.0mm          | 4.0mm              |
+| M5       | 5.5mm    | 14mm              | 10mm             | 8.5mm          | 5.0mm              |
+| M6       | 6.6mm    | 16.5mm            | 12mm             | 10.0mm         | 6.0mm              |
 
 ### Edge Distance Rule
 
@@ -27,21 +27,21 @@ For every fastener, also verify tool-access: trace a straight line from outside 
 ## Counterbore Dimensions (Socket Head Cap Screws)
 
 | Bolt | Counterbore dia | Counterbore depth |
-|------|----------------|-------------------|
-| M3 | 6.5mm | 3.5mm |
-| M4 | 8.0mm | 4.5mm |
-| M5 | 9.5mm | 5.5mm |
-| M6 | 11.0mm | 6.5mm |
+| ---- | --------------- | ----------------- |
+| M3   | 6.5mm           | 3.5mm             |
+| M4   | 8.0mm           | 4.5mm             |
+| M5   | 9.5mm           | 5.5mm             |
+| M6   | 11.0mm          | 6.5mm             |
 
 Counterbore diameter includes ~1mm clearance around the socket head OD. Counterbore depth is socket head height + 0.5mm so the head sits fully below the surface.
 
 ## T-Nut Specs for Aluminum Extrusions
 
-| Extrusion | Slot width | Common bolt | T-nut type |
-|-----------|-----------|-------------|------------|
-| 2020 | 6mm | M5 | Drop-in or slide-in |
-| 3030 | 8mm | M6 | Drop-in or slide-in |
-| 4040 | 10mm | M8 | Drop-in or slide-in |
+| Extrusion | Slot width | Common bolt | T-nut type          |
+| --------- | ---------- | ----------- | ------------------- |
+| 2020      | 6mm        | M5          | Drop-in or slide-in |
+| 3030      | 8mm        | M6          | Drop-in or slide-in |
+| 4040      | 10mm       | M8          | Drop-in or slide-in |
 
 Drop-in T-nuts can be inserted from any point along the extrusion slot without sliding from the end. Slide-in T-nuts must be inserted from an open end of the extrusion. Drop-in is preferred for assembly convenience.
 
@@ -50,10 +50,10 @@ Drop-in T-nuts can be inserted from any point along the extrusion slot without s
 For threaded fastening into plastic parts, use brass knurled heat-set inserts installed with a soldering iron. Never cut threads directly into PETG/PLA.
 
 | Insert | Hole dia in plastic | Insert OD | Insert length | Pull-out force (PETG) |
-|--------|--------------------|-----------|--------------|-----------------------|
-| M3 | 4.0mm | 4.6mm | 4-6mm | ~200N |
-| M4 | 5.0mm | 5.6mm | 5-8mm | ~300N |
-| M5 | 6.0mm | 6.8mm | 6-10mm | ~400N |
+| ------ | ------------------- | --------- | ------------- | --------------------- |
+| M3     | 4.0mm               | 4.6mm     | 4-6mm         | ~200N                 |
+| M4     | 5.0mm               | 5.6mm     | 5-8mm         | ~300N                 |
+| M5     | 6.0mm               | 6.8mm     | 6-10mm        | ~400N                 |
 
 Hole diameter is slightly undersized relative to insert OD so the insert melts into the surrounding plastic for a secure bond.
 

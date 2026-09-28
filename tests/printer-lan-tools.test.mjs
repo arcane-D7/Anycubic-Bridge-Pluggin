@@ -23,18 +23,28 @@ test("assertLanIp accepts private/reserved LAN IPv4 and rejects public/loopback/
 
 test("printer_lan_handshake redacts credentials by default and exposes them with include_credentials", async () => {
   const registered = new Map();
-  const fakeServer = { registerTool: (name, config, handler) => registered.set(name, { config, handler }) };
+  const fakeServer = {
+    registerTool: (name, config, handler) => registered.set(name, { config, handler }),
+  };
   registerPrinterLanTools(fakeServer, z);
 
   // Both LAN tools must be registered and read-only.
   assert.deepEqual([...registered.keys()].sort(), ["printer_lan_handshake", "printer_lan_read"]);
   for (const name of ["printer_lan_handshake", "printer_lan_read"]) {
-    assert.equal(registered.get(name).config.annotations.readOnlyHint, true, `${name} must be read-only`);
+    assert.equal(
+      registered.get(name).config.annotations.readOnlyHint,
+      true,
+      `${name} must be read-only`,
+    );
   }
 
   const handshake = registered.get("printer_lan_handshake");
   const input = handshake.config.inputSchema;
-  assert.equal(input.include_credentials.def.defaultValue, false, "credentials default to redacted");
+  assert.equal(
+    input.include_credentials.def.defaultValue,
+    false,
+    "credentials default to redacted",
+  );
 
   // Handler returns redacted credentials by default (no network call needed to
   // verify the redaction rule — stub the transport dependency via a fake result).
@@ -47,7 +57,9 @@ test("printer_lan_handshake redacts credentials by default and exposes them with
 
 test("printer_lan_read validates IP before connecting", async () => {
   const registered = new Map();
-  const fakeServer = { registerTool: (name, config, handler) => registered.set(name, { config, handler }) };
+  const fakeServer = {
+    registerTool: (name, config, handler) => registered.set(name, { config, handler }),
+  };
   registerPrinterLanTools(fakeServer, z);
   const readTool = registered.get("printer_lan_read");
   const err = await readTool.handler({ ip: "127.0.0.1" });

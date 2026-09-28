@@ -40,6 +40,7 @@ npm --prefix scripts/viewer run start -- --host 127.0.0.1 --dir <abs-models-dir>
 ## The three gotchas (and why the script exists)
 
 ### 1. `.step` renders ONLY via a hidden GLB sidecar
+
 The Viewer has **no CAD kernel** — it cannot tessellate STEP itself. It looks for a
 hidden `.<basename>.step.glb` next to the file. If it's missing you get
 **"Generated GLB is missing"**. So every exporter must emit it:
@@ -58,6 +59,7 @@ def export_part(name, part, stl=True):
 `models/.*.glb`.
 
 ### 2. Fixed port + a lingering server → `EADDRINUSE`
+
 The server binds a **fixed** port (default **4178**) and does **not** auto-increment;
 a previous session's `--shutdown-after 12h` server is often still listening, so a
 fresh launch crashes with `Error: listen EADDRINUSE 127.0.0.1:4178`. Free it first:
@@ -72,6 +74,7 @@ server, kill its PID). Always pass `--shutdown-after 12h` so forgotten servers
 self-clean.
 
 ### 3. The launcher script was renamed
+
 Older bundles exposed `npm run agent:start` (a launcher that owned port selection +
 server reuse). Newer bundles replaced it with plain `start` / `serve`
 (`node backend/server.mjs`) which takes `--host --dir --port --shutdown-after`
@@ -88,5 +91,5 @@ grep -q '"agent:start"' scripts/viewer/package.json && script=agent:start
 
 You do **not** need to restart the server — it serves the `models/` dir live. Just
 re-run `build_all.py` (regenerates the STEP + GLB sidecars) and **refresh the
-browser**. Only restart the server to point at a *different* directory or to pick up
+browser**. Only restart the server to point at a _different_ directory or to pick up
 a Viewer update.

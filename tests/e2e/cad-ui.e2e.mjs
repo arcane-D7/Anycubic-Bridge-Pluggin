@@ -78,9 +78,15 @@ function pickExecutable() {
 try {
   await client.connect(transport);
   const tools = await client.listTools();
-  assert.ok(tools.tools.some((t) => t.name === "cad_open_workspace"), "cad_open_workspace missing");
+  assert.ok(
+    tools.tools.some((t) => t.name === "cad_open_workspace"),
+    "cad_open_workspace missing",
+  );
 
-  const opened = await client.callTool({ name: "cad_open_workspace", arguments: { open_browser: false } });
+  const opened = await client.callTool({
+    name: "cad_open_workspace",
+    arguments: { open_browser: false },
+  });
   const openTxt = JSON.stringify(opened);
   assert.match(openTxt, /"ok":true/);
   cadUrl = openTxt.match(/http:\/\/127\.0\.0\.1:(\d+)/)?.[0];
@@ -117,7 +123,7 @@ try {
   });
   page.on("console", (m) => {
     if (m.type() === "error") {
-      const loc = m.location ? m.location().url ?? "" : "";
+      const loc = m.location ? (m.location().url ?? "") : "";
       const txt = m.text();
       // Benign: favicon 404; Three.js TransformControls known log while the
       // gizmo tracks the scene.
@@ -131,7 +137,10 @@ try {
   });
   // SSE keeps a connection open — wait for the actual UI elements instead.
   await page.waitForSelector("#btnAdd", { timeout: 20000 });
-  assert.ok((await page.$$("#objectList li")).length === 0, "expected empty workspace on fresh open");
+  assert.ok(
+    (await page.$$("#objectList li")).length === 0,
+    "expected empty workspace on fresh open",
+  );
   // ensure primKind = box
   await page.select("#primKind", "box");
   await page.click("#btnAdd");
@@ -143,15 +152,18 @@ try {
       const diag = {
         pageErrors: errors,
         toast: await page.$eval("#toast", (el) => el.textContent).catch(() => ""),
-        list: await page.$$eval("#objectList li .name", (els) =>
-          els.map((x) => x.textContent),
-        ),
+        list: await page.$$eval("#objectList li .name", (els) => els.map((x) => x.textContent)),
         hasOnclick: await page.$eval("#btnAdd", (el) => typeof el.onclick).catch(() => "n/a"),
       };
       throw new Error(`add did not produce an object: ${JSON.stringify(diag)}`);
     });
-  const listAfterAdd = await page.$$eval("#objectList li .name", (els) => els.map((e) => e.textContent));
-  assert.ok(listAfterAdd.includes("box_1") || listAfterAdd.length >= 1, `box_1 missing: ${listAfterAdd}`);
+  const listAfterAdd = await page.$$eval("#objectList li .name", (els) =>
+    els.map((e) => e.textContent),
+  );
+  assert.ok(
+    listAfterAdd.includes("box_1") || listAfterAdd.length >= 1,
+    `box_1 missing: ${listAfterAdd}`,
+  );
 
   // ---- 2. Add a cylinder to use in boolean ----
   await page.select("#primKind", "cylinder");
@@ -164,16 +176,16 @@ try {
       const diag = {
         pageErrors: errors,
         toast: await page.$eval("#toast", (el) => el.textContent).catch(() => ""),
-        list: await page.$$eval("#objectList li .name", (els) =>
-          els.map((x) => x.textContent),
-        ),
+        list: await page.$$eval("#objectList li .name", (els) => els.map((x) => x.textContent)),
         stats: await page.$eval("#statsBox", (el) => el.textContent).catch(() => ""),
       };
       throw new Error(`second add failed: ${JSON.stringify(diag)}`);
     });
 
   // ---- 3. Robust boolean (three-bvh-csg, client side) ----
-  const namesNow = await page.$$eval("#objectList li .name", (els) => els.map((e) => e.textContent));
+  const namesNow = await page.$$eval("#objectList li .name", (els) =>
+    els.map((e) => e.textContent),
+  );
   const a = namesNow[0];
   const b = namesNow[1];
   assert.ok(a && b && a !== b, `need two objects for boolean, got ${namesNow}`);
@@ -182,29 +194,28 @@ try {
   await page.$eval("#csgOp", (el) => (el.value = "subtract"));
   await page.click("#btnCsg");
   await page
-    .waitForFunction(() => document.querySelector("#objectList li[data-name=\"result\"]"), {
+    .waitForFunction(() => document.querySelector('#objectList li[data-name="result"]'), {
       timeout: 25000,
     })
     .catch(async (e) => {
       const diag = {
         pageErrors: errors,
         toast: await page.$eval("#toast", (el) => el.textContent).catch(() => ""),
-        list: await page.$$eval("#objectList li .name", (els) =>
-          els.map((x) => x.textContent),
-        ),
+        list: await page.$$eval("#objectList li .name", (els) => els.map((x) => x.textContent)),
       };
       throw new Error(`boolean failed to produce result: ${JSON.stringify(diag)}`);
     });
 
   // ---- 4. Parametric (manifold) — script in UI -> mesh on server ----
   await page.$eval("#paramScript", (el) => {
-    el.value = "let base = box(30, 30, 8); let hole = cylinder(5, 40, 48); return subtract(base, hole);";
+    el.value =
+      "let base = box(30, 30, 8); let hole = cylinder(5, 40, 48); return subtract(base, hole);";
   });
   await page.click("#btnParam");
   await page.waitForFunction(
     () =>
       document.querySelector("#paramStatus")?.textContent?.startsWith("OK") ||
-      document.querySelector("#objectList li[data-name=\"parametric\"]"),
+      document.querySelector('#objectList li[data-name="parametric"]'),
     { timeout: 20000 },
   );
   const paramStatus = await page.$eval("#paramStatus", (el) => el.textContent);
@@ -215,10 +226,9 @@ try {
     el.value = "a 40 by 25 by 10 mm bracket with two 5 mm holes";
   });
   await page.click("#btnAi");
-  await page.waitForFunction(
-    () => document.querySelector("#aiScript")?.style?.display !== "none",
-    { timeout: 20000 },
-  );
+  await page.waitForFunction(() => document.querySelector("#aiScript")?.style?.display !== "none", {
+    timeout: 20000,
+  });
   const scriptPreview = await page.$eval("#aiScript", (el) => el.textContent);
   assert.match(scriptPreview, /box/);
   assert.match(scriptPreview, /subtract|cylinder/);
@@ -263,25 +273,39 @@ try {
   assert.ok(del.vertices < before, `delete did not reduce vertices: ${before} -> ${del.vertices}`);
   // after deleting corner 0 the box side opens up; filling should add faces back
   const fill = await api("mesh_fill", { name: boxName });
-  assert.ok(fill.triangles >= del.triangles, `fill did not add faces: ${del.triangles} -> ${fill.triangles}`);
+  assert.ok(
+    fill.triangles >= del.triangles,
+    `fill did not add faces: ${del.triangles} -> ${fill.triangles}`,
+  );
   // bridge two edges on the (now refilled) mesh: pick the first two edges
   const mesh2 = await api(`../mesh/${encodeURIComponent(boxName)}`, {}, "GET");
   const edgeKeys = new Set();
   const trisArr = mesh2.tris;
   for (const t of trisArr) {
-    for (const [x, y] of [[t.a, t.b], [t.b, t.c], [t.c, t.a]]) {
+    for (const [x, y] of [
+      [t.a, t.b],
+      [t.b, t.c],
+      [t.c, t.a],
+    ]) {
       edgeKeys.add(x < y ? `${x}|${y}` : `${y}|${x}`);
     }
   }
   const edges = [...edgeKeys].slice(0, 2);
   assert.ok(edges.length === 2, "need >=2 edges for bridge");
   const br = await api("mesh_bridge", { name: boxName, type: "edge", ids: edges });
-  assert.ok(br.triangles === del.triangles + 2, `bridge expected +2 tris, got ${del.triangles} -> ${br.triangles}`);
+  assert.ok(
+    br.triangles === del.triangles + 2,
+    `bridge expected +2 tris, got ${del.triangles} -> ${br.triangles}`,
+  );
   // add edge between two adjacent vertices (sharing a face)
   const mesh3 = await api(`../mesh/${encodeURIComponent(boxName)}`, {}, "GET");
   let pair = null;
   outer: for (const t of mesh3.tris) {
-    for (const [x, y] of [[t.a, t.b], [t.b, t.c], [t.c, t.a]]) {
+    for (const [x, y] of [
+      [t.a, t.b],
+      [t.b, t.c],
+      [t.c, t.a],
+    ]) {
       if (x !== y) {
         pair = [x, y];
         break outer;
@@ -328,14 +352,19 @@ try {
   assert.equal(hasCommit, true, "btnSubCommit not wired");
   // exit sub-mode via the toggle
   await page.click("#btnSubMode");
-  await page.waitForFunction(() => {
-    const row = document.querySelector("#subSelectRow");
-    return row && row.style.display === "none";
-  }, { timeout: 5000 }).catch(async () => {
-    // fallback: ensure the row is not visible
-    const vis = await page.$eval("#subSelectRow", (el) => el.style.display).catch(() => "?");
-    if (vis !== "none") throw new Error(`subSelectRow did not hide: display=${vis}`);
-  });
+  await page
+    .waitForFunction(
+      () => {
+        const row = document.querySelector("#subSelectRow");
+        return row && row.style.display === "none";
+      },
+      { timeout: 5000 },
+    )
+    .catch(async () => {
+      // fallback: ensure the row is not visible
+      const vis = await page.$eval("#subSelectRow", (el) => el.style.display).catch(() => "?");
+      if (vis !== "none") throw new Error(`subSelectRow did not hide: display=${vis}`);
+    });
 
   await browser.close();
   browser = null;

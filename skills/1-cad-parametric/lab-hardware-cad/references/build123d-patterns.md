@@ -77,14 +77,14 @@ manifest, and `check.py interfaces` verifies every entry.
 Each entry needs `standard`, `dimension`, and `value`; `feature`, `intent`, and `clearance` are
 optional:
 
-| Key | Meaning |
-| --- | --- |
-| `standard` | ID from `check.py standards --list` |
-| `dimension` | a dimension name inside that standard |
-| `value` | the number **this model computed**, in mm |
-| `feature` | human label for the check output (default: the dimension name) |
-| `intent` | `match` if this part must itself conform; `envelope` if the feature must accept any conforming part (default: `match`) |
-| `clearance` | total intended clearance in mm, both sides (default: 0) |
+| Key         | Meaning                                                                                                                |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `standard`  | ID from `check.py standards --list`                                                                                    |
+| `dimension` | a dimension name inside that standard                                                                                  |
+| `value`     | the number **this model computed**, in mm                                                                              |
+| `feature`   | human label for the check output (default: the dimension name)                                                         |
+| `intent`    | `match` if this part must itself conform; `envelope` if the feature must accept any conforming part (default: `match`) |
+| `clearance` | total intended clearance in mm, both sides (default: 0)                                                                |
 
 **Write `interfaces()` as a function, and compute derived dimensions inside functions.** A
 module-level `INTERFACES = [...]` list is also accepted, but it is evaluated at import — before
@@ -147,13 +147,13 @@ def checks() -> list[dict]:
 
 Semantics:
 
-| Key | Meaning |
-| --- | --- |
-| `clear` / `material` | region that must contain no material / must contain material |
+| Key                                                                               | Meaning                                                                                                                                             |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `clear` / `material`                                                              | region that must contain no material / must contain material                                                                                        |
 | `{"cylinder": DIA, "axis": "x"\|"y"\|"z", "at": [(a, b), ...], "span": (lo, hi)}` | `at` is 2D in the plane perpendicular to the axis — axis `z`: (x, y); axis `x`: (y, z); axis `y`: (x, z). Omit `span` to run through the whole part |
-| `{"box": (dx, dy, dz), "at": [(x, y, z), ...]}` | axis-aligned box gauges centred at each position |
-| `tol_mm3` / `min_mm3` | pass thresholds per position (both default 0.01) |
-| `bbox_x`…`bbox_z`, `bbox_min/mid/max` | `{"min": mm, "max": mm}` bounds on the measured bounding box |
+| `{"box": (dx, dy, dz), "at": [(x, y, z), ...]}`                                   | axis-aligned box gauges centred at each position                                                                                                    |
+| `tol_mm3` / `min_mm3`                                                             | pass thresholds per position (both default 0.01)                                                                                                    |
+| `bbox_x`…`bbox_z`, `bbox_min/mid/max`                                             | `{"min": mm, "max": mm}` bounds on the measured bounding box                                                                                        |
 
 Size the gauges from the same named constants as the geometry **only when the requirement is
 relational** (the recess sits above the seat). When the requirement is absolute — a mating part's

@@ -541,9 +541,10 @@ test("reconciling a live HTTP capture leaves no unmapped field", () => {
 });
 
 test("every generated HTTP catalog kind reconciles its own live capture exactly", () => {
-  const captures = ["cloud-printer-id-1789077239432.json", "http-read-orders-1789077058851.json"].map(
-    (name) => readEvidence(name),
-  );
+  const captures = [
+    "cloud-printer-id-1789077239432.json",
+    "http-read-orders-1789077058851.json",
+  ].map((name) => readEvidence(name));
   const sources = {
     printer_status: "printer_status",
     printer_info: "printer_info",
@@ -593,4 +594,3 @@ test("a handler failure returns an error result without leaking internals", asyn
   assert.equal(reply.isError, true);
   assert.match(reply.content[0].text, /Unknown read source/);
 });
-

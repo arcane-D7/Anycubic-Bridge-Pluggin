@@ -21,11 +21,11 @@ light rig + backdrop) · `pathtrace.js` (final quality) · `main.js` (UI, export
    sprinkles shards). Auto-assign holes to a flat by z and warn loudly when none fits;
    clamp slot lengths to `±(W/2 − Rc)`.
 4. **Open the shell face behind every panel hole, bigger than the part.** Otherwise the
-   shell face hides the button/window from behind — the part is *there*, positioned
+   shell face hides the button/window from behind — the part is _there_, positioned
    correctly, and looks like a white disc / a faint print. Smaller-than-part holes let
    the shell poke through the part's side wall.
 5. **Lathe about +Z with explicit normals.** `THREE.LatheGeometry` turns about Y and
-   flips visibility with point order — a reversed cap *disappears* silently. Give
+   flips visibility with point order — a reversed cap _disappears_ silently. Give
    normals from the profile tangent; a narrow ring's profile must be monotone.
 6. **Inner light-blocker must fit the outline.** A rectangular core pokes out of large
    corner arcs by 0.3 mm — four black "T"s in side views. Use a cross-shaped pair of
@@ -50,7 +50,7 @@ light rig + backdrop) · `pathtrace.js` (final quality) · `main.js` (UI, export
 12. **Light-emitting parts: black base + emissive, `toneMapped = false`.** Basic
     materials look unlit to any physically based renderer; tone-mapped emissive never reads as light.
 13. **Name emissive materials** (`lightbar`, `dots`) — the name travels through GLB and
-    lets Blender scripts toggle *one* of them.
+    lets Blender scripts toggle _one_ of them.
 14. **Several decals, one canvas.** Label + icon share a texture via UV sub-rects; a
     decal on a domed cap must follow the dome (build a polar-grid disc with `z(r)`) or
     it floats/clips.
@@ -82,20 +82,20 @@ light rig + backdrop) · `pathtrace.js` (final quality) · `main.js` (UI, export
     `load`.
 21. **`serve.py` sends `Cache-Control: no-store`.** Otherwise Chrome caches modules
     and you edit the wrong file for an hour.
-*(22–24 come from the in-browser path tracer, since retired in favour of Blender;
-they hold for any multi-frame renderer you put in the page.)*
+    _(22–24 come from the in-browser path tracer, since retired in favour of Blender;
+    they hold for any multi-frame renderer you put in the page.)_
 
 22. **Pause the interactive rAF loop during export.** The path tracer yields to the
     event loop every N samples; the frame loop sees `needsRender`, re-applies the
-    *interactive* camera and re-syncs the tracer; the rest of the samples accumulate
+    _interactive_ camera and re-syncs the tracer; the rest of the samples accumulate
     onto another view/material set. Random per run: a face goes dark grey, the light
     bar shows the perforation texture, the back plate shows the front label, a bottom
-    tile contains a whole front. Everything *looks like* a material-index bug (new
+    tile contains a whole front. Everything _looks like_ a material-index bug (new
     tracer per tile, merged textures, no-map-swaps — none fix it). Only bites with the
     tab visible, so it "worked" for two versions.
 23. **Path tracer + emissive geometry: small emitters don't light the wall.** No
     importance sampling for arbitrary emissive triangles; a 4 cm² bar at 22× stays at
-    zero on the wall. Add a same-size `RectAreaLight` *inside* the slot (two-sided,
+    zero on the wall. Add a same-size `RectAreaLight` _inside_ the slot (two-sided,
     outside the slot it throws ghost shadows back). Environment maps must be
     `DataTexture` (canvas textures have no `.image.data` → black scene).
 24. **Pin the canvas CSS size to the buffer while path-tracing an export** — the
@@ -105,13 +105,13 @@ they hold for any multi-frame renderer you put in the page.)*
 
 ## Reading depth (holes, recesses, vents)
 
-A perforated panel only reads as *holes* if what shows through is darker than the panel at
+A perforated panel only reads as _holes_ if what shows through is darker than the panel at
 every angle. Two ways it silently stops being darker:
 
 26. **The blanking part behind a hole must be unlit** (`MeshBasicMaterial`, or basic +
     a fixed dark colour). With a lit material, the fill or rim light reaches it from the
-    far side and each hole fills with a pale square — a vent field that renders as *white
-    tiles printed on the shell*. It looks like the holes were never cut, so the instinct
+    far side and each hole fills with a pale square — a vent field that renders as _white
+    tiles printed on the shell_. It looks like the holes were never cut, so the instinct
     is to go check the geometry, which is fine.
 27. **Darken the hole's side wall, not just the cavity.** Off-axis you mostly see the
     wall of the hole, not the space behind it: at 45° a 3 mm-thick wall covers a 3 mm-wide
@@ -123,32 +123,32 @@ every angle. Two ways it silently stops being darker:
     parameter (`driverX/Y`), the parts behind it — basket, cone, light guide, gasket —
     have to move with it. Miss it and the assembly stays at the origin while the hole
     moves: you get a crescent of bare cavity on one side of the opening that looks like a
-    lighting bug, not a positioning one. Position the *group*, never the members.
+    lighting bug, not a positioning one. Position the _group_, never the members.
 
 ## Openings on a swept body, and other silent failures
 
 29. **A swept skin cannot take a hole — so every aperture has to come OUTWARD.**
-    The body sweep is one closed surface. Anything placed *behind* it (a recessed
+    The body sweep is one closed surface. Anything placed _behind_ it (a recessed
     bore, an inset parting groove, a cavity disc) is simply hidden: the wall is
     opaque and continuous. Symptoms are two, and they look like different bugs —
     a bore that renders as nothing at all, and a bore that renders as an unlit
-    *crescent* (the recess opening the wrong way, so you catch one edge of it).
+    _crescent_ (the recess opening the wrong way, so you catch one edge of it).
     Either model the opening as an **unlit dark face 0.05–0.1 mm proud** of the
     skin (identical read at review distance), or rebuild that straight run as a
     flat plate and cut a real hole in it. Same for a parting line: proud thin
     band, not an inset groove.
 30. **`recess()`/`plate()` open toward +z, so check which way you rotated them.**
     `Ry(+90°)` sends +z to **+x**, `Ry(−90°)` sends it to **−x**. Getting the two
-    walls' rotations swapped opens every bore *into* the body — see the crescent
+    walls' rotations swapped opens every bore _into_ the body — see the crescent
     in 29. Write the rotation table once (`{left, right, front}`) rather than per
     call site.
 31. **Loft/ring winding fails silently and does not look like a normals bug.**
     With the ring CCW in xy and z up, the outward face is `(lo[i], lo[j], hi[i])`.
-    Reverse it and three.js culls the *outside* of the part, so you see straight
+    Reverse it and three.js culls the _outside_ of the part, so you see straight
     through to its far inner wall: a keycap reads as a splayed tent, not as an
     inverted normal, and the instinct is to go check the profile maths.
 32. **`Object3D.add()` returns the PARENT, not the child.** `g.add(mesh(…)).rotation.x = …`
-    rotates the whole group. The tell is that *everything* is 90° out — the
+    rotates the whole group. The tell is that _everything_ is 90° out — the
     bounding box reports height in z and depth in y — while each individual
     part's own numbers check out. Assign the mesh to a variable first.
 33. **Two coincident walls z-fight into a white hairline** that reads as a

@@ -16,12 +16,12 @@ python scripts/check.py standards --show slas-microplate-footprint
 
 Four documents split the plate geometry. All are ANSI-approved and were reaffirmed in 2012.
 
-| Document | Governs | Key numbers |
-| --- | --- | --- |
-| ANSI/SLAS 1-2004 | Footprint | 127.76 x 85.48 mm ±0.25; corner radius 3.18 ±1.6 mm |
-| ANSI/SLAS 2-2004 | Height | 14.35 ±0.25 mm, resting plane to top of perimeter wells |
-| ANSI/SLAS 3-2004 | Bottom outside flange | Short 2.41, medium 6.10, tall 7.62 mm, each ±0.38 |
-| ANSI/SLAS 4-2004 | Well positions | 96-well: 9.0 mm pitch, A1 at 14.38 mm from left, 11.24 mm from top |
+| Document         | Governs               | Key numbers                                                        |
+| ---------------- | --------------------- | ------------------------------------------------------------------ |
+| ANSI/SLAS 1-2004 | Footprint             | 127.76 x 85.48 mm ±0.25; corner radius 3.18 ±1.6 mm                |
+| ANSI/SLAS 2-2004 | Height                | 14.35 ±0.25 mm, resting plane to top of perimeter wells            |
+| ANSI/SLAS 3-2004 | Bottom outside flange | Short 2.41, medium 6.10, tall 7.62 mm, each ±0.38                  |
+| ANSI/SLAS 4-2004 | Well positions        | 96-well: 9.0 mm pitch, A1 at 14.38 mm from left, 11.24 mm from top |
 
 ### Designing a plate pocket
 
@@ -41,8 +41,8 @@ pocket_l_mm = plate_l_mm + plate_tol_mm + 2 * fit_clearance_mm   # 128.81
 **2. The corner radius tolerance is enormous — and it bounds the pocket radius from above,
 not below.** 3.18 ±1.6 mm means a real plate corner is anywhere from 1.58 to 4.78 mm. Get the
 direction right: a plate corner is **convex**, a pocket fillet is **concave material bulging
-inward**, so a *sharp* internal pocket corner always clears a rounded plate — the unused corner is
-empty space. It is a pocket fillet *larger* than the plate's corner radius that binds: the bulge
+inward**, so a _sharp_ internal pocket corner always clears a rounded plate — the unused corner is
+empty space. It is a pocket fillet _larger_ than the plate's corner radius that binds: the bulge
 occupies space the plate needs. Sizing the fillet to the plate's maximum corner radius is
 therefore exactly backwards — it binds every plate except those at the top of the corner
 tolerance.
@@ -117,13 +117,13 @@ Design notes:
 Tube dimensions are **not standardised** and differ measurably between suppliers, and often
 between product lines from the same supplier. Approximate outside diameters near the tube rim:
 
-| Tube | Approximate OD | Note |
-| --- | --- | --- |
-| 0.2 mL PCR | 6 mm | Often supplied in strips or as a 96-format plate |
-| 1.5 mL microcentrifuge | 11 mm | Rim is wider than the body; the body tapers |
-| 2.0 mL microcentrifuge | 11 mm | Same rim as 1.5 mL, taller body |
-| 15 mL conical | 17 mm | Cap is wider than the tube |
-| 50 mL conical | 30 mm | Cap is wider than the tube |
+| Tube                   | Approximate OD | Note                                             |
+| ---------------------- | -------------- | ------------------------------------------------ |
+| 0.2 mL PCR             | 6 mm           | Often supplied in strips or as a 96-format plate |
+| 1.5 mL microcentrifuge | 11 mm          | Rim is wider than the body; the body tapers      |
+| 2.0 mL microcentrifuge | 11 mm          | Same rim as 1.5 mL, taller body                  |
+| 15 mL conical          | 17 mm          | Cap is wider than the tube                       |
+| 50 mL conical          | 30 mm          | Cap is wider than the tube                       |
 
 **Treat every number in this table as a starting point for a first article, not a design input.**
 Ask the user for the supplier and catalogue number, or ask them to measure with calipers. Then

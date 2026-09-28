@@ -71,8 +71,7 @@ export function meshFromHandle(handle, op = "model") {
   } catch {
     /* status not exposed on this build */
   }
-  const watertight =
-    statusStr === "0" || statusStr === "NoError" ? tris.length > 0 : false;
+  const watertight = statusStr === "0" || statusStr === "NoError" ? tris.length > 0 : false;
   let volumeMm3 = 0;
   try {
     volumeMm3 = handle.volume ? Number(handle.volume()) : 0;
@@ -93,15 +92,13 @@ export async function createParametricEngine() {
   const box = (w, h = w, d = w) => MCx.Manifold.cube([w, h, d], true);
 
   /** Primitive: cylinder centered at origin. cylinder(r, h, segments). */
-  const cylinder = (r, h, segments = 32) =>
-    MCx.Manifold.cylinder(h, r, r, segments, true);
+  const cylinder = (r, h, segments = 32) => MCx.Manifold.cylinder(h, r, r, segments, true);
 
   /** Primitive: sphere centered at origin. sphere(r, segments). */
   const sphere = (r, segments = 32) => MCx.Manifold.sphere(r, segments);
 
   /** Primitive: cone — bottom radius rb, top radius rt (0 = point), height h. */
-  const cone = (rb, rt, h, segments = 32) =>
-    MCx.Manifold.cylinder(h, rb, rt, segments, true);
+  const cone = (rb, rt, h, segments = 32) => MCx.Manifold.cylinder(h, rb, rt, segments, true);
 
   /** Primitive: regular tetrahedron (unit, centered). */
   const tetrahedron = () => MCx.Manifold.tetrahedron();

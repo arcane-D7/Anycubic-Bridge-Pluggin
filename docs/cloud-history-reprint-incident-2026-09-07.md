@@ -150,4 +150,3 @@ A telemetria cloud confirmou a tarefa `119721474` com os ids e metadados esperad
 Na leitura inicial estavam ativos `ai_detect=1`, AI global `status=3` com os dois
 canais configurados, secagem a `45 C`, auto-leveling, flow calibration e vibration
 compensation. Esta tarefa não foi iniciada pelo MCP.
-

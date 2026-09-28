@@ -3,7 +3,7 @@
 The main loop assumes look images arrive **from** the owner. The other direction is worth
 automating: send the **current parametric render** to an image model and get the next look
 back. The proposal then starts from true proportions instead of the model's imagination,
-and the owner reviews a picture of *their* product rather than a mood board.
+and the owner reviews a picture of _their_ product rather than a mood board.
 
 ```
 params.js ──► three.js render ──► PNG on disk ──► image model ──► look image(s)
@@ -16,12 +16,18 @@ params.js ──► three.js render ──► PNG on disk ──► image model 
 `scripts/serve.py` already takes `POST /save?name=` → `out/`. From the page:
 
 ```js
-cam.set(view); requestAnimationFrame(() => requestAnimationFrame(() => {
-  canvas.toBlob(b => fetch('/save?name=draft-45.png', {method:'POST', body:b}), 'image/png');
-}));
+cam.set(view);
+requestAnimationFrame(() =>
+  requestAnimationFrame(() => {
+    canvas.toBlob(
+      (b) => fetch("/save?name=draft-45.png", { method: "POST", body: b }),
+      "image/png",
+    );
+  }),
+);
 ```
 
-Two nested `requestAnimationFrame`s after moving the camera, or you capture the *previous*
+Two nested `requestAnimationFrame`s after moving the camera, or you capture the _previous_
 view — the same one-frame lag as the contact sheet. Send **two angles** (a 3/4 and a
 straight-on front). From one view the model has to guess the depth, and it guesses
 generously: a 38 mm slab comes back 80 mm deep.
@@ -31,10 +37,10 @@ mock-up. What matters is that the bytes reach disk without someone dragging a fi
 
 ## 1. `edit` vs `generate` — the decision that costs a round
 
-- **`edit`, current render as reference** — refine *within* the form: add a control,
+- **`edit`, current render as reference** — refine _within_ the form: add a control,
   restate a proportion, try a CMF, recess something. Proportions and existing features
   survive because the model is looking at them.
-- **`generate`, text only** — deliberately *leave* the form.
+- **`generate`, text only** — deliberately _leave_ the form.
 
 **Reaching for `edit` when you actually needed a new form is the expensive mistake.** The
 reference drags the old silhouette along; you get the same box with a different button,
@@ -44,7 +50,7 @@ describe the product from the requirements instead.
 
 ## 2. Three prompts, not three samples
 
-`-n 3` returns three samples of *one* prompt: small random differences nobody can choose
+`-n 3` returns three samples of _one_ prompt: small random differences nobody can choose
 between. A review needs **directions**. Write one prompt per direction, sharing a literal
 `BASE` and `STYLE` string, and vary only the middle:
 
@@ -62,7 +68,7 @@ side by side.
 
 An image model **simplifies silently**. Anything not named in `BASE` may quietly vanish or
 drift: the vent field, the feet, the port row, the indicator line on a knob. Name each one
-*and its position* ("on the right third", "at the top edge", "a row below the vents").
+_and its position_ ("on the right third", "at the top edge", "a row below the vents").
 What you don't name is not preserved — it is re-imagined.
 
 The same applies to the thing you're actually changing: give it a size in mm, a colour, a
@@ -71,8 +77,8 @@ gap). "A big emergency button" gets you a different button every run.
 
 ## 4. Always exclude text
 
-Image models write. Without an explicit *"no text, no letters, no numbers, no logos, no
-brand names, no screens"* you get plausible lettering, invented brand marks, and a display
+Image models write. Without an explicit _"no text, no letters, no numbers, no logos, no
+brand names, no screens"_ you get plausible lettering, invented brand marks, and a display
 on a device that has none. Every one of those then has to be argued away in review, and
 one of them will survive into a slide deck.
 
@@ -80,7 +86,7 @@ one of them will survive into a slide deck.
 
 The model will happily put a thermal sensor behind a glossy dark panel, a mic where the
 speaker's back volume is, and an antenna inside a metallised bezel. It is drawing what
-those things *look like*, not what they do. Run every adopted direction past
+those things _look like_, not what they do. Run every adopted direction past
 `references/appearance-vs-physics.md` before it reaches `params.js` — that check is
 cheap on an image and expensive on a mould.
 

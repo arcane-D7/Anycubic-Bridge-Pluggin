@@ -96,6 +96,7 @@ Rules the decorator enforces:
   outputs — the way two part numbers are two parts. Values a model shares with
   its drawing or its assembly live in module constants (`WIDTH = 40.0`) that
   the siblings import.
+
 - **The return is a bare build123d `Shape` and nothing else** — a dict return
   is refused. The return IS the geometry: a `Compound` placing children is
   packaged as occurrences (linked where a child is another model's result), a
@@ -138,7 +139,7 @@ not an error.
 These two terms classify a STEP file by what its source is:
 
 - A **generated STEP file** has a model script as its source. The STEP is a
-  *derived output*; the script is what you edit and re-run.
+  _derived output_; the script is what you edit and re-run.
 - An **imported STEP file** is its own source: authored or downloaded
   elsewhere. There is nothing upstream to regenerate.
 

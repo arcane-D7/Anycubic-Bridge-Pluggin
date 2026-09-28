@@ -7,20 +7,20 @@ agree through. The worked example is
 ## `product.yaml`
 
 ```yaml
-product: <slug>                  # required — product identity (kebab-case)
-revision: vYYYY-MM-DD            # required — bump on ANY cross-domain change
-summary: "one line"             # optional — what it is
+product: <slug> # required — product identity (kebab-case)
+revision: vYYYY-MM-DD # required — bump on ANY cross-domain change
+summary: "one line" # optional — what it is
 
 # one block per domain; each is a self-contained vibe-* project
 firmware:
-  dir: firmware/                 # path (relative to product.yaml) — checked to exist
-  status: stub                   # stub | wip | clean | released   (informational)
-  toolchain: TBD                 # optional — e.g. esp-idf (pinned tag) / platformio
-  config_header: firmware/main/board_pins.h   # optional — enables the pinmap↔header cross-check
+  dir: firmware/ # path (relative to product.yaml) — checked to exist
+  status: stub # stub | wip | clean | released   (informational)
+  toolchain: TBD # optional — e.g. esp-idf (pinned tag) / platformio
+  config_header: firmware/main/board_pins.h # optional — enables the pinmap↔header cross-check
 pcb:
   dir: pcb/
   status: stub
-  gate: "ERC/DRC 0/0/0 + belly keep-out"   # optional — the domain's own gate, for humans
+  gate: "ERC/DRC 0/0/0 + belly keep-out" # optional — the domain's own gate, for humans
 cad:
   dir: cad/
   status: stub
@@ -46,7 +46,7 @@ state of each domain.
 
 ## Why these three contracts (and only these)
 
-The repo forbids one skill's *code* from calling another's. So the three domains are
+The repo forbids one skill's _code_ from calling another's. So the three domains are
 coupled **only through data files**. There are exactly three boundaries in a small
 product, so exactly three contracts:
 
@@ -58,7 +58,7 @@ firmware ◄──────────── pcb ─────────
    & addresses           the 0 mm^3 fit           (outline, holes, stack, ports)
 ```
 
-### 1. `pinmap` — pcb → firmware  (`pcb/pinmap.yaml`, source)
+### 1. `pinmap` — pcb → firmware (`pcb/pinmap.yaml`, source)
 
 The **net map** as machine-readable data: the structured form of the PCB brief's §2.
 The PCB produces it (it mirrors `gen_sch.py` / the brief); firmware consumes it (its
@@ -77,14 +77,14 @@ keys feed `plm_check`'s cross-checks:
   flash/PSRAM-reserved pins, and warns on the native-USB pair unless the
   signal/`to:` mentions usb (tables keyed by mcu prefix; esp32-s3 today).
 
-### 2. `board_step` — pcb → cad  (`pcb/board.step`, **generated artifact**)
+### 2. `board_step` — pcb → cad (`pcb/board.step`, **generated artifact**)
 
 The board's 3D model, the input to `vibe-cad`'s `check_fit.py` (board ↔ shell must be
 0 mm³). It is **generated** by the pcb 3D/fab step, so it may not exist yet —
 `plm_check` **warns** (does not fail) when an artifact contract is missing. Don't
 hand-create it; regenerate it from the board.
 
-### 3. `enclosure_constraints` — cad ↔ pcb  (`cad/constraints.yaml`, source)
+### 3. `enclosure_constraints` — cad ↔ pcb (`cad/constraints.yaml`, source)
 
 The **shared fit numbers**: the structured form of the PCB brief's §7 enclosure
 interlock. One set of numbers both the board outline (pcb) and the shell (cad) read —
@@ -102,12 +102,12 @@ the real `cad/tray.step`, or the cad fit-check importing `pcb/board.step`.
 > are reference-only — and they must **read these numbers**, never hardcode a copy. A
 > magic `STANDOFF_H = 16` that disagrees with `stack.car_bot` makes the part poke
 > through the real shell in the codesign view (`tools/codesign-viewer`). That view is
-> the cross-check: a visual clash = a real number to reconcile *here*. See `vibe-pcb`
+> the cross-check: a visual clash = a real number to reconcile _here_. See `vibe-pcb`
 > `references/fab-and-3d.md` → "Drive the reference models from the shared contract".
 
-### 4 (optional). `placement` — pcb evidence  (`pcb/placement.json`, artifact)
+### 4 (optional). `placement` — pcb evidence (`pcb/placement.json`, artifact)
 
-Where the pcb generator *actually put* the fit-critical items: the **generator exports
+Where the pcb generator _actually put_ the fit-critical items: the **generator exports
 `placement.json` as EVIDENCE; plm compares contract vs evidence**. Declare it with the
 mapping form (`{path: pcb/placement.json, kind: artifact}` — it's generated, so it may
 not exist yet) and, once it does, `plm_check` compares it against `constraints.yaml`:
@@ -117,11 +117,22 @@ and each `ports.*` / `windows.*` center against the matching item (by `kind`, el
 `tolerance_mm` (default 0.5; drift beyond = error). Shape:
 
 ```json
-{"product": "...", "revision": "...",
- "frame": "board mm, origin bottom-left viewed from front, +y up",
- "outline": {"l": 70.0, "w": 70.0, "t": 1.6, "corner_r": 3.0},
- "mount_holes": {"dia": 2.7, "positions": [[4,4],[66,4],[4,66],[66,66]]},
- "items": [{"ref": "J1", "kind": "usb_c", "center": [70.0, 12.0], "w": 9.2, "h": 3.4}]}
+{
+  "product": "...",
+  "revision": "...",
+  "frame": "board mm, origin bottom-left viewed from front, +y up",
+  "outline": { "l": 70.0, "w": 70.0, "t": 1.6, "corner_r": 3.0 },
+  "mount_holes": {
+    "dia": 2.7,
+    "positions": [
+      [4, 4],
+      [66, 4],
+      [4, 66],
+      [66, 66]
+    ]
+  },
+  "items": [{ "ref": "J1", "kind": "usb_c", "center": [70.0, 12.0], "w": 9.2, "h": 3.4 }]
+}
 ```
 
 (Port centers derive from the constraints: edge `±X` → `(edge_x, center_y)`, edge
@@ -139,7 +150,7 @@ file extension:
 - unknown extension → treated as source (must exist) — be explicit, prefer a known ext.
 
 This keeps the gate honest: a not-yet-built `board.step` shouldn't fail integration, but
-a missing `pinmap.yaml` (which firmware *needs* to build) should.
+a missing `pinmap.yaml` (which firmware _needs_ to build) should.
 
 ## Beyond the three: runtime / service contracts (the vibe-glue concern)
 
@@ -147,7 +158,7 @@ The three contracts above are the **hardware** seams (pins, board 3D, fit number
 product often also has a **runtime** seam: a wire protocol between the device and an
 external service — e.g. pager-buddy's Claude-status link
 ([`examples/pager-buddy/bridge/protocol.yaml`](../../../examples/pager-buddy/bridge/protocol.yaml),
-hook → bridge → device). That's adjacent to vibe-plm's core (the roadmap's *vibe-glue*),
+hook → bridge → device). That's adjacent to vibe-plm's core (the roadmap's _vibe-glue_),
 **not** a fourth hardware contract — but the same contract discipline applies, and these
 lessons (learned wiring it over HTTP, then BLE) generalize:
 
@@ -156,7 +167,7 @@ lessons (learned wiring it over HTTP, then BLE) generalize:
 - **Make the wire shape == the design/mock data shape.** When the message is field-for-
   field identical to the UI mock's data, every consumer (firmware, web mock, an ASCII
   stub) renders a received message directly — **no translation layer**.
-- **Declare field ownership.** Say which fields are *device-owned* vs *link-provided*:
+- **Declare field ownership.** Say which fields are _device-owned_ vs _link-provided_:
   battery is device-owned and is **not** on the wire; the clock/time **is** link-provided
   because a clock-less device has no RTC. Ambiguity here causes drift.
 - **Put liveness/expiry in the contract, not just code.** Carry a per-item `ts` and a

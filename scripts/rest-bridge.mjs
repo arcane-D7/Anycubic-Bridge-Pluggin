@@ -32,7 +32,9 @@ function dataRoot() {
   const local = process.env.LOCALAPPDATA;
   return (
     process.env.PLUGIN_DATA ??
-    (local ? path.join(local, "AnycubicSlicerNextControl") : path.join(pluginRoot, "AnycubicSlicerNextControl"))
+    (local
+      ? path.join(local, "AnycubicSlicerNextControl")
+      : path.join(pluginRoot, "AnycubicSlicerNextControl"))
   );
 }
 const TOKEN_FILE = path.join(dataRoot(), "bridge-token");
@@ -92,17 +94,22 @@ async function main() {
     if (url.pathname === "/health") return send(200, { ok: true, tool_count: knownTools.size });
     if (url.pathname === "/openapi.json") {
       try {
-        const spec = JSON.parse(await readFile(path.join(pluginRoot, "schemas", "openapi.json"), "utf8"));
+        const spec = JSON.parse(
+          await readFile(path.join(pluginRoot, "schemas", "openapi.json"), "utf8"),
+        );
         return send(200, spec);
       } catch {
-        return send(500, { error: "openapi.json not generated yet — run node scripts/generate-openapi.mjs" });
+        return send(500, {
+          error: "openapi.json not generated yet — run node scripts/generate-openapi.mjs",
+        });
       }
     }
 
     const m = /^\/tools\/([A-Za-z0-9_]+)$/.exec(url.pathname ?? "");
     if (!m) return send(404, { error: "not found" });
     if (req.method !== "POST") return send(405, { error: "method not allowed" });
-    if (!auth || sha256(auth) !== sha256(token)) return send(401, { error: "invalid bearer token" });
+    if (!auth || sha256(auth) !== sha256(token))
+      return send(401, { error: "invalid bearer token" });
 
     const toolName = m[1];
     if (!knownTools.has(toolName)) return send(404, { error: `unknown tool: ${toolName}` });
@@ -127,7 +134,9 @@ async function main() {
   server.listen(port, "127.0.0.1", () => {
     console.log(`REST bridge em http://127.0.0.1:${port}`);
     console.log(`Token: ${token}`);
-    console.log(`Exemplo: curl -X POST http://127.0.0.1:${port}/tools/inspect_slicer -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" -d '{}'`);
+    console.log(
+      `Exemplo: curl -X POST http://127.0.0.1:${port}/tools/inspect_slicer -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" -d '{}'`,
+    );
   });
 
   const shutdown = async () => {

@@ -28,9 +28,7 @@
           }
         }
       ],
-      "device_codes": [
-        200
-      ]
+      "device_codes": [200]
     },
     "info": {
       "msgid": "6f0bd633-0ce3-42df-84b3-d058db6fdbba",
@@ -105,9 +103,7 @@
           }
         }
       ],
-      "device_codes": [
-        200
-      ]
+      "device_codes": [200]
     },
     "print": {
       "msgid": "b6607269-ecc3-4f8c-ba24-81cc09a7daf3",
@@ -161,10 +157,7 @@
           }
         }
       ],
-      "device_codes": [
-        200,
-        200
-      ]
+      "device_codes": [200, 200]
     },
     "fan": {
       "msgid": "16bd6b29-197d-483f-b4ab-55b72fcec68a",
@@ -189,9 +182,7 @@
           }
         }
       ],
-      "device_codes": [
-        200
-      ]
+      "device_codes": [200]
     },
     "light": {
       "msgid": "4edf0432-892e-4624-84ac-a19de4741107",
@@ -220,9 +211,7 @@
           }
         }
       ],
-      "device_codes": [
-        200
-      ]
+      "device_codes": [200]
     },
     "peripherie": {
       "msgid": "e776b8a5-739d-404e-bd4e-386b361a1351",
@@ -247,9 +236,7 @@
           }
         }
       ],
-      "device_codes": [
-        200
-      ]
+      "device_codes": [200]
     },
     "aiSettings": {
       "msgid": "ce005b4a-2d59-4b8b-9965-b46c62c89308",
@@ -271,22 +258,14 @@
                 "status": 3,
                 "type": 2,
                 "count": 60,
-                "notice_type": [
-                  0,
-                  1
-                ],
-                "sensitivity_level": [
-                  1,
-                  1
-                ]
+                "notice_type": [0, 1],
+                "sensitivity_level": [1, 1]
               }
             }
           }
         }
       ],
-      "device_codes": [
-        200
-      ]
+      "device_codes": [200]
     },
     "extfilbox": {
       "msgid": "0f2cf966-93a8-4fe3-91cc-a68606eecf96",
@@ -337,21 +316,10 @@
                       "index": 0,
                       "sku": "AHHSGY-107",
                       "type": "PLA High Speed",
-                      "color": [
-                        117,
-                        120,
-                        123
-                      ],
+                      "color": [117, 120, 123],
                       "edit_status": 0,
                       "status": 5,
-                      "color_group": [
-                        [
-                          117,
-                          120,
-                          123,
-                          255
-                        ]
-                      ],
+                      "color_group": [[117, 120, 123, 255]],
                       "icon_type": 0,
                       "consumables_percent": 13
                     },
@@ -359,21 +327,10 @@
                       "index": 1,
                       "sku": "AHPLLB-107",
                       "type": "PLA",
-                      "color": [
-                        212,
-                        185,
-                        150
-                      ],
+                      "color": [212, 185, 150],
                       "edit_status": 0,
                       "status": 5,
-                      "color_group": [
-                        [
-                          212,
-                          185,
-                          150,
-                          255
-                        ]
-                      ],
+                      "color_group": [[212, 185, 150, 255]],
                       "icon_type": 0,
                       "consumables_percent": 93
                     },
@@ -381,21 +338,10 @@
                       "index": 2,
                       "sku": "",
                       "type": "PLA Silk",
-                      "color": [
-                        255,
-                        215,
-                        0
-                      ],
+                      "color": [255, 215, 0],
                       "edit_status": 1,
                       "status": 5,
-                      "color_group": [
-                        [
-                          255,
-                          215,
-                          0,
-                          255
-                        ]
-                      ],
+                      "color_group": [[255, 215, 0, 255]],
                       "icon_type": 0,
                       "consumables_percent": 0
                     },
@@ -403,21 +349,10 @@
                       "index": 3,
                       "sku": "",
                       "type": "PLA",
-                      "color": [
-                        0,
-                        0,
-                        0
-                      ],
+                      "color": [0, 0, 0],
                       "edit_status": 1,
                       "status": 5,
-                      "color_group": [
-                        [
-                          0,
-                          0,
-                          0,
-                          255
-                        ]
-                      ],
+                      "color_group": [[0, 0, 0, 255]],
                       "icon_type": 0,
                       "consumables_percent": 0
                     }
@@ -428,9 +363,7 @@
           }
         }
       ],
-      "device_codes": [
-        200
-      ]
+      "device_codes": [200]
     }
   },
   "events": [
@@ -595,14 +528,8 @@
             "status": 3,
             "type": 2,
             "count": 60,
-            "notice_type": [
-              0,
-              1
-            ],
-            "sensitivity_level": [
-              1,
-              1
-            ]
+            "notice_type": [0, 1],
+            "sensitivity_level": [1, 1]
           }
         }
       }
@@ -668,21 +595,10 @@
                   "index": 0,
                   "sku": "AHHSGY-107",
                   "type": "PLA High Speed",
-                  "color": [
-                    117,
-                    120,
-                    123
-                  ],
+                  "color": [117, 120, 123],
                   "edit_status": 0,
                   "status": 5,
-                  "color_group": [
-                    [
-                      117,
-                      120,
-                      123,
-                      255
-                    ]
-                  ],
+                  "color_group": [[117, 120, 123, 255]],
                   "icon_type": 0,
                   "consumables_percent": 13
                 },
@@ -690,21 +606,10 @@
                   "index": 1,
                   "sku": "AHPLLB-107",
                   "type": "PLA",
-                  "color": [
-                    212,
-                    185,
-                    150
-                  ],
+                  "color": [212, 185, 150],
                   "edit_status": 0,
                   "status": 5,
-                  "color_group": [
-                    [
-                      212,
-                      185,
-                      150,
-                      255
-                    ]
-                  ],
+                  "color_group": [[212, 185, 150, 255]],
                   "icon_type": 0,
                   "consumables_percent": 93
                 },
@@ -712,21 +617,10 @@
                   "index": 2,
                   "sku": "",
                   "type": "PLA Silk",
-                  "color": [
-                    255,
-                    215,
-                    0
-                  ],
+                  "color": [255, 215, 0],
                   "edit_status": 1,
                   "status": 5,
-                  "color_group": [
-                    [
-                      255,
-                      215,
-                      0,
-                      255
-                    ]
-                  ],
+                  "color_group": [[255, 215, 0, 255]],
                   "icon_type": 0,
                   "consumables_percent": 0
                 },
@@ -734,21 +628,10 @@
                   "index": 3,
                   "sku": "",
                   "type": "PLA",
-                  "color": [
-                    0,
-                    0,
-                    0
-                  ],
+                  "color": [0, 0, 0],
                   "edit_status": 1,
                   "status": 5,
-                  "color_group": [
-                    [
-                      0,
-                      0,
-                      0,
-                      255
-                    ]
-                  ],
+                  "color_group": [[0, 0, 0, 255]],
                   "icon_type": 0,
                   "consumables_percent": 0
                 }

@@ -24,11 +24,11 @@ export const OP_NAMES = Object.freeze(["add", "subtract", "intersect", "differen
 
 /** Normalize an operation name to a canonical key. Rejects unknowns. */
 export function normalizeOp(op) {
-  const key = String(op ?? "").toLowerCase().trim();
+  const key = String(op ?? "")
+    .toLowerCase()
+    .trim();
   if (!OP_NAMES.includes(key)) {
-    throw new Error(
-      `unsupported boolean op '${op}' — expected one of: ${OP_NAMES.join(", ")}`,
-    );
+    throw new Error(`unsupported boolean op '${op}' — expected one of: ${OP_NAMES.join(", ")}`);
   }
   return key;
 }
@@ -46,7 +46,11 @@ export function buildGeometry({ positions, tris }) {
   const flat = new Float32Array(tris.length * 9);
   tris.forEach((t, i) => {
     const base = i * 9;
-    for (const [k, idx] of [[0, t.a], [3, t.b], [6, t.c]]) {
+    for (const [k, idx] of [
+      [0, t.a],
+      [3, t.b],
+      [6, t.c],
+    ]) {
       const srcIdx = idx * 3;
       flat[base + k] = positions[srcIdx];
       flat[base + k + 1] = positions[srcIdx + 1];

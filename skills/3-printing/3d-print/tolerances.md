@@ -4,28 +4,32 @@ Never blanket-apply a single clearance value to all interfaces. Classify the fit
 
 ## Fit Type Table
 
-| Fit type | Use case | Radial clearance | Notes |
-|----------|----------|------------------|-------|
-| Press fit | Bearing OD into pocket, pin into plastic | 0.10-0.15mm | Interference with plastic elasticity |
-| Snap/retention | Snap lip holding ring/cap | 0.10-0.15mm | Elastic deflection holds |
-| Bolt clearance (static) | M-bolt clearance hole | 0.15-0.25mm | Self-centers under preload |
-| Stationary shaft/dowel | Alignment pin, press axle | 0.25-0.50mm | No rotation |
-| Rotating shaft through plastic | Motor output shaft, unconstrained axle | 0.75-1.25mm | Must never touch -- friction damages plastic |
-| Accommodation fit | Precision boss into printed recess | 0.50-0.75mm | Precision feature entering sloppy-tolerance pocket |
-| Cable/wire passage | Cables through wall | 1-2mm + cable OD | Generous for assembly |
+| Fit type                       | Use case                                 | Radial clearance | Notes                                              |
+| ------------------------------ | ---------------------------------------- | ---------------- | -------------------------------------------------- |
+| Press fit                      | Bearing OD into pocket, pin into plastic | 0.10-0.15mm      | Interference with plastic elasticity               |
+| Snap/retention                 | Snap lip holding ring/cap                | 0.10-0.15mm      | Elastic deflection holds                           |
+| Bolt clearance (static)        | M-bolt clearance hole                    | 0.15-0.25mm      | Self-centers under preload                         |
+| Stationary shaft/dowel         | Alignment pin, press axle                | 0.25-0.50mm      | No rotation                                        |
+| Rotating shaft through plastic | Motor output shaft, unconstrained axle   | 0.75-1.25mm      | Must never touch -- friction damages plastic       |
+| Accommodation fit              | Precision boss into printed recess       | 0.50-0.75mm      | Precision feature entering sloppy-tolerance pocket |
+| Cable/wire passage             | Cables through wall                      | 1-2mm + cable OD | Generous for assembly                              |
 
 ## Key Rules
 
 ### FDM hole shrinkage compensation
+
 FDM holes print 0.15-0.25mm undersized diametrically (varies by material -- see materials.md). Subtract this shrinkage from your designed clearance to estimate real clearance. A "0.3mm diametral clearance" on paper can become 0mm actual clearance after print shrink, resulting in interference. Always design with the real clearance you need after accounting for shrink.
 
 ### Do not reuse tolerances across different interface types
+
 A pillow-block bearing pocket is a press fit. A motor-shaft through-hole is a rotating-shaft clearance. A bolt hole is a static clearance. These have different radial clearance values. Copy-pasting one tolerance into another interface type causes binding or slop.
 
 ### No threads in PETG/PLA
+
 Printed threads in soft plastics strip immediately under any real load. Use heat-set inserts (M3-M6 brass knurled inserts, installed with soldering iron) or T-nuts for aluminum extrusion mounting. Heat-set inserts provide metal threads in a plastic body with excellent pull-out resistance.
 
 ### Rotating shaft pass-through rule
+
 Any time a shaft rotates inside a printed hole with no bearing between them, that is a rotating-shaft class fit. Requires at least 0.75mm radial clearance (at least 1.5mm diametral). Never less, even if the fit looks fine on paper. Real printers and real motors have enough tolerance stack-up (print shrink + shaft runout + mounting misalignment + bearing play) to consume anything smaller.
 
 ## Worked Example: Motor Shaft Through-Hole

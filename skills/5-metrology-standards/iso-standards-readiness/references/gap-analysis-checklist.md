@@ -27,17 +27,17 @@ to keyword counts.
 
 ## Required fields for every review item
 
-| Field | Required content |
-|---|---|
-| Item ID | Stable unique identifier |
-| Scope | Products, sites, processes, suppliers, systems, and period |
-| Owner | Accountable role |
-| Status | One value from the vocabulary above |
-| Evidence | Controlled IDs, revisions/dates, and locations |
+| Field          | Required content                                                    |
+| -------------- | ------------------------------------------------------------------- |
+| Item ID        | Stable unique identifier                                            |
+| Scope          | Products, sites, processes, suppliers, systems, and period          |
+| Owner          | Accountable role                                                    |
+| Status         | One value from the vocabulary above                                 |
+| Evidence       | Controlled IDs, revisions/dates, and locations                      |
 | Source/version | Official source, exact edition/version/date, access/currency review |
-| Rationale | Evidence-based conclusion or approved not-applicable rationale |
-| Action | Gap/change/CAPA ID, owner, due date, and status |
-| Approval | Named authorized approver, decision, date, and record ID |
+| Rationale      | Evidence-based conclusion or approved not-applicable rationale      |
+| Action         | Gap/change/CAPA ID, owner, due date, and status                     |
+| Approval       | Named authorized approver, decision, date, and record ID            |
 
 Blank, placeholder, inaccessible, stale, or unapproved fields fail closed.
 

@@ -38,13 +38,12 @@ metadata:
   version: "1.0"
   skill-author: "@luckiday"
   vendored: "2026-09-18"
-
 ---
 
 # Vibe industrial design (brief + AI look image → parametric appearance → renders → report)
 
-You own *what it looks like*: proportions, split lines, panel inset, control
-placement, CMF. `vibe-cad` owns *how it holds together*. The two meet on a few
+You own _what it looks like_: proportions, split lines, panel inset, control
+placement, CMF. `vibe-cad` owns _how it holds together_. The two meet on a few
 shared numbers (outer W×H×D, corner radii, apertures) that you decide here and
 hand over.
 
@@ -53,7 +52,7 @@ The method has three sources of truth and one loop:
 - **`params.js`** — every dimension, once, with a provenance tag. Nobody types a
   number anywhere else.
 - **`design-report.md`** — the written authority (ID · CMF · manufacturability ·
-  open questions · version log). The `.docx` is a *generated snapshot* of it.
+  open questions · version log). The `.docx` is a _generated snapshot_ of it.
 - **`studio.blend`** — the hand-tuned lighting/materials, extracted so they outlive
   the model.
 
@@ -72,7 +71,7 @@ Before the first picture, go and find the constraints that are **already fixed**
 are rarely all in the brief. An algorithm spec that assumed a mounting height and derived
 its thresholds from it; an ADR whose module needs an antenna keep-out; a human-machine
 contract saying which two controls must never be confusable; a board contract with a power
-LED the MCU cannot switch off. Extract them into the report's §0 *before* you have a
+LED the MCU cannot switch off. Extract them into the report's §0 _before_ you have a
 picture to fall in love with.
 
 Then check that the physics passes through the surface you're about to draw: ordinary
@@ -88,12 +87,12 @@ button colour while the form is wrong.**
 ## 1. What the AI image is (and is not)
 
 An AI-generated product render is a **look**: proportion, material feel, where
-things sit, what reads as "one product". It is *not* a drawing — its own annotated
+things sit, what reads as "one product". It is _not_ a drawing — its own annotated
 dimensions rarely agree with its pixels (a "170 × 95" caption on a 1.98:1 picture).
 Rule: **the picture wins, then make the numbers self-consistent**. Pick one anchor
 (usually the front width, from the volume you need or the board you must wrap),
 derive px/mm, and measure everything else off that. Anything the picture doesn't
-show (back, top, thickness) is *your* decision — say so in the report.
+show (back, top, thickness) is _your_ decision — say so in the report.
 
 Measure with code, not by eye (`scripts/measure_ref.py`, method in
 `references/reference-image-measurement.md`): brightness scans across edges for
@@ -105,7 +104,7 @@ Write the pixel numbers into the params comments — the next person can re-deri
 **You can also drive the picture.** When the next look has to come from you rather than
 from the owner, send the **current render** back to an image model as the reference — the
 proposal then starts from true proportions instead of the model's imagination, and the
-owner reviews a picture of *their* product. `edit` with your render refines *within* the
+owner reviews a picture of _their_ product. `edit` with your render refines _within_ the
 form; plain `generate` deliberately leaves it, and reaching for `edit` after the brief
 moved just gives you the same box with a different button while everyone calls it
 exploration. Getting the render to disk without a human, the three-part prompt (a literal
@@ -117,13 +116,13 @@ exclusions), why three prompts beat `-n 3`, and why "no text, no logos" is not o
 
 ```js
 export const P = {
-  W: 154,        // [v2] from the owner's v2 image (8.03 px/mm at "front = 154")
-  H: 90,         // [v2] 1237×726 px → 1.70; volume held equal to v1
-  Rc: 10,        // [v2] corner fit R≈80 px
-  Rf: 2.0,       // [v2] bezel outer-edge → panel gap only 17 px
-  usbW: 9.15,    // [std] USB-C receptacle 8.94×3.16 + clearance
-  btnOD: 23,     // [v2] 173 px = 21.5; rounded UP for elderly fingers — see report Q6
-  boneRough: .78 // [eye]
+  W: 154, // [v2] from the owner's v2 image (8.03 px/mm at "front = 154")
+  H: 90, // [v2] 1237×726 px → 1.70; volume held equal to v1
+  Rc: 10, // [v2] corner fit R≈80 px
+  Rf: 2.0, // [v2] bezel outer-edge → panel gap only 17 px
+  usbW: 9.15, // [std] USB-C receptacle 8.94×3.16 + clearance
+  btnOD: 23, // [v2] 173 px = 21.5; rounded UP for elderly fingers — see report Q6
+  boneRough: 0.78, // [eye]
 };
 ```
 
@@ -138,10 +137,10 @@ sneaks in and the gap pinches at 45°.
 three.js, no CSG, one file per concern (`params / device / materials / textures /
 views / sheet / studio / pathtrace / main`). The body is **an outline × a side
 profile**: the outline gives the front corner radius, the profile gives the edge
-fillet — two *independent* radii, which is what "very round front, thin soft
+fillet — two _independent_ radii, which is what "very round front, thin soft
 edge" needs and a single-radius rounded box cannot do. Straight runs of the
 outline become **true flat plates** so they can carry **real holes** (ports,
-buttons, light slots); arcs are swept in one piece. Panels sit *in* the shell with a
+buttons, light slots); arcs are swept in one piece. Panels sit _in_ the shell with a
 controlled gap; the gap and the seam are the design's only "lines".
 
 Two disciplines that pay for themselves:
@@ -150,7 +149,7 @@ Two disciplines that pay for themselves:
   review often happens offline in a meeting room; and one texture can host several
   decals (label + icon) via UV sub-rects.
 - **One material per part** (a materials ledger with the real-world counterpart in
-  the report's CMF table). Split parts = split materials; the ledger *is* the CMF spec.
+  the report's CMF table). Split parts = split materials; the ledger _is_ the CMF spec.
 
 The gotchas that cost sessions are in `references/threejs-scene-gotchas.md`
 (holes silently dropped when they cross a seam, alpha-test perforation turning to
@@ -169,7 +168,7 @@ Serve with `scripts/serve.py` (static + `POST /save?name=` → `out/`, and
   top/bottom follow third-angle projection so left/right match the front (those
   strips are what people compare against the board);
 - persists slider deltas in localStorage (`?fresh=1` ignores them; "save params"
-  writes `out/params.json` — copy the values *back into `params.js`*, that is the
+  writes `out/params.json` — copy the values _back into `params.js`_, that is the
   only place they count);
 - **auto-exports**: `?sheet=1&save=1&scale=2` (contact sheet), `?shot=1&view=…`
   (one camera), and for bisecting a broken sheet `?tile=<view>` + `?compose=1`.
@@ -183,7 +182,7 @@ light the wall without a fake area light), and it needed the interactive rAF loo
 paused during every export — otherwise the tracer yields, the loop sees
 `needsRender`, re-applies the default camera, and the remaining samples accumulate
 onto another view/material (a face goes dark grey, the light bar prints the grille
-texture, a bottom tile contains a whole front view — all *look like*
+texture, a bottom tile contains a whole front view — all _look like_
 material-index corruption, only when the tab is visible). If you add any
 multi-frame renderer to the page, keep an `exporting` flag that makes the rAF
 loop return early. Once Cycles was stable the browser tracer bought nothing.
@@ -196,19 +195,19 @@ dots ~5) via `KHR_materials_emissive_strength`; three.js units are mm, glTF is m
 scale 0.001 on import; the front ends up facing **−Y**. Then
 (`references/blender-pipeline.md`, scripts in `scripts/blender_*.py`):
 
-1. `blender_render.py` — new scene *or* open `studio.blend` if present, import the
+1. `blender_render.py` — new scene _or_ open `studio.blend` if present, import the
    GLB under a `device-root` empty, re-attach hand-tuned materials from the
    override table, pack, save `out/*.blend`, render. Use **Khronos PBR Neutral**,
    not AgX (AgX desaturates safety orange to salmon).
 2. Tune by hand once (HDRI, walls, lights, materials, camera). Then
    `blender_extract_studio.py` deletes the device, records `{object name → material
-   names}` for anything hand-materialled, packs, and saves `studio.blend`. From now
+names}` for anything hand-materialled, packs, and saves `studio.blend`. From now
    on every regeneration inherits the studio; renamed parts print an
    `[override]` warning instead of silently losing their material.
 3. `blender_shots.py` — a camera table (front / hero / side / back / top /
    bottom-off / bottom-on + a dim-room pair): the camera moves, the wall doesn't;
-   unseen faces are shown by *rotating the device*. Filter emissives by material
-   *name* — once the front carries lit dots too, "turn the light off" must not
+   unseen faces are shown by _rotating the device_. Filter emissives by material
+   _name_ — once the front carries lit dots too, "turn the light off" must not
    turn those off. Emissive detection must test strength × colour: Principled's
    Emission Strength defaults to 1.0 with black colour, so "strength > 0" flags
    every material. For plain emissives, unlit = strength 0 **and** base colour
@@ -223,11 +222,11 @@ scale 0.001 on import; the front ends up facing **−Y**. Then
    on the wall — Cycles importance-samples mesh lights, no fake area light
    needed). Base = milky PMMA + coat, so unlit is just `lit = 0`. Then add
    **compositor Glare/Bloom** (`enable_bloom`, threshold 1.0): the path tracer
-   computes where light *goes*, not the halo the lens paints around a bright
+   computes where light _goes_, not the halo the lens paints around a bright
    source — that is post. Show the bar in a **dim-room pair** (studio HDRI + lamps
    × 0.15, lights off / on): that is what the light actually looks like.
 5. Look at the HDRI direction — the bright side of an environment map is often
-   *behind* the device on first use; a 180° Z on the World Mapping node fixes it.
+   _behind_ the device on first use; a 180° Z on the World Mapping node fixes it.
 
 ## 6. The report and the version loop
 
@@ -246,7 +245,7 @@ When the owner sends the next look image: save it to `refs/NN-<version>-<view>.p
 measure, add a `[vN]` block to `params.js`, re-render sheet + shots, add the change
 list, regenerate the docx, and **name what the picture doesn't decide** (button
 size vs. finger, LED count vs. driver channels, sensor moved → board respin) as
-open questions rather than silently choosing. What is *not* in the picture stays
+open questions rather than silently choosing. What is _not_ in the picture stays
 unchanged and says so.
 
 ## Run it
@@ -269,7 +268,7 @@ python3 skills/vibe-industrial-design/scripts/measure_ref.py refs/30-v2-front.pn
 - Wall thickness, bosses, snap fits, board fit → `vibe-cad` (take W×H×D, Rc/Rf,
   apertures from `params.js`).
 - Rendering an existing STEP → the `cad-viewer` skill; this skill's renders are
-  for *appearance* review, before there is a STEP.
+  for _appearance_ review, before there is a STEP.
 
 ## Keeping this current (living doc)
 

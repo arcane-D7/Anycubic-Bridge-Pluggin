@@ -23,7 +23,10 @@ function zodToJsonSchema(prop) {
   return prop ?? { type: "object" };
 }
 
-export function buildOpenApiSpec(tools, { title = "Anycubic Slicer Next Control bridge", version = "0.1.0" } = {}) {
+export function buildOpenApiSpec(
+  tools,
+  { title = "Anycubic Slicer Next Control bridge", version = "0.1.0" } = {},
+) {
   const paths = {};
   const schemas = {};
 
@@ -51,18 +54,25 @@ export function buildOpenApiSpec(tools, { title = "Anycubic Slicer Next Control 
         operationId: opId,
         summary: `${readOnly ? "R" : "W"}: ${name}`,
         description:
-          (tool?.description ?? "") + (readOnly ? "\n\nREAD-ONLY." : "\n\nMay WRITE device state; requires a confirm argument where documented."),
+          (tool?.description ?? "") +
+          (readOnly
+            ? "\n\nREAD-ONLY."
+            : "\n\nMay WRITE device state; requires a confirm argument where documented."),
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
-          content: { "application/json": { schema: { $ref: `#/components/schemas/${bodySchemaName}` } } },
+          content: {
+            "application/json": { schema: { $ref: `#/components/schemas/${bodySchemaName}` } },
+          },
         },
         responses: {
-          "200": {
+          200: {
             description: "Tool result",
-            content: { "application/json": { schema: { $ref: `#/components/schemas/${opId}Response` } } },
+            content: {
+              "application/json": { schema: { $ref: `#/components/schemas/${opId}Response` } },
+            },
           },
-          "401": { description: "Missing/invalid bearer token" },
+          401: { description: "Missing/invalid bearer token" },
         },
       },
     };
@@ -70,12 +80,18 @@ export function buildOpenApiSpec(tools, { title = "Anycubic Slicer Next Control 
 
   return {
     openapi: "3.0.3",
-    info: { title, version, description: "Auto-generated from schemas/tools.json (MCP tool surface)." },
+    info: {
+      title,
+      version,
+      description: "Auto-generated from schemas/tools.json (MCP tool surface).",
+    },
     servers: [{ url: "http://127.0.0.1:{port}", variables: { port: { default: "8766" } } }],
     tags: [{ name: "tools", description: "MCP tools exposed over HTTP" }],
     paths,
     components: {
-      securitySchemes: { bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "mcp-token" } },
+      securitySchemes: {
+        bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "mcp-token" },
+      },
       schemas,
     },
   };
@@ -106,8 +122,10 @@ if (isMain) {
     const merged = listed.map((tool) => ({
       name: tool.name,
       description: tool.description ?? staticByName.get(tool.name)?.description,
-      inputSchema: tool.inputSchema ?? staticByName.get(tool.name)?.inputSchema ?? { type: "object" },
-      outputSchema: tool.outputSchema ?? staticByName.get(tool.name)?.outputSchema ?? { type: "object" },
+      inputSchema: tool.inputSchema ??
+        staticByName.get(tool.name)?.inputSchema ?? { type: "object" },
+      outputSchema: tool.outputSchema ??
+        staticByName.get(tool.name)?.outputSchema ?? { type: "object" },
       readOnlyHint: tool.annotations?.readOnlyHint ?? staticByName.get(tool.name)?.readOnlyHint,
     }));
     await client.close();

@@ -240,13 +240,13 @@ cadgen step snapshot STEP/arm.step tmp/demo.gif --animation demo \
 
 The request's keys, all optional:
 
-| key | default | meaning |
-| --- | --- | --- |
-| `fps` | `30` | frames per second, a whole number 1..120 |
-| `seconds` | what is left of the clip from `start` | how much of the clip to render |
-| `start` | `0` | seconds into the clip where the video begins; must be inside it |
-| `quality` | `review` | `draft`, `review`, or `high` |
-| `loop` | `true` | GIF only — an `.mp4` carries no loop count, so `"loop": false` on one is refused |
+| key       | default                               | meaning                                                                          |
+| --------- | ------------------------------------- | -------------------------------------------------------------------------------- |
+| `fps`     | `30`                                  | frames per second, a whole number 1..120                                         |
+| `seconds` | what is left of the clip from `start` | how much of the clip to render                                                   |
+| `start`   | `0`                                   | seconds into the clip where the video begins; must be inside it                  |
+| `quality` | `review`                              | `draft`, `review`, or `high`                                                     |
+| `loop`    | `true`                                | GIF only — an `.mp4` carries no loop count, so `"loop": false` on one is refused |
 
 The span is measured against the clip rather than trusted, because the clip
 evaluator ANSWERS a time past the end instead of refusing it: a clip that does
@@ -304,15 +304,15 @@ cadgen glb build STEP/arm.step GLB/animated/arm.glb \
 
 The request is a clip name, or an object whose keys are all optional but `clip`:
 
-| key | default | meaning |
-| --- | --- | --- |
-| `clip` | — | the clip to bake; required |
-| `fps` | `30` | keyframe samples per second, a whole number 1..120 |
-| `seconds` | what is left of the clip from `start` | how much of the clip to bake |
-| `start` | `0` | seconds into the clip where the span begins; must be inside it |
-| `drop` | `[]` | effects to bake STATIC instead of refusing: `opacity`, `visible` |
-| `deform` | `refuse` | what to do with `.deformTube()`: `refuse`, `morph`, `rest` |
-| `deformTolerance` | `1.0` | `morph` only — millimetres the baked tubes may sit from the clip's own deformation, `0.01`..`10` |
+| key               | default                               | meaning                                                                                          |
+| ----------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `clip`            | —                                     | the clip to bake; required                                                                       |
+| `fps`             | `30`                                  | keyframe samples per second, a whole number 1..120                                               |
+| `seconds`         | what is left of the clip from `start` | how much of the clip to bake                                                                     |
+| `start`           | `0`                                   | seconds into the clip where the span begins; must be inside it                                   |
+| `drop`            | `[]`                                  | effects to bake STATIC instead of refusing: `opacity`, `visible`                                 |
+| `deform`          | `refuse`                              | what to do with `.deformTube()`: `refuse`, `morph`, `rest`                                       |
+| `deformTolerance` | `1.0`                                 | `morph` only — millimetres the baked tubes may sit from the clip's own deformation, `0.01`..`10` |
 
 The span is resolved exactly as `--video`'s is — a looping clip defaults to one
 whole cycle, a clip that stops gets what is left of it, and `fps * seconds` is
@@ -321,14 +321,14 @@ picks where in the CLIP the span begins and the file still opens at t = 0.
 
 **What glTF carries, and what it will not:**
 
-| clip effect | in the GLB |
-| --- | --- |
-| `.rotate()` | sampled rotation channel on that occurrence's node |
-| `.translate()` | sampled translation channel on the same node |
-| `.rotate()` about a pivot | sampled rotation and translation channels |
-| `.opacity()` | **refused.** glTF has no animated opacity. `"drop": ["opacity"]` bakes the value at `start` as a material alpha, and warns |
-| `.visible()` | **refused.** Same reason. `"drop": ["visible"]` omits whatever is hidden at `start`, and warns — an occurrence dropped this way loses its motion too, because a node that is not in the file cannot be animated |
-| `.deformTube()` | **refused by default.** Per-vertex motion, not a node transform. `"deform": "morph"` bakes it as glTF morph targets; see [deformation](animation-deformation.md); `"deform": "rest"` ships those tubes at rest shape and warns |
+| clip effect               | in the GLB                                                                                                                                                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `.rotate()`               | sampled rotation channel on that occurrence's node                                                                                                                                                                             |
+| `.translate()`            | sampled translation channel on the same node                                                                                                                                                                                   |
+| `.rotate()` about a pivot | sampled rotation and translation channels                                                                                                                                                                                      |
+| `.opacity()`              | **refused.** glTF has no animated opacity. `"drop": ["opacity"]` bakes the value at `start` as a material alpha, and warns                                                                                                     |
+| `.visible()`              | **refused.** Same reason. `"drop": ["visible"]` omits whatever is hidden at `start`, and warns — an occurrence dropped this way loses its motion too, because a node that is not in the file cannot be animated                |
+| `.deformTube()`           | **refused by default.** Per-vertex motion, not a node transform. `"deform": "morph"` bakes it as glTF morph targets; see [deformation](animation-deformation.md); `"deform": "rest"` ships those tubes at rest shape and warns |
 
 Nothing is dropped quietly: an effect the file cannot carry stops the export and
 names the occurrences, so a hand whose tendons froze on the way out is a refusal

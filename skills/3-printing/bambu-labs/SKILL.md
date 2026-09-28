@@ -6,7 +6,6 @@ metadata:
   version: "1.0"
   skill-author: "Thompson Labs LLC"
   vendored: "2026-09-18"
-
 ---
 
 # Bambu Labs
@@ -86,11 +85,11 @@ python scripts/bambu_lan_print.py status \
 ```
 
 4. Dry-run the exact handoff, inspect the JSON payload, then run upload-only.
-Only after upload succeeds should you run upload-start. If the user explicitly
-asked to print or start the job, proceed to `upload-start --execute
+   Only after upload succeeds should you run upload-start. If the user explicitly
+   asked to print or start the job, proceed to `upload-start --execute
 --confirm-start-print` after the validation, status, and upload checks pass. If
-the user only asked to prepare, slice, upload, or review, stop before the start
-request.
+   the user only asked to prepare, slice, upload, or review, stop before the start
+   request.
 
 ## Handoff Modes
 

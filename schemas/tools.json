@@ -1,85 +1,141 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Anycubic Slicer Next Control MCP tools",
-  "version": "0.1.0",
-  "$defs": {
-    "basicSettings": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "layer_height_mm": {
-          "type": "number",
-          "minimum": 0.05,
-          "maximum": 1
-        },
-        "infill_density_percent": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 100
-        },
-        "wall_loops": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 20
-        },
-        "supports": {
-          "type": "boolean"
-        },
-        "infill_pattern": {
-          "enum": ["grid", "gyroid", "honeycomb", "rectilinear"]
-        }
-      }
-    }
-  },
   "tools": [
     {
       "name": "account_capture_token",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "mode": {
-            "enum": ["scan", "watch"],
-            "default": "scan"
+            "default": "scan",
+            "type": "string",
+            "enum": ["scan", "watch"]
           },
           "max_seconds": {
+            "default": 90,
             "type": "integer",
             "minimum": 5,
-            "maximum": 600,
-            "default": 90
+            "maximum": 600
           },
           "region": {
-            "enum": ["en", "cn"],
-            "default": "en"
+            "default": "en",
+            "type": "string",
+            "enum": ["en", "cn"]
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "stored"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "account_cloud_diagnostics",
-      "readOnlyHint": false,
+      "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "printers_status",
+              "printer_status",
+              "printer_info",
+              "printer_tool",
+              "printer_functions",
+              "printer_all",
+              "print_history",
+              "print_history_detail",
+              "project_info",
+              "project_monitor",
+              "work_project_error_list",
+              "project_list",
+              "gcode_info_fdm",
+              "gcode_info",
+              "cloud_file_info",
+              "model_file_info",
+              "multi_color_box_info",
+              "video_thumbnail_list"
+            ]
+          },
+          "printer_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "project_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "task_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "file_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "gcode_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "device_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "model_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "type_function_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "page": {
+            "default": 1,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "print_status": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "region": {
+            "default": "en",
+            "type": "string",
+            "enum": ["en", "cn"]
+          },
+          "timeout_ms": {
+            "default": 15000,
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 30000
+          }
+        },
+        "required": ["kind"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object"
-      }
+      "outputSchema": {}
     },
     {
       "name": "account_cloud_files",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
-          "file_type": {
-            "type": "integer"
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
           },
           "access_token": {
             "type": "string",
@@ -88,35 +144,90 @@
           "resources_dir": {
             "type": "string",
             "maxLength": 1024
+          },
+          "file_type": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["count", "files", "read_only"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "account_cloud_live_diagnostics",
-      "readOnlyHint": false,
+      "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "timeout_ms": {
+            "default": 20000,
+            "type": "integer",
+            "minimum": 1000,
+            "maximum": 60000
+          },
+          "include_http": {
+            "default": false,
+            "type": "boolean"
+          },
+          "project_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "gcode_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "read_orders": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["axis", "peripherie", "light", "multiColorBox", "local_files", "usb_files"]
+            }
+          },
+          "queries": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "axis",
+                "info",
+                "print",
+                "tempature",
+                "fan",
+                "light",
+                "peripherie",
+                "aiSettings",
+                "extfilbox",
+                "multiColorBox"
+              ]
+            }
+          }
+        },
+        "required": ["printer_id"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object"
-      }
+      "outputSchema": {}
     },
     {
       "name": "account_cloud_projects",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "printer_id": {
             "type": "integer",
-            "minimum": 1
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
           },
           "access_token": {
             "type": "string",
@@ -126,20 +237,22 @@
             "type": "string",
             "maxLength": 1024
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["read_only", "count", "projects"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "account_cloud_store",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
           "access_token": {
             "type": "string",
             "maxLength": 4096
@@ -148,85 +261,111 @@
             "type": "string",
             "maxLength": 1024
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["read_only", "used_bytes", "total_bytes", "used", "total"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "account_devices",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "region": {
-            "enum": ["en", "cn"],
-            "default": "en"
+            "default": "en",
+            "type": "string",
+            "enum": ["en", "cn"]
           },
           "timeout_ms": {
+            "default": 15000,
             "type": "integer",
             "minimum": 500,
-            "maximum": 60000,
-            "default": 15000
+            "maximum": 30000
           },
           "device_status": {
             "type": "boolean"
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "count", "devices"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "account_file_upload",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false
+        "properties": {
+          "local_file": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "remote_name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "is_temp_file": {
+            "default": false,
+            "type": "boolean"
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          },
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        },
+        "required": ["local_file"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object"
-      }
+      "outputSchema": {}
     },
     {
       "name": "account_files",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "region": {
-            "enum": ["en", "cn"],
-            "default": "en"
+            "default": "en",
+            "type": "string",
+            "enum": ["en", "cn"]
           },
           "timeout_ms": {
+            "default": 15000,
             "type": "integer",
             "minimum": 500,
-            "maximum": 60000,
-            "default": 15000
+            "maximum": 30000
           },
           "query": {
             "type": "string",
             "maxLength": 180
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "count", "files"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "account_login",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "access_token": {
             "type": "string",
@@ -234,28 +373,27 @@
             "maxLength": 2048
           },
           "region": {
-            "enum": ["en", "cn"],
-            "default": "en"
+            "default": "en",
+            "type": "string",
+            "enum": ["en", "cn"]
           },
           "timeout_ms": {
+            "default": 15000,
             "type": "integer",
             "minimum": 500,
-            "maximum": 60000,
-            "default": 15000
+            "maximum": 30000
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "account_print",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "printer_key": {
             "type": "string",
@@ -264,14 +402,17 @@
           },
           "file_key": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 512
           },
           "file_id": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           },
           "gcode_id": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           },
           "filepath": {
             "type": "string",
@@ -280,54 +421,44 @@
           "file_name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 256
+            "maxLength": 180
+          },
+          "ai_detect": {
+            "default": false,
+            "type": "boolean"
+          },
+          "camera_timelapse": {
+            "default": false,
+            "type": "boolean"
           },
           "region": {
-            "enum": ["en", "cn"],
-            "default": "en"
+            "default": "en",
+            "type": "string",
+            "enum": ["en", "cn"]
           },
           "timeout_ms": {
+            "default": 15000,
             "type": "integer",
             "minimum": 500,
-            "maximum": 60000,
-            "default": 15000
+            "maximum": 30000
           }
         },
-        "required": ["printer_key", "file_name"]
+        "required": ["printer_key", "file_name"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "account_print_history",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "printer_id": {
             "type": "integer",
-            "minimum": 1
-          },
-          "page": {
-            "type": "integer",
-            "minimum": 1,
-            "default": 1
-          },
-          "limit": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 100,
-            "default": 20
-          },
-          "print_status": {
-            "type": "integer"
-          },
-          "include_detail": {
-            "type": "boolean",
-            "default": false
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
           },
           "access_token": {
             "type": "string",
@@ -336,44 +467,113 @@
           "resources_dir": {
             "type": "string",
             "maxLength": 1024
+          },
+          "page": {
+            "default": 1,
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "limit": {
+            "default": 20,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "print_status": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "include_detail": {
+            "default": false,
+            "type": "boolean"
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["page", "page_count", "total", "entries", "recent", "read_only"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "account_print_local",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false
+        "properties": {
+          "local_file": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "remote_name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "ai_detect": {
+            "default": true,
+            "type": "boolean"
+          },
+          "camera_timelapse": {
+            "default": false,
+            "type": "boolean"
+          },
+          "use_ams": {
+            "default": false,
+            "type": "boolean"
+          },
+          "ams_box_mapping": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "live_state": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          },
+          "confirm_word": {
+            "type": "string",
+            "maxLength": 16
+          },
+          "verify_timeout_ms": {
+            "type": "integer",
+            "minimum": 5000,
+            "maximum": 90000
+          },
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        },
+        "required": ["local_file"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object"
-      }
+      "outputSchema": {}
     },
     {
       "name": "account_print_metrics",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "printer_id": {
             "type": "integer",
-            "minimum": 1
-          },
-          "limit": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 100,
-            "default": 100
-          },
-          "print_status": {
-            "type": "integer"
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
           },
           "access_token": {
             "type": "string",
@@ -382,61 +582,77 @@
           "resources_dir": {
             "type": "string",
             "maxLength": 1024
+          },
+          "limit": {
+            "default": 100,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "print_status": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object",
-        "required": [
-          "outcomes",
-          "failure_breakdown",
-          "failure_rate_pct",
-          "success_rate_pct",
-          "read_only"
-        ]
-      }
+      "outputSchema": {}
     },
     {
       "name": "account_token_clear",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "executable": {
+            "type": "string"
+          },
+          "input_path": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": ["ok"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "cleared"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "account_token_status",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "include_token": {
-            "type": "boolean",
-            "default": false
+            "default": false,
+            "type": "boolean"
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "stored"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "ace_feed_finish",
       "readOnlyHint": false,
-      "destructiveHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "printer_id": {
             "type": "integer",
-            "minimum": 1
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
           },
           "access_token": {
             "type": "string",
@@ -447,10 +663,10 @@
             "maxLength": 1024
           },
           "box_id": {
+            "default": 0,
             "type": "integer",
             "minimum": 0,
-            "maximum": 9,
-            "default": 0
+            "maximum": 9
           },
           "slot_index": {
             "type": "integer",
@@ -463,27 +679,24 @@
             "maximum": 30000
           },
           "confirm": {
-            "type": "boolean",
-            "default": false
+            "default": false,
+            "type": "boolean"
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "command", "box_id", "reply_state"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "ace_refresh_slot",
       "readOnlyHint": false,
-      "destructiveHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "printer_id": {
             "type": "integer",
-            "minimum": 1
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
           },
           "access_token": {
             "type": "string",
@@ -494,10 +707,10 @@
             "maxLength": 1024
           },
           "box_id": {
+            "default": 0,
             "type": "integer",
             "minimum": 0,
-            "maximum": 9,
-            "default": 0
+            "maximum": 9
           },
           "slot_index": {
             "type": "integer",
@@ -510,205 +723,184 @@
             "maximum": 30000
           },
           "confirm": {
-            "type": "boolean",
-            "default": false
+            "default": false,
+            "type": "boolean"
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "command", "box_id", "reply_state"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "audit_gcode_recovery",
-      "readOnlyHint": false,
+      "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
+        "properties": {
+          "gcode_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "start_layer": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          }
+        },
+        "required": ["gcode_path"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object"
-      }
+      "outputSchema": {}
     },
     {
       "name": "auth_id_flow_start",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "region": {
-            "enum": ["en", "cn"],
-            "default": "en"
+            "description": "Cloud region (default en).",
+            "type": "string",
+            "enum": ["en", "cn"]
           },
           "open_browser": {
-            "type": "boolean",
-            "default": true
-          }
-        }
-      },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"],
-        "properties": {
-          "ok": {
+            "description": "Open the browser immediately (default true).",
             "type": "boolean"
-          },
-          "portal_url": {
-            "type": "string"
-          },
-          "instructions": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "message": {
-            "type": "string"
-          },
-          "error": {
-            "type": "string"
           }
-        }
-      }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      },
+      "outputSchema": {}
     },
     {
       "name": "auth_setup",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "access_token": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "description": "The JWT/XX-Token to validate and store. Human-provided."
           },
           "region": {
-            "enum": ["en", "cn"],
-            "default": "en"
+            "description": "Cloud region (default en).",
+            "type": "string",
+            "enum": ["en", "cn"]
           },
           "timeout_ms": {
             "type": "integer",
             "minimum": 3000,
             "maximum": 30000
           }
-        }
+        },
+        "required": ["access_token"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "stored"],
-        "properties": {
-          "ok": {
-            "type": "boolean"
-          },
-          "stored": {
-            "type": "boolean"
-          },
-          "mode": {
-            "type": "string"
-          },
-          "transport": {
-            "type": "string"
-          },
-          "mqtt": {
-            "type": "boolean"
-          },
-          "user_id": {
-            "type": "integer"
-          },
-          "user_email": {
-            "type": "string"
-          },
-          "region": {
-            "type": "string"
-          },
-          "expires_at": {
-            "type": "string"
-          },
-          "stored_at": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "error": {
-            "type": "string"
-          }
-        }
-      }
+      "outputSchema": {}
     },
     {
       "name": "cad_close_workspace",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "force": {
-            "type": "boolean",
-            "default": false
+            "default": false,
+            "type": "boolean"
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "cad_edit_mesh",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "minLength": 1
+          },
+          "op": {
+            "type": "string",
+            "enum": ["extrude", "bevel", "inset", "subdivide", "sculpt", "weld"]
+          },
+          "face_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "amount": {
+            "type": "number"
+          },
+          "smooth": {
+            "type": "boolean"
+          }
+        },
+        "required": ["object", "op"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object"
-      }
+      "outputSchema": {}
     },
     {
       "name": "cad_generate_from_prompt",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
+          "url": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
           "prompt": {
             "type": "string",
             "minLength": 1
           },
           "params": {
-            "type": "object"
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "dry_run": {
-            "type": "boolean",
-            "default": false
+            "default": false,
+            "type": "boolean"
           },
           "object_name": {
+            "default": "ai_result",
             "type": "string",
-            "default": "ai_result"
+            "minLength": 1
           },
           "export_format": {
-            "enum": ["none", "stl", "step"],
-            "default": "none"
-          },
-          "provider": {
-            "type": "string"
+            "default": "none",
+            "type": "string",
+            "enum": ["none", "stl", "step"]
           }
         },
-        "required": ["prompt"]
+        "required": ["prompt"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object"
-      }
+      "outputSchema": {}
     },
     {
       "name": "cad_generate_parametric",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "url": {
             "type": "string"
@@ -721,40 +913,77 @@
             "minLength": 1
           },
           "params": {
-            "type": "object"
-          },
-          "object_name": {
-            "type": "string",
-            "default": "parametric"
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "export_format": {
-            "enum": ["none", "stl", "step"],
-            "default": "none"
+            "default": "none",
+            "type": "string",
+            "enum": ["none", "stl", "step"]
+          },
+          "object_name": {
+            "default": "param",
+            "type": "string",
+            "minLength": 1
           }
         },
-        "required": ["script"]
+        "required": ["script"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object"
-      }
+      "outputSchema": {}
     },
     {
       "name": "cad_image_to_3d",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
+        "properties": {
+          "image_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "image_base64": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 8,
+            "maximum": 256
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 8,
+            "maximum": 256
+          },
+          "depth_mm": {
+            "type": "number",
+            "minimum": 0.5,
+            "maximum": 100
+          },
+          "base_mm": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 50
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object"
-      }
+      "outputSchema": {}
     },
     {
       "name": "cad_open_workspace",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "input_path": {
             "type": "string",
@@ -771,82 +1000,145 @@
             "maximum": 240
           },
           "open_browser": {
-            "type": "boolean",
-            "default": true
+            "default": true,
+            "type": "boolean"
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "url", "token"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "cad_select_faces",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "minLength": 1
+          },
+          "face_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "grow_from_face": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "grow_angle_deg": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 180
+          }
+        },
+        "required": ["object"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object"
-      }
+      "outputSchema": {}
     },
     {
       "name": "cad_texture",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "minLength": 1
+          },
+          "color": {
+            "minItems": 3,
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            }
+          },
+          "texture_url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "relief_mm": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 50
+          },
+          "image_base64": {
+            "type": "string",
+            "minLength": 1
+          },
+          "face_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "required": ["object"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object"
-      }
+      "outputSchema": {}
     },
     {
       "name": "cad_v2_boolean",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "url": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           },
           "token": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           },
           "name_a": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           },
           "name_b": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           },
           "op": {
-            "enum": ["add", "subtract", "intersect", "difference"],
-            "default": "subtract"
+            "type": "string",
+            "enum": ["add", "subtract", "intersect", "difference"]
           },
           "result_name": {
+            "default": "result",
             "type": "string",
-            "default": "result"
+            "minLength": 1
           }
         },
-        "required": ["name_a", "name_b"]
+        "required": ["url", "token", "name_a", "name_b", "op"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object"
-      }
+      "outputSchema": {}
     },
     {
       "name": "camera_cloud_info",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "printer_id": {
             "type": "integer",
-            "minimum": 1
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
           },
           "access_token": {
             "type": "string",
@@ -856,49 +1148,66 @@
             "type": "string",
             "maxLength": 1024
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["read_only", "printer_id", "camera"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "camera_watch",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
-          "ip": { "type": "string", "maxLength": 64 },
-          "output_dir": { "type": "string", "minLength": 1, "maxLength": 1024 },
-          "tag": { "type": "string", "maxLength": 80 },
-          "interval_s": { "type": "integer", "minimum": 5, "maximum": 3600, "default": 30 },
-          "snapshots": { "type": "integer", "minimum": 1, "maximum": 12, "default": 3 },
-          "size": { "type": "string", "maxLength": 16 },
-          "flv_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
-          "confirm": { "type": "boolean", "default": false }
+          "ip": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "output_dir": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "tag": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "interval_s": {
+            "default": 30,
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 3600
+          },
+          "snapshots": {
+            "default": 3,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "size": {
+            "type": "string",
+            "maxLength": 16
+          },
+          "flv_port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          }
         },
-        "required": ["ip", "output_dir"]
+        "required": ["ip", "output_dir"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"],
-        "properties": {
-          "ok": { "type": "boolean" },
-          "written": { "type": "array", "items": { "type": "string" } },
-          "count": { "type": "integer" },
-          "interval_s": { "type": "integer" },
-          "error": { "type": "string" }
-        }
-      }
+      "outputSchema": {}
     },
     {
       "name": "cancel_print",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "dev_id": {
             "type": "string",
@@ -916,66 +1225,64 @@
             "maxLength": 64
           },
           "command": {
-            "enum": ["task_cancel", "task_pause", "task_resume", "print_stop"],
-            "default": "task_cancel"
+            "default": "task_cancel",
+            "type": "string",
+            "enum": ["task_cancel", "task_pause", "task_resume", "print_stop"]
           },
           "mqtt_port": {
+            "default": 8883,
             "type": "integer",
             "minimum": 1,
-            "maximum": 65535,
-            "default": 8883
+            "maximum": 65535
           },
           "use_ssl_mqtt": {
-            "type": "boolean",
-            "default": true
+            "default": true,
+            "type": "boolean"
           }
         },
-        "required": ["dev_id", "dev_ip"]
+        "required": ["dev_id", "dev_ip"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "command", "dev_id"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "discover_printers",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "timeout_ms": {
+            "default": 4000,
             "type": "integer",
             "minimum": 100,
-            "maximum": 15000,
-            "default": 4000
+            "maximum": 15000
           },
           "scan_ports": {
-            "type": "array",
             "maxItems": 8,
+            "type": "array",
             "items": {
               "type": "integer",
               "minimum": 1,
               "maximum": 65535
             }
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "printers"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "firmware_update_check",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "printer_id": {
             "type": "integer",
-            "minimum": 1
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
           },
           "access_token": {
             "type": "string",
@@ -985,78 +1292,87 @@
             "type": "string",
             "maxLength": 1024
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["read_only", "printer_id", "firmware", "ota"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "get_slice_job",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "job_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           }
         },
-        "required": ["job_id"]
+        "required": ["job_id"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "job_id", "status"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "inspect_slicer",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "installation", "capabilities"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "list_slicer_profiles",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "kind": {
-            "enum": ["machine", "process", "filament", "all"],
-            "default": "all"
+            "default": "all",
+            "type": "string",
+            "enum": ["machine", "process", "filament", "all"]
           },
           "query": {
             "type": "string",
             "maxLength": 120
           },
           "limit": {
+            "default": 50,
             "type": "integer",
             "minimum": 1,
-            "maximum": 200,
-            "default": 50
+            "maximum": 1000
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
+      "outputSchema": {}
+    },
+    {
+      "name": "marble_presets_list",
+      "readOnlyHint": true,
+      "inputSchema": {
         "type": "object",
-        "required": ["ok", "count", "profiles"]
-      }
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 120
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
     },
     {
       "name": "nfc_tag_decode",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "record": {
             "anyOf": [
@@ -1065,7 +1381,7 @@
                 "items": {
                   "anyOf": [
                     {
-                      "type": "integer"
+                      "type": "number"
                     },
                     {
                       "type": "string"
@@ -1075,14 +1391,13 @@
               },
               {
                 "type": "object",
-                "additionalProperties": false,
                 "properties": {
                   "blocks": {
                     "type": "array",
                     "items": {
                       "anyOf": [
                         {
-                          "type": "integer"
+                          "type": "number"
                         },
                         {
                           "type": "string"
@@ -1096,50 +1411,61 @@
             ]
           }
         },
-        "required": ["record"]
+        "required": ["record"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
+      "outputSchema": {}
+    },
+    {
+      "name": "nfc_tag_plan",
+      "readOnlyHint": true,
+      "inputSchema": {
         "type": "object",
-        "required": ["ok"]
-      }
+        "properties": {
+          "spool_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          }
+        },
+        "required": ["spool_id"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
     },
     {
       "name": "open_model_in_slicer",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "input_path": {
             "type": "string",
             "minLength": 1
           }
         },
-        "required": ["input_path"]
+        "required": ["input_path"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "status", "input_path"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "open_slicer",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "status"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "prepare_slice_job",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "input_path": {
             "type": "string",
@@ -1154,122 +1480,173 @@
             "minLength": 1
           },
           "filament_profiles": {
-            "type": "array",
             "minItems": 1,
             "maxItems": 16,
+            "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1
             }
           },
           "output_directory": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           },
           "output_format": {
-            "enum": ["gcode", "gcode_3mf", "both"],
-            "default": "both"
+            "default": "both",
+            "type": "string",
+            "enum": ["gcode", "gcode_3mf", "both"]
           },
           "plate": {
+            "default": 0,
             "type": "integer",
             "minimum": 0,
-            "maximum": 64,
-            "default": 0
+            "maximum": 64
           },
           "arrange": {
-            "type": "boolean",
-            "default": true
+            "default": true,
+            "type": "boolean"
           },
           "orient": {
-            "type": "boolean",
-            "default": false
+            "default": false,
+            "type": "boolean"
           },
           "settings": {
-            "$ref": "#/$defs/basicSettings"
+            "default": {},
+            "type": "object",
+            "properties": {
+              "layer_height_mm": {
+                "type": "number",
+                "minimum": 0.05,
+                "maximum": 1
+              },
+              "infill_density_percent": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "wall_loops": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 20
+              },
+              "supports": {
+                "type": "boolean"
+              },
+              "infill_pattern": {
+                "type": "string",
+                "enum": ["grid", "gyroid", "honeycomb", "rectilinear"]
+              },
+              "outer_wall_speed_mms": {
+                "type": "number",
+                "minimum": 10,
+                "maximum": 600
+              },
+              "inner_wall_speed_mms": {
+                "type": "number",
+                "minimum": 10,
+                "maximum": 600
+              },
+              "sparse_infill_speed_mms": {
+                "type": "number",
+                "minimum": 10,
+                "maximum": 600
+              },
+              "solid_infill_speed_mms": {
+                "type": "number",
+                "minimum": 10,
+                "maximum": 600
+              },
+              "top_surface_speed_mms": {
+                "type": "number",
+                "minimum": 10,
+                "maximum": 600
+              },
+              "top_shell_layers": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 30
+              },
+              "bottom_shell_layers": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 30
+              },
+              "seam_position": {
+                "type": "string",
+                "enum": ["aligned", "nearest", "back", "front", "random"]
+              },
+              "pressure_advance": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "elephant_foot_compensation_mm": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "brim_width_mm": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 20
+              },
+              "nozzle_temperature_c": {
+                "type": "number",
+                "minimum": 150,
+                "maximum": 300
+              },
+              "bed_temperature_c": {
+                "type": "number",
+                "minimum": 20,
+                "maximum": 120
+              }
+            },
+            "additionalProperties": false
           }
         },
-        "required": ["input_path", "machine_profile", "process_profile", "filament_profiles"]
+        "required": ["input_path", "machine_profile", "process_profile", "filament_profiles"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "job_id", "expires_at", "command_preview"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "printer_capability_catalog",
-      "readOnlyHint": false,
+      "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object"
-      }
+      "outputSchema": {}
     },
     {
       "name": "printer_command_catalog",
-      "readOnlyHint": false,
+      "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false
+        "properties": {
+          "safety": {
+            "type": "string",
+            "enum": ["read", "state", "thermal", "motion", "job"]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object"
-      }
+      "outputSchema": {}
     },
     {
       "name": "printer_command_send",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "printer_connection_close",
-      "readOnlyHint": false,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "printer_connection_status",
-      "readOnlyHint": false,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "printer_diagnostics",
-      "readOnlyHint": false,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "printer_edge_stop",
-      "readOnlyHint": false,
-      "destructiveHint": true,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false,
         "properties": {
           "printer_id": {
             "type": "integer",
-            "minimum": 1
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
           },
           "access_token": {
             "type": "string",
@@ -1279,413 +1656,223 @@
             "type": "string",
             "maxLength": 1024
           },
-          "mode": {
-            "enum": ["force", "free"],
-            "default": "force"
+          "command": {
+            "type": "string",
+            "enum": [
+              "light_control",
+              "fan_set",
+              "ace_auto_feed",
+              "ace_set_slot",
+              "ai_settings_set",
+              "temperature_set",
+              "ace_dry",
+              "print_update",
+              "video_start_capture",
+              "video_stop_capture",
+              "axis_move",
+              "axis_turn_off",
+              "ace_feed",
+              "print_pause",
+              "print_resume",
+              "print_stop",
+              "print_query"
+            ]
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          },
+          "confirm_word": {
+            "type": "string",
+            "maxLength": 16
+          },
+          "on": {
+            "type": "boolean"
+          },
+          "brightness": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "light_type": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "fan": {
+            "type": "string",
+            "enum": ["part", "aux", "box"]
+          },
+          "speed_pct": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "nozzle": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 320
+          },
+          "bed": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 120
+          },
+          "axis": {
+            "type": "string",
+            "enum": ["x", "y", "z"]
+          },
+          "move_type": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2
+          },
+          "distance_mm": {
+            "type": "number"
+          },
+          "box_id": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "slot_index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "material_type": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "color": {
+            "minItems": 3,
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            }
+          },
+          "feed_type": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "stop": {
+            "type": "boolean"
+          },
+          "target_temp": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 80
+          },
+          "duration_min": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "ai_detect": {
+            "type": "boolean"
+          },
+          "camera_timelapse": {
+            "type": "boolean"
+          },
+          "file_name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "file_path": {
+            "type": "string",
+            "maxLength": 400
+          },
+          "task_id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "print_speed_mode": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "type": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "sensitivity_level": {
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "notice_type": {
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
           },
           "reply_timeout_ms": {
             "type": "integer",
             "minimum": 500,
             "maximum": 30000
           },
-          "confirm": {
-            "type": "boolean",
-            "default": false
-          },
-          "confirm_word": {
+          "live_state": {
             "type": "string",
-            "maxLength": 16
-          }
-        }
-      },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "command", "mode", "safety", "order_id", "reply_state"]
-      }
-    },
-    {
-      "name": "printer_error_list",
-      "readOnlyHint": true,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "printer_id": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "access_token": {
-            "type": "string",
-            "maxLength": 4096
-          },
-          "resources_dir": {
-            "type": "string",
-            "maxLength": 1024
-          }
-        }
-      },
-      "outputSchema": {
-        "type": "object",
-        "required": ["printer_id", "read_only", "errors", "failure_reason_codes"]
-      }
-    },
-    {
-      "name": "printer_event_watch",
-      "readOnlyHint": true,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "printer_id": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "access_token": {
-            "type": "string",
-            "maxLength": 4096
-          },
-          "resources_dir": {
-            "type": "string",
-            "maxLength": 1024
-          },
-          "reset": {
-            "type": "boolean",
-            "default": false
-          }
-        }
-      },
-      "outputSchema": {
-        "type": "object",
-        "required": ["read_only", "printer_id", "since", "events"]
-      }
-    },
-    {
-      "name": "printer_file_preview",
-      "readOnlyHint": true,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "gcode_id": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "file_id": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "access_token": {
-            "type": "string",
-            "maxLength": 4096
-          },
-          "resources_dir": {
-            "type": "string",
-            "maxLength": 1024
-          }
-        }
-      },
-      "outputSchema": {
-        "type": "object",
-        "required": ["read_only", "gcode_id", "file_id", "layers", "dimensions", "per_color"]
-      }
-    },
-    {
-      "name": "printer_gcode_resolve",
-      "readOnlyHint": false,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "printer_hidden_command_map",
-      "readOnlyHint": false,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "printer_http_readonly_diagnostics",
-      "readOnlyHint": false,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "printer_lan_camera",
-      "readOnlyHint": true,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "ip": { "type": "string", "maxLength": 64 },
-          "output_path": { "type": "string", "minLength": 1, "maxLength": 1024 },
-          "mode": { "enum": ["snapshot", "stream"], "default": "snapshot" },
-          "duration_s": { "type": "integer", "minimum": 1, "maximum": 60, "default": 3 },
-          "size": { "type": "string", "maxLength": 16 },
-          "flv_port": { "type": "integer", "minimum": 1, "maximum": 65535 }
-        },
-        "required": ["ip", "output_path"]
-      },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"],
-        "properties": {
-          "ok": { "type": "boolean" },
-          "mode": { "type": "string" },
-          "output_path": { "type": "string" },
-          "source": { "type": "string" },
-          "duration_s": { "type": "integer" },
-          "size": { "type": "string" },
-          "error": { "type": "string" }
-        }
-      }
-    },
-    {
-      "name": "printer_lan_command_preview",
-      "readOnlyHint": false,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "printer_lan_handshake",
-      "readOnlyHint": true,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "ip": { "type": "string", "maxLength": 64 },
-          "timeout_ms": { "type": "integer", "minimum": 2000, "maximum": 15000 },
-          "include_credentials": { "type": "boolean", "default": false }
-        }
-      },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"],
-        "properties": {
-          "ok": { "type": "boolean" },
-          "ctrlType": { "type": "string" },
-          "brokerHost": { "type": "string" },
-          "brokerPort": { "type": "integer" },
-          "deviceId": { "type": "string" },
-          "modelId": { "type": "string" },
-          "serial": { "type": "string" },
-          "username": { "type": "string" },
-          "error": { "type": "string" }
-        }
-      }
-    },
-    {
-      "name": "printer_lan_read",
-      "readOnlyHint": true,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "ip": { "type": "string", "maxLength": 64 },
-          "sources": { "type": "array", "items": { "type": "string", "maxLength": 40 } },
-          "timeout_ms": { "type": "integer", "minimum": 5000, "maximum": 30000 },
-          "mqtt_port": { "type": "integer", "minimum": 1, "maximum": 65535 }
-        }
-      },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"],
-        "properties": {
-          "ok": { "type": "boolean" },
-          "sources": { "type": "object" },
-          "error": { "type": "string" }
-        }
-      }
-    },
-    {
-      "name": "printer_lifetime_metrics",
-      "readOnlyHint": true,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "printer_id": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "access_token": {
-            "type": "string",
-            "maxLength": 4096
-          },
-          "resources_dir": {
-            "type": "string",
-            "maxLength": 1024
-          }
-        }
-      },
-      "outputSchema": {
-        "type": "object",
-        "required": ["printer_id", "read_only", "lifetime", "current", "firmware"]
-      }
-    },
-    {
-      "name": "printer_material_catalog",
-      "readOnlyHint": false,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "printer_metrics_expose",
-      "readOnlyHint": true,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "printer_id": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "access_token": {
-            "type": "string",
-            "maxLength": 4096
-          },
-          "resources_dir": {
-            "type": "string",
-            "maxLength": 1024
-          }
-        }
-      },
-      "outputSchema": {
-        "type": "object",
-        "required": ["printer_id", "read_only", "metrics_present", "format", "text"]
-      }
-    },
-    {
-      "name": "printer_monitor",
-      "readOnlyHint": false,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "printer_order_registry",
-      "readOnlyHint": true,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "outputSchema": {
-        "type": "object",
-        "required": ["read_only", "validated_live", "from_reference_AnycubicOrderID_IntEnum"]
-      }
-    },
-    {
-      "name": "printer_print_start",
-      "readOnlyHint": false,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "printer_property_catalog",
-      "readOnlyHint": false,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "printer_property_reconcile",
-      "readOnlyHint": false,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "printer_read_all",
-      "readOnlyHint": false,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "printer_rename",
-      "readOnlyHint": false,
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "printer_id": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "access_token": {
-            "type": "string",
-            "maxLength": 4096
-          },
-          "resources_dir": {
-            "type": "string",
-            "maxLength": 1024
-          },
-          "new_name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 60
-          },
-          "confirm": {
-            "type": "boolean",
-            "default": false
+            "maxLength": 40
           }
         },
-        "required": ["new_name"]
+        "required": ["command"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["read_only", "printer_id", "requested_name"]
-      }
+      "outputSchema": {}
     },
     {
-      "name": "printer_status",
+      "name": "printer_connection_close",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_connection_status",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "default": 10,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_diagnostics",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
         "properties": {
           "dev_id": {
             "type": "string",
@@ -1703,39 +1890,80 @@
             "maxLength": 64
           },
           "mqtt_port": {
+            "default": 9883,
             "type": "integer",
             "minimum": 1,
-            "maximum": 65535,
-            "default": 8883
+            "maximum": 65535
           },
           "use_ssl_mqtt": {
-            "type": "boolean",
-            "default": true
+            "default": true,
+            "type": "boolean"
           },
           "timeout_ms": {
+            "default": 8000,
             "type": "integer",
             "minimum": 500,
-            "maximum": 20000,
-            "default": 8000
+            "maximum": 20000
           }
         },
-        "required": ["dev_id", "dev_ip"]
+        "required": ["dev_id", "dev_ip"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "status"]
-      }
+      "outputSchema": {}
     },
     {
-      "name": "printer_status_snapshot",
-      "readOnlyHint": true,
+      "name": "printer_edge_stop",
+      "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "printer_id": {
             "type": "integer",
-            "minimum": 1
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "mode": {
+            "default": "force",
+            "type": "string",
+            "enum": ["force", "free"]
+          },
+          "reply_timeout_ms": {
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 30000
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          },
+          "confirm_word": {
+            "type": "string",
+            "maxLength": 16
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_error_list",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
           },
           "access_token": {
             "type": "string",
@@ -1745,41 +1973,981 @@
             "type": "string",
             "maxLength": 1024
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_event_watch",
+      "readOnlyHint": true,
+      "inputSchema": {
         "type": "object",
-        "required": ["printer_id", "selected", "printers", "count", "read_only"]
-      }
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "reset": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_file_preview",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "gcode_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "file_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_gcode_resolve",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "gcode_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["gcode_id"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_hidden_command_map",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "safety": {
+            "type": "string",
+            "enum": ["read", "state", "thermal", "motion", "job"]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_http_readonly_diagnostics",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string"
+          },
+          "endpoints": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "version",
+                "printer",
+                "job",
+                "connection",
+                "files",
+                "settings",
+                "logs",
+                "server_info",
+                "objects",
+                "info"
+              ]
+            }
+          }
+        },
+        "required": ["ip"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_lan_camera",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "output_path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "mode": {
+            "default": "snapshot",
+            "type": "string",
+            "enum": ["snapshot", "stream"]
+          },
+          "duration_s": {
+            "default": 3,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60
+          },
+          "size": {
+            "type": "string",
+            "maxLength": 16
+          },
+          "flv_port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          }
+        },
+        "required": ["ip", "output_path"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_lan_command_preview",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "default": "20025",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "mqtt_device_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "command": {
+            "type": "string",
+            "enum": [
+              "pause_print",
+              "resume_print",
+              "stop_print",
+              "update_print",
+              "move_axis",
+              "query_axis",
+              "turn_off_motors",
+              "set_temperature",
+              "set_fan",
+              "query_peripherals",
+              "query_light",
+              "control_light",
+              "ace_get_info",
+              "ace_dry",
+              "ace_feed",
+              "ace_set_slot",
+              "ace_auto_feed"
+            ]
+          },
+          "task_id": {
+            "type": "string",
+            "maxLength": 180
+          },
+          "settings": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "axis": {
+            "anyOf": [
+              {
+                "type": "number",
+                "const": 1
+              },
+              {
+                "type": "number",
+                "const": 2
+              },
+              {
+                "type": "number",
+                "const": 3
+              },
+              {
+                "type": "number",
+                "const": 4
+              }
+            ]
+          },
+          "move_type": {
+            "anyOf": [
+              {
+                "type": "number",
+                "const": 0
+              },
+              {
+                "type": "number",
+                "const": 1
+              },
+              {
+                "type": "number",
+                "const": 2
+              }
+            ]
+          },
+          "distance_mm": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 300
+          },
+          "nozzle_temperature_c": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 350
+          },
+          "bed_temperature_c": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 150
+          },
+          "fan": {
+            "type": "string",
+            "enum": ["part", "aux", "box"]
+          },
+          "fan_speed_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "light_type": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 32
+          },
+          "light_status": {
+            "anyOf": [
+              {
+                "type": "number",
+                "const": 0
+              },
+              {
+                "type": "number",
+                "const": 1
+              }
+            ]
+          },
+          "brightness": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "box_id": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 32
+          },
+          "slot_index": {
+            "type": "integer",
+            "minimum": -1,
+            "maximum": 15
+          },
+          "feed_type": {
+            "anyOf": [
+              {
+                "type": "number",
+                "const": 1
+              },
+              {
+                "type": "number",
+                "const": 2
+              }
+            ]
+          },
+          "material_type": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "color": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "drying_duration": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400
+          },
+          "drying_status": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          },
+          "drying_target_temperature_c": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "auto_feed": {
+            "anyOf": [
+              {
+                "type": "number",
+                "const": 0
+              },
+              {
+                "type": "number",
+                "const": 1
+              }
+            ]
+          }
+        },
+        "required": ["command"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_lan_handshake",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "minimum": 2000,
+            "maximum": 15000
+          },
+          "include_credentials": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["ip"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_lan_read",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 40
+            }
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "minimum": 5000,
+            "maximum": 30000
+          },
+          "mqtt_port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          }
+        },
+        "required": ["ip"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_lifetime_metrics",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_material_catalog",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_metrics_expose",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_monitor",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dev_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "dev_ip": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "access_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "mqtt_port": {
+            "default": 9883,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "use_ssl_mqtt": {
+            "default": true,
+            "type": "boolean"
+          },
+          "timeout_ms": {
+            "default": 8000,
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 20000
+          },
+          "samples": {
+            "default": 3,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "interval_ms": {
+            "default": 1000,
+            "type": "integer",
+            "minimum": 250,
+            "maximum": 30000
+          }
+        },
+        "required": ["dev_id", "dev_ip"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_order_registry",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_print_start",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "gcode_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "file_name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "ai_detect": {
+            "default": true,
+            "type": "boolean"
+          },
+          "camera_timelapse": {
+            "default": false,
+            "type": "boolean"
+          },
+          "use_ams": {
+            "default": false,
+            "type": "boolean"
+          },
+          "ams_box_mapping": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "live_state": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          },
+          "confirm_word": {
+            "type": "string",
+            "maxLength": 16
+          },
+          "verify_timeout_ms": {
+            "type": "integer",
+            "minimum": 5000,
+            "maximum": 60000
+          }
+        },
+        "required": ["gcode_id"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_property_catalog",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "info",
+              "tempature",
+              "fan",
+              "light",
+              "peripherie",
+              "aiSettings",
+              "multiColorBox",
+              "axis",
+              "extfilbox",
+              "print",
+              "file",
+              "status"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_property_reconcile",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "info",
+              "tempature",
+              "fan",
+              "light",
+              "peripherie",
+              "aiSettings",
+              "multiColorBox",
+              "axis",
+              "extfilbox",
+              "print",
+              "file",
+              "status",
+              "printer_status",
+              "printer_info",
+              "printer_tool",
+              "printer_functions",
+              "ace",
+              "project_info",
+              "project_monitor",
+              "history_detail",
+              "gcode_info_fdm"
+            ]
+          },
+          "payload": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": ["source", "payload"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_read_all",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transport": {
+            "default": "cloud",
+            "type": "string",
+            "enum": ["cloud", "lan"]
+          },
+          "sources": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "info",
+                "tempature",
+                "fan",
+                "light",
+                "peripherie",
+                "aiSettings",
+                "multiColorBox",
+                "axis",
+                "extfilbox",
+                "print",
+                "file",
+                "status"
+              ]
+            }
+          },
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "ip": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "mqtt_port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "minimum": 1000,
+            "maximum": 60000
+          },
+          "include_http": {
+            "default": false,
+            "type": "boolean"
+          },
+          "include_account": {
+            "default": false,
+            "type": "boolean"
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "project_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "task_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "file_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "gcode_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "device_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "type_function_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "page": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "print_status": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_rename",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "new_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["new_name"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_status",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dev_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "dev_ip": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "access_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "mqtt_port": {
+            "default": 9883,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "use_ssl_mqtt": {
+            "default": true,
+            "type": "boolean"
+          },
+          "timeout_ms": {
+            "default": 8000,
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 20000
+          }
+        },
+        "required": ["dev_id", "dev_ip"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "printer_status_snapshot",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
     },
     {
       "name": "run_slice_job",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "job_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "confirmation": {
+            "type": "string",
             "const": "RUN"
           }
         },
-        "required": ["job_id", "confirmation"]
+        "required": ["job_id", "confirmation"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "job_id", "status", "artifacts"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "send_to_printer",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "dev_id": {
             "type": "string",
@@ -1805,76 +2973,237 @@
             "maxLength": 180
           },
           "ftp_port": {
+            "default": 990,
             "type": "integer",
             "minimum": 1,
-            "maximum": 65535,
-            "default": 990
+            "maximum": 65535
           },
           "use_ssl_ftp": {
-            "type": "boolean",
-            "default": true
+            "default": true,
+            "type": "boolean"
           }
         },
-        "required": ["dev_id", "dev_ip", "local_file"]
+        "required": ["dev_id", "dev_ip", "local_file"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "slice_via_app",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "input_path": {
             "type": "string",
             "maxLength": 2048
           },
           "slice_all": {
-            "type": "boolean",
-            "default": true
+            "default": true,
+            "type": "boolean"
           },
           "export_gcode": {
-            "type": "boolean",
-            "default": true
+            "default": true,
+            "type": "boolean"
           },
           "export_project": {
-            "type": "boolean",
-            "default": false
+            "default": false,
+            "type": "boolean"
           },
           "max_wait_ms": {
+            "default": 30000,
             "type": "integer",
             "minimum": 10000,
-            "maximum": 120000,
-            "default": 30000
+            "maximum": 120000
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"]
-      }
+      "outputSchema": {}
     },
     {
-      "name": "slicer_component_inventory",
+      "name": "slicer_agentic_plan",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input_file": {
+            "type": "string",
+            "minLength": 1
+          },
+          "process_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "window_title": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "machine": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "process": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "filament": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "settings": {
+            "default": {},
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "output_dir": {
+            "type": "string"
+          },
+          "plate": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 64
+          }
+        },
+        "required": ["input_file"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "slicer_agentic_slice",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
+        "properties": {
+          "process_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "window_title": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "input_file": {
+            "type": "string",
+            "minLength": 1
+          },
+          "machine": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "process": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "filament": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "settings": {
+            "default": {},
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "output_dir": {
+            "type": "string"
+          },
+          "plate": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 64
+          },
+          "output_name": {
+            "type": "string",
+            "maxLength": 180
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "slicer_apply_project_settings",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "process_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "window_title": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "settings": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "save": {
+            "default": false,
+            "type": "boolean"
+          },
+          "refresh": {
+            "default": true,
+            "type": "boolean"
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["settings"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "slicer_capability_catalog",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "slicer_component_inventory",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object"
-      }
+      "outputSchema": {}
     },
     {
       "name": "slicer_export_3mf",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "input_file": {
             "type": "string",
@@ -1896,55 +3225,448 @@
             "type": "string"
           },
           "plate": {
+            "default": 0,
             "type": "integer",
             "minimum": 0,
-            "maximum": 64,
-            "default": 0
+            "maximum": 64
           },
           "output_name": {
             "type": "string",
             "maxLength": 180
           },
           "confirm": {
-            "type": "boolean",
-            "default": false
+            "default": false,
+            "type": "boolean"
           }
-        }
+        },
+        "required": ["input_file"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
+      "outputSchema": {}
+    },
+    {
+      "name": "slicer_live_rollback",
+      "readOnlyHint": false,
+      "inputSchema": {
         "type": "object",
-        "required": ["ok"]
-      }
+        "properties": {
+          "process_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "window_title": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "snapshot": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["snapshot"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "slicer_live_sessions",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "process_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "window_title": {
+            "type": "string",
+            "maxLength": 160
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "slicer_live_settings",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "process_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "window_title": {
+            "type": "string",
+            "maxLength": 160
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "slicer_live_snapshot",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "process_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "window_title": {
+            "type": "string",
+            "maxLength": 160
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "slicer_multimaterial",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input_file": {
+            "type": "string",
+            "minLength": 1
+          },
+          "preset": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "machine": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "filaments": {
+            "minItems": 1,
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          "filament_ids_per_object": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16
+            }
+          },
+          "roles": {
+            "type": "object",
+            "properties": {
+              "outer_wall": {
+                "default": "0",
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "inner_wall": {
+                "default": "0",
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "infill": {
+                "default": "0",
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "solid_infill": {
+                "default": "0",
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "top_surface": {
+                "default": "0",
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "bottom_surface": {
+                "default": "0",
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "support": {
+                "default": "0",
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "support_interface": {
+                "default": "0",
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "flush_multiplier": {
+                "default": "0",
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "printer_flush_multiplier": {
+                "default": "0",
+                "type": "string",
+                "pattern": "^\\d+$"
+              },
+              "minimal_purge": {
+                "default": "15",
+                "type": "string",
+                "pattern": "^\\d+$"
+              }
+            }
+          },
+          "flush_volumes_matrix": {
+            "minItems": 16,
+            "maxItems": 16,
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "flush_volumes_vector": {
+            "minItems": 8,
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "enable_prime_tower": {
+            "default": false,
+            "type": "boolean"
+          },
+          "prime_tower_x": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 400
+          },
+          "prime_tower_y": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 400
+          },
+          "prime_tower_width": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "prime_tower_brim_width": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 50
+          },
+          "prime_volume": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "flush_into_infill": {
+            "default": false,
+            "type": "boolean"
+          },
+          "flush_into_objects": {
+            "default": false,
+            "type": "boolean"
+          },
+          "flush_into_support": {
+            "default": false,
+            "type": "boolean"
+          },
+          "bed_adhesion": {
+            "type": "string",
+            "enum": ["none", "brim", "skirt", "raft"]
+          },
+          "support_enable": {
+            "type": "boolean"
+          },
+          "support_type": {
+            "type": "string",
+            "enum": ["normal", "tree", "organic"]
+          },
+          "sparse_infill_density": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "print_sequence": {
+            "type": "string",
+            "enum": ["by_layer", "by_object"]
+          },
+          "detect_thin_wall": {
+            "type": "boolean"
+          },
+          "output_dir": {
+            "type": "string"
+          },
+          "plate": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 64
+          },
+          "output_name": {
+            "type": "string",
+            "maxLength": 180
+          },
+          "analyze_gcode": {
+            "default": true,
+            "type": "boolean"
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["input_file"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "slicer_operation_history",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "default": 50,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "operation": {
+            "type": "string",
+            "maxLength": 80
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "slicer_preflight",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input_file": {
+            "type": "string",
+            "minLength": 1
+          },
+          "machine": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "process": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "filament": {
+            "type": "string",
+            "maxLength": 120
+          }
+        },
+        "required": ["input_file"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
     },
     {
       "name": "slicer_profiles",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "kind": {
+            "default": "all",
             "type": "string",
-            "enum": ["machine", "process", "filament", "all"],
-            "default": "all"
+            "enum": ["machine", "process", "filament", "all"]
           },
           "query": {
             "type": "string",
             "maxLength": 120
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
+      "outputSchema": {}
+    },
+    {
+      "name": "slicer_project_state",
+      "readOnlyHint": true,
+      "inputSchema": {
         "type": "object",
-        "required": ["ok", "count"]
-      }
+        "properties": {
+          "window_title": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "recent_index": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 99
+          },
+          "project_path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "include_full_config": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "slicer_refresh_project",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "process_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "window_title": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
     },
     {
       "name": "slicer_settings",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "machine_profile": {
             "type": "string",
@@ -1957,19 +3679,17 @@
           "output_file": {
             "type": "string"
           }
-        }
+        },
+        "required": ["machine_profile", "process_profile"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "slicer_slice",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "input_file": {
             "type": "string",
@@ -1991,37 +3711,211 @@
             "type": "string"
           },
           "plate": {
+            "default": 0,
             "type": "integer",
             "minimum": 0,
-            "maximum": 64,
-            "default": 0
+            "maximum": 64
           },
           "export_format": {
+            "default": "gcode_3mf",
             "type": "string",
-            "enum": ["gcode_3mf", "gcode"],
-            "default": "gcode_3mf"
+            "enum": ["gcode_3mf", "gcode"]
           },
           "output_name": {
             "type": "string",
             "maxLength": 180
           },
           "confirm": {
-            "type": "boolean",
-            "default": false
+            "default": false,
+            "type": "boolean"
           }
-        }
+        },
+        "required": ["input_file"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
+      "outputSchema": {}
+    },
+    {
+      "name": "spool_bind",
+      "readOnlyHint": false,
+      "inputSchema": {
         "type": "object",
-        "required": ["ok"]
-      }
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "spool_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "box_id": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "slot_index": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["spool_id"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "spool_consume_from_slice",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "spool_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "gcode_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "file_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["spool_id"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "spool_register",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "vendor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "material": {
+            "default": "PLA",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "color_hex": {
+            "default": "#FFFFFF",
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "weight_g": {
+            "default": 1000,
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "diameter": {
+            "default": 1.75,
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "density": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "sku": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "tag_uid": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "box_id": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "slot_index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "spool_id": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["vendor"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
     },
     {
       "name": "spool_resolve",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "uid": {
             "type": "string",
@@ -2029,19 +3923,84 @@
             "maxLength": 120
           }
         },
-        "required": ["uid"]
+        "required": ["uid"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
-      "outputSchema": {
+      "outputSchema": {}
+    },
+    {
+      "name": "spool_status",
+      "readOnlyHint": true,
+      "inputSchema": {
         "type": "object",
-        "required": ["read_only", "query"]
-      }
+        "properties": {
+          "spool_id": {
+            "type": "string",
+            "maxLength": 60
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "spool_usage",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "spool_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "used_g": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["spool_id", "used_g"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
     },
     {
       "name": "start_print",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "dev_id": {
             "type": "string",
@@ -2077,59 +4036,57 @@
             "maxLength": 32
           },
           "bed_leveling": {
-            "type": "boolean",
-            "default": true
+            "default": true,
+            "type": "boolean"
           },
           "flow_cali": {
-            "type": "boolean",
-            "default": false
+            "default": false,
+            "type": "boolean"
           },
           "vibration_cali": {
-            "type": "boolean",
-            "default": false
+            "default": false,
+            "type": "boolean"
           },
           "layer_inspect": {
-            "type": "boolean",
-            "default": true
+            "default": true,
+            "type": "boolean"
           },
           "record_timelapse": {
-            "type": "boolean",
-            "default": false
+            "default": false,
+            "type": "boolean"
           },
           "use_ams": {
-            "type": "boolean",
-            "default": false
+            "default": false,
+            "type": "boolean"
           },
           "mqtt_port": {
+            "default": 8883,
             "type": "integer",
             "minimum": 1,
-            "maximum": 65535,
-            "default": 8883
+            "maximum": 65535
           },
           "use_ssl_mqtt": {
-            "type": "boolean",
-            "default": true
+            "default": true,
+            "type": "boolean"
           },
           "timeout_ms": {
+            "default": 15000,
             "type": "integer",
             "minimum": 500,
-            "maximum": 30000,
-            "default": 15000
+            "maximum": 30000
           }
         },
-        "required": ["dev_id", "dev_ip", "task_name", "file_remote_path"]
+        "required": ["dev_id", "dev_ip", "task_name", "file_remote_path"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok", "task_name", "dev_id"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "uia_click",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "name": {
             "type": "string",
@@ -2137,19 +4094,17 @@
             "maxLength": 120
           }
         },
-        "required": ["name"]
+        "required": ["name"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "uia_key",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "key": {
             "type": "string",
@@ -2157,69 +4112,63 @@
             "maxLength": 32
           }
         },
-        "required": ["key"]
+        "required": ["key"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "uia_read",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "uia_tree",
       "readOnlyHint": true,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "max_depth": {
+            "default": 8,
             "type": "integer",
             "minimum": 1,
-            "maximum": 12,
-            "default": 8
+            "maximum": 12
           },
           "max_children": {
+            "default": 200,
             "type": "integer",
             "minimum": 1,
-            "maximum": 1000,
-            "default": 200
+            "maximum": 1000
           }
-        }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"]
-      }
+      "outputSchema": {}
     },
     {
       "name": "uia_type",
       "readOnlyHint": false,
       "inputSchema": {
         "type": "object",
-        "additionalProperties": false,
         "properties": {
           "text": {
             "type": "string",
             "maxLength": 500
           }
         },
-        "required": ["text"]
+        "required": ["text"],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
-      "outputSchema": {
-        "type": "object",
-        "required": ["ok"]
-      }
+      "outputSchema": {}
     }
   ]
 }

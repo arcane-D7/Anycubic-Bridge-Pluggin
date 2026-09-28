@@ -104,9 +104,7 @@ export function buildTokenRecord(token) {
     capturedAt: new Date().toISOString(),
     ...(typeof claims.sub === "string" ? { sub: claims.sub } : {}),
     ...(typeof claims.email === "string" ? { email: claims.email } : {}),
-    ...(Number.isFinite(exp)
-      ? { expiresAt: new Date(exp * 1000).toISOString() }
-      : {}),
+    ...(Number.isFinite(exp) ? { expiresAt: new Date(exp * 1000).toISOString() } : {}),
   };
 }
 
@@ -162,10 +160,7 @@ export async function loginWithAccessToken(accessToken, options = {}) {
     const code = Number(body?.code ?? (res.ok ? 0 : -1));
     const data = body?.data ?? {};
     if (!res.ok || (code !== 0 && !data.token)) {
-      const detail =
-        typeof body?.msg === "string" && body.msg
-          ? body.msg
-          : `HTTP ${res.status}`;
+      const detail = typeof body?.msg === "string" && body.msg ? body.msg : `HTTP ${res.status}`;
       throw new Error(
         `loginWithAccessToken(${deviceType}) failed: ${String(detail).slice(0, 200)}` +
           (Number.isFinite(code) ? ` (code=${code})` : ""),
@@ -189,10 +184,11 @@ async function getUserInfo(session, options = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 15000);
   try {
-    const res = await fetchImpl(
-      `${baseUrl(session.region ?? "en")}/v1/user/profile/userInfo`,
-      { method: "GET", headers: { ...signAuthHeaders(), "XX-Token": session.token }, signal: controller.signal },
-    );
+    const res = await fetchImpl(`${baseUrl(session.region ?? "en")}/v1/user/profile/userInfo`, {
+      method: "GET",
+      headers: { ...signAuthHeaders(), "XX-Token": session.token },
+      signal: controller.signal,
+    });
     const body = await res.json().catch(() => ({}));
     const data = body?.data ?? body ?? {};
     return {
@@ -228,7 +224,10 @@ export async function validateAccessToken(accessToken, options = {}) {
         ...options,
         deviceType,
       });
-      const info = await getUserInfo({ token: session.token, region: options.region ?? "en" }, options);
+      const info = await getUserInfo(
+        { token: session.token, region: options.region ?? "en" },
+        options,
+      );
       return {
         ok: true,
         mode: deviceType,
@@ -247,8 +246,7 @@ export async function validateAccessToken(accessToken, options = {}) {
   const pcf = await attempt(AUTH_MODES.PCF);
   if (pcf.ok) return pcf;
 
-  const looksLikePortal =
-    /user does not exist|invalid.*token|credential/i.test(pcf.error ?? "");
+  const looksLikePortal = /user does not exist|invalid.*token|credential/i.test(pcf.error ?? "");
   if (looksLikePortal) {
     const web = await attempt(AUTH_MODES.WEB);
     if (web.ok) return web;
@@ -273,7 +271,9 @@ export function defaultDataDir() {
   const local = process.env.LOCALAPPDATA;
   const base =
     process.env.PLUGIN_DATA ??
-    (local ? path.join(local, "AnycubicSlicerNextControl") : path.join(pluginRoot(), "AnycubicSlicerNextControl"));
+    (local
+      ? path.join(local, "AnycubicSlicerNextControl")
+      : path.join(pluginRoot(), "AnycubicSlicerNextControl"));
   return path.join(base, "tokens");
 }
 
@@ -285,11 +285,22 @@ async function runTokenCrypt(action, env) {
   const script = defaultCryptScript();
   const { stdout, stderr } = await execFileAsync(
     "powershell.exe",
-    ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script, "-Action", action],
+    [
+      "-NoLogo",
+      "-NoProfile",
+      "-NonInteractive",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      script,
+      "-Action",
+      action,
+    ],
     { windowsHide: true, timeout: 15000, maxBuffer: 1024 * 1024, env: { ...process.env, ...env } },
   );
   const out = stdout.trim();
-  if (!out && stderr.trim()) throw new Error(`token-crypt ps1 failed: ${stderr.trim().slice(0, 300)}`);
+  if (!out && stderr.trim())
+    throw new Error(`token-crypt ps1 failed: ${stderr.trim().slice(0, 300)}`);
   return out;
 }
 
@@ -336,7 +347,11 @@ export async function clearStoredToken(options = {}) {
 // ---------------------------------------------------------------------------
 
 async function promptSecret(question) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: true,
+  });
   try {
     return await new Promise((resolve) => {
       process.stdout.write(question);
@@ -368,7 +383,9 @@ export async function runInteractiveLogin(options = {}) {
       "",
     ].join("\n"),
   );
-  const token = await promptSecret("Cole o access_token/XX-Token (não será ecoado) e pressione Enter: ");
+  const token = await promptSecret(
+    "Cole o access_token/XX-Token (não será ecoado) e pressione Enter: ",
+  );
   const trimmed = token.trim();
   if (!trimmed) {
     console.log("Nenhum token recebido. Nada foi gravado.");
@@ -466,7 +483,12 @@ export async function casdoorLogin(email, password, options = {}) {
         returned: redactResponse(parsed),
       };
     }
-    return { ok: false, httpStatus: res.status, error: "login page (SPA) returned HTML; needs browser", html: true };
+    return {
+      ok: false,
+      httpStatus: res.status,
+      error: "login page (SPA) returned HTML; needs browser",
+      html: true,
+    };
   } finally {
     clearTimeout(timer);
   }
@@ -485,11 +507,7 @@ function redactResponse(parsed) {
 
 function openBrowser(url) {
   const start =
-    process.platform === "win32"
-      ? "cmd.exe"
-      : process.platform === "darwin"
-        ? "open"
-        : "xdg-open";
+    process.platform === "win32" ? "cmd.exe" : process.platform === "darwin" ? "open" : "xdg-open";
   const args = process.platform === "win32" ? ["/c", "start", "", url] : [url];
   return execFileAsync(start, args, { windowsHide: true, timeout: 10000 }).catch(() => {});
 }
@@ -498,7 +516,8 @@ export async function runIdFlow(options = {}) {
   const region = options.region ?? "en";
   console.log(
     [
-      `Anycubic auth — login por email+senha (região: ${region})`,  "",
+      `Anycubic auth — login por email+senha (região: ${region})`,
+      "",
       "Nota: a Anycubic protege o login com CAPTCHA/2FA (Casdoor). Fazemos",
       "melhor esforço programático; se falhar, o browser abre para login manual",
       "e o token é capturado/gravado a seguir.",
@@ -524,9 +543,11 @@ export async function runIdFlow(options = {}) {
     console.log("✔ Login API aceite pelo Casdoor. A capturar token…");
   } else {
     const msg = String(attempt.error ?? "unknown");
-    console.log(attempt.html
-      ? "ℹ Servidor devolveu a SPA (login exige browser e CAPTCHA human)."
-      : `ℹ Login API rejeitado: ${msg}`);
+    console.log(
+      attempt.html
+        ? "ℹ Servidor devolveu a SPA (login exige browser e CAPTCHA human)."
+        : `ℹ Login API rejeitado: ${msg}`,
+    );
     console.log("A abrir o browser para login manual…");
     await openBrowser(`https://cloud-universe.anycubic.com/file`);
   }
@@ -535,8 +556,10 @@ export async function runIdFlow(options = {}) {
     [
       "",
       "Após o login no browser (se foi aberto):",
-      "  1) Abra DevTools (F12) > Console.",  "  2) Digite: window.localStorage['XX-Token']",
-      "  3) Copie o valor (sem aspas) e cole aqui em baixo.",  "",
+      "  1) Abra DevTools (F12) > Console.",
+      "  2) Digite: window.localStorage['XX-Token']",
+      "  3) Copie o valor (sem aspas) e cole aqui em baixo.",
+      "",
       "(Alternativa: rode `node scripts/auth-login.mjs` para a opção de colar token)",
       "",
     ].join("\n"),
@@ -584,7 +607,10 @@ export function registerAuthSetupHelper(server, z) {
         "Validate and store an Anycubic access_token / XX-Token pasted by the user (or provided as access_token). The token is NEVER echoed back: the tool validates it against loginWithAccessToken, detects pcf (MQTT-enabled) vs web (http-polling-only) mode, and stores it DPAPI-encrypted in the same token store used by the rest of the bridge. Requires a human to supply a token obtained from the Anycubic slicer or portal (captcha/2FA make email+password login impossible).",
       inputSchema: z
         .object({
-          access_token: z.string().min(1).describe("The JWT/XX-Token to validate and store. Human-provided."),
+          access_token: z
+            .string()
+            .min(1)
+            .describe("The JWT/XX-Token to validate and store. Human-provided."),
           region: z.enum(["en", "cn"]).optional().describe("Cloud region (default en)."),
           timeout_ms: z.number().int().min(3000).max(30000).optional(),
         })
@@ -627,7 +653,9 @@ export function registerAuthSetupHelper(server, z) {
           mode: validated.mode,
           transport: validated.transport,
           mqtt: validated.mqtt,
-          ...(Number.isFinite(Number(validated.user_id)) ? { user_id: Number(validated.user_id) } : {}),
+          ...(Number.isFinite(Number(validated.user_id))
+            ? { user_id: Number(validated.user_id) }
+            : {}),
           ...(validated.user_email ? { user_email: validated.user_email } : {}),
           region: validated.region,
           ...(record.sub ? { sub: record.sub } : {}),
@@ -666,7 +694,10 @@ export function registerAuthIdFlowTool(server, z) {
       inputSchema: z
         .object({
           region: z.enum(["en", "cn"]).optional().describe("Cloud region (default en)."),
-          open_browser: z.boolean().optional().describe("Open the browser immediately (default true)."),
+          open_browser: z
+            .boolean()
+            .optional()
+            .describe("Open the browser immediately (default true)."),
         })
         .strict(),
       outputSchema: z
@@ -711,8 +742,7 @@ export function registerAuthIdFlowTool(server, z) {
           content: [
             {
               type: "text",
-              text:
-                error instanceof Error ? error.message : String(error),
+              text: error instanceof Error ? error.message : String(error),
             },
           ],
         };
@@ -740,7 +770,9 @@ if (isMain) {
     try {
       await runIdFlow({ region });
     } catch (error) {
-      console.error(`\nFalha na autenticação: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(
+        `\nFalha na autenticação: ${error instanceof Error ? error.message : String(error)}`,
+      );
       console.error("Nada foi gravado.");
       process.exitCode = 1;
     }
@@ -748,7 +780,9 @@ if (isMain) {
     try {
       await runInteractiveLogin({ region });
     } catch (error) {
-      console.error(`\nFalha na autenticação: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(
+        `\nFalha na autenticação: ${error instanceof Error ? error.message : String(error)}`,
+      );
       console.error("Nada foi gravado.");
       process.exitCode = 1;
     }

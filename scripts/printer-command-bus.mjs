@@ -647,4 +647,3 @@ export function createManager({ accessToken, resourcesDir, log, cloud } = {}) {
   const anycubic = new AnycubicCloud({ access_token: token, resources_dir: resourcesDir, log });
   return new CloudConnectionManager({ cloud: anycubic, log });
 }
-

@@ -70,7 +70,12 @@ while ((im = itemRe.exec(xml)) !== null) {
   const transform = attrs.match(/transform="([^"]+)"/)?.[1] ?? null;
   if (objectId > 0 && transform) {
     const t = transform.trim().split(/\s+/).map(Number);
-    if (t.length >= 12) instances.push({ objectId, transform: t, part: attrs.match(/partnumber="([^"]*)"/)?.[1] ?? "" });
+    if (t.length >= 12)
+      instances.push({
+        objectId,
+        transform: t,
+        part: attrs.match(/partnumber="([^"]*)"/)?.[1] ?? "",
+      });
   } else if (objectId > 0) {
     instances.push({ objectId, transform: identity(), part: "" });
   }
@@ -78,7 +83,8 @@ while ((im = itemRe.exec(xml)) !== null) {
 console.log(`build items: ${instances.length}`);
 if (instances.length === 0) {
   // Fallback: every object once, identity transform.
-  for (const o of objects.values()) instances.push({ objectId: o.id, transform: identity(), part: o.name });
+  for (const o of objects.values())
+    instances.push({ objectId: o.id, transform: identity(), part: o.name });
 }
 
 // ---- 3. Merge triangles with transforms ----
@@ -100,8 +106,12 @@ function applyMatrix(v, m) {
   ];
 }
 function normal(a, b, c) {
-  const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
-  const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+  const ux = b[0] - a[0],
+    uy = b[1] - a[1],
+    uz = b[2] - a[2];
+  const vx = c[0] - a[0],
+    vy = c[1] - a[1],
+    vz = c[2] - a[2];
   let nx = uy * vz - uz * vy;
   let ny = uz * vx - ux * vz;
   let nz = ux * vy - uy * vx;
@@ -177,4 +187,6 @@ for (const tri of outTris) {
 }
 fs.writeFileSync(outPath, stl);
 console.log(`wrote ${outPath} (${(stl.length / 1048576).toFixed(1)} MB, ${outTris.length} tris)`);
-console.log(`bbox min: [${bmin.map((v) => v.toFixed(2)).join(", ")}]  max: [${bmax.map((v) => v.toFixed(2)).join(", ")}]`);
+console.log(
+  `bbox min: [${bmin.map((v) => v.toFixed(2)).join(", ")}]  max: [${bmax.map((v) => v.toFixed(2)).join(", ")}]`,
+);

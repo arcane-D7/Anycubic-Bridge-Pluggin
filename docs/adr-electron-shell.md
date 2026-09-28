@@ -56,6 +56,7 @@ flowchart LR
   reconnects; no code change in the server is required.
 
 **Why child process over in-process import:**
+
 1. `dist/server.mjs` is an **ESM bundle**. Electron main is CommonJS by default; importing
    an ESM bundle with dynamic `import()` inside the main lifecycle adds interop risk
    (top-level await, stdio ownership, graceful shutdown).
@@ -77,14 +78,14 @@ impractical (embedded runtime distribution).
 - The renderer must reach the **same `ui/cad.html`** the browser uses.
 - Recommended: `custom://app/ui/cad.html` protocol (`protocol.registerFileProtocol` /
   `registerSchemesAsPrivileged` with `stream: true, supportFetchAPI: true`).
-- The HTML is already CDN-independent in *logic*: `three@0.186.0`, `three-mesh-bvh`,
+- The HTML is already CDN-independent in _logic_: `three@0.186.0`, `three-mesh-bvh`,
   `three-bvh-csg` are loaded via import-map from jsdelivr / esm.sh. For offline-first
   desktop use, vendoring these three packages **locally** is the recommended change
   (see `electron-packaging.md`). The UI JS (`cadFetch`, import-map, params) is unchanged.
 
 ### IPC channels
 
-- Keep HTTP as the *data* transport (renderer ↔ CAD workspace).
+- Keep HTTP as the _data_ transport (renderer ↔ CAD workspace).
 - Use IPC only for:
   - Token handoff: preload `contextBridge.exposeInMainWorld('cadToken', token)` — the
     renderer reads `window.cadToken` instead of `?token=` in the URL.
@@ -94,11 +95,11 @@ impractical (embedded runtime distribution).
 
 ## Alternatives considered
 
-| Option | Pros | Cons | Verdict |
-| --- | --- | --- | --- |
-| **Tauri (Rust)** | Small binary, memory-light, native | Requires rewriting server connectivity (Rust sidecar), UI must run in WebView2; no ESM Node bundle reuse; Rust toolchain in build | Rejected — Node server reuse is the whole point |
-| **Plain WebView2 / WebView2Loader** | No Electron dependency | Manual host/background process management, no npm ecosystem, more glue code, harder auto-update | Rejected — too much custom glue |
-| **PWA / browser-only** | Zero packaging | No native file dialogs, no install, user already runs MCP where a desktop app adds value | Not chosen for the "future Electron" constraint |
+| Option                              | Pros                               | Cons                                                                                                                              | Verdict                                         |
+| ----------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| **Tauri (Rust)**                    | Small binary, memory-light, native | Requires rewriting server connectivity (Rust sidecar), UI must run in WebView2; no ESM Node bundle reuse; Rust toolchain in build | Rejected — Node server reuse is the whole point |
+| **Plain WebView2 / WebView2Loader** | No Electron dependency             | Manual host/background process management, no npm ecosystem, more glue code, harder auto-update                                   | Rejected — too much custom glue                 |
+| **PWA / browser-only**              | Zero packaging                     | No native file dialogs, no install, user already runs MCP where a desktop app adds value                                          | Not chosen for the "future Electron" constraint |
 
 **Why Electron wins here**: the server is Node; the UI is a plain HTML/JS single page
 with an import-map; Electron gives identical Chromium behavior, npm packaging via

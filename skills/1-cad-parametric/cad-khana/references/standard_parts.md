@@ -3,7 +3,7 @@
 `bd_warehouse` is a Build123d-native companion library bundled as a
 default dependency. Reach for it before hand-rolling any standard
 hardware. Its classes subclass build123d's `BasePartObject`, so an
-instance *is* a `Part` and drops straight into an `Assembly`.
+instance _is_ a `Part` and drops straight into an `Assembly`.
 
 ## What's in it
 
@@ -33,7 +33,7 @@ Three layers of introspection, cheapest first.
 
 This is the highest-signal channel. Many `bd_warehouse` classes annotate
 their type-selector arguments with `Literal[...]`, so the signature
-*enumerates* the valid codes:
+_enumerates_ the valid codes:
 
 ```python
 import inspect
@@ -71,9 +71,9 @@ grep -nE "^class " .venv/lib/python*/site-packages/bd_warehouse/fastener.py
 ```
 
 The [bd_warehouse docs](https://bd-warehouse.readthedocs.io/en/latest/)
-are the better source for *usage examples and idioms*; introspection
-and source are the better source for *does this class exist and what
-arguments does it take*.
+are the better source for _usage examples and idioms_; introspection
+and source are the better source for _does this class exist and what
+arguments does it take_.
 
 ## Size strings: read the error
 

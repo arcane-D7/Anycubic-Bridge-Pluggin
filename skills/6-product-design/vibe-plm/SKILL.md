@@ -25,7 +25,6 @@ metadata:
   version: "1.0"
   skill-author: "@luckiday"
   vendored: "2026-09-18"
-
 ---
 
 # Vibe-PLM — the product manifest + cross-domain integration
@@ -33,9 +32,9 @@ metadata:
 A small embedded product is **three things that must agree** (see
 [`docs/architecture.md`](../../docs/architecture.md)): firmware, PCB, enclosure. Each
 has its own skill and its own self-contained loop. **vibe-plm is the thin layer that
-holds them together** — it owns the *contracts between* the domains, not the work
-inside any one of them. It answers: *what is this product, at which revision, and do
-the three halves still agree?*
+holds them together** — it owns the _contracts between_ the domains, not the work
+inside any one of them. It answers: _what is this product, at which revision, and do
+the three halves still agree?_
 
 > This is **not** a fourth design tool. It writes **no** KiCad, **no** build123d, **no**
 > firmware. It owns one manifest + three interface files and a check that they're
@@ -51,14 +50,14 @@ file and knows what else must move. See `examples/pager-buddy/product.yaml` and
 
 ```yaml
 product: pager-buddy
-revision: v2026-06-19            # vYYYY-MM-DD — bump on ANY cross-domain change
+revision: v2026-06-19 # vYYYY-MM-DD — bump on ANY cross-domain change
 firmware: { dir: firmware/, status: stub }
-pcb:      { dir: pcb/, status: stub }
-cad:      { dir: cad/, status: stub }
+pcb: { dir: pcb/, status: stub }
+cad: { dir: cad/, status: stub }
 interfaces:
-  pinmap: pcb/pinmap.yaml                       # pcb  -> firmware
-  board_step: pcb/board.step                    # pcb  -> cad  (generated artifact)
-  enclosure_constraints: cad/constraints.yaml   # cad <-> pcb
+  pinmap: pcb/pinmap.yaml # pcb  -> firmware
+  board_step: pcb/board.step # pcb  -> cad  (generated artifact)
+  enclosure_constraints: cad/constraints.yaml # cad <-> pcb
 ```
 
 ## The three interface contracts (the only cross-skill coupling allowed)
@@ -67,14 +66,14 @@ The repo rule is that **a skill's code never calls another skill's code**. So th
 domains are coupled only through **data files** — these three contracts. Each has a
 **producer** and a **consumer**; the producer regenerates it, the consumer reads it.
 
-| Contract | Direction | File | What it carries | Kind |
-|---|---|---|---|---|
-| **pinmap** | pcb → firmware | `pcb/pinmap.yaml` | the net map: pin ↔ signal ↔ bus/address | source (must exist) |
-| **board_step** | pcb → cad | `pcb/board.step` | the board 3D for the 0 mm³ fit-check | **artifact** (generated; warn until built) |
-| **enclosure_constraints** | cad ↔ pcb | `cad/constraints.yaml` | the shared fit numbers (outline, holes, stack, ports, windows) | source (must exist) |
+| Contract                  | Direction      | File                   | What it carries                                                | Kind                                       |
+| ------------------------- | -------------- | ---------------------- | -------------------------------------------------------------- | ------------------------------------------ |
+| **pinmap**                | pcb → firmware | `pcb/pinmap.yaml`      | the net map: pin ↔ signal ↔ bus/address                        | source (must exist)                        |
+| **board_step**            | pcb → cad      | `pcb/board.step`       | the board 3D for the 0 mm³ fit-check                           | **artifact** (generated; warn until built) |
+| **enclosure_constraints** | cad ↔ pcb      | `cad/constraints.yaml` | the shared fit numbers (outline, holes, stack, ports, windows) | source (must exist)                        |
 
-`pinmap` is the *net map* the architecture doc calls shared between firmware ↔ PCB.
-`enclosure_constraints` is the *fit numbers* shared between PCB ↔ enclosure. `board_step`
+`pinmap` is the _net map_ the architecture doc calls shared between firmware ↔ PCB.
+`enclosure_constraints` is the _fit numbers_ shared between PCB ↔ enclosure. `board_step`
 is the one **generated** artifact: it appears only after the pcb 3D/fab step runs, so
 `plm_check` warns (not fails) when it's missing.
 
@@ -89,12 +88,12 @@ define product ─► set contracts ─► each domain builds to its contract �
 
 1. **Define the product** — write/scaffold `product.yaml` (identity, the three domain
    dirs, the interface paths). For a new product this is the scaffold step.
-2. **Set the contracts** — fill the *source* contracts: `pinmap.yaml` (the net map) and
+2. **Set the contracts** — fill the _source_ contracts: `pinmap.yaml` (the net map) and
    `constraints.yaml` (the fit numbers). These are the numbers both sides will read.
 3. **Each domain builds to its contract** — hand off to the sibling skills. `vibe-pcb`
-   generates the board *from* the net map + fit numbers and exports `board.step`;
-   `vibe-firmware` generates its config-as-code *from* the pinmap; `vibe-cad` models the
-   shell *from* the fit numbers and fit-checks against `board.step`. Each runs its **own**
+   generates the board _from_ the net map + fit numbers and exports `board.step`;
+   `vibe-firmware` generates its config-as-code _from_ the pinmap; `vibe-cad` models the
+   shell _from_ the fit numbers and fit-checks against `board.step`. Each runs its **own**
    gate (this skill does not run them — it points at them).
 4. **plm_check** — `scripts/plm_check.py product.yaml`: manifest sane, every domain dir
    present, every contract resolves (source missing = error; artifact missing = warn),
@@ -117,8 +116,8 @@ python3 ../../skills/vibe-plm/scripts/plm_check.py product.yaml
 
 `plm_check.py` is **self-contained**: it parses the manifest and reads the contract
 files; it never imports or shells out to `pcb_check.sh` / `check_fit.py` / a firmware
-build. The domains' own scripts run their own gates; this one only proves the *contracts
-between them* are consistent.
+build. The domains' own scripts run their own gates; this one only proves the _contracts
+between them_ are consistent.
 
 ## Content cross-checks (plm_check reads INSIDE the contracts)
 
@@ -129,7 +128,7 @@ Beyond "does every contract file resolve", `plm_check.py` cross-checks contents:
   `#define NAME GPIO_NUM_n` lines and **errors** on any pin whose GPIO drifted
   (warns when a define is missing from the header).
 - **constraints ↔ placement evidence** — declare a `placement` interface (a
-  `placement.json` the pcb generator *exports*); the check compares it against
+  `placement.json` the pcb generator _exports_); the check compares it against
   `constraints.yaml`: outline + mount holes exactly, every port/window center
   within `tolerance_mm` (default 0.5). Contract vs evidence — drift is an error.
 - **GPIO lint** — whenever the pinmap parses: duplicate `gpio:` = error; strapping
@@ -163,7 +162,7 @@ skill. (A one-command scaffolder is a TODO — see below.)
   three contract files; vibe-plm's scripts never import another skill's code (mirrors
   the repo-wide rule). A "hand off to vibe-pcb" pointer is prose, not a function call.
 - **One number, one place.** A shared value (a pin, an outline dim, a stack height)
-  lives in exactly one contract; the other side *reads* it. Don't fork it.
+  lives in exactly one contract; the other side _reads_ it. Don't fork it.
 - **Bump `revision` on any cross-domain change** (vYYYY-MM-DD) so the three halves stay
   versioned together; a release pins all three to one revision.
 - **Never fab/release on a partial gate.** All three domain gates green at one revision
@@ -177,7 +176,7 @@ skill. (A one-command scaffolder is a TODO — see below.)
   scaffolding a new product → **here**.
 - The agent-status **hook→bridge→device** glue (a runtime feature of an example, not a
   cross-domain hardware contract) is a different concern — the roadmap's `vibe-glue` idea.
-  It's a *runtime/service wire contract*, though, so the same discipline applies; the
+  It's a _runtime/service wire contract_, though, so the same discipline applies; the
   hard-won lessons (versioned wire format, wire-shape == mock data, device- vs
   link-owned fields, in-contract freshness/TTL, transport-independence) are captured in
   [`references/manifest-and-interfaces.md`](references/manifest-and-interfaces.md)

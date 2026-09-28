@@ -53,11 +53,11 @@ proceeding.
   Build123d directly or a mesh tool.
 - CAM / toolpath generation. Out of scope.
 - Full constraint solving (drive geometry from relationships). The tool
-  uses *assertions* — they check, they don't drive.
+  uses _assertions_ — they check, they don't drive.
 
 ## CLI
 
-Two kinds of command. **Import-model verbs** take a *target*, import
+Two kinds of command. **Import-model verbs** take a _target_, import
 the module, resolve one member, and do one thing to it. **Execute-model**
 runs a script for effect.
 
@@ -73,7 +73,7 @@ khana --version
 ```
 
 `khana check` is the primary loop. It never exports — STL/STEP come
-from `khana export`, and the two read the *same* file, so there is no
+from `khana export`, and the two read the _same_ file, so there is no
 toggle to get wrong and no way for check-only geometry to reach an
 export.
 
@@ -105,13 +105,13 @@ floor roles, twelve animation frames) is a command script today — see
 **The target owns its default out**, so co-located targets never
 overwrite each other's `mechanism.json`:
 
-| target | writes to |
-|---|---|
-| `unit/assembly.py` | `unit/outputs/` |
-| `unit/check_cones.py` | `unit/outputs/check_cones/` |
+| target                       | writes to                          |
+| ---------------------------- | ---------------------------------- |
+| `unit/assembly.py`           | `unit/outputs/`                    |
+| `unit/check_cones.py`        | `unit/outputs/check_cones/`        |
 | `unit/assembly.py:build_lid` | `unit/outputs/assembly-build_lid/` |
 
-**`assembly` is a privileged *stem*, not "the unit's main file".** A
+**`assembly` is a privileged _stem_, not "the unit's main file".** A
 plain unit check whose file happens to be called `single_floor.py`
 lands in `outputs/single_floor/`, not `outputs/`. If you are comparing
 against a baseline by path, look in the subdirectory before reading a
@@ -119,7 +119,7 @@ missing file as a regression.
 
 An explicit `--out <dir>` overrides and is taken **cwd-relative**
 (you typed it). Inside a script under `khana run`, a relative `out=`
-passed to `check()` / `inspect()` anchors to the *script's* directory,
+passed to `check()` / `inspect()` anchors to the _script's_ directory,
 so `out="outputs"` lands next to the script regardless of cwd.
 
 JSON diagnostics are always written, even on failure — read them to
@@ -148,7 +148,7 @@ than one unit.
 
 `khana view` calls `ocp_vscode.show(...)`, which pushes geometry over
 a local socket (default port 3939). The listener can be either the
-**OCP CAD Viewer** VS Code extension *or* the **standalone viewer
+**OCP CAD Viewer** VS Code extension _or_ the **standalone viewer
 server** that ships with `ocp_vscode`:
 
 ```
@@ -179,15 +179,15 @@ server, one to push the current file to it:
 
 ## The three file kinds
 
-Name a file by what it *is*. The name is the whole tell — a reader
+Name a file by what it _is_. The name is the whole tell — a reader
 should know from it whether the file declares, verifies, or
 orchestrates.
 
-| kind | name | addressed by | imported by others? |
-|---|---|---|---|
-| **declaration module** | `assembly.py`, `animated_assembly.py` | `khana check` / `export` / `view` / `draw` | yes — this is the product |
-| **check module** | `check_*.py` | `khana check` | **never** |
-| **command script** | a descriptive noun — `printability.py`, `role_sweep.py` | `khana run` | never |
+| kind                   | name                                                    | addressed by                               | imported by others?       |
+| ---------------------- | ------------------------------------------------------- | ------------------------------------------ | ------------------------- |
+| **declaration module** | `assembly.py`, `animated_assembly.py`                   | `khana check` / `export` / `view` / `draw` | yes — this is the product |
+| **check module**       | `check_*.py`                                            | `khana check`                              | **never**                 |
+| **command script**     | a descriptive noun — `printability.py`, `role_sweep.py` | `khana run`                                | never                     |
 
 ### Declaration module
 
@@ -207,7 +207,7 @@ effectful. Four sections, in order:
 
 ### Check module
 
-An ordinary assembly module whose *purpose* is verification. It imports
+An ordinary assembly module whose _purpose_ is verification. It imports
 product factories, composes a fixture, declares claims about the
 interaction, and exposes the result as a factory. Prefix `check_`.
 
@@ -304,10 +304,10 @@ free.
    `with_part(name, part(), location=…)` calls — the degenerate case,
    not the default shape. Names are stable IDs the assertions and
    diagnostics reference.
-3. **Add `assert_no_interference` between *every* candidate-overlap
+3. **Add `assert_no_interference` between _every_ candidate-overlap
    pair immediately** — before any clearance work. The cost of
    asserting a pair that will never collide is one line; the cost of
-   *not* asserting a pair that silently overlaps is a printed part
+   _not_ asserting a pair that silently overlaps is a printed part
    you can't assemble. Default to over-asserting.
 4. **Add `assert_clearance(a, b, min_mm=…)` between every pair of
    parts that move relative to each other.** Pick a real number
@@ -324,7 +324,7 @@ cheap, but discovering a missing one downstream is expensive.
 
 ## Minimal skeleton
 
-`assembly.py` — the declaration module. Note what is *absent*: no
+`assembly.py` — the declaration module. Note what is _absent_: no
 `check()`, no `inspect()`, no `__main__`.
 
 ```python
@@ -496,7 +496,7 @@ For build123d's selector operators (`>`, `<`, `>>`, `<<`, `|`, `@`, `%`,
 default dependency — fasteners, bearings, modeled threads, gears,
 sprockets, pipes, flanges, and OpenBuilds extrusions. Reach for it
 before hand-rolling any standard hardware. Each class subclasses
-`BasePartObject`, so an instance *is* a `Part`. Wrap it in a thin pure
+`BasePartObject`, so an instance _is_ a `Part`. Wrap it in a thin pure
 part function to keep script style consistent:
 
 ```python
@@ -524,7 +524,7 @@ prefixed with the part name.
 
 **Under the `khana` CLI the whole script runs, then it exits nonzero
 once.** A red part no longer aborts the run, so a script that checks or
-inspects many parts leaves *every* diagnostics JSON current in one pass,
+inspects many parts leaves _every_ diagnostics JSON current in one pass,
 and the CLI ends with a roll-up naming each failure and its JSON path.
 Run the same script with a bare interpreter and the old behaviour
 applies — the first failure raises `SystemExit(1)` — because nothing
@@ -532,15 +532,15 @@ there can exit nonzero after the fact. **Prefer `khana check` for
 multi-part scripts**; a bare run stops early and leaves the later parts'
 JSON stale from a previous run while it still reads as current.
 
-| Assertion | Checks |
-|---|---|
-| `.assert_no_interference(a, b)` | Parts `a` and `b` don't overlap (intersection volume ≤ 0.001 mm³). |
-| `.assert_clearance(a, b, min_mm=…)` | Minimum distance between `a` and `b` is at least `min_mm`. |
-| `.assert_distance(a, b, min_mm=…, max_mm=…)` | Bounded distance from part `a` to part `b` **or a datum `Plane`**. Either bound alone, or both for "close but not touching" (a gear mesh). See below for `along=` and `grow_*_mm`. |
-| `.assert_scalar(name, value, ge=…, le=…)` | A named claim about a non-geometric scalar (friction budget, torque margin). No bounds = pure recorder. |
-| `.assert_tangent_contact(a, b, tol_mm=…)` | Parts `a` and `b` **touch**: surface gap ≤ `tol_mm` (default 1e-3, noise allowance — not a design gap) and no real overlap. A gap fails, an overlap fails. See below. |
-| `.assert_allowed_contact(a, b, max_overlap_mm3=…, min_overlap_mm3=…)` | Design-intended overlap stays within bounds (a press-fit modeled at its true interference). A gap passes unless `min_overlap_mm3` makes engagement itself the claim. See below. |
-| `.assert_interference(a, b, reason=…)` | Parts `a` and `b` **do** overlap (intersection volume > 0.001 mm³). Regression alarm for a documented, accepted overlap — fails if the overlap disappears, forcing the assertion to be removed when the design gap gets fixed. |
+| Assertion                                                             | Checks                                                                                                                                                                                                                         |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `.assert_no_interference(a, b)`                                       | Parts `a` and `b` don't overlap (intersection volume ≤ 0.001 mm³).                                                                                                                                                             |
+| `.assert_clearance(a, b, min_mm=…)`                                   | Minimum distance between `a` and `b` is at least `min_mm`.                                                                                                                                                                     |
+| `.assert_distance(a, b, min_mm=…, max_mm=…)`                          | Bounded distance from part `a` to part `b` **or a datum `Plane`**. Either bound alone, or both for "close but not touching" (a gear mesh). See below for `along=` and `grow_*_mm`.                                             |
+| `.assert_scalar(name, value, ge=…, le=…)`                             | A named claim about a non-geometric scalar (friction budget, torque margin). No bounds = pure recorder.                                                                                                                        |
+| `.assert_tangent_contact(a, b, tol_mm=…)`                             | Parts `a` and `b` **touch**: surface gap ≤ `tol_mm` (default 1e-3, noise allowance — not a design gap) and no real overlap. A gap fails, an overlap fails. See below.                                                          |
+| `.assert_allowed_contact(a, b, max_overlap_mm3=…, min_overlap_mm3=…)` | Design-intended overlap stays within bounds (a press-fit modeled at its true interference). A gap passes unless `min_overlap_mm3` makes engagement itself the claim. See below.                                                |
+| `.assert_interference(a, b, reason=…)`                                | Parts `a` and `b` **do** overlap (intersection volume > 0.001 mm³). Regression alarm for a documented, accepted overlap — fails if the overlap disappears, forcing the assertion to be removed when the design gap gets fixed. |
 
 Give assertions a `name=` when you'd benefit from a specific label in
 the diagnostics; otherwise they get an auto-generated one.
@@ -586,7 +586,7 @@ a = a.assert_scalar("ramp_slide_margin", tan(radians(RAMP_DEG)),
 ```
 
 Bound comparisons carry a 1e-6 absolute tolerance, so placing or
-sizing geometry *from* the same constant you bound against (gap ==
+sizing geometry _from_ the same constant you bound against (gap ==
 `MESH_BACKLASH` exactly) passes despite solver noise — no need to
 hand-pad bounds with `- 0.01` margins.
 
@@ -600,7 +600,7 @@ Two contact assertions, split by what the design intends:
 - **Required contact** — a tangent rest (foot-on-rail, plate-on-flange,
   gear-on-collar) where the parts must touch. `assert_no_interference`
   alone is a trap here: it also passes with the parts floating 3 mm
-  apart, so nothing asserts the contact *exists*. Use
+  apart, so nothing asserts the contact _exists_. Use
   `assert_tangent_contact` — a gap beyond `tol_mm` fails and a real
   overlap fails. When a part must rest against a specific surface,
   assert the tangent contact against the surface it must face; that
@@ -653,7 +653,7 @@ is blind at every frame.
 Window the **joint angle, not `t`**. The joint is the physical DOF, so
 re-timing the animation can't invalidate the claim — and a contact that
 recurs at several parameters (a pad touched on the way up and again on
-the way down) is usually *one* angle window even though it is two
+the way down) is usually _one_ angle window even though it is two
 disjoint `t` intervals. Derive the window from geometry with
 `classify` (below) rather than guessing it; if the joint is absent from
 a run, the assertion skips like an absent part.
@@ -670,7 +670,7 @@ and assertions against detail-only parts skip (`passed: null`) in runs
 that lack them. Don't mirror an assertion at both levels; that just
 evaluates it twice under two names.
 
-**Claims about the *interaction* of units belong in a check module.**
+**Claims about the _interaction_ of units belong in a check module.**
 A claim owned by no single model — probe cones against sightlines, a
 merged fixture, two units' beliefs about a shared datum — has the
 fixture as its owning level, so give the fixture a file. It imports
@@ -684,7 +684,7 @@ m03_scanner/
 ```
 
 `khana check` evaluates both kinds — the distinction is in how a claim
-is *expressed*, not how it is run. (pytest is the proof: fixture-heavy
+is _expressed_, not how it is run. (pytest is the proof: fixture-heavy
 and three-line tests share one runner.)
 
 **Geometry that exists only to be asserted against** — a sightline
@@ -703,10 +703,10 @@ names: the STEP exporter writes no names.
 When "assert every pair" is the intent, say so — don't hand-write the
 double loop:
 
-| Assertion | Expands to |
-|---|---|
-| `.assert_no_interference_between(group_a, group_b, …)` | One `assert_no_interference` per cross pair `(a, b)`. |
-| `.assert_no_interference_within(group, …)` | One per unordered pair inside `group` (`i < j` in group order). |
+| Assertion                                              | Expands to                                                      |
+| ------------------------------------------------------ | --------------------------------------------------------------- |
+| `.assert_no_interference_between(group_a, group_b, …)` | One `assert_no_interference` per cross pair `(a, b)`.           |
+| `.assert_no_interference_within(group, …)`             | One per unordered pair inside `group` (`i < j` in group order). |
 
 A group is an iterable of part paths, or a **dotted sub-assembly path**
 (`"turret.rotor"`) selecting every part under that subtree — expanded
@@ -729,14 +729,14 @@ listed** — the contact assertion already holds the pair at every frame
 (inside its window to the overlap band, outside it to plain
 no-interference), so re-emitting `no_interference` there could only
 contradict it. Don't restate them in `suppressed=`: that is
-bookkeeping to keep in step, and it goes *wider* than the claim — a
+bookkeeping to keep in step, and it goes _wider_ than the claim — a
 suppression is blind at every frame where a phased claim is not.
 Naming the pair in `known_overlaps=` overrides the skip, if you want
 the regression alarm too.
 
 The skip is resolved over the whole assembled assertion set, so the
 contact may be declared anywhere — before or after the group call, at
-this level or a nested one. Unlike group *membership*, it is not a
+this level or a nested one. Unlike group _membership_, it is not a
 macro over the state at the call, and adds no ordering rule beyond
 "after composition". A hand-written `assert_no_interference` on a
 contact pair is never skipped: that contradiction is yours to see.
@@ -776,8 +776,8 @@ paths are checked at declaration (fail-fast on typos) and re-resolved
 at `check()` time.
 
 The pattern replaces mirror-constant + drift-assert pairs: a unit that
-must build standalone keeps its local numbers, but *exports where it
-believes the shared datum is* — if a mirror drifts, the two beliefs
+must build standalone keeps its local numbers, but _exports where it
+believes the shared datum is_ — if a mirror drifts, the two beliefs
 stop coinciding and the parent's `check()` fails loudly, instead of
 the drift silently desyncing the machine. Anchors carry no geometry;
 exports and interference checks ignore them.
@@ -873,7 +873,7 @@ sub-assembly.
 
 A function `factory(t: float) -> Assembly` that returns the static
 assembly at parameter `t` is the project's animation primitive.
-Motion is expressed *in user code* as math (`angle = f(t)`); the
+Motion is expressed _in user code_ as math (`angle = f(t)`); the
 library samples `factory(t)` and emits glTF or runs per-frame
 checks.
 
@@ -920,7 +920,7 @@ TRS lerp would chord through curved paths).
 
 ### Sweep diagnostics: what touches what, and when
 
-`cad_khana.mechanism.sweep` answers questions about a *motion* rather
+`cad_khana.mechanism.sweep` answers questions about a _motion_ rather
 than a pose. All three take the same `factory(t) -> Assembly`:
 
 ```python
@@ -961,7 +961,7 @@ deletes the regression net.
 approximation.** `never` means "at none of the sampled parameters",
 which is not the same as never — a real m03 sweep at 9 frames saw one
 contact frame where 37 frames show two whole contact phases. So:
-sweeps are for *deriving* a claim, assertions are for *holding* it.
+sweeps are for _deriving_ a claim, assertions are for _holding_ it.
 Once you know the window, declare it with
 `assert_allowed_contact(..., during=...)`, which re-derives from
 geometry on every `khana check` instead of depending on which `t`
@@ -972,7 +972,7 @@ too narrow reddens runs that were always fine.
 Before feeding a bracket into a `during=`, **read the per-frame
 overlaps and check the profile rises and falls once** across the span.
 That is what makes the bracket safe: finer sampling can then only find
-contact *inside* it. Overlap that dips back to zero mid-span means the
+contact _inside_ it. Overlap that dips back to zero mid-span means the
 samples straddle more than one contact event, and the bracket edges say
 nothing about where the second one really starts — re-sample denser, or
 window each event separately. The field can't signal this; only the
@@ -1104,7 +1104,7 @@ inspect(
 )
 ```
 
-Keys are assertion *kinds* (`"wall_min"`, `"overhang_max"` — no
+Keys are assertion _kinds_ (`"wall_min"`, `"overhang_max"` — no
 threshold suffix). A waived failure keeps `passed: false` in the JSON,
 records your reason in `waived`, adds a `waived_failure` entry to
 `warnings[]`, and doesn't fail the run; unwaived failures still exit 1.
@@ -1136,14 +1136,14 @@ the model to fix, not to waive. Only a low alignment supports a
   success, stay the same on a silent no-op or OCCT failure.
 - `interferences` — list of overlapping part pairs with volume + centroid.
 - `assertions` — one entry per declared assertion; `passed` + `detail`
-  + `value`. `passed` is `true`/`false`/`null`: `null` means the
-  assertion was skipped because a part it references is absent from
-  this run (`detail` names the missing parts) — normal for assertions
-  against override-added detail parts in a standalone run. Skips never
-  fail the run; watch for an assertion that is *always* skipped,
-  which usually means a typo'd part name. `value` is the measured/
-  claimed scalar for `assert_distance` / `assert_scalar` (recorded
-  even on pass; `khana diff` reports its drift) and `null` otherwise.
+  - `value`. `passed` is `true`/`false`/`null`: `null` means the
+    assertion was skipped because a part it references is absent from
+    this run (`detail` names the missing parts) — normal for assertions
+    against override-added detail parts in a standalone run. Skips never
+    fail the run; watch for an assertion that is _always_ skipped,
+    which usually means a typo'd part name. `value` is the measured/
+    claimed scalar for `assert_distance` / `assert_scalar` (recorded
+    even on pass; `khana diff` reports its drift) and `null` otherwise.
 
 `<name>-printability.json` after every `inspect()`:
 
@@ -1180,8 +1180,8 @@ the model to fix, not to waive. Only a low alignment supports a
 - **Min wall thickness is approximate.** Rays are cast from tessellated
   faces against the exact solid, and each ray measures only where it
   crosses the face it was cast from — perpendicular to that face, so
-  the reading is a thickness of *that* wall. It can still miss diagonal
-  pinch points. Readings at sharp features are *real* short material
+  the reading is a thickness of _that_ wall. It can still miss diagonal
+  pinch points. Readings at sharp features are _real_ short material
   paths rather than noise — check `min_wall_alignment` to tell a wedge
   tip from a wall. See `references/printability.md` for details.
 - **Overhang detection excludes the build-plate face.** Faces coplanar
@@ -1198,7 +1198,7 @@ the model to fix, not to waive. Only a low alignment supports a
 
 1. Write the declaration module. Use the canonical example as a template.
 2. `khana check path/to/assembly.py` — and `khana run
-   path/to/printability.py` once printed parts exist.
+path/to/printability.py` once printed parts exist.
 3. Read `outputs/mechanism.json` and each `outputs/<name>-printability.json`.
    - `status: "error"` → check `hint` first; if non-null it resolves the
      most common cases without reading the full traceback in `error`.

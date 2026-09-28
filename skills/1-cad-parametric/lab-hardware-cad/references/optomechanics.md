@@ -16,11 +16,11 @@ python scripts/check.py standards --show sm1-lens-tube-thread
 **Metric and imperial optical hardware are not interchangeable, and the difference is small enough
 to look like a rounding error and large enough to prevent assembly.**
 
-| | Metric | Imperial |
-| --- | --- | --- |
-| Grid pitch | 25.0 mm | 25.4 mm (1 inch) |
-| Tapped hole | M6 x 1.0 | 1/4-20 UNC |
-| Typical border | 12.5 mm | 12.7 mm |
+|                | Metric   | Imperial         |
+| -------------- | -------- | ---------------- |
+| Grid pitch     | 25.0 mm  | 25.4 mm (1 inch) |
+| Tapped hole    | M6 x 1.0 | 1/4-20 UNC       |
+| Typical border | 12.5 mm  | 12.7 mm          |
 
 Over a four-hole span the grids differ by **1.6 mm** — far more than any clearance hole absorbs.
 There is no way to infer which the user has from the request. Ask. If the answer is unavailable,

@@ -1,6 +1,6 @@
 # Measuring an AI look image (turn a picture into tagged numbers)
 
-An AI render (Midjourney / Imagen / a designer's mockup) is the *look*. To drive a
+An AI render (Midjourney / Imagen / a designer's mockup) is the _look_. To drive a
 parametric model from it you need numbers, and eyeballing produces arguments. Measure
 with code, keep the pixel evidence in the params comments, and make the result
 self-consistent.
@@ -35,7 +35,7 @@ fraction; feature centres → offsets from the body centre in mm.
 
 ## 2. Corner radius — fit a circle to a clean corner
 
-Use the corner *without* a perforation behind it. For rows y from the top edge down,
+Use the corner _without_ a perforation behind it. For rows y from the top edge down,
 find the outermost non-background x. A circle of radius R centred (x_edge − R, y_top + R)
 predicts offset `R − sqrt(R² − (R − dy)²)`; solve for R at two or three dy values and
 take the one that satisfies all. Sanity: the arc must end (edge becomes vertical) at
@@ -60,14 +60,14 @@ dark; a dark one at the end of an LED row may be a microphone hole — ask.
 
 Sample a flat, evenly lit patch per material (`a[y0:y1, x0:x1].mean(axis=(0,1))`);
 for a perforated plate take the 90th percentile (the material between holes). Record
-as the *rendered start value* in the CMF table — the real colour comes from a painted
+as the _rendered start value_ in the CMF table — the real colour comes from a painted
 swatch next to a Pantone/RAL chip in daylight.
 
 ## 6. Make it self-consistent, then tag
 
 - Round to what tooling can hold (0.4 mm gap, not 0.25).
 - Where the picture and a human factor disagree (a 21.5 mm button for elderly fingers),
-  round the *safe* way and put the disagreement in the report's open questions.
+  round the _safe_ way and put the disagreement in the report's open questions.
 - Anything the picture doesn't show is a decision, not a measurement — tag `[own]`/`[eye]`
   and say so.
 - Save the image into `refs/NN-<version>-<view>.png`; the params comments cite it.

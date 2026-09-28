@@ -1,11 +1,6 @@
 import { test, mock } from "node:test";
 import assert from "node:assert/strict";
-import {
-  meshToBinaryStl,
-  fetchMesh,
-  importMesh,
-  runBoolean,
-} from "../scripts/cad-bool-tool.mjs";
+import { meshToBinaryStl, fetchMesh, importMesh, runBoolean } from "../scripts/cad-bool-tool.mjs";
 import { makeBox, makeCylinder } from "../scripts/cad-csg-engine.mjs";
 
 // ---------------------------------------------------------------------------
@@ -117,7 +112,10 @@ test("runBoolean resolves the result object into the workspace", async () => {
     if (u.includes("/mesh/")) {
       const name = decodeURIComponent(u.split("/mesh/")[1]);
       const mesh = name === "a" ? box : cyl;
-      return { ok: true, json: async () => ({ ok: true, positions: mesh.positions, tris: mesh.tris }) };
+      return {
+        ok: true,
+        json: async () => ({ ok: true, positions: mesh.positions, tris: mesh.tris }),
+      };
     }
     if (u.endsWith("/api/import")) {
       return { ok: true, json: async () => ({ ok: true, revision: 3 }) };

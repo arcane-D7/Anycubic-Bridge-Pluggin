@@ -69,11 +69,11 @@ Most rigs are recorded, and the geometry either helps or fights the tracking:
 Most rigs are built on aluminium extrusion. The critical fact: **slot width is not implied by
 profile size.**
 
-| Profile | Common slot widths | Typical fastener |
-| --- | --- | --- |
-| 20 x 20 mm | 5 mm or 6 mm depending on series | M4 or M5 T-nut |
-| 30 x 30 mm | 8 mm typical | M6 T-nut |
-| 40 x 40 mm | 8 mm or 10 mm depending on series | M6 or M8 T-nut |
+| Profile    | Common slot widths                | Typical fastener |
+| ---------- | --------------------------------- | ---------------- |
+| 20 x 20 mm | 5 mm or 6 mm depending on series  | M4 or M5 T-nut   |
+| 30 x 30 mm | 8 mm typical                      | M6 T-nut         |
+| 40 x 40 mm | 8 mm or 10 mm depending on series | M6 or M8 T-nut   |
 
 A 20 mm profile from one supplier takes a 6 mm slot nut; from another, 5 mm. **Measure the slot,
 or get the part number.** A bracket modelled for the wrong slot is scrap.

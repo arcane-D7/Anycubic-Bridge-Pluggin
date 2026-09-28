@@ -80,9 +80,7 @@
             }
           }
         ],
-        "device_codes": [
-          200
-        ]
+        "device_codes": [200]
       },
       "info": {
         "msgid": "60c44eff-0485-484c-9be2-12397f119cf3",
@@ -157,9 +155,7 @@
             }
           }
         ],
-        "device_codes": [
-          200
-        ]
+        "device_codes": [200]
       },
       "peripherie": {
         "msgid": "7feeaa35-a0ce-4bb6-b693-ce4ff1b3e72e",
@@ -184,9 +180,7 @@
             }
           }
         ],
-        "device_codes": [
-          200
-        ]
+        "device_codes": [200]
       }
     },
     "events": [

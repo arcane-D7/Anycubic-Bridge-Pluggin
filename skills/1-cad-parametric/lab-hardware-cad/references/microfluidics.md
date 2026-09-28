@@ -7,11 +7,11 @@ Channel networks, soft-lithography molds, printed chips, gaskets, and manifolds.
 This is the error that wastes the most time in microfluidic CAD. Three different objects get
 called "the chip":
 
-| Object | Channels are | Made by |
-| --- | --- | --- |
-| **Mold / master** | **Raised ridges** (positive relief) | Photolithography on a wafer, SLA print, or micromilling |
-| **Cast chip** | **Recessed grooves** (negative of the mold) | PDMS cast against the mold, then bonded to a substrate |
-| **Directly-fabricated chip** | **Recessed grooves or enclosed lumens** | Printed, milled, or laser-cut directly |
+| Object                       | Channels are                                | Made by                                                 |
+| ---------------------------- | ------------------------------------------- | ------------------------------------------------------- |
+| **Mold / master**            | **Raised ridges** (positive relief)         | Photolithography on a wafer, SLA print, or micromilling |
+| **Cast chip**                | **Recessed grooves** (negative of the mold) | PDMS cast against the mold, then bonded to a substrate  |
+| **Directly-fabricated chip** | **Recessed grooves or enclosed lumens**     | Printed, milled, or laser-cut directly                  |
 
 A model that is correct as a chip is exactly wrong as a mold. Put the polarity in the module
 docstring and in a named parameter, and **verify it numerically, not by eye**: inverted polarity
@@ -55,14 +55,14 @@ uninterrupted flat surface around the network perimeter — for plasma or adhesi
 Achievable feature size drives the entire design, and the range across processes is three orders
 of magnitude. Confirm against your specific tool before committing.
 
-| Process | Practical minimum channel | Notes |
-| --- | --- | --- |
-| SU-8 photolithography | ~1-10 µm wide, 1-200+ µm tall | The reference process for soft lithography. Feature height is set by spin speed and resist grade. |
-| Two-photon / µSLA | ~10-50 µm | Small build volume, slow, expensive. |
-| Desktop SLA / DLP | ~200-500 µm | Uncured resin is very hard to clear from smaller lumens. Enclosed channels below ~0.5 mm frequently print blocked. |
-| Micromilling | ~100 µm | Set by end-mill diameter; depth limited by tool aspect ratio. Leaves tool marks that scatter light. |
-| FDM | Not suitable for sealed channels | Layer porosity leaks. Use only for holders and manifolds. |
-| Laser-cut film / gasket | ~200 µm | Excellent for stacked-layer devices and gaskets. |
+| Process                 | Practical minimum channel        | Notes                                                                                                              |
+| ----------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| SU-8 photolithography   | ~1-10 µm wide, 1-200+ µm tall    | The reference process for soft lithography. Feature height is set by spin speed and resist grade.                  |
+| Two-photon / µSLA       | ~10-50 µm                        | Small build volume, slow, expensive.                                                                               |
+| Desktop SLA / DLP       | ~200-500 µm                      | Uncured resin is very hard to clear from smaller lumens. Enclosed channels below ~0.5 mm frequently print blocked. |
+| Micromilling            | ~100 µm                          | Set by end-mill diameter; depth limited by tool aspect ratio. Leaves tool marks that scatter light.                |
+| FDM                     | Not suitable for sealed channels | Layer porosity leaks. Use only for holders and manifolds.                                                          |
+| Laser-cut film / gasket | ~200 µm                          | Excellent for stacked-layer devices and gaskets.                                                                   |
 
 **Design enclosed printed channels for drainage.** Every lumen needs a path for uncured resin to
 escape, and orientation on the build plate determines whether it drains. If the user is printing,
@@ -73,7 +73,7 @@ say which way up.
 The port is where most chips leak. Options, roughly in order of how common they are in a research
 lab:
 
-- **Direct tubing insertion** — a bore slightly *under* the tubing OD so the tubing seals by
+- **Direct tubing insertion** — a bore slightly _under_ the tubing OD so the tubing seals by
   interference. For 1/16 inch OD tubing (1.5875 mm), a bore around 1.5 mm in PDMS is typical. This
   works in elastomer and fails in rigid printed parts, which crack instead of gripping.
 - **Luer taper** — the standard syringe interface, a **6% taper** (ISO 80369-7 supersedes the

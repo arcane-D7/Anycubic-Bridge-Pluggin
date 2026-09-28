@@ -17,10 +17,10 @@ Tessellate the part (mesh tolerance `TESSELLATION_TOLERANCE_MM`,
 angular tolerance `TESSELLATION_ANGULAR_TOLERANCE`, shared with the
 overhang check in `cad_khana.core.tessellation`). For every triangle,
 take its centroid and outward normal, and cast an `Axis` along the
-inward normal — from an origin backed off `BACKOFF_MM` *outside* the
+inward normal — from an origin backed off `BACKOFF_MM` _outside_ the
 surface. Collect every crossing of the solid, classifying each by its
 face's outward normal projected on the ray: negative is an **entry**
-into material, positive an **exit**. The ray's *first* crossing is its
+into material, positive an **exit**. The ray's _first_ crossing is its
 entry through the facet it was cast for; paired with the next exit,
 that span is the local thickness of the wall the facet sits on. Each
 ray contributes exactly that one sample. `min_wall_mm` is the minimum
@@ -34,7 +34,7 @@ Three properties follow, and all three are deliberate:
   the tessellation tolerance on curved faces; a ray started at the
   centroid re-hits the surface it came from within that distance,
   which reads as a wall a fraction of a millimetre thick. The error
-  grows with the facet chord, so it got *worse* on larger radii — the
+  grows with the facet chord, so it got _worse_ on larger radii — the
   source of the sub-0.2 mm readings on large-radius annuli that were
   historically waived as "ray-sampling artifacts". Pairing also
   removes a systematic underestimate on curved and tapered walls
@@ -45,10 +45,10 @@ Three properties follow, and all three are deliberate:
   threshold, because every one of those trades a false positive for
   the chance of hiding a genuine thin region — the worse failure for
   a printability check. A thin reading is therefore always real
-  material; `min_wall_alignment` tells you *what kind*.
+  material; `min_wall_alignment` tells you _what kind_.
 - **A reading is always perpendicular to the face it starts from.** A
   ray carries on for the whole depth of the part, and each later entry
-  is into some *other* feature downstream, crossed at whatever oblique
+  is into some _other_ feature downstream, crossed at whatever oblique
   angle the originating facet happens to make with it. Those chords are
   real material but say nothing about the feature's thickness, and a
   grazed corner yields an arbitrarily short one — an unrelated 20×6 mm
@@ -68,7 +68,7 @@ Three properties follow, and all three are deliberate:
 - **Wedge tips read as thin walls.** Where two faces meet at a sharp
   edge — a knife-edge runout, a V-groove root, a cone rim — the
   material path across the wedge near its tip really is short, so the
-  minimum lands there and is *not* a measurement error. It is also not
+  minimum lands there and is _not_ a measurement error. It is also not
   a wall thickness. `min_wall_alignment` is the discriminator: below
   ~0.7 the bounding faces splay apart and the reading is a wedge tip;
   near 1.0 they are parallel and the reading is a genuine wall (or, if
@@ -93,8 +93,8 @@ Three properties follow, and all three are deliberate:
 Use `min_wall_mm` as a floor, not a ceiling: if it reports 0.4 mm on a
 part you think has 2 mm walls, investigate — and read
 `min_wall_alignment` first, since it decides whether "investigate"
-means *fix the model* (alignment near 1.0: two parallel faces really
-are that close) or *accept a feature tip* (low alignment). If it
+means _fix the model_ (alignment near 1.0: two parallel faces really
+are that close) or _accept a feature tip_ (low alignment). If it
 reports 2 mm on a part with a hidden diagonal pinch, it may still be
 wrong.
 

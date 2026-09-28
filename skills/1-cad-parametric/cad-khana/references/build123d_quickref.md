@@ -11,12 +11,12 @@ rich, and plausible-sounding names (`RoundedBox`, `Hexagon`,
 
 build123d accepts shorthand for several common types. Use them.
 
-| Type alias | Accepts |
-|---|---|
-| `VectorLike` | `Vector(x,y,z)` *or* `(x,y)` *or* `(x,y,z)` |
-| `RotationLike` | `Rotation(rx,ry,rz)` *or* `(rx,ry,rz)` |
-| `PlaneLike` | `Plane.XY`, a `Face`, a `Location` |
-| `AxisLike` | `Axis.X` / `Axis.Y` / `Axis.Z`, or `Axis(origin, direction)` |
+| Type alias     | Accepts                                                      |
+| -------------- | ------------------------------------------------------------ |
+| `VectorLike`   | `Vector(x,y,z)` _or_ `(x,y)` _or_ `(x,y,z)`                  |
+| `RotationLike` | `Rotation(rx,ry,rz)` _or_ `(rx,ry,rz)`                       |
+| `PlaneLike`    | `Plane.XY`, a `Face`, a `Location`                           |
+| `AxisLike`     | `Axis.X` / `Axis.Y` / `Axis.Z`, or `Axis(origin, direction)` |
 
 Pass `(0, 0, 5)` instead of `Vector(0, 0, 5)`. Pass `(0, 0, 90)`
 instead of `Rotation(0, 0, 90)`.
@@ -26,16 +26,16 @@ instead of `Rotation(0, 0, 90)`.
 `part.edges()`, `part.faces()`, `part.vertices()` return collections.
 The operator overloads sort, filter, and pick from them:
 
-| Op | Meaning | Example |
-|---|---|---|
-| `>` | sort by, take max | `edges() > Axis.Z` → topmost edge |
-| `<` | sort by, take min | `faces() < Axis.Z` → bottom face |
-| `>>` | group by, take last group | `edges() >> Axis.Z` → all edges at the top |
-| `<<` | group by, take first group | `faces() << Axis.Z` → all faces at the bottom |
-| `\|` | filter by axis / plane / `GeomType` | `edges() \| Axis.Z` → edges parallel to Z |
-| `@` | position at parameter `f ∈ [0,1]` on edge/wire | `edge @ 0.5` |
-| `%` | tangent at parameter `f` | `edge % 0.5` |
-| `^` | `Location` at parameter `f` | `edge ^ 0.5` |
+| Op   | Meaning                                        | Example                                       |
+| ---- | ---------------------------------------------- | --------------------------------------------- |
+| `>`  | sort by, take max                              | `edges() > Axis.Z` → topmost edge             |
+| `<`  | sort by, take min                              | `faces() < Axis.Z` → bottom face              |
+| `>>` | group by, take last group                      | `edges() >> Axis.Z` → all edges at the top    |
+| `<<` | group by, take first group                     | `faces() << Axis.Z` → all faces at the bottom |
+| `\|` | filter by axis / plane / `GeomType`            | `edges() \| Axis.Z` → edges parallel to Z     |
+| `@`  | position at parameter `f ∈ [0,1]` on edge/wire | `edge @ 0.5`                                  |
+| `%`  | tangent at parameter `f`                       | `edge % 0.5`                                  |
+| `^`  | `Location` at parameter `f`                    | `edge ^ 0.5`                                  |
 
 Selectors compose: `(faces() > Axis.Z).edges() | Axis.X` picks
 X-aligned edges of the topmost face.
@@ -55,11 +55,11 @@ positioning. Default to this.
 part = Pos(0, 0, h/2) * (Box(w, w, h) - Cylinder(r, h))
 ```
 
-| Op | Meaning |
-|---|---|
-| `+` | union |
-| `-` | cut |
-| `&` | intersect |
+| Op                     | Meaning                 |
+| ---------------------- | ----------------------- |
+| `+`                    | union                   |
+| `-`                    | cut                     |
+| `&`                    | intersect               |
 | `*` (Location ⋅ Shape) | apply Location to Shape |
 
 `Pos(x, y, z)` is `Location((x, y, z))` with no rotation. `Rot(rx, ry, rz)`

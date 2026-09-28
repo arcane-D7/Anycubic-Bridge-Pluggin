@@ -1,6 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createParametricEngine, resetManifold, meshFromHandle } from "../scripts/cad-parametric-engine.mjs";
+import {
+  createParametricEngine,
+  resetManifold,
+  meshFromHandle,
+} from "../scripts/cad-parametric-engine.mjs";
 import { validateParametricScript, runParametric } from "../scripts/cad-parametric-tool.mjs";
 import { exportStep, meshBounds, tryInitReplicad } from "../scripts/cad-step-export.mjs";
 

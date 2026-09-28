@@ -14,7 +14,11 @@ import { runPromptToCad } from "../scripts/cad-ai-tool.mjs";
 // ---------------------------------------------------------------------------
 
 test("readProviderConfig reads env-only config with defaults", () => {
-  const cfg = readProviderConfig({ CAD_AI_API_KEY: "k", CAD_AI_BASE_URL: "http://x/", CAD_AI_MODEL: "m" });
+  const cfg = readProviderConfig({
+    CAD_AI_API_KEY: "k",
+    CAD_AI_BASE_URL: "http://x/",
+    CAD_AI_MODEL: "m",
+  });
   assert.equal(cfg.apiKey, "k");
   assert.equal(cfg.baseUrl, "http://x");
   assert.equal(cfg.model, "m");
@@ -24,7 +28,7 @@ test("readProviderConfig reads env-only config with defaults", () => {
 });
 
 test("extractScript pulls the JS fenced block", () => {
-  const reply = 'Here you go:\n```js\nreturn box(10, 20, 30);\n```\nDone.';
+  const reply = "Here you go:\n```js\nreturn box(10, 20, 30);\n```\nDone.";
   assert.equal(extractScript(reply).trim(), "return box(10, 20, 30);");
 });
 
@@ -87,7 +91,11 @@ test("translatePromptToScript rejects non-conforming scripts", async () => {
 });
 
 test("translatePromptToScript surfaces provider errors cleanly", async () => {
-  mock.method(globalThis, "fetch", async () => ({ ok: false, status: 401, text: async () => "no key" }));
+  mock.method(globalThis, "fetch", async () => ({
+    ok: false,
+    status: 401,
+    text: async () => "no key",
+  }));
   await assert.rejects(
     () =>
       translatePromptToScript({
@@ -129,10 +137,14 @@ test("runPromptToCad dry_run returns script without provider/execution", async (
 });
 
 test("runPromptToCad full run executes a translated script on the engine", async () => {
-  const content = "```js\nlet b = box(20, 24, 10); let h = cylinder(4, 40, 48); return subtract(b, h);\n```";
+  const content =
+    "```js\nlet b = box(20, 24, 10); let h = cylinder(4, 40, 48); return subtract(b, h);\n```";
   mock.method(globalThis, "fetch", async () => ({
     ok: true,
-    json: async () => ({ choices: [{ message: { content } }], usage: { prompt_tokens: 2, completion_tokens: 3 } }),
+    json: async () => ({
+      choices: [{ message: { content } }],
+      usage: { prompt_tokens: 2, completion_tokens: 3 },
+    }),
   }));
   const out = await runPromptToCad({
     prompt: "plate with a hole",
@@ -150,9 +162,17 @@ test("runPromptToCad full run executes a translated script on the engine", async
 });
 
 test("runPromptToCad redacts provider errors (no crash)", async () => {
-  mock.method(globalThis, "fetch", async () => ({ ok: false, status: 500, text: async () => "boom" }));
+  mock.method(globalThis, "fetch", async () => ({
+    ok: false,
+    status: 500,
+    text: async () => "boom",
+  }));
   await assert.rejects(
-    () => runPromptToCad({ prompt: "x", provider: { apiKey: "k", baseUrl: "https://x/v1", model: "m" } }),
+    () =>
+      runPromptToCad({
+        prompt: "x",
+        provider: { apiKey: "k", baseUrl: "https://x/v1", model: "m" },
+      }),
     /HTTP 500/,
   );
   mock.restoreAll();

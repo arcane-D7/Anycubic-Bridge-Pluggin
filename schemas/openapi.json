@@ -3017,12 +3017,7 @@
           "kind": {
             "default": "all",
             "type": "string",
-            "enum": [
-              "machine",
-              "process",
-              "filament",
-              "all"
-            ]
+            "enum": ["machine", "process", "filament", "all"]
           },
           "query": {
             "type": "string",
@@ -3098,9 +3093,7 @@
             "minLength": 1
           }
         },
-        "required": [
-          "input_path"
-        ],
+        "required": ["input_path"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -3155,11 +3148,7 @@
           "output_format": {
             "default": "both",
             "type": "string",
-            "enum": [
-              "gcode",
-              "gcode_3mf",
-              "both"
-            ]
+            "enum": ["gcode", "gcode_3mf", "both"]
           },
           "plate": {
             "default": 0,
@@ -3199,12 +3188,7 @@
               },
               "infill_pattern": {
                 "type": "string",
-                "enum": [
-                  "grid",
-                  "gyroid",
-                  "honeycomb",
-                  "rectilinear"
-                ]
+                "enum": ["grid", "gyroid", "honeycomb", "rectilinear"]
               },
               "outer_wall_speed_mms": {
                 "type": "number",
@@ -3243,13 +3227,7 @@
               },
               "seam_position": {
                 "type": "string",
-                "enum": [
-                  "aligned",
-                  "nearest",
-                  "back",
-                  "front",
-                  "random"
-                ]
+                "enum": ["aligned", "nearest", "back", "front", "random"]
               },
               "pressure_advance": {
                 "type": "number",
@@ -3280,12 +3258,7 @@
             "additionalProperties": false
           }
         },
-        "required": [
-          "input_path",
-          "machine_profile",
-          "process_profile",
-          "filament_profiles"
-        ],
+        "required": ["input_path", "machine_profile", "process_profile", "filament_profiles"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -3333,10 +3306,7 @@
             "const": "RUN"
           }
         },
-        "required": [
-          "job_id",
-          "confirmation"
-        ],
+        "required": ["job_id", "confirmation"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -3386,9 +3356,7 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           }
         },
-        "required": [
-          "job_id"
-        ],
+        "required": ["job_id"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -3505,9 +3473,7 @@
             "maxLength": 120
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -3542,9 +3508,7 @@
             "maxLength": 500
           }
         },
-        "required": [
-          "text"
-        ],
+        "required": ["text"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -3579,9 +3543,7 @@
             "maxLength": 32
           }
         },
-        "required": [
-          "key"
-        ],
+        "required": ["key"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -3688,10 +3650,7 @@
             "maximum": 20000
           }
         },
-        "required": [
-          "dev_id",
-          "dev_ip"
-        ],
+        "required": ["dev_id", "dev_ip"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -3748,10 +3707,7 @@
             "maximum": 20000
           }
         },
-        "required": [
-          "dev_id",
-          "dev_ip"
-        ],
+        "required": ["dev_id", "dev_ip"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -3897,11 +3853,7 @@
           },
           "fan": {
             "type": "string",
-            "enum": [
-              "part",
-              "aux",
-              "box"
-            ]
+            "enum": ["part", "aux", "box"]
           },
           "fan_speed_pct": {
             "type": "number",
@@ -3988,9 +3940,7 @@
             ]
           }
         },
-        "required": [
-          "command"
-        ],
+        "required": ["command"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -4083,10 +4033,7 @@
             "maximum": 30000
           }
         },
-        "required": [
-          "dev_id",
-          "dev_ip"
-        ],
+        "required": ["dev_id", "dev_ip"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -4129,9 +4076,7 @@
             "maximum": 100000
           }
         },
-        "required": [
-          "gcode_path"
-        ],
+        "required": ["gcode_path"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -4190,11 +4135,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "dev_id",
-          "dev_ip",
-          "local_file"
-        ],
+        "required": ["dev_id", "dev_ip", "local_file"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -4297,12 +4238,7 @@
             "maximum": 30000
           }
         },
-        "required": [
-          "dev_id",
-          "dev_ip",
-          "task_name",
-          "file_remote_path"
-        ],
+        "required": ["dev_id", "dev_ip", "task_name", "file_remote_path"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -4344,12 +4280,7 @@
           "command": {
             "default": "task_cancel",
             "type": "string",
-            "enum": [
-              "task_cancel",
-              "task_pause",
-              "task_resume",
-              "print_stop"
-            ]
+            "enum": ["task_cancel", "task_pause", "task_resume", "print_stop"]
           },
           "mqtt_port": {
             "default": 8883,
@@ -4362,10 +4293,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "dev_id",
-          "dev_ip"
-        ],
+        "required": ["dev_id", "dev_ip"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -4392,10 +4320,7 @@
           "mode": {
             "default": "scan",
             "type": "string",
-            "enum": [
-              "scan",
-              "watch"
-            ]
+            "enum": ["scan", "watch"]
           },
           "max_seconds": {
             "default": 90,
@@ -4406,10 +4331,7 @@
           "region": {
             "default": "en",
             "type": "string",
-            "enum": [
-              "en",
-              "cn"
-            ]
+            "enum": ["en", "cn"]
           }
         },
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -4515,9 +4437,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "ok"
-        ],
+        "required": ["ok"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -4546,10 +4466,7 @@
           "region": {
             "default": "en",
             "type": "string",
-            "enum": [
-              "en",
-              "cn"
-            ]
+            "enum": ["en", "cn"]
           },
           "timeout_ms": {
             "default": 15000,
@@ -4592,10 +4509,7 @@
           "region": {
             "default": "en",
             "type": "string",
-            "enum": [
-              "en",
-              "cn"
-            ]
+            "enum": ["en", "cn"]
           },
           "timeout_ms": {
             "default": 15000,
@@ -4645,10 +4559,7 @@
           "region": {
             "default": "en",
             "type": "string",
-            "enum": [
-              "en",
-              "cn"
-            ]
+            "enum": ["en", "cn"]
           },
           "timeout_ms": {
             "default": 15000,
@@ -4773,10 +4684,7 @@
           "region": {
             "default": "en",
             "type": "string",
-            "enum": [
-              "en",
-              "cn"
-            ]
+            "enum": ["en", "cn"]
           },
           "timeout_ms": {
             "default": 15000,
@@ -4785,9 +4693,7 @@
             "maximum": 30000
           }
         },
-        "required": [
-          "kind"
-        ],
+        "required": ["kind"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -4916,10 +4822,7 @@
           "region": {
             "default": "en",
             "type": "string",
-            "enum": [
-              "en",
-              "cn"
-            ]
+            "enum": ["en", "cn"]
           },
           "timeout_ms": {
             "default": 15000,
@@ -4928,10 +4831,7 @@
             "maximum": 30000
           }
         },
-        "required": [
-          "printer_key",
-          "file_name"
-        ],
+        "required": ["printer_key", "file_name"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -5059,9 +4959,7 @@
             "maximum": 180
           }
         },
-        "required": [
-          "object"
-        ],
+        "required": ["object"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -5105,14 +5003,7 @@
           },
           "op": {
             "type": "string",
-            "enum": [
-              "extrude",
-              "bevel",
-              "inset",
-              "subdivide",
-              "sculpt",
-              "weld"
-            ]
+            "enum": ["extrude", "bevel", "inset", "subdivide", "sculpt", "weld"]
           },
           "face_ids": {
             "type": "array",
@@ -5129,10 +5020,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "object",
-          "op"
-        ],
+        "required": ["object", "op"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -5201,9 +5089,7 @@
             }
           }
         },
-        "required": [
-          "object"
-        ],
+        "required": ["object"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -5317,14 +5203,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
-                "axis",
-                "peripherie",
-                "light",
-                "multiColorBox",
-                "local_files",
-                "usb_files"
-              ]
+              "enum": ["axis", "peripherie", "light", "multiColorBox", "local_files", "usb_files"]
             }
           },
           "queries": {
@@ -5347,9 +5226,7 @@
             }
           }
         },
-        "required": [
-          "printer_id"
-        ],
+        "required": ["printer_id"],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "account_cloud_live_diagnosticsResponse": {
@@ -5389,9 +5266,7 @@
             }
           }
         },
-        "required": [
-          "ip"
-        ],
+        "required": ["ip"],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "printer_http_readonly_diagnosticsResponse": {
@@ -5411,10 +5286,7 @@
           "transport": {
             "default": "cloud",
             "type": "string",
-            "enum": [
-              "cloud",
-              "lan"
-            ]
+            "enum": ["cloud", "lan"]
           },
           "sources": {
             "minItems": 1,
@@ -5577,13 +5449,7 @@
         "properties": {
           "safety": {
             "type": "string",
-            "enum": [
-              "read",
-              "state",
-              "thermal",
-              "motion",
-              "job"
-            ]
+            "enum": ["read", "state", "thermal", "motion", "job"]
           }
         },
         "$schema": "http://json-schema.org/draft-07/schema#"
@@ -5636,10 +5502,7 @@
             "additionalProperties": {}
           }
         },
-        "required": [
-          "source",
-          "payload"
-        ],
+        "required": ["source", "payload"],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "printer_property_reconcileResponse": {
@@ -5658,13 +5521,7 @@
         "properties": {
           "safety": {
             "type": "string",
-            "enum": [
-              "read",
-              "state",
-              "thermal",
-              "motion",
-              "job"
-            ]
+            "enum": ["read", "state", "thermal", "motion", "job"]
           }
         },
         "$schema": "http://json-schema.org/draft-07/schema#"
@@ -5741,11 +5598,7 @@
           },
           "fan": {
             "type": "string",
-            "enum": [
-              "part",
-              "aux",
-              "box"
-            ]
+            "enum": ["part", "aux", "box"]
           },
           "speed_pct": {
             "type": "integer",
@@ -5764,11 +5617,7 @@
           },
           "axis": {
             "type": "string",
-            "enum": [
-              "x",
-              "y",
-              "z"
-            ]
+            "enum": ["x", "y", "z"]
           },
           "move_type": {
             "type": "integer",
@@ -5884,9 +5733,7 @@
             "maxLength": 40
           }
         },
-        "required": [
-          "command"
-        ],
+        "required": ["command"],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "printer_command_sendResponse": {
@@ -5962,9 +5809,7 @@
             "maximum": 60000
           }
         },
-        "required": [
-          "gcode_id"
-        ],
+        "required": ["gcode_id"],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "printer_print_startResponse": {
@@ -6000,9 +5845,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "gcode_id"
-        ],
+        "required": ["gcode_id"],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "printer_gcode_resolveResponse": {
@@ -6073,9 +5916,7 @@
             "maxLength": 1024
           }
         },
-        "required": [
-          "local_file"
-        ],
+        "required": ["local_file"],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "account_file_uploadResponse": {
@@ -6151,9 +5992,7 @@
             "maxLength": 1024
           }
         },
-        "required": [
-          "local_file"
-        ],
+        "required": ["local_file"],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "account_print_localResponse": {
@@ -6182,10 +6021,7 @@
           "mode": {
             "default": "snapshot",
             "type": "string",
-            "enum": [
-              "snapshot",
-              "stream"
-            ]
+            "enum": ["snapshot", "stream"]
           },
           "duration_s": {
             "default": 3,
@@ -6203,10 +6039,7 @@
             "maximum": 65535
           }
         },
-        "required": [
-          "ip",
-          "output_path"
-        ],
+        "required": ["ip", "output_path"],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "printer_lan_cameraResponse": {
@@ -6277,10 +6110,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "ip",
-          "output_dir"
-        ],
+        "required": ["ip", "output_dir"],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "camera_watchResponse": {
@@ -6734,10 +6564,7 @@
           "mode": {
             "default": "force",
             "type": "string",
-            "enum": [
-              "force",
-              "free"
-            ]
+            "enum": ["force", "free"]
           },
           "reply_timeout_ms": {
             "type": "integer",
@@ -6892,9 +6719,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "new_name"
-        ],
+        "required": ["new_name"],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "printer_renameResponse": {
@@ -7007,16 +6832,12 @@
                     }
                   }
                 },
-                "required": [
-                  "blocks"
-                ]
+                "required": ["blocks"]
               }
             ]
           }
         },
-        "required": [
-          "record"
-        ],
+        "required": ["record"],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "nfc_tag_decodeResponse": {
@@ -7039,9 +6860,7 @@
             "maxLength": 120
           }
         },
-        "required": [
-          "uid"
-        ],
+        "required": ["uid"],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "spool_resolveResponse": {
@@ -7096,10 +6915,7 @@
           "region": {
             "description": "Cloud region (default en).",
             "type": "string",
-            "enum": [
-              "en",
-              "cn"
-            ]
+            "enum": ["en", "cn"]
           },
           "timeout_ms": {
             "type": "integer",
@@ -7107,9 +6923,7 @@
             "maximum": 30000
           }
         },
-        "required": [
-          "access_token"
-        ],
+        "required": ["access_token"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -7163,10 +6977,7 @@
           "region": {
             "description": "Cloud region (default en).",
             "type": "string",
-            "enum": [
-              "en",
-              "cn"
-            ]
+            "enum": ["en", "cn"]
           },
           "open_browser": {
             "description": "Open the browser immediately (default true).",
@@ -7216,9 +7027,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "ip"
-        ],
+        "required": ["ip"],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "printer_lan_handshakeResponse": {
@@ -7278,9 +7087,7 @@
             "maximum": 65535
           }
         },
-        "required": [
-          "ip"
-        ],
+        "required": ["ip"],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "printer_lan_readResponse": {

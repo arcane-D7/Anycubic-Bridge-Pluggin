@@ -19,16 +19,16 @@ Preserve specified features and dimensions; disclose any necessary deviation.
 
 ## Geometry failures
 
-| Symptom | Useful checks and possible remedies |
-| --- | --- |
-| Missing or invalid body | Check profile closure, cut placement, zero thickness and the first failing operation. Use the Python diagnostics in [inspection](inspection-and-validation.md). |
-| Missing hole/pocket | Check feature mode, selector, cut depth and the intended through-condition against the saved geometry. |
-| Wrong scale or extents | Check units, radius versus diameter, primitive alignment and extrusion direction; measure the relevant dimensions. |
-| Fillet/chamfer failure | Check edge selection and local space. Consider feature order or equivalent profile construction. Change a required radius only as an explicit design decision. |
+| Symptom                           | Useful checks and possible remedies                                                                                                                                                      |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Missing or invalid body           | Check profile closure, cut placement, zero thickness and the first failing operation. Use the Python diagnostics in [inspection](inspection-and-validation.md).                          |
+| Missing hole/pocket               | Check feature mode, selector, cut depth and the intended through-condition against the saved geometry.                                                                                   |
+| Wrong scale or extents            | Check units, radius versus diameter, primitive alignment and extrusion direction; measure the relevant dimensions.                                                                       |
+| Fillet/chamfer failure            | Check edge selection and local space. Consider feature order or equivalent profile construction. Change a required radius only as an explicit design decision.                           |
 | Loft failure or distorted surface | Inspect wire correspondence, winding, self-crossings and disconnected sections. Prefixes or adjacent pairs can localize the problem; a successful pair does not prove a valid full loft. |
-| Slow Boolean | Time the suspect operation or inspect a stack sample. Consider simpler surfaces, tool extents, batching or staged cuts while preserving the required feature. |
-| Selector no longer matches | Reopen with `read_scene`, enumerate candidates, and measure their geometry. Numeric refs are revision-scoped. |
-| Assembly placement mismatch | Check local datums, fixed/moving order, axis direction and transform composition. Measure the required signed gaps and angles on saved geometry. |
+| Slow Boolean                      | Time the suspect operation or inspect a stack sample. Consider simpler surfaces, tool extents, batching or staged cuts while preserving the required feature.                            |
+| Selector no longer matches        | Reopen with `read_scene`, enumerate candidates, and measure their geometry. Numeric refs are revision-scoped.                                                                            |
+| Assembly placement mismatch       | Check local datums, fixed/moving order, axis direction and transform composition. Measure the required signed gaps and angles on saved geometry.                                         |
 
 Version-specific pitfalls and construction alternatives are in
 [build123d modeling](build123d-modeling.md). For assembly corrections, see

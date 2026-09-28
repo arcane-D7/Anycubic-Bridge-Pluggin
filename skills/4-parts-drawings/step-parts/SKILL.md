@@ -6,7 +6,6 @@ metadata:
   version: "1.0"
   skill-author: "Thompson Labs LLC"
   vendored: "2026-09-18"
-
 ---
 
 # STEP Parts

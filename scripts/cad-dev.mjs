@@ -6,8 +6,9 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { fileURLToPath } from "node:url";
 
 const args = process.argv.slice(2);
-const openBrowser =
-  args.includes("--open-browser") ? args[args.indexOf("--open-browser") + 1] !== "false" : true;
+const openBrowser = args.includes("--open-browser")
+  ? args[args.indexOf("--open-browser") + 1] !== "false"
+  : true;
 
 const transport = new StdioClientTransport({
   command: process.execPath,

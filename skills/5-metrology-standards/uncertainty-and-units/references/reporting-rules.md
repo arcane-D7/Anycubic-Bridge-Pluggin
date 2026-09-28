@@ -24,12 +24,12 @@ Trailing zeros in the uncertainty are significant and must be kept: `0.10`, not 
 
 ## Notations
 
-| Notation | Example | Where it is used |
-| --- | --- | --- |
-| Plus-minus | 12.346 ± 0.023 mm | prose, tables |
-| Concise / parenthetic | 12.346(23) mm | physics, CODATA, high-precision tables |
-| Scientific | (9.1093837139 ± 0.0000000028)e-31 kg | very large or small values |
-| Concise scientific | 9.1093837139(28)e-31 kg | constants |
+| Notation              | Example                              | Where it is used                       |
+| --------------------- | ------------------------------------ | -------------------------------------- |
+| Plus-minus            | 12.346 ± 0.023 mm                    | prose, tables                          |
+| Concise / parenthetic | 12.346(23) mm                        | physics, CODATA, high-precision tables |
+| Scientific            | (9.1093837139 ± 0.0000000028)e-31 kg | very large or small values             |
+| Concise scientific    | 9.1093837139(28)e-31 kg              | constants                              |
 
 In concise notation the digits in parentheses apply to the last digits of the quoted
 value, so `12.346(23)` is 12.346 ± 0.023 and `1234(25)` is 1234 ± 25. When the
@@ -69,11 +69,11 @@ generates the sentence.
 An error bar is uninterpretable unless the caption says what it is, and the three
 common choices differ by more than a factor of two for typical n:
 
-| Bar | Answers | Shrinks with n |
-| --- | --- | --- |
-| Standard deviation | how much do individual observations scatter | no |
-| Standard error of the mean | how precisely is the mean located | yes, as 1/√n |
-| 95% confidence interval | plausible range for the population mean | yes |
+| Bar                        | Answers                                     | Shrinks with n |
+| -------------------------- | ------------------------------------------- | -------------- |
+| Standard deviation         | how much do individual observations scatter | no             |
+| Standard error of the mean | how precisely is the mean located           | yes, as 1/√n   |
+| 95% confidence interval    | plausible range for the population mean     | yes            |
 
 Choosing SEM because it looks tighter is a misrepresentation when the question is about
 spread. Every caption needs the bar's identity, n, and whether n counts biological or
@@ -128,6 +128,6 @@ tolerate. Report the rule alongside the verdict.
 
 - JCGM 100:2008 (GUM), clause 7 — reporting uncertainty.
 - JCGM 101:2008 (GUM Supplement 1), clause 8 — numerical tolerance and validation.
-- NIST Technical Note 1297, *Guidelines for Evaluating and Expressing the Uncertainty of
-  NIST Measurement Results* — the source of the two standard sentence forms above.
+- NIST Technical Note 1297, _Guidelines for Evaluating and Expressing the Uncertainty of
+  NIST Measurement Results_ — the source of the two standard sentence forms above.
 - ISO/IEC 17025:2017 clause 7.8.6 and ILAC-G8:09/2019 — decision rules and guard bands.

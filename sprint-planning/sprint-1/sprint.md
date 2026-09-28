@@ -2,18 +2,18 @@
 
 ## Sprint Metadata
 
-| Field                 | Value                                              |
-| --------------------- | -------------------------------------------------- |
-| **Sprint Name**       | Robust in-browser boolean CSG                       |
+| Field                 | Value                                                                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sprint Name**       | Robust in-browser boolean CSG                                                                                                         |
 | **Sprint Goal**       | Replace the fragile half-space CSG kernel with the MIT `three-bvh-csg` engine, exposed as an MCP tool and usable from the CAD web UI. |
-| **Duration Estimate** | ~1 day                                             |
-| **Priority**          | P1                                                 |
-| **Sprint Type**       | Feature + Test                                     |
-| **Primary Owner**     | cad-engine                                          |
-| **Source**            | [CAD research](../docs/cad-engine-research.md), [architecture](../docs/architecture.md) component 11 |
-| **Depends On**        | None                                               |
-| **Status**            | ✅ Complete · commit `892f39d`                      |
-| **Health Gate**       | `pnpm run test` 132/132 · smoke 79 tools            |
+| **Duration Estimate** | ~1 day                                                                                                                                |
+| **Priority**          | P1                                                                                                                                    |
+| **Sprint Type**       | Feature + Test                                                                                                                        |
+| **Primary Owner**     | cad-engine                                                                                                                            |
+| **Source**            | [CAD research](../docs/cad-engine-research.md), [architecture](../docs/architecture.md) component 11                                  |
+| **Depends On**        | None                                                                                                                                  |
+| **Status**            | ✅ Complete · commit `892f39d`                                                                                                        |
+| **Health Gate**       | `pnpm run test` 132/132 · smoke 79 tools                                                                                              |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -49,15 +49,15 @@ gate for this checkout is `test` + `smoke` (see docs/architecture.md).
 
 ### S1-001 — Pure CSG engine module over three-bvh-csg
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S1-001                    |
+| Field                | Value                                              |
+| -------------------- | -------------------------------------------------- |
+| **Ticket ID**        | S1-001                                             |
 | **Title**            | `scripts/cad-csg-engine.mjs` — pure boolean engine |
-| **Priority**         | P0                        |
-| **Type**             | Feature                   |
-| **Estimated Effort** | M                         |
-| **Source Finding**   | CAD research finalist #3 (three-bvh-csg, MIT) |
-| **Status**           | ⏳ Planned                |
+| **Priority**         | P0                                                 |
+| **Type**             | Feature                                            |
+| **Estimated Effort** | M                                                  |
+| **Source Finding**   | CAD research finalist #3 (three-bvh-csg, MIT)      |
+| **Status**           | ⏳ Planned                                         |
 
 #### Context
 
@@ -78,15 +78,15 @@ robust BVH-based boolean math. Node-only; no DOM required.
 
 ### S1-002 — MCP adapter `cad_v2_boolean`
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S1-002                    |
-| **Title**            | Register `cad_v2_boolean` MCP tool in the bundle |
-| **Priority**         | P0                        |
-| **Type**             | Feature                   |
-| **Estimated Effort** | M                         |
+| Field                | Value                                                   |
+| -------------------- | ------------------------------------------------------- |
+| **Ticket ID**        | S1-002                                                  |
+| **Title**            | Register `cad_v2_boolean` MCP tool in the bundle        |
+| **Priority**         | P0                                                      |
+| **Type**             | Feature                                                 |
+| **Estimated Effort** | M                                                       |
 | **Source Finding**   | Existing tool registration pattern in `dist/server.mjs` |
-| **Status**           | ⏳ Planned                |
+| **Status**           | ⏳ Planned                                              |
 
 #### Context
 
@@ -108,15 +108,15 @@ workspace — mirroring `cad_select_faces`/`cad_edit_mesh` conventions
 
 ### S1-003 — Web UI toggle for robust boolean
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S1-003                    |
-| **Title**            | `ui/cad.html` uses the v2 boolean engine |
-| **Priority**         | P1                        |
-| **Type**             | Feature                   |
-| **Estimated Effort** | S                         |
+| Field                | Value                                                     |
+| -------------------- | --------------------------------------------------------- |
+| **Ticket ID**        | S1-003                                                    |
+| **Title**            | `ui/cad.html` uses the v2 boolean engine                  |
+| **Priority**         | P1                                                        |
+| **Type**             | Feature                                                   |
+| **Estimated Effort** | S                                                         |
 | **Source Finding**   | `btnCsg` handler calls `/api/boolean` (half-space kernel) |
-| **Status**           | ⏳ Planned                |
+| **Status**           | ⏳ Planned                                                |
 
 #### Context
 
@@ -136,15 +136,15 @@ endpoint wired by S1-002 and re-fetches the resulting mesh.
 
 ### S1-004 — Unit + integration tests for CSG engine
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S1-004                    |
+| Field                | Value                                       |
+| -------------------- | ------------------------------------------- |
+| **Ticket ID**        | S1-004                                      |
 | **Title**            | Tests: meshing prims, booleans, tool wiring |
-| **Priority**         | P1                        |
-| **Type**             | Test                      |
-| **Estimated Effort** | M                         |
-| **Source Finding**   | Project test convention `tests/*.test.mjs` |
-| **Status**           | ⏳ Planned                |
+| **Priority**         | P1                                          |
+| **Type**             | Test                                        |
+| **Estimated Effort** | M                                           |
+| **Source Finding**   | Project test convention `tests/*.test.mjs`  |
+| **Status**           | ⏳ Planned                                  |
 
 #### Context
 

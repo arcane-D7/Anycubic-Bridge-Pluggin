@@ -176,11 +176,11 @@ entrypoints or outputs change:
 ```markdown
 # Models
 
-| Script | Output | Purpose |
-| --- | --- | --- |
-| plate.py | STEP/plate.step | Mounting plate |
-| plate_drawing.py | DXF/plate_drawing.dxf | Plate flat pattern |
-| assembly.py | STEP/assembly.step | Plate with standoffs |
+| Script           | Output                | Purpose              |
+| ---------------- | --------------------- | -------------------- |
+| plate.py         | STEP/plate.step       | Mounting plate       |
+| plate_drawing.py | DXF/plate_drawing.dxf | Plate flat pattern   |
+| assembly.py      | STEP/assembly.step    | Plate with standoffs |
 
 Build: `python src/assembly.py` from the project root builds the assembly and
 its dependencies. Run independent entrypoints separately. Unchanged models are current.

@@ -21,6 +21,7 @@ geometry and design intent, and generate the image with the TT-Images tool.
 ## Available capabilities
 
 ### Anycubic CAD MCP (`anycubic-slicer-next` server)
+
 - `cad_open_workspace` / workspace state — inspect objects, dimensions, bounding
   boxes, face selections currently in the CAD workspace.
 - `cad_generate_from_prompt` — parametric modeling from natural language
@@ -31,6 +32,7 @@ geometry and design intent, and generate the image with the TT-Images tool.
 - Slicer export tools — produce printable 3MF/STL artifacts when asked.
 
 ### TT-Images MCP (`ttai-images` server)
+
 - `ttai_generate_image(prompt, size, n, returnImage, save)` — generates 2D
   images via Top-Tools AI and returns them inline plus a saved file path.
 

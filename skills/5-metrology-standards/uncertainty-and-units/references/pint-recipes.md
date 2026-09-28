@@ -19,7 +19,7 @@ first.Quantity(1, "m") + second.Quantity(1, "m")
 
 This bites hardest across module boundaries, where each module innocently creates its
 own registry at import time, and after unpickling, because a pickled quantity is
-restored against the *application* registry rather than the one that created it.
+restored against the _application_ registry rather than the one that created it.
 
 Build one registry and share it, or use the application registry everywhere:
 
@@ -46,7 +46,7 @@ Q(20, "degC") + Q(5, "degC")
 # OffsetUnitCalculusError: Ambiguous operation with offset unit (...).
 ```
 
-The delta units carry temperature *differences*, and mixed arithmetic works:
+The delta units carry temperature _differences_, and mixed arithmetic works:
 
 ```python
 Q(20, "degC") + Q(5, "delta_degC")   # 25 degree_Celsius
@@ -58,7 +58,7 @@ automatically, which is correct and often surprising downstream.
 
 An uncertainty on a temperature is always a difference. `u = 0.5 degC` means
 `0.5 delta_degC`; converting it to Fahrenheit multiplies by 9/5 and applies no offset,
-giving `0.9 delta_degF`. Converting the *value* 20 degC to Fahrenheit applies the
+giving `0.9 delta_degF`. Converting the _value_ 20 degC to Fahrenheit applies the
 offset and gives 68 degF. Two different conversions on the same line of a report.
 
 `pint.UnitRegistry(autoconvert_offset_to_baseunit=True)` makes arithmetic proceed by
@@ -109,7 +109,7 @@ Q(532, "nm").to("THz", "sp", n=1.33)    # 423.69899089829823 terahertz
 ```
 
 Note that `gauss` fails without the Gaussian context: CGS electromagnetic units have
-different *dimensions* from SI ones, not merely different scales.
+different _dimensions_ from SI ones, not merely different scales.
 
 ## Stripping the unit
 

@@ -61,12 +61,12 @@ shared repositories and prompts too.
 Read the reference file for the standard in play **before** preparing evidence. Each
 one carries its own current edition, lane, domain vocabulary, and failure modes.
 
-| Standard | Profile key | Lane | Reference |
-| --- | --- | --- | --- |
-| ISO 13485 medical device QMS | `iso-13485` | Certification | `references/iso-13485.md` |
-| ISO 14971 device risk management | `iso-14971` | No lane of its own | `references/iso-14971.md` |
-| ISO/IEC 17025 testing and calibration laboratories | `iso-17025` | Accreditation | `references/iso-17025.md` |
-| ISO 15189 medical laboratories | `iso-15189` | Accreditation | `references/iso-15189.md` |
+| Standard                                           | Profile key | Lane               | Reference                 |
+| -------------------------------------------------- | ----------- | ------------------ | ------------------------- |
+| ISO 13485 medical device QMS                       | `iso-13485` | Certification      | `references/iso-13485.md` |
+| ISO 14971 device risk management                   | `iso-14971` | No lane of its own | `references/iso-14971.md` |
+| ISO/IEC 17025 testing and calibration laboratories | `iso-17025` | Accreditation      | `references/iso-17025.md` |
+| ISO 15189 medical laboratories                     | `iso-15189` | Accreditation      | `references/iso-15189.md` |
 
 A standard absent from this table is out of scope for the bundled checks. Do not
 repurpose a profile for a standard it does not name — a domain vocabulary borrowed from
@@ -84,7 +84,7 @@ a different standard produces a report that looks complete and means nothing.
   requirements formerly in ISO 22870, and its accreditation transition closed in
   **December 2025** — implemented, not upcoming.
 - **FDA QMSR** effective and enforced since **2026-02-02**; Part 820 is titled
-  *Quality Management System Regulation*; QSIT is retired in favour of Compliance
+  _Quality Management System Regulation_; QSIT is retired in favour of Compliance
   Program **7382.850**.
 - **MDSAP** current Audit Approach is **MDSAP AU P0002.010**, version date
   **2026-02-02**.
@@ -130,11 +130,11 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/validate_scope_intake.py \
 
 Use the matching template and profile:
 
-| Profile | Template |
-| --- | --- |
-| `iso-13485`, `iso-14971` | `assets/templates/scope-intake-template.json` |
-| `iso-17025` | `assets/templates/laboratory-scope-intake-template.json` |
-| `iso-15189` | `assets/templates/medical-laboratory-scope-intake-template.json` |
+| Profile                  | Template                                                         |
+| ------------------------ | ---------------------------------------------------------------- |
+| `iso-13485`, `iso-14971` | `assets/templates/scope-intake-template.json`                    |
+| `iso-17025`              | `assets/templates/laboratory-scope-intake-template.json`         |
+| `iso-15189`              | `assets/templates/medical-laboratory-scope-intake-template.json` |
 
 `--standard` defaults to `iso-13485`. Every distributed template intentionally fails
 closed; copy it outside the skill and complete it with controlled organizational

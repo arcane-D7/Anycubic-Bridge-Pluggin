@@ -17,7 +17,7 @@ three.js ──GLB──►  blender_render.py  ──► out/<name>.blend  (ope
 - **Device only** — hide meshes with `AdditiveBlending` (glow cards); fake bloom is
   wrong offline. Lights, walls, backdrop stay out.
 - **Emissive strength baked**: set `emissiveIntensity` on the light bar (~8) and lit
-  dots (~5) *during* export (`KHR_materials_emissive_strength`); restore after. At 1.0
+  dots (~5) _during_ export (`KHR_materials_emissive_strength`); restore after. At 1.0
   Cycles renders "white plastic", not a lamp.
 - **Units**: three.js scene is in mm, glTF is metres → `device.scale = 0.001` on import.
 - **Front faces −Y** after the y-up → z-up conversion. Wall on +Y, camera on −Y.
@@ -55,8 +55,8 @@ parts show up in the log the first render after the rename.
 ## `blender_shots.py` (multi-angle set)
 
 - Camera table: `rot` (device XYZ degrees), `cam` (m), `lens`, `res`, `lit`. The
-  **camera moves, the wall doesn't**; back/top/bottom are shown by *rotating the
-  device* (a wall-mounted product can't have a camera inside the wall).
+  **camera moves, the wall doesn't**; back/top/bottom are shown by _rotating the
+  device_ (a wall-mounted product can't have a camera inside the wall).
 - **Lit / unlit**: set Emission Strength to 0 **and** swap Base Color to opal; a
   black-based emissive at strength 0 is a black plastic bar (real unlit diffusers are
   milky).
@@ -78,14 +78,14 @@ parts show up in the log the first render after the rename.
   socket declared on `nt.interface` (`CompositorNodeComposite` no longer exists).
 - **Dim-room pair** (`set_ambient(scene, 0.15)`, shots `hero-dim-off/on`,
   `front-dim-on`): World strength and every lamp scaled together. Lit under the studio
-  HDRI a bar barely registers; in a dim room the pool on the wall *is* the design.
+  HDRI a bar barely registers; in a dim room the pool on the wall _is_ the design.
 - HDRI direction: check the first render — the bright side of an environment map is
   often behind the product; rotate the World `Mapping` node 180° in Z and re-shoot.
 
 ## Practicalities
 
 - Blender CLI: `/Applications/Blender.app/Contents/MacOS/Blender --background
-  --python <script> -- <args>`; parse `sys.argv` after `--`.
+--python <script> -- <args>`; parse `sys.argv` after `--`.
 - Cycles 128 samples + denoise is enough for review; ~1–2 min per 1920×1280 frame on
   an Apple GPU with a real HDRI studio; a 10-shot set is ~15 min — run it in the
   background and keep writing. Tune materials at 32–48 samples on one shot.

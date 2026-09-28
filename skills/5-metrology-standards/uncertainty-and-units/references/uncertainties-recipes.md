@@ -16,7 +16,7 @@ x - x                    # 0.0+/-0        the same variable, perfectly correlate
 x - ufloat(1.0, 0.1)     # 0.00+/-0.14    two independent variables
 ```
 
-That pair of lines is the whole design. A `ufloat` is an *identity*, not a number with
+That pair of lines is the whole design. A `ufloat` is an _identity_, not a number with
 an attached error bar, and the difference of a variable with itself is exactly zero.
 This is the correct answer, and it is why arithmetic on ufloats beats manual quadrature
 in any expression where a quantity appears more than once.
@@ -51,7 +51,7 @@ correlation_matrix([a, b])[0][1] # 0.19999999999999987
 `correlation_matrix` returns a NumPy array; `covariance_matrix` returns a nested list —
 index it as `[i][j]`, not `[i, j]`.
 
-`correlated_values_norm` takes `[(value, std_dev), ...]` plus a *correlation* matrix
+`correlated_values_norm` takes `[(value, std_dev), ...]` plus a _correlation_ matrix
 instead of a covariance matrix, which is usually what a paper reports.
 
 ## Functions
@@ -88,8 +88,8 @@ The split is worth internalizing: reductions written in terms of Python arithmet
 
 ## Formatting
 
-The format spec extends the standard one. `u` counts significant digits *in the
-uncertainty*, and the value is rounded to match:
+The format spec extends the standard one. `u` counts significant digits _in the
+uncertainty_, and the value is rounded to match:
 
 ```python
 from uncertainties import ufloat

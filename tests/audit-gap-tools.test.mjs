@@ -183,7 +183,10 @@ test("uploadFileToCloud runs the lock/PUT/claim/unlock flow and reconciles gcode
 });
 
 test("a failed PUT deletes the reservation instead of orphaning the lock", async () => {
-  const cloud = fakeCloud({ failPut: true, storeBytes: { total: 2 * 1024 ** 3, used: 50 * 1024 ** 2 } });
+  const cloud = fakeCloud({
+    failPut: true,
+    storeBytes: { total: 2 * 1024 ** 3, used: 50 * 1024 ** 2 },
+  });
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "upload-"));
   const file = path.join(dir, "cube.gcode");
   fs.writeFileSync(file, "x");
@@ -212,7 +215,7 @@ test("a quota preflight aborts the upload when free space is insufficient", asyn
     "no lock may be taken when the preflight fails",
   );
   fs.rmSync(dir, { recursive: true, force: true });
-});;
+});
 
 test("uploadFileToCloud rejects empty files before touching the cloud", async () => {
   const cloud = fakeCloud();

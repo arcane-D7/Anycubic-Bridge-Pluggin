@@ -17,14 +17,14 @@ elsewhere, by people solving a different problem:
 - a **human-machine contract** naming which control does what — and which two must never
   be confusable;
 - a **board contract** fixing where the connectors are, and which indicator the MCU
-  *cannot* turn off.
+  _cannot_ turn off.
 
-Read them and write the extracted constraints down *before* the first look image, in the
+Read them and write the extracted constraints down _before_ the first look image, in the
 report's §0. Then the picture is judged against them instead of against taste.
 
 **Worked failure.** A perception spec derived its detection thresholds from "wall-mounted
-at 1.5 m, lens horizontal, landscape" — the numbers separating *sitting* from *lying on
-the floor* were three sensor rows apart, all computed from that height. The appearance
+at 1.5 m, lens horizontal, landscape" — the numbers separating _sitting_ from _lying on
+the floor_ were three sensor rows apart, all computed from that height. The appearance
 work started from a reference photo of a desktop cube and produced a lovely desktop cube
 with feet. Nothing in the render looked wrong. It just quietly invalidated every threshold
 in an algorithm that already had regression tests, and none of that surfaces until someone
@@ -38,14 +38,14 @@ is wrong.**
 Every opening is a promise that something crosses the boundary. Check the band, not the
 look:
 
-| what crosses | the trap |
-|---|---|
-| **LWIR** (8–14 µm thermal array) | ordinary plastic, glass and acrylic are **opaque**. A "dark filter-looking panel" over the sensor is a blind device that renders beautifully. Real options: open aperture (dust, insects), silicon window (cost), thin polyethylene film (cheap; costs transmission, and see §4) |
-| **NIR** (proximity, ambient light) | the opposite trap — plastics that look solid black can be NIR-transparent, so "it must be blocked, it's black" is wrong in both directions. Ask for the transmission curve |
-| **RF** (2.4 GHz, sub-GHz) | metallised paint, EMI coating and foil-backed fabric detune or blind an antenna. The keep-out is a **volume**, not an area on the PCB |
-| **sound in** (MEMS mic) | a decorative mesh with no acoustic path behind it; a mic port that shares a cavity with the speaker (it will hear the speaker, not the person) |
-| **sound out** | loudness is set by the amplifier rail *and* the back volume. A thin wall-hugging body and "must be audible in the yard" are in direct conflict — decide which one is real, in writing |
-| **heat** | see §3 |
+| what crosses                       | the trap                                                                                                                                                                                                                                                                         |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **LWIR** (8–14 µm thermal array)   | ordinary plastic, glass and acrylic are **opaque**. A "dark filter-looking panel" over the sensor is a blind device that renders beautifully. Real options: open aperture (dust, insects), silicon window (cost), thin polyethylene film (cheap; costs transmission, and see §4) |
+| **NIR** (proximity, ambient light) | the opposite trap — plastics that look solid black can be NIR-transparent, so "it must be blocked, it's black" is wrong in both directions. Ask for the transmission curve                                                                                                       |
+| **RF** (2.4 GHz, sub-GHz)          | metallised paint, EMI coating and foil-backed fabric detune or blind an antenna. The keep-out is a **volume**, not an area on the PCB                                                                                                                                            |
+| **sound in** (MEMS mic)            | a decorative mesh with no acoustic path behind it; a mic port that shares a cavity with the speaker (it will hear the speaker, not the person)                                                                                                                                   |
+| **sound out**                      | loudness is set by the amplifier rail _and_ the back volume. A thin wall-hugging body and "must be audible in the yard" are in direct conflict — decide which one is real, in writing                                                                                            |
+| **heat**                           | see §3                                                                                                                                                                                                                                                                           |
 
 Put the answer in the CMF table as a material row, not as a note: the window is a part
 with a supplier, not a graphic.

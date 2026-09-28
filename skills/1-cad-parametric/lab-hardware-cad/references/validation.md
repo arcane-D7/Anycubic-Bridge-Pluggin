@@ -6,17 +6,17 @@ it catches, because a checklist without consequences gets skipped.
 ## 1. Provenance
 
 - [ ] The STEP was produced by `gen.py` from the current model source.
-      *Catches: a stale artifact that no longer matches the code you just edited.*
+      _Catches: a stale artifact that no longer matches the code you just edited._
 - [ ] A `*.manifest.json` exists alongside it, and its `source.sha256` matches the model file.
-      *Catches: silently editing an exported STEP, which makes the design unreproducible.*
+      _Catches: silently editing an exported STEP, which makes the design unreproducible._
 - [ ] The manifest's `interfaces` block lists every dimension a bundled standard covers, and its
       values are the ones the model computed after any `--param` override. Empty is correct only
       when nothing on the part mates with a bundled standard — and then every interface dimension
       is named as unchecked in the report instead.
-      *Catches: a static `INTERFACES` list frozen at import, recording pre-override numbers; and
-      an interface that silently escaped checking.*
+      _Catches: a static `INTERFACES` list frozen at import, recording pre-override numbers; and
+      an interface that silently escaped checking._
 - [ ] Every parameter in the model is named with units.
-      *Catches: the bare `12.7` nobody can later identify as half an inch.*
+      _Catches: the bare `12.7` nobody can later identify as half an inch._
 
 ```bash
 python scripts/gen.py part_model.py --outdir out/
@@ -25,18 +25,18 @@ python scripts/gen.py part_model.py --outdir out/
 ## 2. Geometry is sound
 
 - [ ] `is_valid` is true.
-      *Catches: self-intersecting or non-manifold solids that slicers and CAM silently mangle.*
+      _Catches: self-intersecting or non-manifold solids that slicers and CAM silently mangle._
 - [ ] `solid_count` is what you expect — usually 1.
-      *Catches: a boolean that failed and left two disjoint lumps, or a feature floating free of
-      the body.*
+      _Catches: a boolean that failed and left two disjoint lumps, or a feature floating free of
+      the body._
 - [ ] Volume is plausible for the part's size and wall thickness.
-      *Catches: a cavity modelled solid, or a subtract that did nothing.*
+      _Catches: a cavity modelled solid, or a subtract that did nothing._
 - [ ] Every geometric requirement in the request is declared in `checks()` and passes — clear
       regions for what must pass through or fit in, material regions for what must remain,
       bbox bounds for stated size limits.
-      *Catches: a recess that swallowed its screw seat, a pocket the mating part cannot enter,
+      _Catches: a recess that swallowed its screw seat, a pocket the mating part cannot enter,
       a beam corridor with a wall in it, a feature a fillet silently ate — all invisible to
-      `is_valid` and the bounding box.*
+      `is_valid` and the bounding box._
 
 ```bash
 python scripts/check.py facts out/part.step
@@ -47,20 +47,20 @@ python scripts/check.py geometry out/part.step --model part_model.py
 
 - [ ] Every interface dimension has a written source: a standard ID, a vendor drawing, or a user
       measurement. **None came from memory.**
-      *Catches: the single most expensive failure mode in this skill.*
+      _Catches: the single most expensive failure mode in this skill._
 - [ ] Every interface covered by a standard is declared in the model's `interfaces()` and passes
       `check.py interfaces`.
-      *Catches: an interface nobody checked because the outer bounding box could not see it.*
+      _Catches: an interface nobody checked because the outer bounding box could not see it._
 - [ ] Features that receive a standardised component use `intent: "envelope"`.
-      *Catches: a pocket sized to nominal, which fits only the smaller half of conforming parts.*
+      _Catches: a pocket sized to nominal, which fits only the smaller half of conforming parts._
 - [ ] Any standard entry marked `verified: false` was confirmed against the primary document, or
       the user was told it is unconfirmed.
-      *Catches: propagating a derived number as if it were read from the standard.*
+      _Catches: propagating a derived number as if it were read from the standard._
 - [ ] Metric vs imperial is confirmed where both exist, and no expression mixes them.
-      *Catches: the 25.0 vs 25.4 mm grid error, which accumulates to 1.6 mm over four holes.*
+      _Catches: the 25.0 vs 25.4 mm grid error, which accumulates to 1.6 mm over four holes._
 - [ ] Interfaces not covered by any bundled standard — a vendor drawing, a measurement — were
       reported to the user as unchecked, with the number and its source.
-      *Catches: a silent gap where the automatic check simply had nothing to say.*
+      _Catches: a silent gap where the automatic check simply had nothing to say._
 
 ```bash
 python scripts/check.py interfaces out/part.manifest.json
@@ -72,11 +72,11 @@ python scripts/check.py fit --standard <id> --intent envelope --clearance <mm> -
 ## 4. Fits and assembly
 
 - [ ] Every mating dimension has a deliberate clearance chosen for the process.
-      *Catches: nominal-to-nominal fits, which do not assemble.*
+      _Catches: nominal-to-nominal fits, which do not assemble._
 - [ ] Multi-part assemblies were checked for interference.
-      *Catches: parts that overlap in CAD and therefore cannot exist together.*
+      _Catches: parts that overlap in CAD and therefore cannot exist together._
 - [ ] Rigid multi-hole mounting patterns have at least one slot.
-      *Catches: a four-hole bolt pattern binding on accumulated tolerance.*
+      _Catches: a four-hole bolt pattern binding on accumulated tolerance._
 
 ```bash
 python scripts/check.py clearance out/a.step out/b.step --min 0.3
@@ -93,11 +93,11 @@ python scripts/check.py clearance out/a.step out/b.step --min 0.3
 ## 6. Material
 
 - [ ] Material is compatible with the **cleaning agent**, not only the sample.
-      *Catches: acrylic crazing on 70% ethanol; PLA distorting in an autoclave.*
+      _Catches: acrylic crazing on 70% ethanol; PLA distorting in an autoclave._
 - [ ] Sterilisation method is stated and the material actually survives it.
 - [ ] Anything contacting cells, tissue, or animals has a justified material, or contact is
       designed out.
-      *Catches: assuming a printed resin part is cell-safe.*
+      _Catches: assuming a printed resin part is cell-safe._
 - [ ] Optical requirements — autofluorescence, scatter, transmission — are addressed if the part is
       near a beam or a detector.
 

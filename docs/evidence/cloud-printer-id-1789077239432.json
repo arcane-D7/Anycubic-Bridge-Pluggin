@@ -28,9 +28,7 @@
           }
         }
       ],
-      "device_codes": [
-        200
-      ]
+      "device_codes": [200]
     },
     "info": {
       "msgid": "7b6293e9-ce9f-41b0-8d31-fd98741f2135",
@@ -105,9 +103,7 @@
           }
         }
       ],
-      "device_codes": [
-        200
-      ]
+      "device_codes": [200]
     },
     "print": {
       "msgid": "1387be8f-5839-4bae-9842-383fbc415b35",
@@ -141,9 +137,7 @@
           }
         }
       ],
-      "device_codes": [
-        200
-      ]
+      "device_codes": [200]
     },
     "fan": {
       "msgid": "c6e6da17-e0ff-4516-ba9c-b8c1dbeb8704",
@@ -168,9 +162,7 @@
           }
         }
       ],
-      "device_codes": [
-        200
-      ]
+      "device_codes": [200]
     },
     "light": {
       "msgid": "01cd7eb6-6249-4a79-8112-5d7181d91153",
@@ -199,9 +191,7 @@
           }
         }
       ],
-      "device_codes": [
-        200
-      ]
+      "device_codes": [200]
     },
     "peripherie": {
       "msgid": "99ef7b31-a8f6-498a-99e1-ae462521e045",
@@ -226,9 +216,7 @@
           }
         }
       ],
-      "device_codes": [
-        200
-      ]
+      "device_codes": [200]
     },
     "aiSettings": {
       "msgid": "781d93c0-c962-465d-8a63-84641a096aab",
@@ -250,22 +238,14 @@
                 "status": 3,
                 "type": 2,
                 "count": 60,
-                "notice_type": [
-                  0,
-                  1
-                ],
-                "sensitivity_level": [
-                  1,
-                  1
-                ]
+                "notice_type": [0, 1],
+                "sensitivity_level": [1, 1]
               }
             }
           }
         }
       ],
-      "device_codes": [
-        200
-      ]
+      "device_codes": [200]
     },
     "extfilbox": {
       "msgid": "00821bb4-7e0e-491c-aac2-fd38a04573bf",
@@ -316,21 +296,10 @@
                       "index": 0,
                       "sku": "AHHSGY-107",
                       "type": "PLA High Speed",
-                      "color": [
-                        117,
-                        120,
-                        123
-                      ],
+                      "color": [117, 120, 123],
                       "edit_status": 0,
                       "status": 5,
-                      "color_group": [
-                        [
-                          117,
-                          120,
-                          123,
-                          255
-                        ]
-                      ],
+                      "color_group": [[117, 120, 123, 255]],
                       "icon_type": 0,
                       "consumables_percent": 13
                     },
@@ -338,21 +307,10 @@
                       "index": 1,
                       "sku": "AHPLLB-107",
                       "type": "PLA",
-                      "color": [
-                        212,
-                        185,
-                        150
-                      ],
+                      "color": [212, 185, 150],
                       "edit_status": 0,
                       "status": 5,
-                      "color_group": [
-                        [
-                          212,
-                          185,
-                          150,
-                          255
-                        ]
-                      ],
+                      "color_group": [[212, 185, 150, 255]],
                       "icon_type": 0,
                       "consumables_percent": 93
                     },
@@ -360,21 +318,10 @@
                       "index": 2,
                       "sku": "",
                       "type": "PLA Silk",
-                      "color": [
-                        255,
-                        215,
-                        0
-                      ],
+                      "color": [255, 215, 0],
                       "edit_status": 1,
                       "status": 5,
-                      "color_group": [
-                        [
-                          255,
-                          215,
-                          0,
-                          255
-                        ]
-                      ],
+                      "color_group": [[255, 215, 0, 255]],
                       "icon_type": 0,
                       "consumables_percent": 0
                     },
@@ -382,21 +329,10 @@
                       "index": 3,
                       "sku": "",
                       "type": "PLA",
-                      "color": [
-                        0,
-                        0,
-                        0
-                      ],
+                      "color": [0, 0, 0],
                       "edit_status": 1,
                       "status": 5,
-                      "color_group": [
-                        [
-                          0,
-                          0,
-                          0,
-                          255
-                        ]
-                      ],
+                      "color_group": [[0, 0, 0, 255]],
                       "icon_type": 0,
                       "consumables_percent": 0
                     }
@@ -407,9 +343,7 @@
           }
         }
       ],
-      "device_codes": [
-        200
-      ]
+      "device_codes": [200]
     }
   },
   "events": [
@@ -574,14 +508,8 @@
             "status": 3,
             "type": 2,
             "count": 60,
-            "notice_type": [
-              0,
-              1
-            ],
-            "sensitivity_level": [
-              1,
-              1
-            ]
+            "notice_type": [0, 1],
+            "sensitivity_level": [1, 1]
           }
         }
       }
@@ -1043,21 +971,10 @@
                   "index": 0,
                   "sku": "AHHSGY-107",
                   "type": "PLA High Speed",
-                  "color": [
-                    117,
-                    120,
-                    123
-                  ],
+                  "color": [117, 120, 123],
                   "edit_status": 0,
                   "status": 5,
-                  "color_group": [
-                    [
-                      117,
-                      120,
-                      123,
-                      255
-                    ]
-                  ],
+                  "color_group": [[117, 120, 123, 255]],
                   "icon_type": 0,
                   "consumables_percent": 13
                 },
@@ -1065,21 +982,10 @@
                   "index": 1,
                   "sku": "AHPLLB-107",
                   "type": "PLA",
-                  "color": [
-                    212,
-                    185,
-                    150
-                  ],
+                  "color": [212, 185, 150],
                   "edit_status": 0,
                   "status": 5,
-                  "color_group": [
-                    [
-                      212,
-                      185,
-                      150,
-                      255
-                    ]
-                  ],
+                  "color_group": [[212, 185, 150, 255]],
                   "icon_type": 0,
                   "consumables_percent": 93
                 },
@@ -1087,21 +993,10 @@
                   "index": 2,
                   "sku": "",
                   "type": "PLA Silk",
-                  "color": [
-                    255,
-                    215,
-                    0
-                  ],
+                  "color": [255, 215, 0],
                   "edit_status": 1,
                   "status": 5,
-                  "color_group": [
-                    [
-                      255,
-                      215,
-                      0,
-                      255
-                    ]
-                  ],
+                  "color_group": [[255, 215, 0, 255]],
                   "icon_type": 0,
                   "consumables_percent": 0
                 },
@@ -1109,21 +1004,10 @@
                   "index": 3,
                   "sku": "",
                   "type": "PLA",
-                  "color": [
-                    0,
-                    0,
-                    0
-                  ],
+                  "color": [0, 0, 0],
                   "edit_status": 1,
                   "status": 5,
-                  "color_group": [
-                    [
-                      0,
-                      0,
-                      0,
-                      255
-                    ]
-                  ],
+                  "color_group": [[0, 0, 0, 255]],
                   "icon_type": 0,
                   "consumables_percent": 0
                 }
@@ -1588,11 +1472,7 @@
           "device_status": 1,
           "external_shelves": {
             "brand_name": null,
-            "color": [
-              233,
-              157,
-              67
-            ],
+            "color": [233, 157, 67],
             "current_status": -1,
             "id": 0,
             "loaded": 1,
@@ -1695,19 +1575,8 @@
             "model_id": 0,
             "slots": [
               {
-                "color": [
-                  117,
-                  120,
-                  123
-                ],
-                "color_group": [
-                  [
-                    117,
-                    120,
-                    123,
-                    255
-                  ]
-                ],
+                "color": [117, 120, 123],
+                "color_group": [[117, 120, 123, 255]],
                 "consumables_percent": 13,
                 "edit_status": 0,
                 "icon_type": 0,
@@ -1717,19 +1586,8 @@
                 "type": "PLA High Speed"
               },
               {
-                "color": [
-                  212,
-                  185,
-                  150
-                ],
-                "color_group": [
-                  [
-                    212,
-                    185,
-                    150,
-                    255
-                  ]
-                ],
+                "color": [212, 185, 150],
+                "color_group": [[212, 185, 150, 255]],
                 "consumables_percent": 93,
                 "edit_status": 0,
                 "icon_type": 0,
@@ -1739,19 +1597,8 @@
                 "type": "PLA"
               },
               {
-                "color": [
-                  255,
-                  215,
-                  0
-                ],
-                "color_group": [
-                  [
-                    255,
-                    215,
-                    0,
-                    255
-                  ]
-                ],
+                "color": [255, 215, 0],
+                "color_group": [[255, 215, 0, 255]],
                 "consumables_percent": 0,
                 "edit_status": 1,
                 "icon_type": 0,
@@ -1761,19 +1608,8 @@
                 "type": "PLA Silk"
               },
               {
-                "color": [
-                  0,
-                  0,
-                  0
-                ],
-                "color_group": [
-                  [
-                    0,
-                    0,
-                    0,
-                    255
-                  ]
-                ],
+                "color": [0, 0, 0],
+                "color_group": [[0, 0, 0, 255]],
                 "consumables_percent": 0,
                 "edit_status": 1,
                 "icon_type": 0,
@@ -1846,20 +1682,7 @@
               "type_function_id": 13
             }
           ],
-          "type_function_ids": [
-            2,
-            13,
-            22,
-            39,
-            41,
-            43,
-            44,
-            45,
-            47,
-            48,
-            67,
-            2006
-          ],
+          "type_function_ids": [2, 13, 22, 39, 41, 43, 44, 45, 47, 48, 67, 2006],
           "version": {
             "firmware_version": "",
             "force_update": 0,
@@ -1905,9 +1728,7 @@
           "function_id": 13,
           "id": 12,
           "img": null,
-          "middle_tip": [
-            "single movement(mm)"
-          ],
+          "middle_tip": ["single movement(mm)"],
           "model_id": 0,
           "tips": [
             "The XYZ axis motor of the printer will move according to the set moving distance and direction. When moving the Z-axis, you need to observe the distance between the nozzle and the platform to avoid extruding and damaging the printer."
@@ -1964,19 +1785,8 @@
             "model_id": 0,
             "slots": [
               {
-                "color": [
-                  117,
-                  120,
-                  123
-                ],
-                "color_group": [
-                  [
-                    117,
-                    120,
-                    123,
-                    255
-                  ]
-                ],
+                "color": [117, 120, 123],
+                "color_group": [[117, 120, 123, 255]],
                 "consumables_percent": 13,
                 "edit_status": 0,
                 "icon_type": 0,
@@ -1986,19 +1796,8 @@
                 "type": "PLA High Speed"
               },
               {
-                "color": [
-                  212,
-                  185,
-                  150
-                ],
-                "color_group": [
-                  [
-                    212,
-                    185,
-                    150,
-                    255
-                  ]
-                ],
+                "color": [212, 185, 150],
+                "color_group": [[212, 185, 150, 255]],
                 "consumables_percent": 93,
                 "edit_status": 0,
                 "icon_type": 0,
@@ -2008,19 +1807,8 @@
                 "type": "PLA"
               },
               {
-                "color": [
-                  255,
-                  215,
-                  0
-                ],
-                "color_group": [
-                  [
-                    255,
-                    215,
-                    0,
-                    255
-                  ]
-                ],
+                "color": [255, 215, 0],
+                "color_group": [[255, 215, 0, 255]],
                 "consumables_percent": 0,
                 "edit_status": 1,
                 "icon_type": 0,
@@ -2030,19 +1818,8 @@
                 "type": "PLA Silk"
               },
               {
-                "color": [
-                  0,
-                  0,
-                  0
-                ],
-                "color_group": [
-                  [
-                    0,
-                    0,
-                    0,
-                    255
-                  ]
-                ],
+                "color": [0, 0, 0],
+                "color_group": [[0, 0, 0, 255]],
                 "consumables_percent": 0,
                 "edit_status": 1,
                 "icon_type": 0,
@@ -2070,16 +1847,10 @@
         "msg": "Connection successful",
         "data": {
           "auto_operation": null,
-          "aux_fan_speed_limit": [
-            0,
-            100
-          ],
+          "aux_fan_speed_limit": [0, 100],
           "aux_fan_speed_pct": 0,
           "box_fan_level": 0,
-          "box_fan_level_limit": [
-            0,
-            100
-          ],
+          "box_fan_level_limit": [0, 100],
           "create_time": 1789068084,
           "device_message": {
             "action": "start",
@@ -2105,10 +1876,7 @@
             "total_layers": 150
           },
           "end_time": 1789073571,
-          "fan_limit": [
-            0,
-            100
-          ],
+          "fan_limit": [0, 100],
           "fan_speed_pct": 0,
           "gcode_id": 0,
           "gcode_name": "0910-2020-OpenSCAD Model_plate(01)_PLA_0.2_2h32m25s",
@@ -2165,11 +1933,7 @@
               {
                 "filament_used": 68.11,
                 "material_type": "PLA",
-                "paint_color": [
-                  212,
-                  185,
-                  150
-                ],
+                "paint_color": [212, 185, 150],
                 "paint_index": 1
               }
             ],
@@ -2193,14 +1957,8 @@
             "ai_detect": 1,
             "ai_settings": {
               "count": 60,
-              "notice_type": [
-                0,
-                1
-              ],
-              "sensitivity_level": [
-                1,
-                1
-              ],
+              "notice_type": [0, 1],
+              "sensitivity_level": [1, 1],
               "status": 3,
               "type": 2
             },
@@ -2224,34 +1982,15 @@
             "curr_hotbed_temp": 41,
             "curr_nozzle_temp": 41,
             "limit": {
-              "hotbed_temp_limit": [
-                35,
-                120
-              ],
-              "nozzle_temp_limit": [
-                185,
-                320
-              ]
+              "hotbed_temp_limit": [35, 120],
+              "nozzle_temp_limit": [185, 320]
             },
             "target_chamber_temp": 0,
             "target_hotbed_temp": 0,
             "target_nozzle_temp": 0
           },
           "total_time": "0",
-          "type_function_ids": [
-            2,
-            13,
-            22,
-            39,
-            41,
-            43,
-            44,
-            45,
-            47,
-            48,
-            67,
-            2006
-          ],
+          "type_function_ids": [2, 13, 22, 39, 41, 43, 44, 45, 47, 48, 67, 2006],
           "z_thick": 0.2
         }
       }
@@ -2308,11 +2047,7 @@
             {
               "filament_used": 68.11,
               "paint_index": 1,
-              "paint_color": [
-                212,
-                185,
-                150
-              ],
+              "paint_color": [212, 185, 150],
               "material_type": "PLA"
             }
           ],
@@ -2369,39 +2104,13 @@
             "curr_bed_type_label": "Smooth Plate/Transfer Plate",
             "enable_support": 0,
             "extruder_colour": [
-              [
-                117,
-                120,
-                123
-              ],
-              [
-                212,
-                185,
-                150
-              ],
-              [
-                255,
-                215,
-                0
-              ],
-              [
-                0,
-                0,
-                0
-              ]
+              [117, 120, 123],
+              [212, 185, 150],
+              [255, 215, 0],
+              [0, 0, 0]
             ],
-            "fan_max_speed": [
-              100,
-              100,
-              100,
-              100
-            ],
-            "fan_min_speed": [
-              100,
-              100,
-              100,
-              100
-            ],
+            "fan_max_speed": [100, 100, 100, 100],
+            "fan_min_speed": [100, 100, 100, 100],
             "filament_retract_length": 0.8,
             "filament_settings_id": [
               "Anycubic PLA High Speed @Anycubic Kobra S1 0.4 nozzle",
@@ -2414,9 +2123,7 @@
             "image_id": "cloud/2026/09-10/png/<MD5>.png",
             "inner_wall_speed": 300,
             "layer_height": 0.2,
-            "nozzle_diameter": [
-              0.4
-            ],
+            "nozzle_diameter": [0.4],
             "nozzle_type": 1,
             "nozzle_type_label": "Brass",
             "outer_wall_speed": 200,
@@ -2424,11 +2131,7 @@
               {
                 "filament_used": 68.11,
                 "material_type": "PLA",
-                "paint_color": [
-                  212,
-                  185,
-                  150
-                ],
+                "paint_color": [212, 185, 150],
                 "paint_index": 1
               }
             ],
@@ -2436,9 +2139,7 @@
             "perimeter_speed": 200,
             "perimeters": 2,
             "printer_model": "Anycubic Kobra S1",
-            "printer_names": [
-              "Anycubic Kobra S1 0.4 nozzle"
-            ],
+            "printer_names": ["Anycubic Kobra S1 0.4 nozzle"],
             "printer_settings_id": "Anycubic Kobra S1 0.4 nozzle",
             "support_material_auto": 0,
             "support_type": "tree(auto)",
@@ -2448,12 +2149,7 @@
           "slice_result": {
             "bounding_box_max": "",
             "bounding_box_min": "",
-            "filament used [g]": [
-              0,
-              68.11,
-              0,
-              0
-            ],
+            "filament used [g]": [0, 68.11, 0, 0],
             "model_size": "200.00,250.00,30.00",
             "print_time": "2h 32m 25s",
             "size_x": 200,

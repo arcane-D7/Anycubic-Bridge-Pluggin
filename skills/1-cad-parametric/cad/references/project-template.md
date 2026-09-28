@@ -105,15 +105,15 @@ For mating datums and joint relationships, see [positioning](positioning.md).
 
 ## Add capabilities only when needed
 
-| Need | Add |
-| --- | --- |
-| STL, 3MF or GLB output | A mesh decorator; a mesh-only model omits `@step`. See [exports](supported-exports.md). |
-| Shared factory or hole pattern | A plain helper under `src/lib/`, with `src/lib/__init__.py`. |
-| Left/right geometry | Mirror inline, or use separate models for independent outputs/reuse; see [mirroring and caching](step-generation.md#mirrored-geometry-and-reusable-models). |
-| Subassembly | A model that calls its child models; use folders as the project grows. |
-| 2D drawing | A separate drawing model using `$dxf`. |
-| Vendor CAD | Preserve the source under the format's `imported/` folder; use `read_step` with an anchored path or a wrapper model. |
-| Durable requirement checks | `checks/` or the project's existing test directory; exploratory checks and images go in ignored `tmp/`. |
+| Need                           | Add                                                                                                                                                         |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| STL, 3MF or GLB output         | A mesh decorator; a mesh-only model omits `@step`. See [exports](supported-exports.md).                                                                     |
+| Shared factory or hole pattern | A plain helper under `src/lib/`, with `src/lib/__init__.py`.                                                                                                |
+| Left/right geometry            | Mirror inline, or use separate models for independent outputs/reuse; see [mirroring and caching](step-generation.md#mirrored-geometry-and-reusable-models). |
+| Subassembly                    | A model that calls its child models; use folders as the project grows.                                                                                      |
+| 2D drawing                     | A separate drawing model using `$dxf`.                                                                                                                      |
+| Vendor CAD                     | Preserve the source under the format's `imported/` folder; use `read_step` with an anchored path or a wrapper model.                                        |
+| Durable requirement checks     | `checks/` or the project's existing test directory; exploratory checks and images go in ignored `tmp/`.                                                     |
 
 Only kinematics, intrinsic materials or animation require a STEP sidecar.
 Declaring a mesh alongside STEP does not create one.
@@ -125,10 +125,10 @@ Add a short `src/README.md` catalog for a multi-model project:
 ```markdown
 # Models
 
-| Script | Output | Purpose |
-| --- | --- | --- |
-| plate.py | STEP/plate.step | Base plate |
-| standoff.py | STEP/standoff.step | Repeated spacer |
+| Script      | Output             | Purpose                |
+| ----------- | ------------------ | ---------------------- |
+| plate.py    | STEP/plate.step    | Base plate             |
+| standoff.py | STEP/standoff.step | Repeated spacer        |
 | assembly.py | STEP/assembly.step | Plate with two spacers |
 
 Build the assembly with `python src/assembly.py` from the project root.

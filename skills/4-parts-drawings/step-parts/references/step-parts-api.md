@@ -6,14 +6,14 @@ Default to the API origin `https://api.step.parts`. Use a different origin only 
 
 ## Machine Endpoints
 
-| Endpoint | Use |
-| --- | --- |
-| `https://www.step.parts/llms.txt` | Human-readable agent guide with endpoint summary and examples. |
-| `/v1/parts` | Search, filter, paginate, and retrieve absolute asset URLs. |
-| `/v1/parts/{id}` | Fetch one enriched part record by stable id. |
-| `/v1/catalog/schema` | JSON Schema, field semantics, result ordering, and family attribute meanings. |
-| `/v1/catalog/parts.index.json` | Compact id/name/facet discovery index for cheap lookups before fetching details. |
-| `/v1/openapi.json` | OpenAPI 3.1 contract for generating clients/tools. |
+| Endpoint                          | Use                                                                              |
+| --------------------------------- | -------------------------------------------------------------------------------- |
+| `https://www.step.parts/llms.txt` | Human-readable agent guide with endpoint summary and examples.                   |
+| `/v1/parts`                       | Search, filter, paginate, and retrieve absolute asset URLs.                      |
+| `/v1/parts/{id}`                  | Fetch one enriched part record by stable id.                                     |
+| `/v1/catalog/schema`              | JSON Schema, field semantics, result ordering, and family attribute meanings.    |
+| `/v1/catalog/parts.index.json`    | Compact id/name/facet discovery index for cheap lookups before fetching details. |
+| `/v1/openapi.json`                | OpenAPI 3.1 contract for generating clients/tools.                               |
 
 ## `/v1/parts` Query Parameters
 

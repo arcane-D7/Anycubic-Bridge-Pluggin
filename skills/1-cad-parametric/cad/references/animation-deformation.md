@@ -21,11 +21,11 @@ m.get("tendon").deformTube({
 Both paths are `{normal, segments}` in assembly coordinates. `normal` is a
 required transverse frame seed on each path. Segments must connect tangentially:
 
-| Segment | Fields |
-| --- | --- |
-| Line | `{kind: "line", start, end}` |
-| Arc | `{kind: "arc", center, axis, start, sweepDeg}` |
-| Cubic Bezier | `{kind: "bezier", points: [p0, p1, p2, p3]}` |
+| Segment      | Fields                                         |
+| ------------ | ---------------------------------------------- |
+| Line         | `{kind: "line", start, end}`                   |
+| Arc          | `{kind: "arc", center, axis, start, sweepDeg}` |
+| Cubic Bezier | `{kind: "bezier", points: [p0, p1, p2, p3]}`   |
 
 Positions are vec3 millimetres; angles are degrees. Normalized arc length maps
 the rest path to the posed path. Check tendon length, bend radius and collisions

@@ -60,26 +60,69 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
-      case "--out": args.out = need(i, "out"); i++; break;
-      case "--view": args.view = need(i, "view").toLowerCase(); i++; break;
-      case "--engine": args.engine = need(i, "engine").toLowerCase(); i++; break;
-      case "--samples": args.samples = Number(need(i, "samples")); i++; break;
-      case "--width": args.width = Number(need(i, "width")); i++; break;
-      case "--height": args.height = Number(need(i, "height")); i++; break;
-      case "--zoom": args.zoom = Number(need(i, "zoom")); i++; break;
-      case "--rotate-x": args.rotateX = Number(need(i, "rotate-x")); i++; break;
-      case "--rotate-y": args.rotateY = Number(need(i, "rotate-y")); i++; break;
-      case "--rotate-z": args.rotateZ = Number(need(i, "rotate-z")); i++; break;
-      case "--bg": args.bg = need(i, "bg"); i++; break;
-      case "--timeout": args.timeoutMs = Number(need(i, "timeout")); i++; break;
-      case "-h": case "--help": printUsage(); process.exit(0); break;
+      case "--out":
+        args.out = need(i, "out");
+        i++;
+        break;
+      case "--view":
+        args.view = need(i, "view").toLowerCase();
+        i++;
+        break;
+      case "--engine":
+        args.engine = need(i, "engine").toLowerCase();
+        i++;
+        break;
+      case "--samples":
+        args.samples = Number(need(i, "samples"));
+        i++;
+        break;
+      case "--width":
+        args.width = Number(need(i, "width"));
+        i++;
+        break;
+      case "--height":
+        args.height = Number(need(i, "height"));
+        i++;
+        break;
+      case "--zoom":
+        args.zoom = Number(need(i, "zoom"));
+        i++;
+        break;
+      case "--rotate-x":
+        args.rotateX = Number(need(i, "rotate-x"));
+        i++;
+        break;
+      case "--rotate-y":
+        args.rotateY = Number(need(i, "rotate-y"));
+        i++;
+        break;
+      case "--rotate-z":
+        args.rotateZ = Number(need(i, "rotate-z"));
+        i++;
+        break;
+      case "--bg":
+        args.bg = need(i, "bg");
+        i++;
+        break;
+      case "--timeout":
+        args.timeoutMs = Number(need(i, "timeout"));
+        i++;
+        break;
+      case "-h":
+      case "--help":
+        printUsage();
+        process.exit(0);
+        break;
       default:
         if (a.startsWith("--")) fail(`unknown option: ${a}`);
         if (args.input) fail("only one input file allowed");
         args.input = a;
     }
   }
-  if (!args.input) { printUsage(); fail("input file required"); }
+  if (!args.input) {
+    printUsage();
+    fail("input file required");
+  }
   return args;
 }
 
@@ -135,7 +178,9 @@ function discoverBlender() {
     for (const entry of readdirSync(base)) {
       candidates.push(join(base, entry, "blender.exe"));
     }
-  } catch { /* not installed classically */ }
+  } catch {
+    /* not installed classically */
+  }
 
   for (const c of candidates) {
     if (c && pathExists(c)) return c;
@@ -169,14 +214,14 @@ function pathExists(p) {
 // ---------------------------------------------------------------------------
 
 const VIEWS = {
-  iso:   { azim: 45,  elev: 30 },
-  front: { azim: 0,   elev: 0 },
-  back:  { azim: 180, elev: 0 },
-  left:  { azim: 90,  elev: 0 },
+  iso: { azim: 45, elev: 30 },
+  front: { azim: 0, elev: 0 },
+  back: { azim: 180, elev: 0 },
+  left: { azim: 90, elev: 0 },
   right: { azim: -90, elev: 0 },
-  top:   { azim: 0,   elev: 89.9 },
-  bottom:{ azim: 0,   elev: -89.9 },
-  side:  { azim: 90,  elev: 0 },
+  top: { azim: 0, elev: 89.9 },
+  bottom: { azim: 0, elev: -89.9 },
+  side: { azim: 90, elev: 0 },
 };
 
 function buildBpyScript(args, outPng, reportPath) {
@@ -422,11 +467,15 @@ if (!pathExists(inputAbs)) fail(`input not found: ${inputAbs}`);
 
 const blender = discoverBlender();
 if (!blender) {
-  fail(`blender not found. Set BLENDER_EXE or install via Store (%LOCALAPPDATA%\\Microsoft\\WindowsApps\\blender-launcher.exe).`);
+  fail(
+    `blender not found. Set BLENDER_EXE or install via Store (%LOCALAPPDATA%\\Microsoft\\WindowsApps\\blender-launcher.exe).`,
+  );
 }
 
 const outPng = args.out
-  ? (isAbsolute(args.out) ? args.out : resolve(args.out))
+  ? isAbsolute(args.out)
+    ? args.out
+    : resolve(args.out)
   : resolve("renders", basename(inputAbs, extname(inputAbs)) + ".png");
 mkdirSync(dirname(outPng), { recursive: true });
 
@@ -448,8 +497,12 @@ try {
 
   const child = spawn(blender, cliArgs, { stdio: ["ignore", "pipe", "pipe"] });
   let logTail = "";
-  child.stdout.on("data", (d) => { logTail += d; });
-  child.stderr.on("data", (d) => { logTail += d; });
+  child.stdout.on("data", (d) => {
+    logTail += d;
+  });
+  child.stderr.on("data", (d) => {
+    logTail += d;
+  });
 
   const timeout = setTimeout(() => {
     child.kill("SIGKILL");
@@ -485,6 +538,9 @@ try {
 } catch (err) {
   fail(err.message);
 } finally {
-  try { rmSync(workDir, { recursive: true, force: true }); } catch { /* keep on error */ }
+  try {
+    rmSync(workDir, { recursive: true, force: true });
+  } catch {
+    /* keep on error */
+  }
 }
-

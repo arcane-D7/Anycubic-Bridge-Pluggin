@@ -87,12 +87,15 @@ assert not is_solid(result, bolt_x, bolt_y, top_z + 0.5), "Counterbore covered a
 ## Common Causes of Covered Holes
 
 ### 1. Union after cut
+
 Adding material (union, fillet, chamfer) after cutting a hole can fill the hole back in. The fix: always perform boolean cuts LAST, after all additive geometry is complete.
 
 ### 2. Fillet on hole edge
+
 CadQuery fillet operations on small hole edges can create degenerate geometry that seals the hole. The fix: apply fillets BEFORE cutting holes.
 
 ### 3. Coplanar faces
+
 When a cut cylinder face is exactly coplanar with a solid body face, OCCT may keep the solid face instead of creating an opening. The fix: extend cuts 1mm past each face of the body.
 
 ```python
@@ -105,15 +108,17 @@ result = body.cut(cq.Workplane("XY").cylinder(height=wall_thickness + 2, radius=
 ```
 
 ### 4. Wrong extrusion direction
+
 The XZ workplane extrudes in the -Y direction. Getting the offset or direction wrong puts the cut in entirely the wrong location, and since it misses the body, no material is removed. Always verify which direction your workplane extrudes.
 
-| Workplane | Extrusion direction |
-|-----------|-------------------|
-| XY | +Z (default), -Z with `cutBlind` |
-| XZ | -Y |
-| YZ | -X |
+| Workplane | Extrusion direction              |
+| --------- | -------------------------------- |
+| XY        | +Z (default), -Z with `cutBlind` |
+| XZ        | -Y                               |
+| YZ        | -X                               |
 
 ### 5. Undersized cut
+
 A cut cylinder that is slightly smaller than intended (due to parameter error) may leave a thin ring of material around the opening. Always verify the cut radius matches the intended dimension.
 
 ## Full Verification Template

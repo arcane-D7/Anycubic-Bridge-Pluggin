@@ -1,23 +1,23 @@
 # Domain conversions and dimensional blind spots
 
 Values below were produced with pint 0.25.3 and SciPy 1.18.0 (CODATA 2022). Anything
-marked *exact* is fixed by definition and carries zero uncertainty.
+marked _exact_ is fixed by definition and carries zero uncertainty.
 
 ## Dimensional analysis does not catch these
 
 Two quantities with the same dimensions convert freely, whether or not the conversion
 means anything.
 
-| Pair | Shared dimension | What pint does | Why it matters |
-| --- | --- | --- | --- |
-| gray and sievert | L²T⁻² | converts 1:1, silently | Sv includes a radiation weighting factor; the numbers coincide only for photons and electrons |
-| newton-metre and joule | ML²T⁻² | converts 1:1, silently | torque is a vector product, energy a scalar; adding them is meaningless |
-| hertz and becquerel | T⁻¹ | converts 1:1, silently | one is periodic, the other stochastic |
-| radian and dimensionless | none | radians vanish | `sin(x)` needs radians; a degrees value that lost its unit is silently wrong |
-| mol/L and mol/kg | different | raises | molarity and molality are genuinely different quantities |
-| mg/L and ppm | different | raises | equal only for dilute aqueous solutions near 1 g/mL |
+| Pair                     | Shared dimension | What pint does         | Why it matters                                                                                |
+| ------------------------ | ---------------- | ---------------------- | --------------------------------------------------------------------------------------------- |
+| gray and sievert         | L²T⁻²            | converts 1:1, silently | Sv includes a radiation weighting factor; the numbers coincide only for photons and electrons |
+| newton-metre and joule   | ML²T⁻²           | converts 1:1, silently | torque is a vector product, energy a scalar; adding them is meaningless                       |
+| hertz and becquerel      | T⁻¹              | converts 1:1, silently | one is periodic, the other stochastic                                                         |
+| radian and dimensionless | none             | radians vanish         | `sin(x)` needs radians; a degrees value that lost its unit is silently wrong                  |
+| mol/L and mol/kg         | different        | raises                 | molarity and molality are genuinely different quantities                                      |
+| mg/L and ppm             | different        | raises                 | equal only for dilute aqueous solutions near 1 g/mL                                           |
 
-The last two raise because they *are* dimensionally distinct. The first four are the
+The last two raise because they _are_ dimensionally distinct. The first four are the
 dangerous ones: no tool will warn you.
 
 ## Energy ladder
@@ -25,17 +25,17 @@ dangerous ones: no tool will warn you.
 Molecular science quotes the same energy in at least six units, three of which are
 per-mole and therefore need the Avogadro constant.
 
-| From | To | Factor |
-| --- | --- | --- |
-| 1 eV | kJ/mol | 96.48533212331002 |
-| 1 hartree | eV | 27.21138624598103 |
-| 1 hartree | kcal/mol | 627.5094740628942 |
-| 1 cm⁻¹ | eV | 1.2398419843320026e-4 |
-| 1 cm⁻¹ | K (as E/k_B) | 1.4387768775039336 |
-| k_B T at 298.15 K | eV | 0.02569257912108585 |
-| k_B T at 298.15 K | kJ/mol | 2.478957029602389 |
-| 1 cal (thermochemical) | J | 4.184 (exact) |
-| 1 cal_IT | J | 4.1868 (exact) |
+| From                   | To           | Factor                |
+| ---------------------- | ------------ | --------------------- |
+| 1 eV                   | kJ/mol       | 96.48533212331002     |
+| 1 hartree              | eV           | 27.21138624598103     |
+| 1 hartree              | kcal/mol     | 627.5094740628942     |
+| 1 cm⁻¹                 | eV           | 1.2398419843320026e-4 |
+| 1 cm⁻¹                 | K (as E/k_B) | 1.4387768775039336    |
+| k_B T at 298.15 K      | eV           | 0.02569257912108585   |
+| k_B T at 298.15 K      | kJ/mol       | 2.478957029602389     |
+| 1 cal (thermochemical) | J            | 4.184 (exact)         |
+| 1 cal_IT               | J            | 4.1868 (exact)        |
 
 Two traps. First, **per-mole and per-particle units are not dimensionally
 interchangeable**: eV is an energy, kJ/mol is an energy per amount of substance, and the
@@ -52,7 +52,7 @@ Q(298.15, "K").to("eV", "boltzmann")     # 0.02569257912108585 electron_volt
 ## Spectroscopy
 
 Wavelength, frequency, wavenumber, and photon energy are related by physics, not by
-dimensional analysis, and the relations are *reciprocal* — an uncertainty does not
+dimensional analysis, and the relations are _reciprocal_ — an uncertainty does not
 convert by the same factor as the value.
 
 ```python
@@ -71,14 +71,14 @@ shifts a 532 nm frequency from 563.5 THz to 423.7 THz.
 
 ## Concentration
 
-| Quantity | Unit | Depends on |
-| --- | --- | --- |
-| Molarity | mol/L | temperature, through solution volume |
-| Molality | mol/kg solvent | nothing — preferred for thermodynamics |
-| Mole fraction | dimensionless | nothing |
-| Mass fraction, ppm(m/m) | dimensionless | nothing |
-| Volume fraction, ppm(v/v) | dimensionless | temperature |
-| Mass concentration | mg/L, g/L | temperature |
+| Quantity                  | Unit           | Depends on                             |
+| ------------------------- | -------------- | -------------------------------------- |
+| Molarity                  | mol/L          | temperature, through solution volume   |
+| Molality                  | mol/kg solvent | nothing — preferred for thermodynamics |
+| Mole fraction             | dimensionless  | nothing                                |
+| Mass fraction, ppm(m/m)   | dimensionless  | nothing                                |
+| Volume fraction, ppm(v/v) | dimensionless  | temperature                            |
+| Mass concentration        | mg/L, g/L      | temperature                            |
 
 "ppm" alone is ambiguous: mass/mass, volume/volume, and mol/mol differ by the ratio of
 densities or molar masses. In environmental water chemistry ppm conventionally means
@@ -97,13 +97,13 @@ Q(1, "g").to("mol", "chemistry", mw=Q(180.156, "g/mol"))   # 0.00555074490996691
 
 ## Pressure
 
-| From | To Pa | Note |
-| --- | --- | --- |
-| 1 atm | 101325 | exact |
-| 1 bar | 100000 | exact |
-| 1 torr | 133.32236842105263 | atm/760, exact by definition |
-| 1 psi | 6894.7572931683635 | |
-| 1 mmHg | 133.322387415 | *not* identical to torr, differs in the 8th digit |
+| From   | To Pa              | Note                                              |
+| ------ | ------------------ | ------------------------------------------------- |
+| 1 atm  | 101325             | exact                                             |
+| 1 bar  | 100000             | exact                                             |
+| 1 torr | 133.32236842105263 | atm/760, exact by definition                      |
+| 1 psi  | 6894.7572931683635 |                                                   |
+| 1 mmHg | 133.322387415      | _not_ identical to torr, differs in the 8th digit |
 
 **Gauge and absolute pressure are different quantities and no unit library models the
 difference.** "psig" and "psia" have the same dimensions; a gauge reading needs the
@@ -118,7 +118,7 @@ Q(1, "gauss").to("T", "Gaussian") # 9.999999999338245e-05 tesla
 Q(1, "rpm").to("rad/s")           # 0.10471975511965977 radian / second
 ```
 
-Gauss fails *without* the Gaussian context: CGS electromagnetic units have different
+Gauss fails _without_ the Gaussian context: CGS electromagnetic units have different
 dimensions from SI ones, not merely different scales. Magnetic field strength H (A/m,
 oersted) and magnetic flux density B (T, gauss) are distinct quantities that literature
 routinely calls "the field".
@@ -139,7 +139,7 @@ propagate like ordinary quantities:
 
 - the mean of pH 5 and pH 7 is not pH 6 — averaging requires converting to
   concentration, averaging, and converting back;
-- a standard deviation in pH units is a *relative* standard deviation in concentration;
+- a standard deviation in pH units is a _relative_ standard deviation in concentration;
 - adding two dB quantities multiplies the underlying linear quantities (see
   `pint-recipes.md`);
 - decibel scales differ by reference: dBm references 1 mW, dBW references 1 W, dBV
@@ -158,13 +158,13 @@ Absolute zero is exactly 273.15 K below 0 degC — `scipy.constants.zero_Celsius
 The 2019 SI redefinition fixed several constants **exactly**, so their relative standard
 uncertainty is zero and no future CODATA release will change them:
 
-| Constant | Exact value |
-| --- | --- |
-| speed of light in vacuum, c | 299792458 m/s |
-| Planck constant, h | 6.62607015e-34 J/Hz |
-| elementary charge, e | 1.602176634e-19 C |
-| Boltzmann constant, k | 1.380649e-23 J/K |
-| Avogadro constant, N_A | 6.02214076e23 /mol |
+| Constant                    | Exact value         |
+| --------------------------- | ------------------- |
+| speed of light in vacuum, c | 299792458 m/s       |
+| Planck constant, h          | 6.62607015e-34 J/Hz |
+| elementary charge, e        | 1.602176634e-19 C   |
+| Boltzmann constant, k       | 1.380649e-23 J/K    |
+| Avogadro constant, N_A      | 6.02214076e23 /mol  |
 
 Everything else is a measured recommended value that moves between CODATA releases —
 electron mass, the gravitational constant, the fine-structure constant, the Rydberg
@@ -184,5 +184,5 @@ served CODATA 2018. Hard-coding a constant pins you to whichever release you cop
 from and discards its uncertainty entirely. `scripts/audit_units.py` flags literals that
 match a known constant (`CONST001`).
 
-Note also that `constants.precision` returns a *relative* standard uncertainty. The
+Note also that `constants.precision` returns a _relative_ standard uncertainty. The
 absolute standard uncertainty is `value * precision`.

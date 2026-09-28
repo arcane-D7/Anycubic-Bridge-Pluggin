@@ -278,4 +278,3 @@ export function registerPrinterCommands(server, z, { manager, resolvePrinter } =
 }
 
 export { assertConfirm };
-

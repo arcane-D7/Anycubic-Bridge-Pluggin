@@ -2,18 +2,18 @@
 
 ## Sprint Metadata
 
-| Field                 | Value                                              |
-| --------------------- | -------------------------------------------------- |
-| **Sprint Name**       | Electron packaging strategy                         |
+| Field                 | Value                                                                                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sprint Name**       | Electron packaging strategy                                                                                                                                   |
 | **Sprint Goal**       | Document the packaging path for a future Electron desktop app wrapping the CAD workspace + MCP server (plan-only; no runnable Electron shell in this sprint). |
-| **Duration Estimate** | ~1 day (docs + checklist)                          |
-| **Priority**          | P2                                                 |
-| **Sprint Type**       | Docs                                               |
-| **Primary Owner**     | cad-engine                                          |
-| **Source**            | User constraint: "future Electron"; architecture docs |
-| **Depends On**        | Sprint 3                                           |
-| **Status**            | ✅ Complete (docs) · commit (este sprint)          |
-| **Health Gate**       | `git diff --stat` docs-only                         |
+| **Duration Estimate** | ~1 day (docs + checklist)                                                                                                                                     |
+| **Priority**          | P2                                                                                                                                                            |
+| **Sprint Type**       | Docs                                                                                                                                                          |
+| **Primary Owner**     | cad-engine                                                                                                                                                    |
+| **Source**            | User constraint: "future Electron"; architecture docs                                                                                                         |
+| **Depends On**        | Sprint 3                                                                                                                                                      |
+| **Status**            | ✅ Complete (docs) · commit (este sprint)                                                                                                                     |
+| **Health Gate**       | `git diff --stat` docs-only                                                                                                                                   |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -42,15 +42,15 @@ git diff --stat        # only docs/ changes expected
 
 ### S4-001 — Electron architecture decision record
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S4-001                    |
+| Field                | Value                                    |
+| -------------------- | ---------------------------------------- |
+| **Ticket ID**        | S4-001                                   |
 | **Title**            | ADR: Electron shell over Node MCP server |
-| **Priority**         | P1                        |
-| **Type**             | Docs                      |
-| **Estimated Effort** | M                         |
-| **Source Finding**   | future-Electron user constraint |
-| **Status**           | ✅ Done · docs/adr-electron-shell.md                |
+| **Priority**         | P1                                       |
+| **Type**             | Docs                                     |
+| **Estimated Effort** | M                                        |
+| **Source Finding**   | future-Electron user constraint          |
+| **Status**           | ✅ Done · docs/adr-electron-shell.md     |
 
 #### Context
 
@@ -70,15 +70,15 @@ import-map CDN).
 
 ### S4-002 — Installer & distribution checklist
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S4-002                    |
-| **Title**            | Packaging blueprint (electron-builder) |
-| **Priority**         | P1                        |
-| **Type**             | Docs                      |
-| **Estimated Effort** | S                         |
+| Field                | Value                                         |
+| -------------------- | --------------------------------------------- |
+| **Ticket ID**        | S4-002                                        |
+| **Title**            | Packaging blueprint (electron-builder)        |
+| **Priority**         | P1                                            |
+| **Type**             | Docs                                          |
+| **Estimated Effort** | S                                             |
 | **Source Finding**   | WinApp CLI packaging skill + plugin awareness |
-| **Status**           | ✅ Done · docs/electron-packaging.md                |
+| **Status**           | ✅ Done · docs/electron-packaging.md          |
 
 #### Context
 
@@ -96,15 +96,15 @@ embedded). Keep all paths/plugins MIT-compatible.
 
 ### S4-003 — Security & local-only checklist
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| **Ticket ID**        | S4-003                    |
-| **Title**            | Local-only hardening checklist |
-| **Priority**         | P1                        |
-| **Type**             | Docs                      |
-| **Estimated Effort** | S                         |
+| Field                | Value                                          |
+| -------------------- | ---------------------------------------------- |
+| **Ticket ID**        | S4-003                                         |
+| **Title**            | Local-only hardening checklist                 |
+| **Priority**         | P1                                             |
+| **Type**             | Docs                                           |
+| **Estimated Effort** | S                                              |
 | **Source Finding**   | redaction/token-gating invariants in this repo |
-| **Status**           | ✅ Done · docs/electron-security-local-only.md      |
+| **Status**           | ✅ Done · docs/electron-security-local-only.md |
 
 #### Context
 

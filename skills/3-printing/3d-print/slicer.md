@@ -37,6 +37,7 @@ Users can use PrusaSlicer's built-in profiles or custom INI files. Custom profil
 ```
 
 Ask the user which printer, filament, and quality profiles to use before slicing. Common quality presets:
+
 - `0.20mm` -- standard quality, good balance of speed and detail
 - `0.32mm` -- draft quality, fast prints for prototypes
 - `0.12mm` -- fine quality, slower but smoother surfaces
@@ -172,7 +173,7 @@ def upload_gcode_octoprint(gcode_path, host, api_key, start=False):
     """Upload G-code to OctoPrint."""
     boundary = "----PythonBoundary"
     filename = Path(gcode_path).name
-    
+
     select_and_print = "true" if start else "false"
     body = (
         f"--{boundary}\r\n"

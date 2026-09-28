@@ -15,15 +15,15 @@ The official Anycubic source tree is an OrcaSlicer derivative. Its CLI parser ac
 
 However, the CLI-generated single-filament `.gcode.3mf` is **rejected by the printer firmware** (error 10115, "printer cannot parse the file"). Static comparison of a working file (from the app GUI) vs. a CLI export showed the working file carries metadata the CLI does not write:
 
-| Field | CLI export (rejected) | App GUI export (accepted) |
-|---|---|---|
-| Thumbnails (`Metadata/*.png`, `THUMBNAIL_BLOCK`) | absent | present |
-| `print_sequence` / `is_seq_print` | absent / `false` | `by object` / `true` |
-| `bed_type` | `textured_plate` | `hot_plate` |
-| `filament_ids` | `[0,1,2]` | `[2,3]` (ACE slots) |
-| `first_extruder` | `0` | `-1` |
-| `paint_info` / `model_instances` | absent | present |
-| `project_settings` arrays | 1 slot | 4 slots (ACE) |
+| Field                                            | CLI export (rejected) | App GUI export (accepted) |
+| ------------------------------------------------ | --------------------- | ------------------------- |
+| Thumbnails (`Metadata/*.png`, `THUMBNAIL_BLOCK`) | absent                | present                   |
+| `print_sequence` / `is_seq_print`                | absent / `false`      | `by object` / `true`      |
+| `bed_type`                                       | `textured_plate`      | `hot_plate`               |
+| `filament_ids`                                   | `[0,1,2]`             | `[2,3]` (ACE slots)       |
+| `first_extruder`                                 | `0`                   | `-1`                      |
+| `paint_info` / `model_instances`                 | absent                | present                   |
+| `project_settings` arrays                        | 1 slot                | 4 slots (ACE)             |
 
 So the integration boundary is: **CLI for local G-code, app-GUI for anything that must be printed** (LAN or cloud). `slice_via_app` implements the app-GUI path and validates the exported structure (`src/export-scan.ts`).
 
@@ -45,26 +45,26 @@ The wxWidgets UI exposes many controls to Windows UI Automation, but the observe
 
 ## Trust boundaries
 
-| Boundary | Controls |
-|---|---|
-| Model -> MCP | Strict schemas (Zod v4, `.strict()`), focused descriptions, no generic command tool. |
-| MCP -> filesystem | Absolute paths, canonicalization, allowlists, extension/size checks. |
-| MCP -> slicer | Fixed executable, fixed flag vocabulary, `shell: false`, timeout. |
-| Slicer -> artifacts | New UUID directory, no overwrite, allowlisted root, artifact enumeration. |
-| UI automation | Read-only inspection plus a fixed allowlist of safe clicks/keys; no model-selected coordinates or arbitrary selectors. |
-| App-GUI export | Only the app's own Slice all / Export G-code / Save Project controls; structure validation before the file is used. |
-| MCP -> printer | Access code never logged; `dev_ip`/`dev_id` from user or `ANYCUBIC_PRINTER_IPS`; TLS with self-signed certs accepted for the LAN peer; publish-only control messages, no cloud account required. |
-| MCP -> cloud | `ANYCUBIC_CLOUD_TOKEN` (or per-call `access_token`) is never logged or echoed; session memoized per region. Printer/file reads are supported; START_PRINT is experimental and currently blocked by the documented cloud/local request mismatch. |
+| Boundary             | Controls                                                                                                                                                                                                                                                    |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Model -> MCP         | Strict schemas (Zod v4, `.strict()`), focused descriptions, no generic command tool.                                                                                                                                                                        |
+| MCP -> filesystem    | Absolute paths, canonicalization, allowlists, extension/size checks.                                                                                                                                                                                        |
+| MCP -> slicer        | Fixed executable, fixed flag vocabulary, `shell: false`, timeout.                                                                                                                                                                                           |
+| Slicer -> artifacts  | New UUID directory, no overwrite, allowlisted root, artifact enumeration.                                                                                                                                                                                   |
+| UI automation        | Read-only inspection plus a fixed allowlist of safe clicks/keys; no model-selected coordinates or arbitrary selectors.                                                                                                                                      |
+| App-GUI export       | Only the app's own Slice all / Export G-code / Save Project controls; structure validation before the file is used.                                                                                                                                         |
+| MCP -> printer       | Access code never logged; `dev_ip`/`dev_id` from user or `ANYCUBIC_PRINTER_IPS`; TLS with self-signed certs accepted for the LAN peer; publish-only control messages, no cloud account required.                                                            |
+| MCP -> cloud         | `ANYCUBIC_CLOUD_TOKEN` (or per-call `access_token`) is never logged or echoed; session memoized per region. Printer/file reads are supported; START_PRINT is experimental and currently blocked by the documented cloud/local request mismatch.             |
 | MCP -> CAD workspace | Binds only to 127.0.0.1; per-session random token for all mutations (`X-Cad-Token` header or `?token=`); view-only `/api/objects`; exports constrained to the configured output root; idle timeout auto-stops the server; never touches the printer/slicer. |
 
 ## Optional environment
 
-| Variable | Meaning |
-|---|---|
-| `ANYCUBIC_ACCESS_CODE` | Printer access code (8-char alphanumeric on modern Anycubic/Bambu firmware). Used when a tool does not receive `access_code`. |
-| `ANYCUBIC_PRINTER_IPS` | Comma-separated fixed printer IPs to skip subnet discovery. |
-| `ANYCUBIC_CLOUD_TOKEN` | Anycubic account access_token (JWT, from AnycubicSlicerNext conf). Used by `account_login`/`account_devices`/`account_print` when no `access_token` param is passed. |
-| `ANYCUBIC_CLOUD_REGION` | `en` (default) or `cn` endpoint selection for the workbench API. |
+| Variable                | Meaning                                                                                                                                                              |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ANYCUBIC_ACCESS_CODE`  | Printer access code (8-char alphanumeric on modern Anycubic/Bambu firmware). Used when a tool does not receive `access_code`.                                        |
+| `ANYCUBIC_PRINTER_IPS`  | Comma-separated fixed printer IPs to skip subnet discovery.                                                                                                          |
+| `ANYCUBIC_CLOUD_TOKEN`  | Anycubic account access_token (JWT, from AnycubicSlicerNext conf). Used by `account_login`/`account_devices`/`account_print` when no `access_token` param is passed. |
+| `ANYCUBIC_CLOUD_REGION` | `en` (default) or `cn` endpoint selection for the workbench API.                                                                                                     |
 
 ## Failure model
 

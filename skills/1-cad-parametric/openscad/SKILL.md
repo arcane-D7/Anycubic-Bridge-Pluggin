@@ -6,7 +6,6 @@ metadata:
   version: "1.0"
   skill-author: "mitsuhiko"
   vendored: "2026-09-18"
-
 ---
 
 # OpenSCAD Skill
@@ -16,6 +15,7 @@ Create, validate, and export OpenSCAD 3D models. Supports parameter customizatio
 ## Prerequisites
 
 OpenSCAD must be installed. Install via Homebrew:
+
 ```bash
 brew install openscad
 ```
@@ -25,6 +25,7 @@ brew install openscad
 This skill provides several tools in the `tools/` directory:
 
 ### Preview Generation
+
 ```bash
 # Generate a single preview image
 ./tools/preview.sh model.scad output.png [--camera=x,y,z,tx,ty,tz,dist] [--size=800x600]
@@ -34,18 +35,21 @@ This skill provides several tools in the `tools/` directory:
 ```
 
 ### STL Export
+
 ```bash
 # Export to STL for 3D printing
 ./tools/export-stl.sh model.scad output.stl [-D 'param=value']
 ```
 
 ### Parameter Extraction
+
 ```bash
 # Extract customizable parameters from an OpenSCAD file
 ./tools/extract-params.sh model.scad
 ```
 
 ### Validation
+
 ```bash
 # Check for syntax errors and warnings
 ./tools/validate.sh model.scad
@@ -67,6 +71,7 @@ After writing or editing any OpenSCAD file:
 4. **Iterate if needed**: If something looks wrong, fix the code and re-validate
 
 This catches issues that syntax validation alone cannot detect:
+
 - Inverted normals or inside-out geometry
 - Misaligned features or incorrect boolean operations
 - Proportions that don't match the intended design
@@ -109,12 +114,14 @@ difference() {
 ```
 
 Parameter comment format:
+
 - `// [min:max]` - numeric range
 - `// [min:step:max]` - numeric range with step
 - `// [opt1, opt2, opt3]` - dropdown options
 - `// Description text` - plain description
 
 ### 2. Validate the Model
+
 ```bash
 ./tools/validate.sh model.scad
 ```
@@ -122,6 +129,7 @@ Parameter comment format:
 ### 3. Generate Previews
 
 Generate preview images to visually validate the model:
+
 ```bash
 ./tools/multi-preview.sh model.scad ./previews/
 ```
@@ -129,6 +137,7 @@ Generate preview images to visually validate the model:
 This creates PNG images from multiple angles. Use the `read` tool to view them.
 
 ### 4. Export to STL
+
 ```bash
 ./tools/export-stl.sh model.scad output.stl
 # With custom parameters:
@@ -138,6 +147,7 @@ This creates PNG images from multiple angles. Use the `read` tool to view them.
 ## Camera Positions
 
 Common camera angles for previews:
+
 - **Isometric**: `--camera=0,0,0,45,0,45,200`
 - **Front**: `--camera=0,0,0,90,0,0,200`
 - **Top**: `--camera=0,0,0,0,0,0,200`
@@ -148,11 +158,13 @@ Format: `x,y,z,rotx,roty,rotz,distance`
 ## MakerWorld Publishing
 
 For MakerWorld, you typically need:
+
 1. STL file(s) exported via `export-stl.sh`
 2. Preview images (at least one good isometric view)
 3. A description of customizable parameters
 
 Consider creating a `model.json` with metadata:
+
 ```json
 {
   "name": "Model Name",
@@ -199,6 +211,7 @@ Consider creating a `model.json` with metadata:
 ## OpenSCAD Quick Reference
 
 ### Basic Shapes
+
 ```openscad
 cube([x, y, z]);
 sphere(r = radius);
@@ -207,6 +220,7 @@ cylinder(h = height, r1 = bottom_r, r2 = top_r);  // cone
 ```
 
 ### Transformations
+
 ```openscad
 translate([x, y, z]) object();
 rotate([rx, ry, rz]) object();
@@ -215,6 +229,7 @@ mirror([x, y, z]) object();
 ```
 
 ### Boolean Operations
+
 ```openscad
 union() { a(); b(); }        // combine
 difference() { a(); b(); }   // subtract b from a
@@ -222,6 +237,7 @@ intersection() { a(); b(); } // overlap only
 ```
 
 ### Advanced
+
 ```openscad
 linear_extrude(height) 2d_shape();
 rotate_extrude() 2d_shape();
@@ -230,6 +246,7 @@ minkowski() { a(); b(); }    // minkowski sum (rounding)
 ```
 
 ### 2D Shapes
+
 ```openscad
 circle(r = radius);
 square([x, y]);

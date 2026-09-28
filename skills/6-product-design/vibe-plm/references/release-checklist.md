@@ -9,7 +9,7 @@ Run from the product dir. Pin everything to one `revision:` in `product.yaml`.
 ## 0. Manifest + contracts consistent
 
 - [ ] `python3 …/skills/vibe-plm/scripts/plm_check.py product.yaml` → **no errors**
-      (artifact-pending warnings are OK *until* you need that artifact below).
+      (artifact-pending warnings are OK _until_ you need that artifact below).
 - [ ] `revision:` is today (or the intended tag) and reflects the latest cross-domain
       change. Every domain below is built against **this** revision.
 
@@ -51,6 +51,6 @@ Run from the product dir. Pin everything to one `revision:` in `product.yaml`.
 
 ## The failure this gate exists to stop
 
-Fabbing the board, *then* finding the shell was modeled to an older outline, or the
+Fabbing the board, _then_ finding the shell was modeled to an older outline, or the
 firmware pinned to pins the board moved. The fix is cheap and boring: one `revision`,
 one `plm_check`, three green gates, in that order. Don't order on a partial gate.

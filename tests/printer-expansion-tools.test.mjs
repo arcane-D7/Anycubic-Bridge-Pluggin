@@ -401,7 +401,10 @@ test("collectPrintMetrics aggregates outcomes and maps reason strings to labels"
 });
 
 test("failureReasonLabel maps numeric codes, descriptive text and unknown values", () => {
-  assert.equal(failureReasonLabel(10101), "Print task already exists (residual task on the printer)");
+  assert.equal(
+    failureReasonLabel(10101),
+    "Print task already exists (residual task on the printer)",
+  );
   assert.equal(failureReasonLabel(11520), "Out of material");
   // Descriptive text -> reverse-matched code label (10115 -> its vocabulary label)
   assert.equal(

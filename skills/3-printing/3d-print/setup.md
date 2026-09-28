@@ -34,12 +34,12 @@ uname -m   # x86_64, aarch64 (Linux ARM), arm64 (macOS ARM)
 
 Skip if `python3 --version` shows 3.10-3.12.
 
-| Platform | Command |
-|----------|---------|
-| Linux (apt) | `sudo apt update && sudo apt install -y python3.12 python3.12-venv python3.12-dev` |
-| Linux (dnf) | `sudo dnf install -y python3.12 python3.12-devel` |
-| macOS (Homebrew) | `brew install python@3.12` |
-| Windows | `winget install Python.Python.3.12` |
+| Platform         | Command                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| Linux (apt)      | `sudo apt update && sudo apt install -y python3.12 python3.12-venv python3.12-dev` |
+| Linux (dnf)      | `sudo dnf install -y python3.12 python3.12-devel`                                  |
+| macOS (Homebrew) | `brew install python@3.12`                                                         |
+| Windows          | `winget install Python.Python.3.12`                                                |
 
 ## Install CadQuery
 
@@ -89,12 +89,12 @@ print(f'BoundingBox: {result.val().BoundingBox()}')
 
 Only needed if the user wants to slice STL files and upload G-code to their printer. Skip if they just want to design and export STL.
 
-| Platform | Command |
-|----------|---------|
-| Linux (AppImage) | Download from https://github.com/prusa3d/PrusaSlicer/releases — the AppImage includes the CLI |
-| Linux (apt) | `sudo apt install prusa-slicer` (may be older version) |
-| macOS | `brew install --cask prusaslicer` — CLI available at `/Applications/PrusaSlicer.app/Contents/MacOS/PrusaSlicer` |
-| Windows | `winget install Prusa3D.PrusaSlicer` |
+| Platform         | Command                                                                                                         |
+| ---------------- | --------------------------------------------------------------------------------------------------------------- |
+| Linux (AppImage) | Download from https://github.com/prusa3d/PrusaSlicer/releases — the AppImage includes the CLI                   |
+| Linux (apt)      | `sudo apt install prusa-slicer` (may be older version)                                                          |
+| macOS            | `brew install --cask prusaslicer` — CLI available at `/Applications/PrusaSlicer.app/Contents/MacOS/PrusaSlicer` |
+| Windows          | `winget install Prusa3D.PrusaSlicer`                                                                            |
 
 **macOS note:** After installing via Homebrew, the CLI may need a symlink:
 

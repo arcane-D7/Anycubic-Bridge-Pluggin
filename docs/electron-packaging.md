@@ -82,7 +82,7 @@ electronLanguages: [en-US, pt-BR]
 - Recommended: embed the runtime inside the app (`extraResources` with a portable Node
   build) OR run the server **in-process** in the Electron main (Node ≥22 behavior via
   Electron's Node integration, which since Electron ~28 tracks recent Node majors).
-- Decision rule: if upstream server continues to need *external* Node ≥22 features, embed
+- Decision rule: if upstream server continues to need _external_ Node ≥22 features, embed
   the portable runtime and spawn it (cleanest supervision). If Electron's embedded Node
   satisfies `node --check` on `dist/server.mjs` + WASM imports, favor in-process.
 
@@ -130,11 +130,11 @@ Per the WinApp CLI manifest/asset workflow (MIT-compatible tooling):
 
 ## 6. Build matrix
 
-| Target | CI job | Artifacts |
-| --- | --- | --- |
-| Windows x64 NSIS | `windows` (GitHub Actions `windows-latest`) | `anycubic-bridge-cad Setup 0.1.0.exe`, `latest.yml` |
-| Windows x64 MSIX | same job, `electron-builder --win msix` | `anycubic-bridge-cad_0.1.0_x64.msix` |
-| Source / npm | `npm pack` | `anycubic-slicer-next-control-0.1.0.tgz` (server-only, unchanged) |
+| Target           | CI job                                      | Artifacts                                                         |
+| ---------------- | ------------------------------------------- | ----------------------------------------------------------------- |
+| Windows x64 NSIS | `windows` (GitHub Actions `windows-latest`) | `anycubic-bridge-cad Setup 0.1.0.exe`, `latest.yml`               |
+| Windows x64 MSIX | same job, `electron-builder --win msix`     | `anycubic-bridge-cad_0.1.0_x64.msix`                              |
+| Source / npm     | `npm pack`                                  | `anycubic-slicer-next-control-0.1.0.tgz` (server-only, unchanged) |
 
 ## 7. Clean-room / licensing checklist (MIT constraint)
 

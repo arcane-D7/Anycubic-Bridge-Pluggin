@@ -237,17 +237,17 @@ python skills/uncertainty-and-units/scripts/audit_units.py \
   --input analysis.py --format markdown --fail-on medium
 ```
 
-| Rule | Severity | Detects |
-| --- | --- | --- |
-| `UNIT001` | medium | a second `UnitRegistry` in one module — cross-registry `ValueError` |
-| `UNIT002` | medium | offset temperature units with no `delta_` unit anywhere |
-| `UNIT003` | high | `.magnitude` without a preceding `.to(...)` or `.m_as(...)` |
-| `UNIT004` | medium | logarithmic units, whose `+` multiplies |
-| `UNC001` | high | `curve_fit` without `absolute_sigma` |
-| `UNC002` | medium | `np.std` / `np.var` without `ddof` |
-| `UNC003` | medium | `math` or `numpy` functions in a module that uses `uncertainties` |
-| `UNC004` | high | a `ufloat` rebuilt from `.nominal_value` and `.std_dev` |
-| `CONST001` | low | a literal within 0.1% of a CODATA constant |
+| Rule       | Severity | Detects                                                             |
+| ---------- | -------- | ------------------------------------------------------------------- |
+| `UNIT001`  | medium   | a second `UnitRegistry` in one module — cross-registry `ValueError` |
+| `UNIT002`  | medium   | offset temperature units with no `delta_` unit anywhere             |
+| `UNIT003`  | high     | `.magnitude` without a preceding `.to(...)` or `.m_as(...)`         |
+| `UNIT004`  | medium   | logarithmic units, whose `+` multiplies                             |
+| `UNC001`   | high     | `curve_fit` without `absolute_sigma`                                |
+| `UNC002`   | medium   | `np.std` / `np.var` without `ddof`                                  |
+| `UNC003`   | medium   | `math` or `numpy` functions in a module that uses `uncertainties`   |
+| `UNC004`   | high     | a `ufloat` rebuilt from `.nominal_value` and `.std_dev`             |
+| `CONST001` | low      | a literal within 0.1% of a CODATA constant                          |
 
 Exit status is 1 when a finding meets `--fail-on` (default `high`), which makes it usable
 as a pre-commit or CI check.
@@ -310,15 +310,15 @@ edges and assume the geometry their correlation was fitted for — see
 
 ## Choosing a propagation method
 
-| Situation | Method |
-| --- | --- |
-| Linear or near-linear model, normal-ish inputs, large dof | GUM framework alone |
-| Any nonlinearity across ±2u of an input | run both, apply the clause 8 test |
-| Relative uncertainty above ~20% on any input | Monte Carlo |
-| Dominant rectangular or otherwise non-normal component | Monte Carlo |
-| Output bounded below (variance, concentration, squared quantity) | Monte Carlo |
-| Asymmetric output distribution | Monte Carlo, shortest coverage interval |
-| Correlated inputs | either, but supply the covariance matrix, not the standard uncertainties alone |
+| Situation                                                        | Method                                                                         |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Linear or near-linear model, normal-ish inputs, large dof        | GUM framework alone                                                            |
+| Any nonlinearity across ±2u of an input                          | run both, apply the clause 8 test                                              |
+| Relative uncertainty above ~20% on any input                     | Monte Carlo                                                                    |
+| Dominant rectangular or otherwise non-normal component           | Monte Carlo                                                                    |
+| Output bounded below (variance, concentration, squared quantity) | Monte Carlo                                                                    |
+| Asymmetric output distribution                                   | Monte Carlo, shortest coverage interval                                        |
+| Correlated inputs                                                | either, but supply the covariance matrix, not the standard uncertainties alone |
 
 A model dominated by rectangular contributions fails the clause 8 test even when it is
 perfectly linear: the framework's `k = 1.96` over-covers a nearly trapezoidal output.
@@ -339,7 +339,7 @@ constants.precision("electron mass")    # 3.07e-10, relative standard uncertaint
 constants.precision("Planck constant")  # 0.0, exact by definition
 ```
 
-`precision` returns a *relative* standard uncertainty; multiply by the value for the
+`precision` returns a _relative_ standard uncertainty; multiply by the value for the
 absolute one.
 
 ## Reference files

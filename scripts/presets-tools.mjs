@@ -35,7 +35,9 @@ export function loadCatalog() {
 
 /** Resolve a preset by id, name or alias (case-insensitive substring on alias). */
 export function findPreset(catalog, idOrAlias) {
-  const q = String(idOrAlias ?? "").trim().toLowerCase();
+  const q = String(idOrAlias ?? "")
+    .trim()
+    .toLowerCase();
   if (!q) return null;
   return (
     catalog.presets.find((p) => p.id.toLowerCase() === q) ??

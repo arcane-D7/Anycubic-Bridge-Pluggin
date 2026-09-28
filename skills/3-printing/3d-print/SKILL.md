@@ -6,7 +6,6 @@ metadata:
   version: "1.0"
   skill-author: "Parham Beheshti"
   vendored: "2026-09-18"
-
 ---
 
 # 3D Print — Parametric CAD Design & Printing
@@ -70,11 +69,11 @@ NOT `face_radius + safety_margin` (wrong — ignores encoder, protrusions, shaft
 
 **For every dimension: "What constrains this? What is the minimum? Is there an upper limit?"**
 
-| Type | Meaning | Action |
-|------|---------|--------|
-| **Fixed** | Determined by mating part | Exact value + tolerance |
-| **Minimum** | Must be at least X for strength | Calculate from physics, add margin |
-| **Free** | No upper constraint | **Be generous.** Never default to compact. |
+| Type        | Meaning                         | Action                                     |
+| ----------- | ------------------------------- | ------------------------------------------ |
+| **Fixed**   | Determined by mating part       | Exact value + tolerance                    |
+| **Minimum** | Must be at least X for strength | Calculate from physics, add margin         |
+| **Free**    | No upper constraint             | **Be generous.** Never default to compact. |
 
 Document every parameter's constraint in code:
 
@@ -99,6 +98,7 @@ Read `fasteners.md` for edge distance rules and wrench clearances.
 Read `materials.md` in this skill directory for material property tables.
 
 Calculate:
+
 1. Load per bolt (static analysis)
 2. Bearing stress on housing wall
 3. Bolt shear stress
@@ -107,6 +107,7 @@ Calculate:
 All stresses must be well below material yield with safety margin. Include the force calculations in the CadQuery script output.
 
 **Mounting orientation matters:**
+
 - Top mount: bolts in shear. Strong.
 - Bottom mount: bolts in tension, pulling out of plastic. Weak. Need more bolts, more edge distance.
 - Side mount: asymmetric loading. Need analysis.

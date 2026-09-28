@@ -17,10 +17,16 @@ import { redact } from "./cloud-readonly-diagnostics.mjs";
 
 /** Centering math: XY bbox center -> origin, min Z -> 0. */
 export function centerOnPlateGeometry(positions) {
-  let minX = Infinity, minY = Infinity, minZ = Infinity;
-  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    minZ = Infinity;
+  let maxX = -Infinity,
+    maxY = -Infinity,
+    maxZ = -Infinity;
   for (let i = 0; i < positions.length; i += 3) {
-    const x = positions[i], y = positions[i + 1], z = positions[i + 2];
+    const x = positions[i],
+      y = positions[i + 1],
+      z = positions[i + 2];
     if (x < minX) minX = x;
     if (y < minY) minY = y;
     if (z < minZ) minZ = z;
@@ -30,7 +36,9 @@ export function centerOnPlateGeometry(positions) {
   }
   const cx = (minX + maxX) / 2;
   const cy = (minY + maxY) / 2;
-  const dx = -cx, dy = -cy, dz = -minZ;
+  const dx = -cx,
+    dy = -cy,
+    dz = -minZ;
   const out = new Float32Array(positions.length);
   for (let i = 0; i < positions.length; i += 3) {
     out[i] = positions[i] + dx;
@@ -54,8 +62,12 @@ export function meshToBinaryStl(mesh, name = "model") {
     return { x: mesh.positions[i], y: mesh.positions[i + 1], z: mesh.positions[i + 2] };
   };
   const normal = (a, b, c) => {
-    const ux = b.x - a.x, uy = b.y - a.y, uz = b.z - a.z;
-    const vx = c.x - a.x, vy = c.y - a.y, vz = c.z - a.z;
+    const ux = b.x - a.x,
+      uy = b.y - a.y,
+      uz = b.z - a.z;
+    const vx = c.x - a.x,
+      vy = c.y - a.y,
+      vz = c.z - a.z;
     let nx = uy * vz - uz * vy;
     let ny = uz * vx - ux * vz;
     let nz = ux * vy - uy * vx;
@@ -63,7 +75,9 @@ export function meshToBinaryStl(mesh, name = "model") {
     return { x: nx / len, y: ny / len, z: nz / len };
   };
   for (const t of mesh.tris) {
-    const a = vertex(t.a), b = vertex(t.b), c = vertex(t.c);
+    const a = vertex(t.a),
+      b = vertex(t.b),
+      c = vertex(t.c);
     const n = normal(a, b, c);
     buffer.writeFloatLE(n.x, offset);
     buffer.writeFloatLE(n.y, offset + 4);
@@ -128,10 +142,16 @@ export async function runCenterOnPlate({ url, token, name, result_name = name })
 }
 
 function bounds(positions) {
-  let minX = Infinity, minY = Infinity, minZ = Infinity;
-  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    minZ = Infinity;
+  let maxX = -Infinity,
+    maxY = -Infinity,
+    maxZ = -Infinity;
   for (let i = 0; i < positions.length; i += 3) {
-    const x = positions[i], y = positions[i + 1], z = positions[i + 2];
+    const x = positions[i],
+      y = positions[i + 1],
+      z = positions[i + 2];
     if (x < minX) minX = x;
     if (y < minY) minY = y;
     if (z < minZ) minZ = z;

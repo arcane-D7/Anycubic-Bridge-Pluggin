@@ -251,4 +251,3 @@ none of the read interfaces tested supplies the firmware coordinate origin or
 last executed motion. Firmware modification, reboot, installing a root/debug
 package, and unsolicited movement remain outside this read-only investigation.
 The print recovery is still unvalidated, not complete.
-

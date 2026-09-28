@@ -6,15 +6,15 @@
 
 ## Invariant map (existing → Electron equivalent)
 
-| # | Existing invariant (server/browser today) | Electron equivalent required |
-| --- | --- | --- |
-| I1 | CAD HTTP workspace binds **loopback only** (`127.0.0.1`, random port) | Same — main process must not expose `0.0.0.0`; keep `127.0.0.1` hard-coded |
-| I2 | **Per-session random token** gates `/api/*`, `/`, `/sync` (header `X-Cad-Token` or `?token=`) | Same token model; renderer receives token via preload bridge, never via URL bar/log |
-| I3 | All tool/server errors go through `redact()` (**tokens/keys masked**) | Same `redact()` used on every IPC error path and every console log |
-| I4 | Cloud tokens stored DPAPI-encrypted locally (never in repo) | Electron keeps the same store; renderer never gets cloud tokens — only the CAD session token |
-| I5 | No credentials reach the browser (`contextIsolation` equivalent today = page is served with token in URL param but token not persisted) | Strict `contextIsolation: true`, `nodeIntegration: false`, sandbox on the renderer |
-| I6 | `/api/objects` returns mesh stats only (no secrets) | Same payloads over IPC bridge |
-| I7 | MCP stdio transport: single client owns stdin/stdout | Main process owns the child's stdio; no socket listener for MCP |
+| #   | Existing invariant (server/browser today)                                                                                               | Electron equivalent required                                                                 |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| I1  | CAD HTTP workspace binds **loopback only** (`127.0.0.1`, random port)                                                                   | Same — main process must not expose `0.0.0.0`; keep `127.0.0.1` hard-coded                   |
+| I2  | **Per-session random token** gates `/api/*`, `/`, `/sync` (header `X-Cad-Token` or `?token=`)                                           | Same token model; renderer receives token via preload bridge, never via URL bar/log          |
+| I3  | All tool/server errors go through `redact()` (**tokens/keys masked**)                                                                   | Same `redact()` used on every IPC error path and every console log                           |
+| I4  | Cloud tokens stored DPAPI-encrypted locally (never in repo)                                                                             | Electron keeps the same store; renderer never gets cloud tokens — only the CAD session token |
+| I5  | No credentials reach the browser (`contextIsolation` equivalent today = page is served with token in URL param but token not persisted) | Strict `contextIsolation: true`, `nodeIntegration: false`, sandbox on the renderer           |
+| I6  | `/api/objects` returns mesh stats only (no secrets)                                                                                     | Same payloads over IPC bridge                                                                |
+| I7  | MCP stdio transport: single client owns stdin/stdout                                                                                    | Main process owns the child's stdio; no socket listener for MCP                              |
 
 ## Electron main-process checklist
 
@@ -23,14 +23,14 @@
 - [ ] Preload uses `contextBridge.exposeInMainWorld('cadToken', token)` and
       `'cad'` API (open/close/reload). No `process`, `require`, `Buffer` exposed.
 - [ ] `BrowserWindow` webPreferences:
-      ```js
-      webPreferences: {
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,          // renderer has no Node.js at all
-        preload: path.join(__dirname, 'preload.cjs')
-      }
-      ```
+      `js
+webPreferences: {
+contextIsolation: true,
+nodeIntegration: false,
+sandbox: true,          // renderer has no Node.js at all
+preload: path.join(__dirname, 'preload.cjs')
+}
+`
 - [ ] Only `custom://app/*` is registered as privileged scheme; block everything else
       (`setWindowOpenHandler` deny, `will-navigate` allowlist to `custom://app/index.html`).
 - [ ] Token lifecycle: generate once per server start, pass over IPC at load; **never**

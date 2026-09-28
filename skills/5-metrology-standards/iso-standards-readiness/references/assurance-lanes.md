@@ -11,15 +11,15 @@ this skill produces none of them.
 
 ## The seven lanes
 
-| Lane | Who decides | Basis | Artifact | Applies to |
-| --- | --- | --- | --- | --- |
-| Management-system certification | Certification body under ISO/IEC 17021-1 | Authorized standard + certification scheme | Certificate, scoped | ISO 13485 |
-| Laboratory accreditation | Accreditation body under ISO/IEC 17011 | Authorized standard + scheme rules | Accreditation + scope schedule | ISO/IEC 17025, ISO 15189 |
-| Regulator inspection | National regulator | That jurisdiction's law | Inspection outcome, enforcement | FDA QMSR, CLIA, national regimes |
-| Mandatory certification/licensure | Government or its agent | Statute | Certificate/licence to operate | CLIA |
-| Regulatory audit programme | Recognized Auditing Organization | Programme audit model | Audit report used by participating regulators | MDSAP |
-| Conformity assessment | Notified body / manufacturer per route | Product regulation | Product certificate, declaration of conformity | EU MDR/IVDR |
-| Assessed-inside-another-lane | Whoever runs the host lane | The standard, as evidence | No artifact of its own | ISO 14971 |
+| Lane                              | Who decides                              | Basis                                      | Artifact                                       | Applies to                       |
+| --------------------------------- | ---------------------------------------- | ------------------------------------------ | ---------------------------------------------- | -------------------------------- |
+| Management-system certification   | Certification body under ISO/IEC 17021-1 | Authorized standard + certification scheme | Certificate, scoped                            | ISO 13485                        |
+| Laboratory accreditation          | Accreditation body under ISO/IEC 17011   | Authorized standard + scheme rules         | Accreditation + scope schedule                 | ISO/IEC 17025, ISO 15189         |
+| Regulator inspection              | National regulator                       | That jurisdiction's law                    | Inspection outcome, enforcement                | FDA QMSR, CLIA, national regimes |
+| Mandatory certification/licensure | Government or its agent                  | Statute                                    | Certificate/licence to operate                 | CLIA                             |
+| Regulatory audit programme        | Recognized Auditing Organization         | Programme audit model                      | Audit report used by participating regulators  | MDSAP                            |
+| Conformity assessment             | Notified body / manufacturer per route   | Product regulation                         | Product certificate, declaration of conformity | EU MDR/IVDR                      |
+| Assessed-inside-another-lane      | Whoever runs the host lane               | The standard, as evidence                  | No artifact of its own                         | ISO 14971                        |
 
 ## Certification and accreditation are not synonyms
 

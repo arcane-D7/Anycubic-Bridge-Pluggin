@@ -367,12 +367,16 @@ export async function collectPrintHistoryDetail(cloud, { taskId }) {
  * Aggregate print history into cost/failure metrics (N1 metrics).
  * Purely derived from the same endpoint as collectPrintHistory; no extra calls.
  */
-export async function collectPrintMetrics(
-  cloud,
-  { printerId, limit = 100, printStatus } = {},
-) {
+export async function collectPrintMetrics(cloud, { printerId, limit = 100, printStatus } = {}) {
   const history = await collectPrintHistory(cloud, { printerId, limit, printStatus });
-  const outcomes = { total: history.total, finished: 0, failed: 0, cancelled: 0, paused: 0, other: 0 };
+  const outcomes = {
+    total: history.total,
+    finished: 0,
+    failed: 0,
+    cancelled: 0,
+    paused: 0,
+    other: 0,
+  };
   const failures = {};
   const records = history.entries ?? [];
   for (const entry of records) {
@@ -393,8 +397,10 @@ export async function collectPrintMetrics(
     window: { limit, status_filter: printStatus ?? null },
     outcomes,
     failure_breakdown: failures,
-    failure_rate_pct: outcomes.total > 0 ? Number(((totalFailed / outcomes.total) * 100).toFixed(2)) : null,
-    success_rate_pct: outcomes.total > 0 ? Number(((outcomes.finished / outcomes.total) * 100).toFixed(2)) : null,
+    failure_rate_pct:
+      outcomes.total > 0 ? Number(((totalFailed / outcomes.total) * 100).toFixed(2)) : null,
+    success_rate_pct:
+      outcomes.total > 0 ? Number(((outcomes.finished / outcomes.total) * 100).toFixed(2)) : null,
   };
 }
 
@@ -464,26 +470,34 @@ export function collectMetricsExpose(snapshot, { printerId } = {}) {
   const lifetime = selected.lifetime ?? {};
   const current = selected.current ?? {};
   const slots = Array.isArray(selected.multi_color_box)
-    ? selected.multi_color_box.flatMap((box) =>
-        Array.isArray(box?.slots) ? box.slots : [],
-      )
+    ? selected.multi_color_box.flatMap((box) => (Array.isArray(box?.slots) ? box.slots : []))
     : [];
   const lines = [];
   lines.push("# HELP printer_print_count_total Total number of prints started on this printer.");
   lines.push("# TYPE printer_print_count_total counter");
-  lines.push(`printer_print_count_total{printer_id="${selected.printer_id}"} ${lifetime.print_count ?? 0}`);
+  lines.push(
+    `printer_print_count_total{printer_id="${selected.printer_id}"} ${lifetime.print_count ?? 0}`,
+  );
   lines.push("# HELP printer_material_used_kg Total filament used in kilograms.");
   lines.push("# TYPE printer_material_used_kg gauge");
-  lines.push(`printer_material_used_kg{printer_id="${selected.printer_id}"} ${lifetime.material_used_kg ?? 0}`);
+  lines.push(
+    `printer_material_used_kg{printer_id="${selected.printer_id}"} ${lifetime.material_used_kg ?? 0}`,
+  );
   lines.push("# HELP printer_print_totaltime_hours Total print time in hours.");
   lines.push("# TYPE printer_print_totaltime_hours counter");
-  lines.push(`printer_print_totaltime_hours{printer_id="${selected.printer_id}"} ${lifetime.print_totaltime_hours ?? 0}`);
+  lines.push(
+    `printer_print_totaltime_hours{printer_id="${selected.printer_id}"} ${lifetime.print_totaltime_hours ?? 0}`,
+  );
   lines.push("# HELP printer_temperature_c Current temperature in Celsius.");
   lines.push("# TYPE printer_temperature_c gauge");
   if (current.nozzle_temp_c != null)
-    lines.push(`printer_temperature_c{printer_id="${selected.printer_id}",sensor="nozzle"} ${current.nozzle_temp_c}`);
+    lines.push(
+      `printer_temperature_c{printer_id="${selected.printer_id}",sensor="nozzle"} ${current.nozzle_temp_c}`,
+    );
   if (current.hotbed_temp_c != null)
-    lines.push(`printer_temperature_c{printer_id="${selected.printer_id}",sensor="hotbed"} ${current.hotbed_temp_c}`);
+    lines.push(
+      `printer_temperature_c{printer_id="${selected.printer_id}",sensor="hotbed"} ${current.hotbed_temp_c}`,
+    );
   for (const slot of slots) {
     const consumables = slot.consumables_percent;
     if (consumables == null) continue;
@@ -491,12 +505,15 @@ export function collectMetricsExpose(snapshot, { printerId } = {}) {
       `printer_consumables_percent{printer_id="${selected.printer_id}",slot="${slot.slot_index ?? slot.index ?? "?"}"} ${consumables}`,
     );
   }
-  lines.push("# HELP printer_ace_drying_status Drying status per ACE box (0 = idle, 1 = drying; remain_time in seconds).");
+  lines.push(
+    "# HELP printer_ace_drying_status Drying status per ACE box (0 = idle, 1 = drying; remain_time in seconds).",
+  );
   lines.push("# TYPE printer_ace_drying_status gauge");
   if (Array.isArray(selected.multi_color_box)) {
     selected.multi_color_box.forEach((box, i) => {
       const drying = box?.drying_status ?? null;
-      const active = drying && typeof drying === "object" ? Number(drying.isDrying ?? drying.drying ?? 0) : 0;
+      const active =
+        drying && typeof drying === "object" ? Number(drying.isDrying ?? drying.drying ?? 0) : 0;
       const remain = drying && typeof drying === "object" ? Number(drying.remain_time ?? 0) : 0;
       lines.push(
         `printer_ace_drying_status{printer_id="${selected.printer_id}",box="${i}"} ${Number.isFinite(active) ? active : 0}`,

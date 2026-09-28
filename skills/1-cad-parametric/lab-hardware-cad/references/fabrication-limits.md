@@ -9,20 +9,20 @@ Achievable tolerance and minimum feature size, as planning figures. **Every numb
 the specific machine, material, and operator.** Use them to choose a process and to size a first
 article, then verify with a test coupon.
 
-| Process | Typical tolerance | Min wall | Min feature | Notes |
-| --- | --- | --- | --- | --- |
-| FDM | ±0.3 mm (often worse over 100 mm) | 1.2 mm (3 x 0.4 mm nozzle) | ~0.8 mm | Anisotropic: much weaker across layers. Porous. |
-| SLA / DLP | ±0.1 mm | 0.8 mm | ~0.3 mm | Better surface and detail. Resin choice dominates properties. |
-| SLS (nylon) | ±0.2 mm | 0.8 mm | ~0.5 mm | Isotropic, no supports, slightly porous surface. |
-| CNC milling | ±0.05 mm or better | 0.8 mm in metal | Set by tool diameter | Internal corners carry the tool radius — you cannot mill a sharp internal corner. |
-| Laser cutting | ±0.1 mm | n/a | Kerf ~0.1-0.3 mm | 2D only. Edge taper on thick stock. Kerf offset must be applied. |
+| Process       | Typical tolerance                 | Min wall                   | Min feature          | Notes                                                                             |
+| ------------- | --------------------------------- | -------------------------- | -------------------- | --------------------------------------------------------------------------------- |
+| FDM           | ±0.3 mm (often worse over 100 mm) | 1.2 mm (3 x 0.4 mm nozzle) | ~0.8 mm              | Anisotropic: much weaker across layers. Porous.                                   |
+| SLA / DLP     | ±0.1 mm                           | 0.8 mm                     | ~0.3 mm              | Better surface and detail. Resin choice dominates properties.                     |
+| SLS (nylon)   | ±0.2 mm                           | 0.8 mm                     | ~0.5 mm              | Isotropic, no supports, slightly porous surface.                                  |
+| CNC milling   | ±0.05 mm or better                | 0.8 mm in metal            | Set by tool diameter | Internal corners carry the tool radius — you cannot mill a sharp internal corner. |
+| Laser cutting | ±0.1 mm                           | n/a                        | Kerf ~0.1-0.3 mm     | 2D only. Edge taper on thick stock. Kerf offset must be applied.                  |
 
 Two consequences that catch people:
 
 - **Holes print undersize** on both FDM and SLA. A 6.0 mm modelled hole typically measures under
   6.0 mm. Oversize functional bores, or plan to ream them.
 - **Internal corners cannot be sharp in milling.** If a milled pocket must accept a square part,
-  add corner relief cuts. (For a part with *rounded* corners the tool radius is harmless as long
+  add corner relief cuts. (For a part with _rounded_ corners the tool radius is harmless as long
   as it stays at or below the part's minimum corner radius — see the corner-radius rule in
   `references/labware-adapters.md`.)
 
@@ -48,11 +48,11 @@ Two consequences that catch people:
 
 Nominal dimensions do not produce fits. Choose a clearance deliberately, per side:
 
-| Fit | FDM | SLA | CNC |
-| --- | --- | --- | --- |
-| Free-sliding (a plate dropping into a pocket) | 0.40 mm | 0.20 mm | 0.10 mm |
-| Located but removable by hand | 0.25 mm | 0.10 mm | 0.05 mm |
-| Press / interference | -0.05 mm | -0.03 mm | -0.02 mm |
+| Fit                                           | FDM      | SLA      | CNC      |
+| --------------------------------------------- | -------- | -------- | -------- |
+| Free-sliding (a plate dropping into a pocket) | 0.40 mm  | 0.20 mm  | 0.10 mm  |
+| Located but removable by hand                 | 0.25 mm  | 0.10 mm  | 0.05 mm  |
+| Press / interference                          | -0.05 mm | -0.03 mm | -0.02 mm |
 
 Then remember the **other** part has tolerance too. When mating to a standardised component,
 design the receiving feature against the component's **maximum material condition**, not its
@@ -102,15 +102,15 @@ For FDM especially, orientation is a design decision, not a printing detail:
 
 ### Thermal
 
-| Material | Approximate service limit | Autoclave (121 °C)? |
-| --- | --- | --- |
-| PLA | ~50-60 °C | **No** — distorts well below autoclave temperature |
-| PETG | ~70-80 °C | No |
-| ABS / ASA | ~90-100 °C | Marginal, generally no |
-| Polypropylene | ~100 °C | Marginal |
-| Nylon (SLS) | ~120-160 °C | Sometimes; verify per grade |
-| PEEK | >250 °C | Yes |
-| Stainless steel, aluminium, glass | High | Yes |
+| Material                          | Approximate service limit | Autoclave (121 °C)?                                |
+| --------------------------------- | ------------------------- | -------------------------------------------------- |
+| PLA                               | ~50-60 °C                 | **No** — distorts well below autoclave temperature |
+| PETG                              | ~70-80 °C                 | No                                                 |
+| ABS / ASA                         | ~90-100 °C                | Marginal, generally no                             |
+| Polypropylene                     | ~100 °C                   | Marginal                                           |
+| Nylon (SLS)                       | ~120-160 °C               | Sometimes; verify per grade                        |
+| PEEK                              | >250 °C                   | Yes                                                |
+| Stainless steel, aluminium, glass | High                      | Yes                                                |
 
 **Assume a printed part is not autoclavable unless it is a verified high-temperature material.**
 Offer chemical or gas sterilisation as the alternative, and check that against the solvent notes

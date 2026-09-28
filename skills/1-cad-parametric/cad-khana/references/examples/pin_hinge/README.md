@@ -20,7 +20,7 @@ does its own one thing, so the file is identical under `check`, `export`,
 `printability.py` is a **command script**. Per-part `inspect()` calls are
 a batch, not a claim on the assembly, so they live behind `khana run`.
 Its docstring opens with its own invocation line and says what `khana
-check` on the sibling does *not* cover — without that sentence, "I ran
+check` on the sibling does _not_ cover — without that sentence, "I ran
 `khana check`, it was green" quietly means the printability checks never
 ran.
 
@@ -31,11 +31,11 @@ here: this mechanism is one unit. SKILL.md describes it.
 ## What it demonstrates
 
 - **The factory contract.** `build_hinge(slot_clearance=…,
-  pin_clearance=…)` is the module's public surface; its defaults are the
+pin_clearance=…)` is the module's public surface; its defaults are the
   master design. Overriding a clearance to ask "does it still pass at
   0.15?" is the same call a composing parent would make — not a special
   tool-facing entry point. The module-level `assembly = build_hinge()` is
-  the tolerated *degenerate* form that lets `khana check <file>` resolve
+  the tolerated _degenerate_ form that lets `khana check <file>` resolve
   without a `:factory`.
 - **Assertions as first-class claims.** `assert_no_interference` on all
   three pairs; `assert_clearance` for the tang's swing room and the pin's
