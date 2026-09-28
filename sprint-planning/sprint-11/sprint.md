@@ -10,7 +10,7 @@
 | **Priority**          | P1                                                                                                                      |
 | **Sprint Type**       | Feature                                                                                                                 |
 | **Primary Owner**     | engine-nonplanar                                                                                                        |
-| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §3.1 (S2 height-field), §3.3 (formulas), §4/§8 (Blender IPC), §5.1 (envelope), §10 R5 |
+| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §3.1 (S2 height-field), §3.3 (formulas), §3.0a (nonplanar = opt-in per-project), §4/§8 (Blender IPC), §5.1 (envelope), §10 R5 |
 | **Depends On**        | Sprint 8 (R2 planar core + IR)                                                                                           |
 | **Status**            | ⏳ Planned                                                                                                              |
 
@@ -33,6 +33,14 @@ Every generated toolpath is collision-checked against the full swept envelope (�
 `tool_envelope`, not a nozzle cone). Physical coupon on the bundled reference profile uses
 only placeholders (`<MACHINE_TYPE>` etc.). Continuous-Z pre-flight is mandatory and
 fail-closed.
+
+> **Dual-mode (user-confirmed 2026-09-28, §3.0a):** this sprint turns the **non-planar mode
+> on**, but only as the **opt-in per-project** experimental mode. **Standard (planar) mode
+> remains the default and is untouched**: a user who disables non-planar gets a fully standard
+> slicing model; a `standard` job on even a continuous-Z profile slices as pure standard. The
+> `nonplanar` project selector is enabled **iff** the active profile declares
+> `continuous_z.supported` + slope budget; otherwise disabled with the named missing
+> capability — never a silent fallback.
 
 ## Health Check Commands (must pass before commit)
 
@@ -139,15 +147,18 @@ capability contract) along the proposed path must not intersect the part or fixt
 
 S2 toolpaths must be emitted only through the machine's dialect whitelist — a continuous-Z move
 on a Z-hop-only machine is a hardware-clash risk, so the whitelist is the gate. The independent
-validator (S8-004) re-checks emitted S2 lines (E/Z consistency, envelope in-bounds, no
-out-of-dialect codes).
+validator (S8-004) re-checks emitted S2 lines (E/Z consistency, envelope in-bounds, mode
+consistency per §3.0a, no out-of-dialect codes). **Standard-mode jobs are unaffected**: the S2
+postprocessor only activates when `slicing_mode = nonplanar` for that project; otherwise the
+standard pipeline emits pure planar gcode.
 
 #### Acceptance Criteria
 
 - [ ] S2 lines emitted only for profiles whose dialect whitelist includes continuous-Z moves; otherwise pre-flight rejection wins (already S11-002) — double gate, no silent degrade.
-- [ ] Postprocessor emits per-machine codes for S2 ramps (e.g. G1 Z ramp with E delta per §3.3).
-- [ ] Independent validator re-checks S2 emitted program (E conservation, slope vs profile budget, envelope in-bounds, dialect whitelist) with a seeded-bug test (validator catches a bogus Z ramp).
-- [ ] E2E: height-field part → S2 generate → validate → postprocess → preview renders curved-top layers.
+- [ ] Postprocessor emits per-machine codes for S2 ramps (e.g. G1 Z ramp with E delta per §3.3); only active in `nonplanar` mode.
+- [ ] Independent validator re-checks S2 emitted program (E conservation, slope vs profile budget, envelope in-bounds, dialect whitelist) with a seeded-bug test (validator catches a bogus Z ramp); mode-tagged: `nonplanar` Z-ramps accepted, same code in a `standard` job rejected.
+- [ ] E2E: height-field part → S2 generate → validate → postprocess → preview renders curved-top layers; the same part in `standard` mode slices as pure planar (no Z-ramp).
+- [ ] **Selector gating**: project `slicing_mode` selector offers `nonplanar` only when the active profile declares continuous-Z + slope budget; otherwise disabled with tooltip reason (no fallback path in code).
 - [ ] Health gate green.
 
 ### S11-005 — Physical coupon on bundled reference profile (placeholders only) + declared budget

@@ -198,6 +198,53 @@ possible under its terms, per the own-engine objective (§3.4, §11-3, matrix ro
 against the grid-apps engine has **not been tested** in this revision — it is a candidate/
 reference only.
 
+### 3.0a Slicing modes — Standard (planar) AND Non-planar, both first-class (user-confirmed 2026-09-28)
+
+**[SPEC]** The slicer ships with **two mutually-exclusive slicing modes**, selectable **per
+project**; the **standard (planar) mode is the default** and is always available; the
+**non-planar mode is an opt-in experimental mode** offered only when the active machine
+profile declares the required capabilities. Both modes are implemented by **one engine /
+one IR / one validator** (runtime feature flag — not separate binaries; validated by the
+Consultor against Bambu/Cura/Prusa practice, 2026-09-28).
+
+- **Standard mode (planar, default).** Complete product-grade pipeline: slice (planar) → IR →
+  postprocess → independent validation → preview. This is the R2 planar core + S1 parity
+  baseline; it is **not** a research stub and never requires non-planar capabilities. Users
+  who disable non-planar get a fully standard slicing model.
+- **Non-planar mode (experimental, opt-in).** More capable, less trusted: curved-top (S2),
+  conformal (S3), later multi-axis (S4). Selectable **per project only when the active
+  machine profile declares the required capabilities** (e.g. `continuous_z.supported`,
+  slope budget, joint/kinematic model per §5); otherwise the selector is **disabled with a
+  named reason** — never a silent fallback to standard.
+- **Mode lifecycle rules (enforced by the pipeline, §3.7):**
+  1. `slicing_mode` is a persisted, typed, **per-project** field (`standard` | `nonplanar`),
+     default `standard`; explicit project-level UI toggle in the print-settings panel (mirrors
+     Cura/Bambu/Prusa per-project config, not a global app setting).
+  2. The mode is written into the **job record** (input hash, §3.5) and into **every IR
+     segment's provenance** (§3.6). Z-ramp / non-planar segments are tagged
+     `mode: nonplanar` at segment level; the layer preview consumes the flag so continuous-Z
+     is never rendered as a layer change (Prusa/Bambu pitfall).
+  3. The **independent emitted-program validator is mode-aware**: it rejects any segment
+     inconsistent with the selected mode (a Z-ramp inside a `standard` job; a layer-jump
+     inside a `nonplanar` job) with a named reason + segment id (consultor AC-3).
+  4. **Slice-cache key includes the mode**: switching modes invalidates the cache and forces
+     a re-slice with explicit UI confirmation — no stale-mode gcode leak (consultor AC-4).
+  5. Non-planar **Z/flow generation lives in a dedicated stage applied after extrusion
+     math** (same E/Z accounting code path as planar, with a per-mode tolerance) — isolated
+     like Prusa's SpiralVase postprocessor, never mixed mid-pipeline (consultor AC-6).
+  6. Both modes short-circuit identically through the **safety box** (§3.5): non-planar
+     proposals outside the box are rejected; standard mode also passes the same validation.
+- **Capability gating (non-planar mode):** same rule as every §5 feature — a profile lacking
+  `continuous_z.supported` (or slope budget / joint model as required by the S2/S3/S4 feature)
+  has the non-planar selector **disabled with the named missing capability**, and a pre-flight
+  with non-planar mode on that profile is **rejected**, not silently degraded (consultor AC-2
+  → aligns with §5.3 fail-closed).
+- _Acceptance (from consultor, paste-ready):_ AC-1 persisted per-project enum default
+  `standard`, no global setting; AC-2 selector enabled iff profile declares capabilities, else
+  disabled with reason, no silent fallback path in code; AC-3 validator rejects mode-inconsistent
+  segments; AC-4 cache key includes mode with forced re-slice on switch; AC-5 preview consumes
+  mode metadata; AC-6 Z-ramp generation isolated post-extrusion with one shared E/Z path.
+
 ### 3.1 Strategies (multiple pursued, not all-or-nothing)
 
 1. **Topology-conformal layering.** Layer surfaces follow the part's topology rather than
@@ -990,7 +1037,7 @@ Single-window, resizable panels:
 | 3MF read/write                                                      | `read-3mf.mjs`                                                                           | Port + extend                                               | Needs write support for editor                                                                                                                                                                                                                                                                 |
 | **Modeling backend / geometry authority**                           | Blender bpy (pinned, user-installed)                                                     | **Reuse as REQUIRED primary** (headless server)             | §4; legal packaging gate §4.5 before first public distribution; discovery per `tools/HEADLESS-RENDER.md`                                                                                                                                                                                       |
 | STEP/IGES conversion                                                | OCCT (OpenCascade.js / replicad)                                                         | **Reuse — conversion only** (optional tier)                 | **Not** a modeling kernel, §4.4; current repo path is degraded bbox (§2.1 `[BUG]`)                                                                                                                                                                                                             |
-| **Slicing (planar)**                                                | own Rust core                                                                            | **Build (own)**; Kiri:Moto / libSlic3r = **reference only** | Kiri:Moto **engine** distribution/embedding terms **unconfirmed** (client MIT only; not assumed MIT-embeddable) `[BUG] Kiri license`; per §🔒 LICENSE POLICY only Apache/MIT references may be source-adapted — anything else is study-only; libSlic3r AGPL-3.0; planar output is the validation baseline, not the product goal (§3) |
+| **Slicing (planar)**                                                | own Rust core                                                                            | **Build (own)**; Kiri:Moto / libSlic3r = **reference only** | Kiri:Moto **engine** distribution/embedding terms **unconfirmed** (client MIT only; not assumed MIT-embeddable) `[BUG] Kiri license`; per §🔒 LICENSE POLICY only Apache/MIT references may be source-adapted — anything else is study-only; libSlic3r AGPL-3.0; planar output is the validation baseline, not the product goal (§3). **Both slicing modes are first-class** (§3.0a): standard (planar, default) always available; non-planar (S2/S3/S4) is an opt-in experimental mode, selectable per project only when the machine profile declares the required capabilities (fail-closed otherwise). |
 | Slicing (Anycubic-compatible reference output)                      | Anycubic Slicer Next CLI/GUI via existing adapters                                       | Reuse (external)                                            | firmware-compat validation only, not the engine                                                                                                                                                                                                                                                |
 | Non-planar strategy 1 (conformal)                                   | CurviSlicer / Zip-o-mat-Hamburg                                                          | **Build own**; algorithm studied from published             | AGPL implementation = study only, §3.4                                                                                                                                                                                                                                                         |
 | Non-planar strategy 2 (field/volumetric)                            | own + research reuse                                                                     | **Build own**                                               | license diligence per artifact, §3.4                                                                                                                                                                                                                                                           |
@@ -1059,6 +1106,11 @@ spikes (S1–S4, §3.8) run in parallel with the editing stages where hardware a
   a **stale-revision** command is rejected with the actual revision (not forced); crash recovery
   replays to the last committed revision with no stale selection.
 
+**[NOTE] Slicing modes:** with the user-confirmed **dual-mode** requirement (§3.0a), R0 also
+  ships the project-level `slicing_mode` persisted field. Both modes come online together at
+  R2 (planar = standard, default) and R5/R6 (non-planar, opt-in capability-gated):
+  R0 merely persists the mode; **no slicing pipeline ships before R2.**
+
 ### R2 — Own planar core (validation baseline) + context-dependent op IR
 
 - **Own** planar core (Rust worker; S1 spike, §3.8) — walls + infill for the baseline corpus.
@@ -1071,9 +1123,15 @@ spikes (S1–S4, §3.8) run in parallel with the editing stages where hardware a
   speed, collision-free interval, provenance) + **independent emitted-program validator**
   (a separate code path from the generator, §3.6/§3.7). G-code via the per-machine postprocessor
   (kinematics-aware FK → joint targets), **not** a generic Cartesian emitter (§3.7).
+- **Standard slicing mode ships here** (§3.0a): `slicing_mode` per-project (default `standard`);
+  mode in the IR provenance + cache-key; mode-aware validator; standard-mode pipeline complete
+  (slice → IR → postprocess → validate → preview). Non-planar S2/S3 (Sprint 11/12) enable
+  `nonplanar` mode per-project, capability-gated.
 - _Acceptance (S1):_ measured deltas vs. Anycubic Slicer Next reference on the fixed 3-part corpus
   within a **declared** budget — per-layer wall count (±0), infill volume (≤ declared %),
-  bounding box (≤ declared mm). Each number declared _before_ the spike runs.
+  bounding box (≤ declared mm). Each number declared _before_ the spike runs. Plus §3.0a
+  acceptance: persisted per-project mode default `standard`; mode in cache key; validator
+  rejects mode-inconsistent segments; no global mode setting.
 
 ### R3 — Harness v1 (BYOK + capability sandbox + learning journal)
 
@@ -1116,13 +1174,19 @@ spikes (S1–S4, §3.8) run in parallel with the editing stages where hardware a
 - Height-field lifting over planar base, **slope rejection per machine profile** (capability-gated
   — not a global assumption), per-segment Z/E from the §3.3 derivation, **swept-envelope**
   collision (§5.1 `tool_envelope` — the full swept volume, not just a nozzle cone).
-- G-code post-processing (per-machine, §3.7) + independent emitted-program validation.
+- **Non-planar mode goes live for curved-top here** (§3.0a): `slicing_mode = nonplanar` is
+  enabled per-project **iff** the active profile declares `continuous_z.supported` + slope
+  budget; selector disabled with the named missing capability when the profile cannot do it
+  (never silent fallback to standard; cache invalidated on mode switch, §3.0a).
+- G-code post-processing (per-machine, §3.7) + independent emitted-program validation
+  (validator is mode-aware: Z-ramp in a `standard` job is rejected, §3.0a).
 - **Validation coupons on the bundled reference profile `<MACHINE_TYPE>`** — referenced by
   placeholder only (cloud id `<PRINTER_ID>`, fw `<FW_VERSION>`); **continuous-Z firmware is a
   pre-flight requirement** — fail closed otherwise (§5.3). No product-hardware default.
 - _Acceptance (S2):_ physical coupon on `<MACHINE_TYPE>`; measured layer-height deviation ≤
   declared budget; any profile lacking `continuous_z.supported` is **rejected pre-flight** (not
-  degraded silently).
+  degraded silently). Plus §3.0a acceptance: non-planar selector enabled iff profile declares
+  capability; standard-mode jobs on a continuous-Z profile still slice as pure standard.
 
 ### R6 — Non-planar S3 (conformal / field-based)
 
@@ -1130,9 +1194,12 @@ spikes (S1–S4, §3.8) run in parallel with the editing stages where hardware a
   from its published paper** (AGPL implementation = study only, **not** copied, §3.4 — no
   contamination claim, no clean-room claim).
 - Solver integration (OSQP in Rust), **variable-thickness validation**.
-- Experimental feature flag; **art/decorative-only** until structural results are measured.
+- **`nonplanar` mode extends to conformal** (§3.0a): experimental feature flag;
+  **art/decorative-only** until structural results are measured. Profile gating applies (slope
+  budget + joint model); standard mode remains the default and is untouched.
 - _Acceptance (S3):_ tolerance vs. planar-baseline deviation on the S1 corpus + 2 curved parts ≤
   declared budget; the feature is flagged art-only in the UI until structural acceptance is met.
+  Standard-mode jobs keep slicing as pure standard regardless of flag state (§3.0a).
 
 ### R7 — Sandbox hardening (T3b VM) + S4 multi-axis research
 
@@ -1184,6 +1251,12 @@ item below is unverified.
 7. **Parity corpus size / budgets.** All R1–R7 acceptance numbers are **proposed, not measured**
    — each spike declares its budget _before_ running; the corpus is versioned with expected
    outcomes captured from **native** snapshots (never the renderer, §4.2).
+8. **Dual-mode isolation depth (consultor-validated patterns).** Mode-aware validator, cache
+   key including mode, per-segment `mode` tags in IR, dedicated Z-ramp stage post-extrusion —
+   all validated against Bambu/Cura/Prusa practice; the one open item is the **exact
+   `slicing_mode` IR field + job-record schema key** to freeze (proposed: `standard` | `nonplanar`
+   on the job record, segment `mode` tag on non-planar segments) — to freeze at R2/R5 with the
+   acceptance criteria in §3.0a.
 
 ---
 
@@ -1392,3 +1465,12 @@ scripts/sanitize-repo.mjs --dry-run` and `node --test "tests/*.test.mjs"` (no co
   **references** extended (bmesh, python_module build, blender.org license, Kiri:Moto caveat,
   Goose unverified) (§12); (11) this **corrected-claims log** (§13). No runtime editor
   code was written or deleted by this revision.
+- **v2.0.1 (2026-09-28, planning follow-up — dual-mode requirement).** User-confirmed: the
+  slicer must offer BOTH a standard (planar) mode (default, always available) AND an opt-in
+  non-planar mode, selectable per project. Investigation updated: new §3.0a (Slicing modes
+  SPEC), roadmap R0/R2/R5/R6 adjustments (mode persisted at R0; standard mode ships at R2 as
+  the default; non-planar S2/S3 come online as capability-gated per-project opt-in), §11
+  unknowns +8, and the §9 matrix "Slicing (planar)" row extended to state both modes are
+  first-class. Design validated by the Consultor (AirRouter) against Bambu/Cura/Prusa mode
+  patterns; kept one engine / one IR / one validator with a runtime feature flag — no separate
+  binaries.

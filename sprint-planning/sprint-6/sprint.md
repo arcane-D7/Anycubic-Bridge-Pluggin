@@ -10,7 +10,7 @@
 | **Priority**          | P0                                                                                                                      |
 | **Sprint Type**       | Feature                                                                                                                 |
 | **Primary Owner**     | platform-core                                                                                                           |
-| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §5, §6 (auth-separable), §7 (UI), §10 R0; Sprint 5 gates |
+| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §5, §6 (auth-separable), §7 (UI), §10 R0, §3.0a (dual slicing modes — persisted per project); Sprint 5 gates |
 | **Depends On**        | Sprint 5 (architecture + quality gates)                                                                                 |
 | **Status**            | ⏳ Planned                                                                                                              |
 
@@ -151,15 +151,18 @@ The legacy editor has an in-memory singleton scene: no snapshots, autosave, undo
 object IDs or versioned schema (Rev 2.0 §2.2). R0 introduces the durable project model that R1
 will drive from the Blender scene: objects with stable IDs, ops journal, revisions, and
 content-addressed geometry artifacts keyed by hash. Geometry blobs live outside the DB
-(hash→file reference).
+(hash→file reference). The project model also persists the **slicing mode** per project
+(§3.0a): a typed `slicing_mode` field (`standard` | `nonplanar`, default `standard`) so the
+dual-mode requirement is data from day one.
 
 #### Acceptance Criteria
 
 - [ ] Schema v1 in rusqlite: `projects`, `objects` (stable UUID ids), `ops` (journal), `revisions`, `artifacts` (sha256 → path); schema versioned and migratable.
+- [ ] `slicing_mode` persisted per project: typed enum column, default `standard`, validated (invalid value rejected at the schema/API layer), included in the job record once slicing exists (§3.0a mode lifecycle).
 - [ ] Artifact store: write/read by content hash; dedupe tested (two identical meshes → one blob); DB stores only the reference.
 - [ ] Undo graph stubs: ops journal append-only; revisions monotonic; replays target a revision (R1 will implement re-validation).
 - [ ] Autosave + crash-recovery skeleton: periodic snapshot + journal replay to the last committed revision (integration test simulates a kill and replays).
-- [ ] Migration test: v1→v2 upgrade preserves data; `PRAGMA user_version` asserted.
+- [ ] Migration test: v1→v2 upgrade preserves data (incl. `slicing_mode`); `PRAGMA user_version` asserted.
 - [ ] Health gate green.
 
 ### S6-005 — Loopback bridge to preserved Node MCP server (read-only legacy scene)

@@ -98,6 +98,7 @@ Rev 2.0 (R0–R7).
 | S4 continuous multi-axis feasibility on actually-existing catalog profiles only | 13 | S13-003 | no in-catalog machine → research-only note, no claim; LinuxCNC study; S3-Slicer/Open5x/S4_Slicer/FullControl rows = study/inspiration |
 | Full-tier matrix integration test (T0/T1/T3a/T2/T3b) + T3b journal/safety-box audit | 13 | S13-004 | wrong-tier request fails; journal record completeness; revocation e2e |
 | Health gates: unit + typing + integration + e2e per sprint | 5–13 | S5-006 + per-sprint HS | `pnpm run check` (unit/type/lint/format/knip/licenses) + sprint-specific runner + sanitizer dry-run |
+| **Dual slicing modes (standard + non-planar both first-class, optional disable non-planar)** | 5–6, 8, 11, 12 | S5-001(§3.0a), S6-004, S8-002/004/005, S11-001/002/004, S12-003/005 | **Standard (planar) = default, always available** (R2 full pipeline); **non-planar = opt-in per project** only when profile declares capabilities (else disabled with named reason, never silent fallback). Mode persisted per project (S6-004), in IR provenance + cache key, mode-aware validator (S8-004), Z-ramp isolated post-extrusion, standard mode untouched by S3 flag. User-confirmed 2026-09-28, §3.0a; consultor-validated (Bambu/Cura/Prusa patterns) |
 
 ## Legend
 

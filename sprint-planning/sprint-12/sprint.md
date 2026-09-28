@@ -10,7 +10,7 @@
 | **Priority**          | P1                                                                                                                      |
 | **Sprint Type**       | Feature/Research                                                                                                        |
 | **Primary Owner**     | engine-nonplanar                                                                                                        |
-| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §3.1 (S3: deformation/inverse-map or field-based strategies 1/2), §3.3/§3.9 (research boundary), §🔒 LICENSE POLICY, §10 R6 |
+| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §3.1 (S3: deformation/inverse-map or field-based strategies 1/2), §3.3/§3.9 (research boundary), §3.0a (nonplanar mode extends to conformal), §🔒 LICENSE POLICY, §10 R6 |
 | **Depends On**        | Sprint 11 (R5 S2)                                                                                                       |
 | **Status**            | ⏳ Planned                                                                                                              |
 
@@ -32,6 +32,12 @@ boundary). The OSQP solver is implemented in Rust for field strategies, with var
 validation and controls, and everything ships behind an experimental flag restricted to
 art/decorative uses until structural acceptance (measured against a declared tolerance budget
 on the S1 corpus + 2 curved parts) passes.
+
+> **Dual-mode (user-confirmed 2026-09-28, §3.0a):** S3 is another engine inside the same
+> **opt-in `nonplanar` mode** — extended from S2 curved-top to conformal whole-surface paths.
+> **Standard (planar) mode remains the default and is untouched** regardless of the S3 flag
+> state; a `standard` job never contains conformal segments. The `nonplanar` selector keeps
+> its profile gating (now slope budget + joint model).
 
 ## Health Check Commands (must pass before commit)
 
@@ -115,14 +121,15 @@ against hand-computable small QPs.
 Alternative conformal strategy: parametrize (unfold) the curved surface to a plane, slice in
 parameter space, and map back through the inverse map. This produces paths aligned with the
 surface but must validate distortion limits (subsequent bead widths vary — handled by
-variable-thickness validation S12-004).
+variable-thickness validation S12-004). Runs only within `slicing_mode = nonplanar` (§3.0a);
+standard-mode jobs never use it.
 
 #### Acceptance Criteria
 
 - [ ] Parameterization of a topologically disk-like curved surface (develop or near-isometric) with bounded area distortion (targets recorded).
 - [ ] Inverse-map: parameter-space paths → surface paths; distortion above the per-profile threshold → rejected or re-mapped (journaled).
 - [ ] Bounds: only parts whose curtain edges lie on slope-budget surfaces; no over-claim ("general free-form" is not claimed for S3 v1).
-- [ ] Integration: paths go through IR S12-005/S8-004 and per-machine postprocessor.
+- [ ] Integration: paths go through IR S12-005/S8-004 (mode-tagged) and per-machine postprocessor.
 - [ ] Health gate green.
 
 ### S12-004 — Variable-thickness layer validation + paint-ability check
@@ -171,14 +178,16 @@ S3 must be measured against the planar baseline and its declared tolerance budge
 S1 corpus plus two curved parts: max deviation (mm) on an exposed top surface, wall thickness
 deviation, and infill continuity metrics. Budget numbers are declared BEFORE measurement; only
 results within budget upgrade the feature flag from art-only to art+structural. The UI gate is
-explicit: when the flag is off, conformal tools are grayed out with the reason.
+explicit: when the flag is off, conformal tools are grayed out with the reason — and the
+**standard mode toggle stays fully functional regardless**: standard-mode slices on the same
+profile must remain byte-stable (regression) while S3 flag is off.
 
 #### Acceptance Criteria
 
 - [ ] Budget declared in `docs/evidence/s3-tolerance-budget-*.md` (pre-measurement): max top-surface deviation ≤ X mm, wall-thickness deviation ≤ Y mm, infill continuity ≥ Z %.
 - [ ] Measurement harness: run S3 and planar baseline on the S1 corpus + 2 curved fixtures; comparator `scripts/compare-conformal-runs.mjs` computes the metrics; results recorded in `docs/evidence/` (redacted, JSON-safe).
 - [ ] Pass/fail vs declared budget documented. On pass: feature flag flips to art+structural (still experimental label). On fail: remains art-only with the measured deltas and a journaled rollback path.
-- [ ] UI gate test: with flag off (default), conformal toolbar tools are disabled with reason; flag set → enabled + "experimental" badge.
+- [ ] UI gate test: with flag off (default), conformal toolbar tools are disabled with reason; flag set → enabled + "experimental" badge; `standard` mode unchanged (byte-stable standard slice regression on the corpus).
 - [ ] Health gate green.
 
 ## Sprint Commit
@@ -189,7 +198,7 @@ git commit -m "feat(sprint-12): R6 — conformal/field-based S3 (paper study, OS
 
 - S12-001: CurviSlicer paper study + design lock (AGPL never imported)
 - S12-002: OSQP QP solver in Rust (field strategies)
-- S12-003: deform/inverse-map conformal strategy
+- S12-003: deform/inverse-map conformal strategy (nonplanar mode only)
 - S12-004: variable-thickness validation + paint-ability check
-- S12-005: S3 tolerance vs planar baseline + art-only UI gate
+- S12-005: S3 tolerance vs planar baseline + art-only UI gate (standard untouched)
 ```

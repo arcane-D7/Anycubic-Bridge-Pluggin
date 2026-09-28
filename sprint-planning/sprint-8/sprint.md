@@ -10,7 +10,7 @@
 | **Priority**          | P0                                                                                                                      |
 | **Sprint Type**       | Feature                                                                                                                 |
 | **Primary Owner**     | engine-core                                                                                                             |
-| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §3 (own engine, S1, §3.3, §3.6, §3.7), §5 (profiles), §10 R2, §2 (presets/catalog.json) |
+| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §3 (own engine, S1, §3.3, §3.6, §3.7), §3.0a (dual modes — standard default), §5 (profiles), §10 R2, §2 (presets/catalog.json) |
 | **Depends On**        | Sprint 7 (R1)                                                                                                           |
 | **Status**            | ⏳ Planned                                                                                                              |
 
@@ -34,6 +34,15 @@ implements layer preview / per-layer toolpath visualization, and introduces the
 context-dependent op IR (pose, orientation, bead section, flow, cooling, speed, collision-free
 interval, provenance) with an **independent** emitted-program validator (separate code path
 from the generator) and per-machine postprocessing via kinematics-aware FK.
+
+> **Dual-mode requirement (user-confirmed 2026-09-28, §3.0a):** the slicer ships BOTH modes,
+> first-class — **standard (planar) mode = the default, always available, product-grade**; the
+> non-planar engine is an **opt-in experimental mode** selected **per project** only when the
+> active machine profile declares the required capabilities. **R2 delivers the standard-mode
+> pipeline in full** (slice → IR → postprocess → validate → preview) and all dual-mode
+> mechanics (mode persisted per project from S6-004, mode in IR provenance + cache key,
+> mode-aware validator, no global mode setting). Non-planar S2/S3 come online later (Sprint
+> 11/12) as a capability-gated per-project opt-in.
 
 ## Health Check Commands (must pass before commit)
 
@@ -96,7 +105,10 @@ The planar core is a thin, deterministic Rust slice engine: layer heights, wall 
 infill, E computed by volume conservation from real 3D path length and bead cross-section
 (§3.3 — `V = ∫A_bead(s)ds`, `ΔE = V/A_filament` in filament-length mode, `Q = A_bead·v`
 steady state). No source-adaptation of libSlic3r (AGPL) or Kiri:Moto engine (terms
-unconfirmed); any reference use is study-only per §🔒 LICENSE POLICY.
+unconfirmed); any reference use is study-only per §🔒 LICENSE POLICY. This is the engine
+behind **standard (planar) mode** — the default slicing model, always available (§3.0a); **not**
+a research stub. It does **not** depend on any non-planar capability and is the baseline every
+mode-aware validator checks against.
 
 #### Acceptance Criteria
 
@@ -105,6 +117,7 @@ unconfirmed); any reference use is study-only per §🔒 LICENSE POLICY.
 - [ ] Deterministic: same input + profile → byte-identical slice metadata (hash test); no float nondeterminism.
 - [ ] Machine capability gates: build volume from profile (never hardcoded); unsupported dialect → pre-flight rejection (reuses §5 contract).
 - [ ] Output: intermediate IR (S8-004) + per-machine gcode subset via postprocessor (S8-005); no generic Cartesian emitter claim yet.
+- [ ] **Standard-mode role**: runs without any non-planar capability; a `standard` job never contains a Z-ramp or non-planar segment (validator enforces, §3.0a).
 - [ ] Health gate green.
 
 ### S8-003 — Profiles mapping: presets/catalog.json → §5 machine capability schema
@@ -151,15 +164,20 @@ the catalog is a *provider*. Unmapped keys are flagged `unknown`/null, never gue
 Every generated path needs a deterministic, reproducible intermediate representation before
 machine postprocessing, and the emitted program must be validated by an **independent**
 validation pass that does not share the generator's code path (§3.6). This IR is the seam the
-non-planar engine (R5/R6) plugs into later. It carries per-segment: pose, tool orientation,
-bead cross-section, flow, cooling, speed, collision-free interval, and provenance (revision,
-generator, inputs).
+non-planar engine (R5/R6) plugs into later — and the seam where **mode** lives. It carries
+per-segment: pose, tool orientation, bead cross-section, flow, cooling, speed, collision-free
+interval, and provenance (revision, generator, inputs). A segment-level `mode` tag
+(`standard` | `nonplanar`) makes the validator **mode-aware** (§3.0a): a Z-ramp in a
+`standard` job, or a layer-jump in a `nonplanar` job, is rejected with a named reason +
+segment id.
 
 #### Acceptance Criteria
 
 - [ ] IR schema v1 versioned (JSON or bincode): segments with pose (position + orientation), bead `A_bead(s)` (variable section allowed), flow `Q`, cooling params, speed, collision-free interval, provenance; the segment's Z/E derivation uses §3.3 formulas.
+- [ ] **Mode tagging**: per-segment `mode` field (`standard` | `nonplanar`); non-planar segments (Z-ramp etc.) are tagged `nonplanar`; the preview consumes the flag so continuous-Z is never rendered as a layer change.
 - [ ] Generator writes IR deterministically (hash test); IR is the contract between generator and postprocessor.
-- [ ] **Independent validator** (separate crate/code path, no shared functions with the generator): re-checks every segment: extrusion conservation (∫A_bead ds ≈ ΣE·A_filament), continuity, no out-of-profile moves, build-volume containment, dialect whitelist; a seeded bug in the generator is caught by the validator in a test.
+- [ ] **Independent validator** (separate crate/code path, no shared functions with the generator): re-checks every segment: extrusion conservation (∫A_bead ds ≈ ΣE·A_filament), continuity, no out-of-profile moves, build-volume containment, dialect whitelist, **and mode consistency — a Z-ramp inside a `standard` job is rejected (named reason + segment id)**; a seeded bug in the generator is caught by the validator in a test.
+- [ ] **Slice-cache key includes the `slicing_mode`**: switching mode invalidates the cache and forces a re-slice with explicit UI confirmation (no stale-mode gcode leak, §3.0a).
 - [ ] Validator failures surface as journaled rejections, never silent pass.
 - [ ] Health gate green.
 
@@ -180,25 +198,26 @@ generator, inputs).
 The postprocessor maps IR → controller dialect per the machine profile: joints from the
 capability schema (linear/R-theta/robotic), a gcode whitelist per `controller_dialect`, and
 no out-of-whitelist emission. Layer preview / per-layer toolpath visualization renders IR in
-the R3F viewport for inspection.
+the R3F viewport for inspection. In **standard mode** the preview renders layer-by-layer
+(fictitious-layer detection disabled when a `nonplanar` tag is present, §3.0a).
 
 #### Acceptance Criteria
 
 - [ ] Postprocessor emits only whitelisted dialect codes from the profile (`gcode_whitelist`); a code outside the whitelist fails the validator test.
 - [ ] Kinematics-aware: for a cartesian profile the FK is identity (X/Y/Z); for a rotary profile the joint targets are computed from IR pose (rectilinear segments; continuous multi-axis is R7/S4 — no over-claim).
-- [ ] Layer preview: viewport shows per-layer toolpaths + infill/walls overlays from IR; layer slider works.
-- [ ] E2E: slice fixture → IR → postprocess → validate → preview renders without errors.
+- [ ] Layer preview: viewport shows per-layer toolpaths + infill/walls overlays from IR; layer slider works; `mode` metadata consumed (standard renders layer-aligned; nonplanar segments render as ramps, not layer jumps).
+- [ ] E2E: slice fixture → IR → postprocess → validate → preview renders without errors, in `standard` (default) mode.
 - [ ] Health gate green.
 
 ## Sprint Commit
 
 ```bash
 git add -A
-git commit -m "feat(sprint-8): R2 — own planar core as validation baseline + op IR"
+git commit -m "feat(sprint-8): R2 — standard slicing mode + own planar core + op IR"
 
 - S8-001: S1 spike — declared planar parity budget vs Anycubic reference
-- S8-002: clean Rust planar core (layers/walls/infill, §3.3 extrusion)
+- S8-002: clean Rust planar core (layers/walls/infill, §3.3 extrusion) = standard mode
 - S8-003: profiles mapping from preserved catalog into §5 schema
-- S8-004: context-dependent op IR + independent emitted-program validator
-- S8-005: per-machine kinematics-aware postprocessor + layer preview
+- S8-004: context-dependent op IR (mode-tagged) + mode-aware independent validator
+- S8-005: per-machine kinematics-aware postprocessor + mode-aware layer preview
 ```
