@@ -2,17 +2,17 @@
 
 ## Sprint Metadata
 
-| Field                 | Value                                                                                                                   |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Sprint Name**       | R0 Foundation — Tauri+React scaffold, broker skeleton, machine capability contract, versioned project schema, loopback bridge |
+| Field                 | Value                                                                                                                                                                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Sprint Name**       | R0 Foundation — Tauri+React scaffold, broker skeleton, machine capability contract, versioned project schema, loopback bridge                                                                                                                                |
 | **Sprint Goal**       | Deliver a runnable desktop shell with the new workspace, the machine capability contract v1 (fail-closed, 3 ingestion paths), a versioned project schema with content-addressed artifacts, and a read-only loopback bridge to the preserved Node MCP server. |
-| **Duration Estimate** | ~3 weeks                                                                                                                |
-| **Priority**          | P0                                                                                                                      |
-| **Sprint Type**       | Feature                                                                                                                 |
-| **Primary Owner**     | platform-core                                                                                                           |
-| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §5, §6 (auth-separable), §7 (UI), §10 R0, §3.0a (dual slicing modes — persisted per project); Sprint 5 gates |
-| **Depends On**        | Sprint 5 (architecture + quality gates)                                                                                 |
-| **Status**            | ⏳ Planned                                                                                                              |
+| **Duration Estimate** | ~3 weeks                                                                                                                                                                                                                                                     |
+| **Priority**          | P0                                                                                                                                                                                                                                                           |
+| **Sprint Type**       | Feature                                                                                                                                                                                                                                                      |
+| **Primary Owner**     | platform-core                                                                                                                                                                                                                                                |
+| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §5, §6 (auth-separable), §7 (UI), §10 R0, §3.0a (dual slicing modes — persisted per project); Sprint 5 gates                |
+| **Depends On**        | Sprint 5 (architecture + quality gates)                                                                                                                                                                                                                      |
+| **Status**            | ⏳ Planned                                                                                                                                                                                                                                                   |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -24,8 +24,7 @@
 
 ## Sprint Goal Statement
 
-R0 builds the shell everything else hangs on. The new `apps/editor` (Tauri 2 + React 19 + R3F
-9) starts up, talks to a Rust broker (rusqlite workspace DB, no auth dependency), ingests
+R0 builds the shell everything else hangs on. The new `apps/editor` (Tauri 2 + React 19 + R3F 9) starts up, talks to a Rust broker (rusqlite workspace DB, no auth dependency), ingests
 machine profiles through the three read-only paths into the §5.1 capability schema with
 fail-closed pre-flight rejection, and reads the legacy scene **read-only** through a loopback
 bridge during migration. The legacy editor is **not** deleted yet (cutover is at R5+); it is
@@ -44,15 +43,15 @@ node scripts/sanitize-repo.mjs --dry-run
 
 ### S6-001 — Tauri 2 + React 19 scaffold (apps/editor)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S6-001                                                                 |
-| **Title**            | Desktop shell scaffold (Tauri 2, React 19, R3F 9, layout panels)       |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | XL                                                                     |
-| **Source Finding**   | Invest. Rev 2.0 §7.1/§7.2; Sprint 5 architecture (S5-001/002)          |
-| **Status**           | ⏳ Planned                                                             |
+| Field                | Value                                                            |
+| -------------------- | ---------------------------------------------------------------- |
+| **Ticket ID**        | S6-001                                                           |
+| **Title**            | Desktop shell scaffold (Tauri 2, React 19, R3F 9, layout panels) |
+| **Priority**         | P0                                                               |
+| **Type**             | Feature                                                          |
+| **Estimated Effort** | XL                                                               |
+| **Source Finding**   | Invest. Rev 2.0 §7.1/§7.2; Sprint 5 architecture (S5-001/002)    |
+| **Status**           | ⏳ Planned                                                       |
 
 #### Context
 
@@ -73,15 +72,15 @@ all Sprint 5 quality gates from day one.
 
 ### S6-002 — Rust broker skeleton + workspace DB
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S6-002                                                                 |
-| **Title**            | Broker skeleton, rusqlite workspace.db, keystore boundary (no auth dep) |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                       |
+| -------------------- | --------------------------------------------------------------------------- |
+| **Ticket ID**        | S6-002                                                                      |
+| **Title**            | Broker skeleton, rusqlite workspace.db, keystore boundary (no auth dep)     |
+| **Priority**         | P0                                                                          |
+| **Type**             | Feature                                                                     |
+| **Estimated Effort** | L                                                                           |
 | **Source Finding**   | Invest. Rev 2.0 §8.1/§8.5 (T2 broker, keys in keystore), §6.1 storage table |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                  |
 
 #### Context
 
@@ -101,15 +100,15 @@ keys never touch the DB (keystore only). A `schema_version` pragma is enforced f
 
 ### S6-003 — Machine capability contract v1 (schema + ingestion)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S6-003                                                                 |
+| Field                | Value                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S6-003                                                                                 |
 | **Title**            | §5.1 machine capability contract v1 — schema, 3 ingestion paths, fail-closed rejection |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | XL                                                                     |
-| **Source Finding**   | Invest. Rev 2.0 §5.1/§5.2/§5.3 (fail-closed, src/measured, qualification) |
-| **Status**           | ⏳ Planned                                                             |
+| **Priority**         | P0                                                                                     |
+| **Type**             | Feature                                                                                |
+| **Estimated Effort** | XL                                                                                     |
+| **Source Finding**   | Invest. Rev 2.0 §5.1/§5.2/§5.3 (fail-closed, src/measured, qualification)              |
+| **Status**           | ⏳ Planned                                                                             |
 
 #### Context
 
@@ -135,15 +134,15 @@ confidence marking / online catalog hash-checked), profile store, qualification 
 
 ### S6-004 — Versioned project schema + content-addressed artifacts
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S6-004                                                                 |
-| **Title**            | Project schema v1 (objects/ops/undo/revisions) + content-addressed artifact store |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                                                      |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S6-004                                                                                                     |
+| **Title**            | Project schema v1 (objects/ops/undo/revisions) + content-addressed artifact store                          |
+| **Priority**         | P0                                                                                                         |
+| **Type**             | Feature                                                                                                    |
+| **Estimated Effort** | L                                                                                                          |
 | **Source Finding**   | Invest. Rev 2.0 §2.2 (no durable model today), §6.1 (content-addressed artifacts), §4.6 (revision/journal) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                                 |
 
 #### Context
 
@@ -167,15 +166,15 @@ dual-mode requirement is data from day one.
 
 ### S6-005 — Loopback bridge to preserved Node MCP server (read-only legacy scene)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S6-005                                                                 |
-| **Title**            | Read-only loopback REST/SSE bridge to the existing Node MCP/CAD server   |
-| **Priority**         | P1                                                                     |
-| **Type**             | Feature (bridge)                                                       |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S6-005                                                                                 |
+| **Title**            | Read-only loopback REST/SSE bridge to the existing Node MCP/CAD server                 |
+| **Priority**         | P1                                                                                     |
+| **Type**             | Feature (bridge)                                                                       |
+| **Estimated Effort** | L                                                                                      |
 | **Source Finding**   | Invest. Rev 2.0 §7.1 (worker bridge), §2 (preserved contract), §10 R0 (migration gate) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                             |
 
 #### Context
 
@@ -196,15 +195,15 @@ new UI yet.
 
 ### S6-006 — Auth service scaffold (separable, loopback) — editor runs without it
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S6-006                                                                 |
-| **Title**            | Auth service skeleton: loopback module/process, separate auth.db, zero editor-core dependency |
-| **Priority**         | P1                                                                     |
-| **Type**             | Feature (skeleton)                                                     |
-| **Estimated Effort** | M                                                                      |
+| Field                | Value                                                                                                    |
+| -------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S6-006                                                                                                   |
+| **Title**            | Auth service skeleton: loopback module/process, separate auth.db, zero editor-core dependency            |
+| **Priority**         | P1                                                                                                       |
+| **Type**             | Feature (skeleton)                                                                                       |
+| **Estimated Effort** | M                                                                                                        |
 | **Source Finding**   | Invest. Rev 2.0 §6.1/§6.4 (separable service; local `auth.db` XOR Postgres; auth tenant ≠ printer creds) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                               |
 
 #### Context
 

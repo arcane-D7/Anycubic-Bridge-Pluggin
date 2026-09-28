@@ -125,7 +125,7 @@ public static class WindowRefreshApi { [DllImport("user32.dll")] public static e
 
 export function listLiveSlicerSessions({ process_id, window_title } = {}) {
   return runningSlicers()
-    .filter((item) => (!process_id || item.process_id === process_id))
+    .filter((item) => !process_id || item.process_id === process_id)
     .filter((item) => {
       if (!window_title) return true;
       const wanted = window_title.toLowerCase().replace(/[\s*+()]/g, "");
@@ -158,7 +158,8 @@ export function rollbackLiveSlicerSettings({ process_id, window_title, snapshot 
   if (!process) throw new Error("No matching Anycubic Slicer Next process is running.");
   const target = process.sessions[0];
   const source = snapshot.sessions[0]?.sessions?.[0] ?? snapshot.sessions[0];
-  if (!target || !source?.settings) throw new Error("Snapshot does not contain restorable settings.");
+  if (!target || !source?.settings)
+    throw new Error("Snapshot does not contain restorable settings.");
   saveSessionConfig(target.settings_file, source.settings);
   refreshLiveSlicerProject(process.process_id);
   const verified = readLiveSlicerSettings({ process_id: process.process_id });

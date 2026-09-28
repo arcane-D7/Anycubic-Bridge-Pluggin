@@ -2,17 +2,17 @@
 
 ## Sprint Metadata
 
-| Field                 | Value                                                                                                                   |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Sprint Name**       | R1 — Blender required backend wiring, parity corpus, modal IPC, undo/recovery, import/export                    |
+| Field                 | Value                                                                                                                                                                                                                                                       |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sprint Name**       | R1 — Blender required backend wiring, parity corpus, modal IPC, undo/recovery, import/export                                                                                                                                                                |
 | **Sprint Goal**       | Wire the pinned, user-installed Blender as the required geometry authority behind modal begin/update/commit/cancel commands, prove parity on a versioned corpus (≥3 meshes, ≥20 ops) and land journal-based undo/recovery + STL/OBJ/3MF/glTF import-export. |
-| **Duration Estimate** | ~4 weeks                                                                                                                |
-| **Priority**          | P0                                                                                                                      |
-| **Sprint Type**       | Feature                                                                                                                 |
-| **Primary Owner**     | geometry-core                                                                                                           |
-| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §4 (decision + parity matrix + build options + IPC), §7.4, §10 R1; Sprint 5/6 gates |
-| **Depends On**        | Sprint 6 (R0)                                                                                                           |
-| **Status**            | ⏳ Planned                                                                                                              |
+| **Duration Estimate** | ~4 weeks                                                                                                                                                                                                                                                    |
+| **Priority**          | P0                                                                                                                                                                                                                                                          |
+| **Sprint Type**       | Feature                                                                                                                                                                                                                                                     |
+| **Primary Owner**     | geometry-core                                                                                                                                                                                                                                               |
+| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §4 (decision + parity matrix + build options + IPC), §7.4, §10 R1; Sprint 5/6 gates                                        |
+| **Depends On**        | Sprint 6 (R0)                                                                                                                                                                                                                                               |
+| **Status**            | ⏳ Planned                                                                                                                                                                                                                                                  |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -28,7 +28,7 @@ Blender becomes the geometry authority: a pinned `BLENDER_VERSION`, user-install
 (never bundled — GPL), driven headless (`blender -b --python`) through a **framed stdio/framed
 IPC command contract with a binary artifact channel** (MSIX-alias stdout limitation scoped to
 the alias; JSON-over-file retained as PoC fallback per §4.6). The viewport renders the live
-Blender scene as a *view*, never a twin. Modal ops (begin/update/commit/cancel), stale-revision
+Blender scene as a _view_, never a twin. Modal ops (begin/update/commit/cancel), stale-revision
 handling, selection invariants, and journal-based undo/recovery are the core deliverables, plus
 the parity corpus that measures the R1 matrix rows (object mode, edit-mode selection, mesh
 topology ops, merge/dissolve/normals, selection invariants, undo/redo).
@@ -49,15 +49,15 @@ node scripts/sanitize-repo.mjs --dry-run
 
 ### S7-001 — Blender discovery + pinned version contract
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S7-001                                                                 |
-| **Title**            | Blender discovery (MSIX alias + classic), version pinning, egress/limits for T2 worker |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | M                                                                      |
+| Field                | Value                                                                                                                                              |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S7-001                                                                                                                                             |
+| **Title**            | Blender discovery (MSIX alias + classic), version pinning, egress/limits for T2 worker                                                             |
+| **Priority**         | P0                                                                                                                                                 |
+| **Type**             | Feature                                                                                                                                            |
+| **Estimated Effort** | M                                                                                                                                                  |
 | **Source Finding**   | Invest. Rev 2.0 §4.1 (required dep), §4.3(a) baseline, `tools/HEADLESS-RENDER.md`, §8.2 T2 row (fault containment, firewall egress deny, watchdog) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                                                                         |
 
 #### Context
 
@@ -77,15 +77,15 @@ external watchdog — §8.2).
 
 ### S7-002 — Framed stdio/IPC command contract (modal lifecycle + stale revisions)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S7-002                                                                 |
+| Field                | Value                                                                                                     |
+| -------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S7-002                                                                                                    |
 | **Title**            | Versioned command contract: begin/update/commit/cancel, expected_revision, remapping table, binary deltas |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | XL                                                                     |
-| **Source Finding**   | Invest. Rev 2.0 §4.6 (IPC contract), §4.2 selection invariants, §3.5 journal discipline |
-| **Status**           | ⏳ Planned                                                             |
+| **Priority**         | P0                                                                                                        |
+| **Type**             | Feature                                                                                                   |
+| **Estimated Effort** | XL                                                                                                        |
+| **Source Finding**   | Invest. Rev 2.0 §4.6 (IPC contract), §4.2 selection invariants, §3.5 journal discipline                   |
+| **Status**           | ⏳ Planned                                                                                                |
 
 #### Context
 
@@ -107,19 +107,19 @@ versioned wire format and explicit backpressure.
 
 ### S7-003 — Parity corpus v1 (≥3 meshes, ≥20 ops) + corpus runner
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S7-003                                                                 |
-| **Title**            | Versioned parity corpus + assertions (selection invariants, snapshots authoritative) |
-| **Priority**         | P0                                                                     |
-| **Type**             | Test                                                                    |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S7-003                                                                                 |
+| **Title**            | Versioned parity corpus + assertions (selection invariants, snapshots authoritative)   |
+| **Priority**         | P0                                                                                     |
+| **Type**             | Test                                                                                   |
+| **Estimated Effort** | L                                                                                      |
 | **Source Finding**   | Invest. Rev 2.0 §4.2 (parity corpus [SPEC]), §7.4 (native snapshot wins over renderer) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                             |
 
 #### Context
 
-Parity is *measured*, not asserted. The corpus: ≥3 small meshes + ≥20 recorded op sequences +
+Parity is _measured_, not asserted. The corpus: ≥3 small meshes + ≥20 recorded op sequences +
 recorded expected outcomes (native BLEND snapshots, mesh hashes, selection snapshots). The
 runner executes the R1-row matrix ops through the contract and compares against expectations.
 Native snapshots are authoritative — a renderer mismatch is a renderer bug.
@@ -134,15 +134,15 @@ Native snapshots are authoritative — a renderer mismatch is a renderer bug.
 
 ### S7-004 — Viewport as a view of the live Blender scene (R3F)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S7-004                                                                 |
-| **Title**            | R3F viewport rendering authoritative snapshots; gizmos/modes/numeric entry UI |
-| **Priority**         | P1                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | XL                                                                     |
+| Field                | Value                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S7-004                                                                                            |
+| **Title**            | R3F viewport rendering authoritative snapshots; gizmos/modes/numeric entry UI                     |
+| **Priority**         | P1                                                                                                |
+| **Type**             | Feature                                                                                           |
+| **Estimated Effort** | XL                                                                                                |
 | **Source Finding**   | Invest. Rev 2.0 §7.4 (viewport is view, not twin), §4.2 (UI owns interaction, Blender owns state) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                        |
 
 #### Context
 
@@ -161,15 +161,15 @@ native snapshot is a renderer bug (snapshot wins).
 
 ### S7-005 — Undo/recovery = command-journal replay
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S7-005                                                                 |
-| **Title**            | Journal-based undo authority, autosave snapshots, crash recovery        |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                                     |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S7-005                                                                                    |
+| **Title**            | Journal-based undo authority, autosave snapshots, crash recovery                          |
+| **Priority**         | P0                                                                                        |
+| **Type**             | Feature                                                                                   |
+| **Estimated Effort** | L                                                                                         |
 | **Source Finding**   | Invest. Rev 2.0 §4.6 (undo/recovery), §3.5 (journal discipline), Sprint 6 S6-004 skeleton |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                |
 
 #### Context
 
@@ -189,15 +189,15 @@ the contract.
 
 ### S7-006 — Import/Export: STL/OBJ/3MF/glTF (+ STEP/IGES conversion-only note)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S7-006                                                                 |
-| **Title**            | Import/export STL/OBJ/3MF/glTF; OCCT conversion tier read-only            |
-| **Priority**         | P1                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S7-006                                                                                            |
+| **Title**            | Import/export STL/OBJ/3MF/glTF; OCCT conversion tier read-only                                    |
+| **Priority**         | P1                                                                                                |
+| **Type**             | Feature                                                                                           |
+| **Estimated Effort** | L                                                                                                 |
 | **Source Finding**   | Invest. Rev 2.0 §10 R1 (import/export list), §4.4 (STEP/IGES conversion-only, degraded bbox path) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                        |
 
 #### Context
 

@@ -2,17 +2,17 @@
 
 ## Sprint Metadata
 
-| Field                 | Value                                                                                                                   |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Sprint Name**       | R7 — T3b VM sandbox hardening (Linux dev-VM first; Windows off-by-default) + S4 continuous multi-axis research on real catalog profiles only |
+| Field                 | Value                                                                                                                                                                                                                                                                                                                                                                    |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Sprint Name**       | R7 — T3b VM sandbox hardening (Linux dev-VM first; Windows off-by-default) + S4 continuous multi-axis research on real catalog profiles only                                                                                                                                                                                                                             |
 | **Sprint Goal**       | Harden the sandbox to the native-VM tier (T3b) for genuinely untrusted native/model-generated code — Linux dev-VM first, Windows Hyper-V isolated or Windows Sandbox evaluated then deferred, off-by-default — and run the S4 research spike for continuous multi-axis printing against machines that actually exist in the capability catalog (no "any printer" claim). |
-| **Duration Estimate** | ~5 weeks                                                                                                                |
-| **Priority**          | P2 (research + hardening)                                                                                                 |
-| **Sprint Type**       | Feature/Research                                                                                                        |
-| **Primary Owner**     | harness-core / engine-nonplanar                                                                                          |
-| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §8 (harness tiers), §5.1 (joints/rotary model), §3 (S4 multi-axis), §10 R7 |
-| **Depends On**        | Sprint 12 (R6)                                                                                                           |
-| **Status**            | ⏳ Planned                                                                                                              |
+| **Duration Estimate** | ~5 weeks                                                                                                                                                                                                                                                                                                                                                                 |
+| **Priority**          | P2 (research + hardening)                                                                                                                                                                                                                                                                                                                                                |
+| **Sprint Type**       | Feature/Research                                                                                                                                                                                                                                                                                                                                                         |
+| **Primary Owner**     | harness-core / engine-nonplanar                                                                                                                                                                                                                                                                                                                                          |
+| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §8 (harness tiers), §5.1 (joints/rotary model), §3 (S4 multi-axis), §10 R7                                                                                                                                                              |
+| **Depends On**        | Sprint 12 (R6)                                                                                                                                                                                                                                                                                                                                                           |
+| **Status**            | ⏳ Planned                                                                                                                                                                                                                                                                                                                                                               |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -47,15 +47,15 @@ node scripts/sanitize-repo.mjs --dry-run
 
 ### S13-001 — T3b VM design spike + Windows decision (off-by-default)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S13-001                                                                |
+| Field                | Value                                                                                                 |
+| -------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S13-001                                                                                               |
 | **Title**            | T3b VM architecture spike (Linux dev-VM vs Windows Hyper-V/Sandbox) + Windows off-by-default decision |
-| **Priority**         | P1                                                                     |
-| **Type**             | Research/Spike                                                         |
-| **Estimated Effort** | M                                                                      |
-| **Source Finding**   | Invest. Rev 2.0 §8.2 (T3b native VM, off-by-default on Windows)         |
-| **Status**           | ⏳ Planned                                                             |
+| **Priority**         | P1                                                                                                    |
+| **Type**             | Research/Spike                                                                                        |
+| **Estimated Effort** | M                                                                                                     |
+| **Source Finding**   | Invest. Rev 2.0 §8.2 (T3b native VM, off-by-default on Windows)                                       |
+| **Status**           | ⏳ Planned                                                                                            |
 
 #### Context
 
@@ -73,15 +73,15 @@ requires explicit opt-in (§8.2).
 
 ### S13-002 — T3b worker: throwaway VM session (Linux dev-VM first), capability-gated
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S13-002                                                                |
-| **Title**            | Native code execution in throwaway VM with capability gates + watchdog |
-| **Priority**         | P1                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | XL                                                                     |
+| Field                | Value                                                                   |
+| -------------------- | ----------------------------------------------------------------------- |
+| **Ticket ID**        | S13-002                                                                 |
+| **Title**            | Native code execution in throwaway VM with capability gates + watchdog  |
+| **Priority**         | P1                                                                      |
+| **Type**             | Feature                                                                 |
+| **Estimated Effort** | XL                                                                      |
 | **Source Finding**   | Invest. Rev 2.0 §8.2 (T3b: untrusted native code, VM, capability-gated) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                              |
 
 #### Context
 
@@ -93,7 +93,7 @@ The VM session is proven dead after every run (no orphan processes on host).
 #### Acceptance Criteria
 
 - [ ] Linux dev-VM T3b integration: boot, transfer artifact, run with capability env (deny script: no net, no host mounts beyond scratch, no secrets in env — asserted by test), return output to scratch, snapshot-discard, verify host has zero leftover processes (kill/reap test).
-- [ ] Only T3b routes native tool execution; a tool that needs native code is *routed* to T3b only, never downgraded to T1/T3a; a tool that needs Blender = the broker-proxied named capability as always (S9-004), because Blender remains T2 first-party.
+- [ ] Only T3b routes native tool execution; a tool that needs native code is _routed_ to T3b only, never downgraded to T1/T3a; a tool that needs Blender = the broker-proxied named capability as always (S9-004), because Blender remains T2 first-party.
 - [ ] Watchdog mandatory (S9-002 same rule); fuel and wall-clock both enforced; VM disk wiped (scratch always discarded, never reused across sessions).
 - [ ] Windows behavior: T3b off by default; if on (explicit opt-in), Hyper-V isolated session per S13-001 decision; otherwise the attempt fails cleanly (see S13-001 test).
 - [ ] E2E: submit a "native tool" fixture to the harness → T3b-only handling; host resource isolation verified.
@@ -101,15 +101,15 @@ The VM session is proven dead after every run (no orphan processes on host).
 
 ### S13-003 — S4 spike: continuous multi-axis feasibility against existing catalog profiles
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S13-003                                                                |
-| **Title**            | S4 continuous multi-axis feasibility spike on actually-existing catalog profiles |
-| **Priority**         | P2                                                                     |
-| **Type**             | Research/Spike                                                         |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                                                                        |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S13-003                                                                                                                      |
+| **Title**            | S4 continuous multi-axis feasibility spike on actually-existing catalog profiles                                             |
+| **Priority**         | P2                                                                                                                           |
+| **Type**             | Research/Spike                                                                                                               |
+| **Estimated Effort** | L                                                                                                                            |
 | **Source Finding**   | Invest. Rev 2.0 §3 (S4 multi-axis, no "any printer" claim), §5.1 (joints/kinematic model), §8 (no claim for absent profiles) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                                                   |
 
 #### Context
 
@@ -119,7 +119,8 @@ or a rotary-tilt FDM cell if it is in the catalog; otherwise "no in-catalog mach
 research-only"). References: LinuxCNC 5-axis conventions (GPL, study), S3-Slicer (BSD-3 →
 study-only per §🔒), Open5x (MIT → study), S4_Slicer (GPL-3.0 → study), FullControl (GPL-3.0 →
 inspiration only). No over-claim: if no machine qualifies, the deliverable is a research note
-+ catalog extension request, not an engine.
+
+- catalog extension request, not an engine.
 
 #### Acceptance Criteria
 
@@ -132,15 +133,15 @@ inspiration only). No over-claim: if no machine qualifies, the deliverable is a 
 
 ### S13-004 — R7 integration: journal/safety-box interaction + full-tier matrix test
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S13-004                                                                |
-| **Title**            | Full harness-tier matrix integration test + journal/safety audit for T3b |
-| **Priority**         | P1                                                                     |
-| **Type**             | Test/Evidence                                                          |
-| **Estimated Effort** | M                                                                      |
+| Field                | Value                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S13-004                                                                                     |
+| **Title**            | Full harness-tier matrix integration test + journal/safety audit for T3b                    |
+| **Priority**         | P1                                                                                          |
+| **Type**             | Test/Evidence                                                                               |
+| **Estimated Effort** | M                                                                                           |
 | **Source Finding**   | Invest. Rev 2.0 §8 (tiers T0–T3b), §3.5 (learning journal; VM runs journaled like any tool) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                  |
 
 #### Context
 

@@ -2,17 +2,17 @@
 
 ## Sprint Metadata
 
-| Field                 | Value                                                                                                                   |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Sprint Name**       | R2 — own planar core (S1 spike), profiles mapping, layer preview, op IR + independent emitted-program validator            |
+| Field                 | Value                                                                                                                                                                                                                                                                                                      |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sprint Name**       | R2 — own planar core (S1 spike), profiles mapping, layer preview, op IR + independent emitted-program validator                                                                                                                                                                                            |
 | **Sprint Goal**       | Ship our own planar slicing core as a validation baseline (walls + infill on the corpus), spike S1 parity vs Anycubic Slicer Next within a declared budget, map existing presets into the machine capability schema, and define the context-dependent op IR with an independent emitted-program validator. |
-| **Duration Estimate** | ~4 weeks                                                                                                                |
-| **Priority**          | P0                                                                                                                      |
-| **Sprint Type**       | Feature                                                                                                                 |
-| **Primary Owner**     | engine-core                                                                                                             |
-| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §3 (own engine, S1, §3.3, §3.6, §3.7), §3.0a (dual modes — standard default), §5 (profiles), §10 R2, §2 (presets/catalog.json) |
-| **Depends On**        | Sprint 7 (R1)                                                                                                           |
-| **Status**            | ⏳ Planned                                                                                                              |
+| **Duration Estimate** | ~4 weeks                                                                                                                                                                                                                                                                                                   |
+| **Priority**          | P0                                                                                                                                                                                                                                                                                                         |
+| **Sprint Type**       | Feature                                                                                                                                                                                                                                                                                                    |
+| **Primary Owner**     | engine-core                                                                                                                                                                                                                                                                                                |
+| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §3 (own engine, S1, §3.3, §3.6, §3.7), §3.0a (dual modes — standard default), §5 (profiles), §10 R2, §2 (presets/catalog.json)                                            |
+| **Depends On**        | Sprint 7 (R1)                                                                                                                                                                                                                                                                                              |
+| **Status**            | ⏳ Planned                                                                                                                                                                                                                                                                                                 |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -25,7 +25,7 @@
 ## Sprint Goal Statement
 
 The product goal is a non-planar engine; the planar core is the **validation baseline** — it
-must match the Anycubic Slicer Next reference within a *declared, pre-declared* measurement
+must match the Anycubic Slicer Next reference within a _declared, pre-declared_ measurement
 budget (S1 spike), NOT be a product feature wrapper. Kiri:Moto and libSlic3r are **reference
 only** (per §3.4 + §🔒 license policy; the Kiri engine terms are unconfirmed; libSlic3r is
 AGPL) — the planar core is our own clean Rust implementation (thin: layers + walls + infill).
@@ -59,19 +59,19 @@ node scripts/sanitize-repo.mjs --dry-run
 
 ### S8-001 — S1 spike: declare & measure planar parity budget
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S8-001                                                                 |
-| **Title**            | Spike S1 — planar parity baseline vs Anycubic Slicer Next (declared budget) |
-| **Priority**         | P0                                                                     |
-| **Type**             | Test/Research spike                                                     |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------ |
+| **Ticket ID**        | S8-001                                                                                                 |
+| **Title**            | Spike S1 — planar parity baseline vs Anycubic Slicer Next (declared budget)                            |
+| **Priority**         | P0                                                                                                     |
+| **Type**             | Test/Research spike                                                                                    |
+| **Estimated Effort** | L                                                                                                      |
 | **Source Finding**   | Invest. Rev 2.0 §3.8 S1, §10 R2 acceptance; §3 (planar output = validation baseline, not product goal) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                             |
 
 #### Context
 
-Before building the planar core, the *measurement* must exist. The fixed 3-part corpus
+Before building the planar core, the _measurement_ must exist. The fixed 3-part corpus
 (fixtures committed in tests), Anycubic Slicer Next reference slicing via the preserved CLI
 adapter (`scripts/slicer-cli.mjs`), and a comparator must be in place. Budget numbers
 (per-layer wall count ±0, infill volume ≤ declared %, bounding box ≤ declared mm) are written
@@ -89,15 +89,15 @@ gates R2.
 
 ### S8-002 — Own planar core (clean Rust): layers + walls + infill
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S8-002                                                                 |
-| **Title**            | Planar slice core in Rust (layers, walls, infill) — clean implementation |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | XL                                                                     |
+| Field                | Value                                                                                                                       |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S8-002                                                                                                                      |
+| **Title**            | Planar slice core in Rust (layers, walls, infill) — clean implementation                                                    |
+| **Priority**         | P0                                                                                                                          |
+| **Type**             | Feature                                                                                                                     |
+| **Estimated Effort** | XL                                                                                                                          |
 | **Source Finding**   | Invest. Rev 2.0 §3 (own engine), §3.8 S1 (thin: layer + walls + infill), §10 R2; §🔒 policy (Kiri/libSlic3r reference-only) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                                                  |
 
 #### Context
 
@@ -122,21 +122,21 @@ mode-aware validator checks against.
 
 ### S8-003 — Profiles mapping: presets/catalog.json → §5 machine capability schema
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S8-003                                                                 |
-| **Title**            | Profile system (machine/process/filament) mapped from preserved catalog with contract as source of truth |
-| **Priority**         | P1                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | M                                                                      |
+| Field                | Value                                                                                                                   |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S8-003                                                                                                                  |
+| **Title**            | Profile system (machine/process/filament) mapped from preserved catalog with contract as source of truth                |
+| **Priority**         | P1                                                                                                                      |
+| **Type**             | Feature                                                                                                                 |
+| **Estimated Effort** | M                                                                                                                       |
 | **Source Finding**   | Invest. Rev 2.0 §10 R2 (profiles import from `presets/catalog.json` mapped into §5.1), §5 (contract is source of truth) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                                              |
 
 #### Context
 
 `presets/catalog.json` + slicer process/filament presets already exist in the repo (preserved).
 R2 imports them where possible into the capability schema — the schema is the source of truth,
-the catalog is a *provider*. Unmapped keys are flagged `unknown`/null, never guessed; conflicts
+the catalog is a _provider_. Unmapped keys are flagged `unknown`/null, never guessed; conflicts
 (process vs profile) surface for human resolution per §5.2/§5.3.
 
 #### Acceptance Criteria
@@ -144,20 +144,20 @@ the catalog is a *provider*. Unmapped keys are flagged `unknown`/null, never gue
 - [ ] Mapper crate/TS: catalog preset → `machine-profile` schema fields; process presets → slicing params; filaments → material capability entries.
 - [ ] Every unmapped or conflicting field is stored as `unknown`/null or flagged with provenance + confidence — no silent default (unit tests).
 - [ ] Conflicts between catalog/profile entries raise a human-resolution workflow entry (journaled), never auto-preference.
-- [ ] A profile is only *qualified* for a feature after the §5 qualification rules pass (ties into S6-003).
+- [ ] A profile is only _qualified_ for a feature after the §5 qualification rules pass (ties into S6-003).
 - [ ] Health gate green.
 
 ### S8-004 — Context-dependent op IR + independent emitted-program validator
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S8-004                                                                 |
+| Field                | Value                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------ |
+| **Ticket ID**        | S8-004                                                                                                 |
 | **Title**            | Op IR per segment (pose/orientation/bead/flow/cooling/speed/collision/provenance) + separate validator |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | XL                                                                     |
-| **Source Finding**   | Invest. Rev 2.0 §3.6 (deterministic IR + independent validator), §3.7 pipeline, §10 R2 |
-| **Status**           | ⏳ Planned                                                             |
+| **Priority**         | P0                                                                                                     |
+| **Type**             | Feature                                                                                                |
+| **Estimated Effort** | XL                                                                                                     |
+| **Source Finding**   | Invest. Rev 2.0 §3.6 (deterministic IR + independent validator), §3.7 pipeline, §10 R2                 |
+| **Status**           | ⏳ Planned                                                                                             |
 
 #### Context
 
@@ -183,15 +183,15 @@ segment id.
 
 ### S8-005 — Per-machine postprocessor (kinematics-aware FK → joint targets)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S8-005                                                                 |
-| **Title**            | Kinematics-aware postprocessor + layer preview/toolpath visualization    |
-| **Priority**         | P1                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                                                           |
+| -------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S8-005                                                                                                          |
+| **Title**            | Kinematics-aware postprocessor + layer preview/toolpath visualization                                           |
+| **Priority**         | P1                                                                                                              |
+| **Type**             | Feature                                                                                                         |
+| **Estimated Effort** | L                                                                                                               |
 | **Source Finding**   | Invest. Rev 2.0 §3.7 (per-machine FK → joint targets), §5.1 (joints/controller dialect), §10 R2 (layer preview) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                                      |
 
 #### Context
 

@@ -9,10 +9,19 @@ import { generateAll } from "../tools/cad/doser-precision-tool.mjs";
 // ---------------------------------------------------------------------------
 
 function bounds(mesh) {
-  let b = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, minZ: Infinity, maxZ: -Infinity };
+  let b = {
+    minX: Infinity,
+    maxX: -Infinity,
+    minY: Infinity,
+    maxY: -Infinity,
+    minZ: Infinity,
+    maxZ: -Infinity,
+  };
   const p = mesh.positions;
   for (let i = 0; i < p.length; i += 3) {
-    const x = p[i], y = p[i + 1], z = p[i + 2];
+    const x = p[i],
+      y = p[i + 1],
+      z = p[i + 2];
     if (x < b.minX) b.minX = x;
     if (x > b.maxX) b.maxX = x;
     if (y < b.minY) b.minY = y;
@@ -43,10 +52,7 @@ test("every part sits on the plate (min Z == 0, no floating parts)", async () =>
   const parts = await generateAll();
   for (const [name, mesh] of Object.entries(parts)) {
     const b = bounds(mesh);
-    assert.ok(
-      Math.abs(b.minZ) < EPS,
-      `${name} floats: minZ=${b.minZ.toFixed(6)} (expected 0)`,
-    );
+    assert.ok(Math.abs(b.minZ) < EPS, `${name} floats: minZ=${b.minZ.toFixed(6)} (expected 0)`);
   }
 });
 

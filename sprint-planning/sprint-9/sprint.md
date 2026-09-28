@@ -2,17 +2,17 @@
 
 ## Sprint Metadata
 
-| Field                 | Value                                                                                                                   |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Sprint Name**       | R3 — harness: BYOK adapters (AirRouter primary, local models first-class), T1/T3a WASI capability sandbox + mandatory watchdog, generated-tool lifecycle, continuous-learning journal v1 + safety box, approval/spend/provenance, chat UI |
+| Field                 | Value                                                                                                                                                                                                                                                                                                                                                                                           |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sprint Name**       | R3 — harness: BYOK adapters (AirRouter primary, local models first-class), T1/T3a WASI capability sandbox + mandatory watchdog, generated-tool lifecycle, continuous-learning journal v1 + safety box, approval/spend/provenance, chat UI                                                                                                                                                       |
 | **Sprint Goal**       | Land the isolated tool harness: BYOK with broker-held keys (AirRouter primary, local models first-class), Wasmtime capability-based sandbox for generated Wasm tools with a mandatory external watchdog, the hash-bound tool lifecycle (manifest→…→revocation), the immutable learning journal with a provably unmodifiable deterministic safety box, and the chat UI with approval/spend feed. |
-| **Duration Estimate** | ~5 weeks                                                                                                                |
-| **Priority**          | P0                                                                                                                      |
-| **Sprint Type**       | Feature                                                                                                                 |
-| **Primary Owner**     | harness-core                                                                                                            |
-| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §8 (harness/sandbox/BYOK/MCP), §3.5 (learning), §7.3 (chat UI), §10 R3 |
-| **Depends On**        | Sprint 8 (R2)                                                                                                           |
-| **Status**            | ⏳ Planned                                                                                                              |
+| **Duration Estimate** | ~5 weeks                                                                                                                                                                                                                                                                                                                                                                                        |
+| **Priority**          | P0                                                                                                                                                                                                                                                                                                                                                                                              |
+| **Sprint Type**       | Feature                                                                                                                                                                                                                                                                                                                                                                                         |
+| **Primary Owner**     | harness-core                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §8 (harness/sandbox/BYOK/MCP), §3.5 (learning), §7.3 (chat UI), §10 R3                                                                                                                                                                                         |
+| **Depends On**        | Sprint 8 (R2)                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Status**            | ⏳ Planned                                                                                                                                                                                                                                                                                                                                                                                      |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -46,15 +46,15 @@ node scripts/sanitize-repo.mjs --dry-run
 
 ### S9-001 — BYOK provider adapter (broker-held keys, AirRouter primary, local models first-class)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S9-001                                                                 |
-| **Title**            | BYOK multi-provider adapter behind broker keystore; egress pinning      |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                                                                                                        |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Ticket ID**        | S9-001                                                                                                                                                       |
+| **Title**            | BYOK multi-provider adapter behind broker keystore; egress pinning                                                                                           |
+| **Priority**         | P0                                                                                                                                                           |
+| **Type**             | Feature                                                                                                                                                      |
+| **Estimated Effort** | L                                                                                                                                                            |
 | **Source Finding**   | Invest. Rev 2.0 §8.5 (BYOK: broker holds keys, capability-named egress), §7.1 (Tauri broker), `scripts/cad-ai-translator.mjs` (existing adapter), R3 roadmap |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                                                                                   |
 
 #### Context
 
@@ -76,15 +76,15 @@ same adapter contract that `cad-ai-translator.mjs` already implements.
 
 ### S9-002 — T1/T3a Wasmtime capability sandbox + mandatory external watchdog
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S9-002                                                                 |
-| **Title**            | Wasmtime WASI capability sandbox (deny-by-default) + watchdog; bpy excluded |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | XL                                                                     |
+| Field                | Value                                                                                                      |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S9-002                                                                                                     |
+| **Title**            | Wasmtime WASI capability sandbox (deny-by-default) + watchdog; bpy excluded                                |
+| **Priority**         | P0                                                                                                         |
+| **Type**             | Feature                                                                                                    |
+| **Estimated Effort** | XL                                                                                                         |
 | **Source Finding**   | Invest. Rev 2.0 §8.2 (T1/T3a, fuel/epochs + mandatory watchdog [SPEC]), Wasmtime security docs (cited §11) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                                 |
 
 #### Context
 
@@ -92,7 +92,7 @@ Wasmtime `wasip2` capability-based sandboxing: the tool requests a capability se
 grants a subset; unrequested = denied. Fuel/epochs cannot interrupt blocking host calls — an
 external watchdog process is mandatory for every T1/T3a worker (never optional). bpy is not a
 T1/T3a workload; Blender runs as T2 and model-generated code wanting Blender's results requests
-a named *geometry capability* the broker proxies (§8.2 text).
+a named _geometry capability_ the broker proxies (§8.2 text).
 
 #### Acceptance Criteria
 
@@ -105,20 +105,20 @@ a named *geometry capability* the broker proxies (§8.2 text).
 
 ### S9-003 — Generated-tool lifecycle: manifest→scratch→build→test→approval→registration→revocation
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S9-003                                                                 |
-| **Title**            | Hash-bound tool registry + lifecycle state machine                        |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | L                                                                      |
-| **Source Finding**   | Invest. Rev 2.0 §8.3 (lifecycle table [SPEC]); separation of trust      |
-| **Status**           | ⏳ Planned                                                             |
+| Field                | Value                                                              |
+| -------------------- | ------------------------------------------------------------------ |
+| **Ticket ID**        | S9-003                                                             |
+| **Title**            | Hash-bound tool registry + lifecycle state machine                 |
+| **Priority**         | P0                                                                 |
+| **Type**             | Feature                                                            |
+| **Estimated Effort** | L                                                                  |
+| **Source Finding**   | Invest. Rev 2.0 §8.3 (lifecycle table [SPEC]); separation of trust |
+| **Status**           | ⏳ Planned                                                         |
 
 #### Context
 
 A self-created tool goes through a versioned lifecycle; none of the stages may be skipped.
-Approval is of the *exact manifested artifact* (hash-bound — approving a manifest does not
+Approval is of the _exact manifested artifact_ (hash-bound — approving a manifest does not
 approve a re-build). Registration is by content hash; only then invocable by name. Revocation
 kills running instances next tick and is journaled. Trusted first-party operations are
 separated from generated tools (trusted ops only via named-capability requests).
@@ -135,19 +135,19 @@ separated from generated tools (trusted ops only via named-capability requests).
 
 ### S9-004 — Named capability broker proxy to pinned workers (geometry capability)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S9-004                                                                 |
-| **Title**            | Broker-proxied named capabilities (Blender geometry, OCCT) for tools   |
-| **Priority**         | P1                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | M                                                                      |
+| Field                | Value                                                                                        |
+| -------------------- | -------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S9-004                                                                                       |
+| **Title**            | Broker-proxied named capabilities (Blender geometry, OCCT) for tools                         |
+| **Priority**         | P1                                                                                           |
+| **Type**             | Feature                                                                                      |
+| **Estimated Effort** | M                                                                                            |
 | **Source Finding**   | Invest. Rev 2.0 §8.2 (bpy exclusion + named geometry capability), §8.3 (separation of trust) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                   |
 
 #### Context
 
-Model-generated code that wants Blender's *results* requests a named *geometry capability*
+Model-generated code that wants Blender's _results_ requests a named _geometry capability_
 the broker proxies to the pinned Blender process — the model never obtains a Blender handle;
 untrusted Python/Blender scripts are T3b (VM), not T1. This broker proxy is the only way a T1/T3a
 tool touches Blender.
@@ -162,15 +162,15 @@ tool touches Blender.
 
 ### S9-005 — Continuous-learning journal v1 + deterministic safety box
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S9-005                                                                 |
+| Field                | Value                                                                                                |
+| -------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S9-005                                                                                               |
 | **Title**            | Immutable job journal + safety box (retrieval/optimisation/training gates; shadow→bounded→promotion) |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | XL                                                                     |
-| **Source Finding**   | Invest. Rev 2.0 §3.5 (bounded continuous learning [SPEC]), §10 R3       |
-| **Status**           | ⏳ Planned                                                             |
+| **Priority**         | P0                                                                                                   |
+| **Type**             | Feature                                                                                              |
+| **Estimated Effort** | XL                                                                                                   |
+| **Source Finding**   | Invest. Rev 2.0 §3.5 (bounded continuous learning [SPEC]), §10 R3                                    |
+| **Status**           | ⏳ Planned                                                                                           |
 
 #### Context
 
@@ -196,15 +196,15 @@ box is rejected and journaled. E-stop stays outside any learned pipeline.
 
 ### S9-006 — Chat UI v1: context sources, token budget, approval cards, spend
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S9-006                                                                 |
-| **Title**            | Chat panel v1 with approval/spend/provenance feed (React)                |
-| **Priority**         | P1                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                      |
+| -------------------- | -------------------------------------------------------------------------- |
+| **Ticket ID**        | S9-006                                                                     |
+| **Title**            | Chat panel v1 with approval/spend/provenance feed (React)                  |
+| **Priority**         | P1                                                                         |
+| **Type**             | Feature                                                                    |
+| **Estimated Effort** | L                                                                          |
 | **Source Finding**   | Invest. Rev 2.0 §7.3 (chat requirements), §8.8 (approval UX), §8.5 (spend) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                 |
 
 #### Context
 

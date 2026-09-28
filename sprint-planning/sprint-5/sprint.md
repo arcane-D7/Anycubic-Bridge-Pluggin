@@ -2,17 +2,17 @@
 
 ## Sprint Metadata
 
-| Field                 | Value                                                                                                                   |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Sprint Name**       | Architecture design, code-quality levels, inspection tooling, SOLID/DRY doctrine, repo boundaries                       |
-| **Sprint Goal**       | Lock the target architecture for the new React/Tauri editor, codify code-quality levels and repo boundaries, and install the quality/typing/license inspection gates that every later sprint must pass. |
-| **Duration Estimate** | ~2 weeks                                                                                                                |
-| **Priority**          | P0                                                                                                                      |
-| **Sprint Type**       | Architecture / Docs / Tooling                                                                                           |
-| **Primary Owner**     | platform-core                                                                                                           |
+| Field                 | Value                                                                                                                                                                                                                |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sprint Name**       | Architecture design, code-quality levels, inspection tooling, SOLID/DRY doctrine, repo boundaries                                                                                                                    |
+| **Sprint Goal**       | Lock the target architecture for the new React/Tauri editor, codify code-quality levels and repo boundaries, and install the quality/typing/license inspection gates that every later sprint must pass.              |
+| **Duration Estimate** | ~2 weeks                                                                                                                                                                                                             |
+| **Priority**          | P0                                                                                                                                                                                                                   |
+| **Sprint Type**       | Architecture / Docs / Tooling                                                                                                                                                                                        |
+| **Primary Owner**     | platform-core                                                                                                                                                                                                        |
 | **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md), Rev 2.0 §2, §4, §5, §6, §7, §8, §9, §10 + user license policy (Apache/MIT direct-use only) |
-| **Depends On**        | Sprint 4 (legacy CAD sprints 1–4 history)                                                                               |
-| **Status**            | ⏳ Planned                                                                                                              |
+| **Depends On**        | Sprint 4 (legacy CAD sprints 1–4 history)                                                                                                                                                                            |
+| **Status**            | ⏳ Planned                                                                                                                                                                                                           |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -24,9 +24,9 @@
 
 ## Sprint Goal Statement
 
-The Rev 2.0 investigation defines the *what*: an own non-planar engine, Blender as required
+The Rev 2.0 investigation defines the _what_: an own non-planar engine, Blender as required
 geometry authority (external process, never bundled), machine capability contract, harness
-sandbox, separable auth. This sprint turns that into the *how*: a committed architecture
+sandbox, separable auth. This sprint turns that into the _how_: a committed architecture
 design document (`docs/architecture.md`) with module boundaries, process model, IPC contracts
 and the preserved-root boundary; **code-quality levels** (strict TypeScript, ESLint flat
 config, Prettier, Knip, license check) wired into a single health gate so every future sprint
@@ -57,15 +57,15 @@ node scripts/sanitize-repo.mjs --dry-run   # must remain 0 files / 0 groups
 
 ### S5-001 — Architecture design document (target architecture)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S5-001                                                                 |
-| **Title**            | `docs/architecture.md` — committed architecture for the new editor     |
-| **Priority**         | P0                                                                     |
-| **Type**             | Architecture/Docs                                                      |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S5-001                                                                                            |
+| **Title**            | `docs/architecture.md` — committed architecture for the new editor                                |
+| **Priority**         | P0                                                                                                |
+| **Type**             | Architecture/Docs                                                                                 |
+| **Estimated Effort** | L                                                                                                 |
 | **Source Finding**   | Invest. Rev 2.0 §1, §4, §5, §6, §7, §8, §9, §10; user "primeiro passo ... desenho de arquitetura" |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                        |
 
 #### Context
 
@@ -88,15 +88,15 @@ GPL/AGPL/BSD-3 = study/reference only; Blender = user-installed prerequisite, ne
 
 ### S5-002 — Repository boundaries & workspace layout
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S5-002                                                                 |
-| **Title**            | Enforce repository/workspace boundaries (preserved root vs new app)    |
-| **Priority**         | P0                                                                     |
-| **Type**             | Architecture/Tooling                                                   |
-| **Estimated Effort** | M                                                                      |
+| Field                | Value                                                                                            |
+| -------------------- | ------------------------------------------------------------------------------------------------ |
+| **Ticket ID**        | S5-002                                                                                           |
+| **Title**            | Enforce repository/workspace boundaries (preserved root vs new app)                              |
+| **Priority**         | P0                                                                                               |
+| **Type**             | Architecture/Tooling                                                                             |
+| **Estimated Effort** | M                                                                                                |
 | **Source Finding**   | Invest. Rev 2.0 §2 scope boundary; AGENTS.md repo agnostic rules; user "boundrys do repositório" |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                       |
 
 #### Context
 
@@ -117,15 +117,15 @@ preserved contract files change shape).
 
 ### S5-003 — Code-quality levels & inspection tooling
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S5-003                                                                 |
-| **Title**            | Install code-quality gates: typecheck, lint, format, knip, licenses    |
-| **Priority**         | P0                                                                     |
-| **Type**             | Tooling                                                                |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                            |
+| -------------------- | -------------------------------------------------------------------------------- |
+| **Ticket ID**        | S5-003                                                                           |
+| **Title**            | Install code-quality gates: typecheck, lint, format, knip, licenses              |
+| **Priority**         | P0                                                                               |
+| **Type**             | Tooling                                                                          |
+| **Estimated Effort** | L                                                                                |
 | **Source Finding**   | User: "ajustar níveis de code-quality, tools de inspeção de qualidade de codigo" |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                       |
 
 #### Context
 
@@ -148,15 +148,15 @@ Knip (dead-code) and a license validator, exposed as pnpm scripts and documented
 
 ### S5-004 — SOLID & DRY doctrine for the repo
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S5-004                                                                 |
-| **Title**            | SOLID/DRY rules as repository doctrine                                 |
-| **Priority**         | P1                                                                     |
-| **Type**             | Docs/Rules                                                             |
-| **Estimated Effort** | M                                                                      |
+| Field                | Value                                                                                        |
+| -------------------- | -------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S5-004                                                                                       |
+| **Title**            | SOLID/DRY rules as repository doctrine                                                       |
+| **Priority**         | P1                                                                                           |
+| **Type**             | Docs/Rules                                                                                   |
+| **Estimated Effort** | M                                                                                            |
 | **Source Finding**   | User: "regras SOLID e DRY"; existing repo practice (pure engine modules + thin MCP adapters) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                   |
 
 #### Context
 
@@ -177,15 +177,15 @@ the DRY test as a lint-level check.
 
 ### S5-005 — License policy enforcement + reference registry
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S5-005                                                                 |
-| **Title**            | License policy registry (`docs/licenses.md`) + enforced allowlist      |
-| **Priority**         | P0                                                                     |
-| **Type**             | Tooling/Docs                                                           |
-| **Estimated Effort** | M                                                                      |
+| Field                | Value                                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **Ticket ID**        | S5-005                                                                                                             |
+| **Title**            | License policy registry (`docs/licenses.md`) + enforced allowlist                                                  |
+| **Priority**         | P0                                                                                                                 |
+| **Type**             | Tooling/Docs                                                                                                       |
+| **Estimated Effort** | M                                                                                                                  |
 | **Source Finding**   | User approved: "usaremos diretamente apenas licenças Apache e MIT ... nunca uma implementação ... dentro do nosso" |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                                         |
 
 #### Context
 
@@ -202,19 +202,19 @@ direct). The check gate from S5-003 uses this registry.
 - [ ] `scripts/check-licenses.mjs` (S5-003) consumes this registry — any package marked `direct` in `package.json` deps must resolve to an Apache/MIT SPDX id, else the gate fails with the registry row cited.
 - [ ] Run the health check command successfully.
 
-[^1]: BSD-3 is a permissive license but not Apache/MIT; per user policy it is reference-only — BSD-3 *code* is not copied.
+[^1]: BSD-3 is a permissive license but not Apache/MIT; per user policy it is reference-only — BSD-3 _code_ is not copied.
 
 ### S5-006 — Health gate unification & CI wiring
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S5-006                                                                 |
-| **Title**            | Unified health gate + CI workflow for the new workspace                |
-| **Priority**         | P1                                                                     |
-| **Type**             | Tooling/CI                                                             |
-| **Estimated Effort** | M                                                                      |
+| Field                | Value                                                                                                                                        |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S5-006                                                                                                                                       |
+| **Title**            | Unified health gate + CI workflow for the new workspace                                                                                      |
+| **Priority**         | P1                                                                                                                                           |
+| **Type**             | Tooling/CI                                                                                                                                   |
+| **Estimated Effort** | M                                                                                                                                            |
 | **Source Finding**   | User: "inclua todos os pontos de health check necessários, incluindo testes unitários, testes de tipagem, testes e2e e testes de integração" |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                                                                   |
 
 #### Context
 

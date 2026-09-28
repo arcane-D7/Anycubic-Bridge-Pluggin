@@ -78,16 +78,16 @@ All long-running analysis commands must use a bounded timeout or an external pro
 
 The following target set was analyzed:
 
-| Module | Role | Relevant evidence |
-|---|---|---|
-| `AnycubicSlicerNext.exe` | GUI application entry point | PE32+, x86-64, MSVC, image base `0x140000000`, product version `2.0.0.3` |
-| `AnycubicSlicer.dll` | Native slicing and configuration engine | Slic3r configuration classes, dynamic config types and serialization metadata |
-| `Workbench.dll` | Application/workbench boundary | Exports `getPackageInfo` and `registerHandler` |
-| `cloud_mqtt.dll` | Anycubic cloud MQTT abstraction | Topic creation, message push, password calculation, PEM retrieval, action/event mapping |
-| `mqtt_client.dll` | MQTT implementation | Connect, publish, subscribe, disconnect, sinks and Paho-derived implementation |
-| `MachMQTT.dll` | Application MQTT adapter | Client initialization, creation and deinitialization exports |
-| `common_encrypt.dll` | Crypto and certificate support | BCrypt/Crypt32/OpenSSL-related imports and error strings |
-| `RequestFilter.dll` | Request/signature construction boundary | Export `make_js(Account*)` and crypto/network imports |
+| Module                   | Role                                    | Relevant evidence                                                                       |
+| ------------------------ | --------------------------------------- | --------------------------------------------------------------------------------------- |
+| `AnycubicSlicerNext.exe` | GUI application entry point             | PE32+, x86-64, MSVC, image base `0x140000000`, product version `2.0.0.3`                |
+| `AnycubicSlicer.dll`     | Native slicing and configuration engine | Slic3r configuration classes, dynamic config types and serialization metadata           |
+| `Workbench.dll`          | Application/workbench boundary          | Exports `getPackageInfo` and `registerHandler`                                          |
+| `cloud_mqtt.dll`         | Anycubic cloud MQTT abstraction         | Topic creation, message push, password calculation, PEM retrieval, action/event mapping |
+| `mqtt_client.dll`        | MQTT implementation                     | Connect, publish, subscribe, disconnect, sinks and Paho-derived implementation          |
+| `MachMQTT.dll`           | Application MQTT adapter                | Client initialization, creation and deinitialization exports                            |
+| `common_encrypt.dll`     | Crypto and certificate support          | BCrypt/Crypt32/OpenSSL-related imports and error strings                                |
+| `RequestFilter.dll`      | Request/signature construction boundary | Export `make_js(Account*)` and crypto/network imports                                   |
 
 ### Version and hash evidence
 
@@ -136,10 +136,10 @@ This is consistent with the observed behavior of the slicer: settings are repres
 
 Radare2 and the Ghidra import confirmed these exports:
 
-| Symbol | Virtual address | File offset |
-|---|---:|---:|
-| `getPackageInfo` | `0x180001000` | `0x400` |
-| `registerHandler` | `0x180001010` | `0x410` |
+| Symbol            | Virtual address | File offset |
+| ----------------- | --------------: | ----------: |
+| `getPackageInfo`  |   `0x180001000` |     `0x400` |
+| `registerHandler` |   `0x180001010` |     `0x410` |
 
 `Workbench.dll` is small compared with the slicing engine. Its size and export shape make it a strong candidate for an adapter boundary rather than the complete implementation of project state. The names suggest:
 

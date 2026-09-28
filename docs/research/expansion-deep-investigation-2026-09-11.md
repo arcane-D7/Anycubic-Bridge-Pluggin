@@ -233,10 +233,10 @@ Cada tool herda os padrões existentes: `confirm:` para não-leitura, redact,
    `confirm:true` + `confirm_word:"EXECUTE"` (safety job); mode `force` apenas
    num estado genuinamente preso na unidade sacrificial.
 10. `ace_feed_finish` (1209) / `ace_refresh_slot` (1210) — `confirm:true`
-   (safety state); validação via feed real na unidade livre.
+    (safety state); validação via feed real na unidade livre.
 11. `printer_rename` + OTA check (N10) — rename write com `confirm:true`
-   (idempotente, não destrutivo); OTA **read-only** (`getPrinterUpdateVersion`,
-   nunca dispara/cancela update).
+    (idempotente, não destrutivo); OTA **read-only** (`getPrinterUpdateVersion`,
+    nunca dispara/cancela update).
 
 ### Batch 2 — infra ✅ **ENTREGUE (2026-09-11): itens 12–15**
 

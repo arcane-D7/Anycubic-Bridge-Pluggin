@@ -23,7 +23,9 @@ import fs from "node:fs";
 
 const [, , inPath, outPath, zCutArg, capArg, epsArg] = process.argv;
 if (!inPath || !outPath || zCutArg === undefined) {
-  console.error("usage: node tools/3mf/cut-stl-top.mjs <in.stl> <out.stl> <zCut-mm> [cap=1|0] [eps]");
+  console.error(
+    "usage: node tools/3mf/cut-stl-top.mjs <in.stl> <out.stl> <zCut-mm> [cap=1|0] [eps]",
+  );
   process.exit(2);
 }
 const Z_CUT = Number(zCutArg);

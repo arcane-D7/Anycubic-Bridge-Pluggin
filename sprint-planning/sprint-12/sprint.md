@@ -2,17 +2,17 @@
 
 ## Sprint Metadata
 
-| Field                 | Value                                                                                                                   |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Sprint Name**       | R6 — conformal/field-based non-planar slicing (fully-curved parts) with the CurviSlicer paper studied and OSQP solver in Rust |
+| Field                 | Value                                                                                                                                                                                                                                                                                                                                                                                                            |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sprint Name**       | R6 — conformal/field-based non-planar slicing (fully-curved parts) with the CurviSlicer paper studied and OSQP solver in Rust                                                                                                                                                                                                                                                                                    |
 | **Sprint Goal**       | Ship general conformal (S3): deformation/inverse-map AND field-based strategies over arbitrary curved surfaces, with the CurviSlicer algorithm implemented only from the published paper (AGPL code never copied), an OSQP (Rust) solver for field strategies, variable-thickness validation, and an experimental art/decorative-only gate until structural acceptance is demonstrated within a declared budget. |
-| **Duration Estimate** | ~6 weeks                                                                                                                |
-| **Priority**          | P1                                                                                                                      |
-| **Sprint Type**       | Feature/Research                                                                                                        |
-| **Primary Owner**     | engine-nonplanar                                                                                                        |
-| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §3.1 (S3: deformation/inverse-map or field-based strategies 1/2), §3.3/§3.9 (research boundary), §3.0a (nonplanar mode extends to conformal), §🔒 LICENSE POLICY, §10 R6 |
-| **Depends On**        | Sprint 11 (R5 S2)                                                                                                       |
-| **Status**            | ⏳ Planned                                                                                                              |
+| **Duration Estimate** | ~6 weeks                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **Priority**          | P1                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Sprint Type**       | Feature/Research                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Primary Owner**     | engine-nonplanar                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §3.1 (S3: deformation/inverse-map or field-based strategies 1/2), §3.3/§3.9 (research boundary), §3.0a (nonplanar mode extends to conformal), §🔒 LICENSE POLICY, §10 R6                                                                                                        |
+| **Depends On**        | Sprint 11 (R5 S2)                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Status**            | ⏳ Planned                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -51,15 +51,15 @@ node scripts/sanitize-repo.mjs --dry-run
 
 ### S12-001 — CurviSlicer study (paper) + implementation design lock
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S12-001                                                                |
-| **Title**            | CurviSlicer paper study → design notes; AGPL never imported              |
-| **Priority**         | P0                                                                     |
-| **Type**             | Research                                                                |
-| **Estimated Effort** | M                                                                      |
+| Field                | Value                                                                                         |
+| -------------------- | --------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S12-001                                                                                       |
+| **Title**            | CurviSlicer paper study → design notes; AGPL never imported                                   |
+| **Priority**         | P0                                                                                            |
+| **Type**             | Research                                                                                      |
+| **Estimated Effort** | M                                                                                             |
 | **Source Finding**   | Invest. Rev 2.0 §3.9 (algorithms studied from published papers only), §🔒 (AGPL = study-only) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                    |
 
 #### Context
 
@@ -78,15 +78,15 @@ work.
 
 ### S12-002 — OSQP quadratic-program solver in Rust (field strategies)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S12-002                                                                |
-| **Title**            | OSQP solver port/implementation in Rust for surface field QP                |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | XL                                                                     |
-| **Source Finding**   | Invest. Rev 2.0 §3.1 (S3 field strategy needs a QP solver); §10 R6      |
-| **Status**           | ⏳ Planned                                                             |
+| Field                | Value                                                              |
+| -------------------- | ------------------------------------------------------------------ |
+| **Ticket ID**        | S12-002                                                            |
+| **Title**            | OSQP solver port/implementation in Rust for surface field QP       |
+| **Priority**         | P0                                                                 |
+| **Type**             | Feature                                                            |
+| **Estimated Effort** | XL                                                                 |
+| **Source Finding**   | Invest. Rev 2.0 §3.1 (S3 field strategy needs a QP solver); §10 R6 |
+| **Status**           | ⏳ Planned                                                         |
 
 #### Context
 
@@ -106,15 +106,15 @@ against hand-computable small QPs.
 
 ### S12-003 — Deform / inverse-map strategy
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S12-003                                                                |
-| **Title**            | Deformable-surface conformal strategy (mesh parameterization)            |
-| **Priority**         | P1                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | L                                                                      |
-| **Source Finding**   | Invest. Rev 2.0 §3.1 (S3 deformation/inverse-map strategy)              |
-| **Status**           | ⏳ Planned                                                             |
+| Field                | Value                                                         |
+| -------------------- | ------------------------------------------------------------- |
+| **Ticket ID**        | S12-003                                                       |
+| **Title**            | Deformable-surface conformal strategy (mesh parameterization) |
+| **Priority**         | P1                                                            |
+| **Type**             | Feature                                                       |
+| **Estimated Effort** | L                                                             |
+| **Source Finding**   | Invest. Rev 2.0 §3.1 (S3 deformation/inverse-map strategy)    |
+| **Status**           | ⏳ Planned                                                    |
 
 #### Context
 
@@ -134,19 +134,19 @@ standard-mode jobs never use it.
 
 ### S12-004 — Variable-thickness layer validation + paint-ability check
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S12-004                                                                |
+| Field                | Value                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------ |
+| **Ticket ID**        | S12-004                                                                                    |
 | **Title**            | Variable-thickness validation (thickness locked to bead painting); art flag enforces scope |
-| **Priority**         | P1                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | L                                                                      |
-| **Source Finding**   | Invest. Rev 2.0 §10 R6 (variable thickness validation); §3.1            |
-| **Status**           | ⏳ Planned                                                             |
+| **Priority**         | P1                                                                                         |
+| **Type**             | Feature                                                                                    |
+| **Estimated Effort** | L                                                                                          |
+| **Source Finding**   | Invest. Rev 2.0 §10 R6 (variable thickness validation); §3.1                               |
+| **Status**           | ⏳ Planned                                                                                 |
 
 #### Context
 
-Non-constant layer thickness from painting is what separates *art* from *structure*. The
+Non-constant layer thickness from painting is what separates _art_ from _structure_. The
 thickness model and the validation must agree (per §3.3 `ΔE = V/A_filament`; painted
 thickness = bead cross-section area along the path). A "paint-ability" check verifies E/Z
 feasibility per segment before anything structural. Until the structural acceptance gate
@@ -162,15 +162,15 @@ feasibility per segment before anything structural. Until the structural accepta
 
 ### S12-005 — S3 tolerance vs baseline on corpus (declared budget) + art-only UI gate
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S12-005                                                                |
-| **Title**            | S3 tolerance measurement vs planar baseline (declared budget) + UI flag gate |
-| **Priority**         | P1                                                                     |
-| **Type**             | Test/Evidence                                                          |
-| **Estimated Effort** | M                                                                      |
+| Field                | Value                                                                                                       |
+| -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S12-005                                                                                                     |
+| **Title**            | S3 tolerance measurement vs planar baseline (declared budget) + UI flag gate                                |
+| **Priority**         | P1                                                                                                          |
+| **Type**             | Test/Evidence                                                                                               |
+| **Estimated Effort** | M                                                                                                           |
 | **Source Finding**   | Invest. Rev 2.0 §10 R6 (tolerance vs planar baseline on S1 corpus + 2 curved parts, declared budget); §7 UI |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                                  |
 
 #### Context
 

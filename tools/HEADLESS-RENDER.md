@@ -8,12 +8,12 @@
 
 ## 1. Porquê Blender (e não difusão)
 
-| | Difusão (TT-Images etc.) | Blender headless (este PoC) |
-|---|---|---|
-| Fidelidade dimensional | ~nenhuma (semântica) | **exata** (a imagem É a geometria) |
-| Reprodutibilidade | zero (mesmo prompt → imagens diferentes) | **determinística** (mesmo mesh+seed → mesma imagem) |
-| Custos | créditos API | 0 (local, CPU ou GPU) |
-| Latência típica | 5–20 s | 2–10 s CPU (Cycles pode ser mais) |
+|                        | Difusão (TT-Images etc.)                 | Blender headless (este PoC)                         |
+| ---------------------- | ---------------------------------------- | --------------------------------------------------- |
+| Fidelidade dimensional | ~nenhuma (semântica)                     | **exata** (a imagem É a geometria)                  |
+| Reprodutibilidade      | zero (mesmo prompt → imagens diferentes) | **determinística** (mesmo mesh+seed → mesma imagem) |
+| Custos                 | créditos API                             | 0 (local, CPU ou GPU)                               |
+| Latência típica        | 5–20 s                                   | 2–10 s CPU (Cycles pode ser mais)                   |
 
 ## 2. Blender neste sistema (MSIX/Store)
 
@@ -38,6 +38,7 @@ versão:  5.2.2 LTS
 ```
 
 > O `render-headless.mjs` resolve o caminho automaticamente nesta ordem:
+>
 > 1. `BLENDER_EXE` (env var)
 > 2. `%LOCALAPPDATA%\Microsoft\WindowsApps\blender-launcher.exe` (Store)
 > 3. uma instalação clássica do Blender em `Program Files`
@@ -53,16 +54,16 @@ node tools/render-headless.mjs modelo.stl --width 1920 --height 1080 --zoom 1.2
 
 Opções:
 
-| Flag | Default | Descrição |
-|---|---|---|
-| `--out <path>` | `renders/<nome>.png` | PNG de saída |
-| `--view <v>` | `iso` | `iso`, `front`, `side`, `top`, `back`, `bottom`, `left`, `right` |
-| `--engine <e>` | `eevee` | `eevee` (rápido) ou `cycles` (ray tracing) |
-| `--samples <n>` | `128` | amostras (só cycles) |
-| `--width/--height` | `1024`/`1024` | resolução do render |
-| `--zoom <z>` | `1.0` | >1 aproxima, <1 afasta |
-| `--rotate-x/y/z` | `0` | rotação extra em graus |
-| `--bg <r,g,b>` | `240,240,240` | cor de fundo |
+| Flag               | Default              | Descrição                                                        |
+| ------------------ | -------------------- | ---------------------------------------------------------------- |
+| `--out <path>`     | `renders/<nome>.png` | PNG de saída                                                     |
+| `--view <v>`       | `iso`                | `iso`, `front`, `side`, `top`, `back`, `bottom`, `left`, `right` |
+| `--engine <e>`     | `eevee`              | `eevee` (rápido) ou `cycles` (ray tracing)                       |
+| `--samples <n>`    | `128`                | amostras (só cycles)                                             |
+| `--width/--height` | `1024`/`1024`        | resolução do render                                              |
+| `--zoom <z>`       | `1.0`                | >1 aproxima, <1 afasta                                           |
+| `--rotate-x/y/z`   | `0`                  | rotação extra em graus                                           |
+| `--bg <r,g,b>`     | `240,240,240`        | cor de fundo                                                     |
 
 Saída: o PNG + um JSON `_report.json` com bounding box (mm), câmara, motor e
 tempos — para auditoria de fidelidade.

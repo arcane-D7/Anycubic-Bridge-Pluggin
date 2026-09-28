@@ -192,13 +192,13 @@ e [live-validated-order1-2026-09-11.md](live-validated-order1-2026-09-11.md).
 
 ## Correções aplicadas
 
-| #   | Correção                                                                                                                                                                      | Ficheiro                                                                  |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| 1   | **Reinstalado OrcaSlicer** (nightly já nos Downloads, `/S`)                                                                                                                   | `C:\Program Files\OrcaSlicer\orca-slicer.exe`                             |
+| #   | Correção                                                                                                                                                                      | Ficheiro                                                                                      |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 1   | **Reinstalado OrcaSlicer** (nightly já nos Downloads, `/S`)                                                                                                                   | `C:\Program Files\OrcaSlicer\orca-slicer.exe`                                                 |
 | 2   | **Fallback LAN no bridge**: `/cloud/devices?lan_fallback=1` expõe a impressora LAN como device virtual quando a cloud está vazia (handshake 18910 → AES → MQTT 9883 → status) | `dist/bridge-server.mjs` (investigado em `local-scripts/experiments/inject-lan-fallback.mjs`) |
-| 3   | **Plugin com fallback automático**: `_devices()` tenta cloud primeiro; se vazio, usa `lan_fallback=1`                                                                         | `%APPDATA%\OrcaSlicer\orca_plugins\anycubic-cloud\anycubic_cloud.py`      |
-| 4   | **Bridge mantido ativo** (PID persistente, porta 37645, state file sincronizado com o plugin)                                                                                 | `scripts/start-bridge.ps1`                                                |
-| 5   | **Permissão Python audit (`socket.__new__`) aprovada** via SetForegroundWindow + ENTER                                                                                        | `scripts/approve-orca-dialog.ps1`                                         |
+| 3   | **Plugin com fallback automático**: `_devices()` tenta cloud primeiro; se vazio, usa `lan_fallback=1`                                                                         | `%APPDATA%\OrcaSlicer\orca_plugins\anycubic-cloud\anycubic_cloud.py`                          |
+| 4   | **Bridge mantido ativo** (PID persistente, porta 37645, state file sincronizado com o plugin)                                                                                 | `scripts/start-bridge.ps1`                                                                    |
+| 5   | **Permissão Python audit (`socket.__new__`) aprovada** via SetForegroundWindow + ENTER                                                                                        | `scripts/approve-orca-dialog.ps1`                                                             |
 
 ## Estado final validado
 
@@ -275,4 +275,3 @@ caminho (IP errado/protocolo errado) — por isso "não responde" ao clicar cone
 Se o device aparecer offline: confirmar que o bridge está ativo
 (`scripts/start-bridge.ps1`) e que a impressora está visível na conta Anycubic
 (app do telemóvel / web).
-

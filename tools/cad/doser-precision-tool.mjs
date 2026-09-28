@@ -87,10 +87,19 @@ const GUIDE_H = 4.0;
 // mesh helpers (positions are {x,y,z} in manifoldCAD output — Z-up already)
 // ---------------------------------------------------------------------------
 function bounds(mesh) {
-  let b = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, minZ: Infinity, maxZ: -Infinity };
+  let b = {
+    minX: Infinity,
+    maxX: -Infinity,
+    minY: Infinity,
+    maxY: -Infinity,
+    minZ: Infinity,
+    maxZ: -Infinity,
+  };
   const p = mesh.positions;
   for (let i = 0; i < p.length; i += 3) {
-    const x = p[i], y = p[i + 1], z = p[i + 2];
+    const x = p[i],
+      y = p[i + 1],
+      z = p[i + 2];
     if (x < b.minX) b.minX = x;
     if (x > b.maxX) b.maxX = x;
     if (y < b.minY) b.minY = y;
@@ -133,7 +142,11 @@ async function buildDosePuck(e) {
   }
   const puck = e.extrude(poly, DOSE_PUCK_HEIGHT); // Z 0..4.2
   // central bore for plunger rod (through)
-  const bore = e.translate(e.cylinder(DOSE_PUCK_BORE_R, DOSE_PUCK_HEIGHT + 4, 48), { x: 0, y: 0, z: -2 });
+  const bore = e.translate(e.cylinder(DOSE_PUCK_BORE_R, DOSE_PUCK_HEIGHT + 4, 48), {
+    x: 0,
+    y: 0,
+    z: -2,
+  });
   let p = e.subtract(puck, bore);
   // alignment nub on top (centered) — mates with the recess below the next puck
   const nub = e.cylinder(PUCK_NUB_R, PUCK_NUB_H, 32);
@@ -180,7 +193,7 @@ async function buildPurgeT(e) {
   const rod = e.cylinder(PURGE_THREAD_MINOR / 2, PURGE_SCREW_LEN, 32);
   const head = e.translate(
     e.cylinder(PURGE_THREAD_MAJOR / 1.5, PURGE_HEAD_H, 6), // approx hex head
-    { x: 0, y: 0, z: PURGE_SCREW_LEN / 2 + PURGE_HEAD_H / 2 }
+    { x: 0, y: 0, z: PURGE_SCREW_LEN / 2 + PURGE_HEAD_H / 2 },
   );
   return e.add(rod, head);
 }
@@ -271,11 +284,12 @@ async function main() {
     results.push({ ...info, b });
     console.log(
       `[stl] ${name}: ${info.tris} tris, ${info.volMm3.toFixed(1)} mm³ ` +
-      `size ${(b.maxX - b.minX).toFixed(1)}×${(b.maxY - b.minY).toFixed(1)}×${(b.maxZ - b.minZ).toFixed(1)} ` +
-      `z:[${b.minZ.toFixed(3)}, ${b.maxZ.toFixed(3)}] centerXY:(${((b.minX + b.maxX) / 2).toFixed(3)}, ${((b.minY + b.maxY) / 2).toFixed(3)})`
+        `size ${(b.maxX - b.minX).toFixed(1)}×${(b.maxY - b.minY).toFixed(1)}×${(b.maxZ - b.minZ).toFixed(1)} ` +
+        `z:[${b.minZ.toFixed(3)}, ${b.maxZ.toFixed(3)}] centerXY:(${((b.minX + b.maxX) / 2).toFixed(3)}, ${((b.minY + b.maxY) / 2).toFixed(3)})`,
     );
   }
-  const url = process.argv[2], token = process.argv[3];
+  const url = process.argv[2],
+    token = process.argv[3];
   if (url && token) {
     for (const [name, mesh] of Object.entries(parts)) {
       const r = await importToCad(url, token, name, mesh);

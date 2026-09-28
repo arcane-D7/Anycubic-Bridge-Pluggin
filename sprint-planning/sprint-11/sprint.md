@@ -2,17 +2,17 @@
 
 ## Sprint Metadata
 
-| Field                 | Value                                                                                                                   |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Sprint Name**       | R5 — height-field curved-top non-planar paths (S2) with per-profile slope envelopes and machine pre-flight budgets         |
+| Field                 | Value                                                                                                                                                                                                                                                                                                                                        |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sprint Name**       | R5 — height-field curved-top non-planar paths (S2) with per-profile slope envelopes and machine pre-flight budgets                                                                                                                                                                                                                           |
 | **Sprint Goal**       | Turn curved-top non-planar slicing (S2) into working, gated software: height-field lifting on the planar baseline, per-machine slope rejection via lampower tools not fallbacks, swept-envelope collision checks, per-machine gcode postprocessing with independent validation, and a physical coupon gate on the bundled reference profile. |
-| **Duration Estimate** | ~6 weeks                                                                                                                |
-| **Priority**          | P1                                                                                                                      |
-| **Sprint Type**       | Feature                                                                                                                 |
-| **Primary Owner**     | engine-nonplanar                                                                                                        |
-| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §3.1 (S2 height-field), §3.3 (formulas), §3.0a (nonplanar = opt-in per-project), §4/§8 (Blender IPC), §5.1 (envelope), §10 R5 |
-| **Depends On**        | Sprint 8 (R2 planar core + IR)                                                                                           |
-| **Status**            | ⏳ Planned                                                                                                              |
+| **Duration Estimate** | ~6 weeks                                                                                                                                                                                                                                                                                                                                     |
+| **Priority**          | P1                                                                                                                                                                                                                                                                                                                                           |
+| **Sprint Type**       | Feature                                                                                                                                                                                                                                                                                                                                      |
+| **Primary Owner**     | engine-nonplanar                                                                                                                                                                                                                                                                                                                             |
+| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §3.1 (S2 height-field), §3.3 (formulas), §3.0a (nonplanar = opt-in per-project), §4/§8 (Blender IPC), §5.1 (envelope), §10 R5                                                                               |
+| **Depends On**        | Sprint 8 (R2 planar core + IR)                                                                                                                                                                                                                                                                                                               |
+| **Status**            | ⏳ Planned                                                                                                                                                                                                                                                                                                                                   |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -54,15 +54,15 @@ node scripts/sanitize-repo.mjs --dry-run
 
 ### S11-001 — Height-field top-surface lifting over the planar baseline
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S11-001                                                                |
-| **Title**            | Height-field top-surface model + curved-top path generation               |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | XL                                                                     |
+| Field                | Value                                                                    |
+| -------------------- | ------------------------------------------------------------------------ |
+| **Ticket ID**        | S11-001                                                                  |
+| **Title**            | Height-field top-surface model + curved-top path generation              |
+| **Priority**         | P0                                                                       |
+| **Type**             | Feature                                                                  |
+| **Estimated Effort** | XL                                                                       |
 | **Source Finding**   | Invest. Rev 2.0 §3.1 (S2 height-field lift), §3.3 (Z/E formulas), §10 R5 |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                               |
 
 #### Context
 
@@ -81,15 +81,15 @@ mode). No `h/cosθ` approximation and no predictive-deposition claim.
 
 ### S11-002 — Per-machine slope-limit envelope + pre-flight rejection (fail-closed)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S11-002                                                                |
-| **Title**            | Slope budgets/kinematic limits per profile; pre-flight continuous-Z gate |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | M                                                                      |
+| Field                | Value                                                                                                       |
+| -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S11-002                                                                                                     |
+| **Title**            | Slope budgets/kinematic limits per profile; pre-flight continuous-Z gate                                    |
+| **Priority**         | P0                                                                                                          |
+| **Type**             | Feature                                                                                                     |
+| **Estimated Effort** | M                                                                                                           |
 | **Source Finding**   | Invest. Rev 2.0 §5.1 (`continuous_z.supported`), §3.1 (slope rejection per profile); fail-closed pre-flight |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                                  |
 
 #### Context
 
@@ -107,15 +107,15 @@ journaled; never a silent degrade down to planar.
 
 ### S11-003 — Swept-envelope collision check (full tool envelope, not nozzle cone)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S11-003                                                                |
-| **Title**            | Collision check against full swept envelope from §5.1 tool_envelope      |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | M                                                                      |
+| Field                | Value                                                                                                 |
+| -------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S11-003                                                                                               |
+| **Title**            | Collision check against full swept envelope from §5.1 tool_envelope                                   |
+| **Priority**         | P0                                                                                                    |
+| **Type**             | Feature                                                                                               |
+| **Estimated Effort** | M                                                                                                     |
 | **Source Finding**   | Invest. Rev 2.0 §5.1 (`tool_envelope` [SPEC]); §4 (Blender geometry backend for meshes/intersections) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                            |
 
 #### Context
 
@@ -133,15 +133,15 @@ capability contract) along the proposed path must not intersect the part or fixt
 
 ### S11-004 — Per-machine gcode postprocessing + independent emitted-program validation for S2
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S11-004                                                                |
-| **Title**            | S2 postprocessor (continuous-Z dialect whitelist) + independent check    |
-| **Priority**         | P1                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                                                    |
+| -------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S11-004                                                                                                  |
+| **Title**            | S2 postprocessor (continuous-Z dialect whitelist) + independent check                                    |
+| **Priority**         | P1                                                                                                       |
+| **Type**             | Feature                                                                                                  |
+| **Estimated Effort** | L                                                                                                        |
 | **Source Finding**   | Invest. Rev 2.0 §3.7 (per-machine FK + dialect whitelist), §10 R5 (per-machine postprocess + validation) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                               |
 
 #### Context
 
@@ -163,15 +163,15 @@ standard pipeline emits pure planar gcode.
 
 ### S11-005 — Physical coupon on bundled reference profile (placeholders only) + declared budget
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S11-005                                                                |
-| **Title**            | Printed curved-top coupon + measured budget vs declared (envelope walkthrough) |
-| **Priority**         | P1                                                                     |
-| **Type**             | Process/Gate evidence                                                    |
-| **Estimated Effort** | M                                                                      |
+| Field                | Value                                                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S11-005                                                                                                                          |
+| **Title**            | Printed curved-top coupon + measured budget vs declared (envelope walkthrough)                                                   |
+| **Priority**         | P1                                                                                                                               |
+| **Type**             | Process/Gate evidence                                                                                                            |
+| **Estimated Effort** | M                                                                                                                                |
 | **Source Finding**   | Invest. Rev 2.0 §10 R5 (coupon on `<MACHINE_TYPE>` reference, `poc-output/` gitignored); AGENTS.md (synthetic placeholders only) |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                                                       |
 
 #### Context
 

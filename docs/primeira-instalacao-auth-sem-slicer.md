@@ -17,12 +17,12 @@ guardado e utilizado automaticamente.
 
 ## 2. Caminhos para obter um token (sem Slicer Next)
 
-| Caminho | O que é | Modo | MQTT (comandos) |
-| ------- | ------- | ---- | --------------- |
-| **a)** JWT do Slicer/Android noutra máquina | `access_token` (3 partes, ~344+ chars) | `pcf` | ✅ Sim |
-| **b)** Token do portal web | `XX-Token` (obtido no browser) | `web` | ❌ Não (só polling HTTP) |
-| **c)** Email/senha assistido por browser | O utilizador faz login no browser (portal Casdoor); o script captura o `XX-Token` | `web` | ❌ Não (só polling HTTP) |
-| **d)** LAN Mode (sem conta) | já existente no bridge (18910) | — | ✅ Sim (local) |
+| Caminho                                     | O que é                                                                           | Modo  | MQTT (comandos)          |
+| ------------------------------------------- | --------------------------------------------------------------------------------- | ----- | ------------------------ |
+| **a)** JWT do Slicer/Android noutra máquina | `access_token` (3 partes, ~344+ chars)                                            | `pcf` | ✅ Sim                   |
+| **b)** Token do portal web                  | `XX-Token` (obtido no browser)                                                    | `web` | ❌ Não (só polling HTTP) |
+| **c)** Email/senha assistido por browser    | O utilizador faz login no browser (portal Casdoor); o script captura o `XX-Token` | `web` | ❌ Não (só polling HTTP) |
+| **d)** LAN Mode (sem conta)                 | já existente no bridge (18910)                                                    | —     | ✅ Sim (local)           |
 
 **Regra de ouro**: se precisar de **comandos** (imprimir, pausar, temperatura,
 ACE/dry, etc.), o token tem de ser **modo `pcf`** (a/b). O token web é apenas
@@ -39,7 +39,7 @@ leitura de estado.
 1. Abra `https://cloud-universe.anycubic.com/file` e inicie sessão.
 2. DevTools (F12) → Console → cole:
    ```js
-   window.localStorage["XX-Token"]
+   window.localStorage["XX-Token"];
    ```
 3. Copie a string devolvida e cole-a no terminal (ver secção 3).
 
@@ -117,7 +117,7 @@ não o repete.
   `scripts/token-crypt.ps1` — inacessível a outros utilizadores do sistema.
 - O formato do ficheiro é idêntico ao `TokenStore` compilado em
   `dist/server.mjs` (`.json` com `{encrypted, capturedAt, sub?, email?,
-  expiresAt?}`), pelo que os tools `account_token_status` / `account_login`
+expiresAt?}`), pelo que os tools `account_token_status` / `account_login`
   continuam a funcionar sem alterações.
 - Nunca cole tokens em chats/assistentes; o caminho por terminal é o
   recomendado precisamente para o segredo não circular.

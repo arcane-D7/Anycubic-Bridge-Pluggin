@@ -13,7 +13,7 @@ print, home axes, move, extrude, or change temperatures.
 Two separate axis replies returned code 200 and identical coordinates:
 
 ```json
-{"x":47,"y":276,"z":4.034207620182453}
+{ "x": 47, "y": 276, "z": 4.034207620182453 }
 ```
 
 The second printer timestamp was 1789075476602. These are current reported
@@ -47,4 +47,3 @@ from `curr_layer` alone. A failed task is not a paused task.
 The user confirms the printed part remains fixed to the bed. Axis movement,
 reboot history and coordinate-reference validity still need establishing
 before generating an executable in-place restart. No recovery print was started.
-

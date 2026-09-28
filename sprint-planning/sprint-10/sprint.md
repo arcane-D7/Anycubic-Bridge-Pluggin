@@ -2,17 +2,17 @@
 
 ## Sprint Metadata
 
-| Field                 | Value                                                                                                                   |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Sprint Name**       | R4 — separable auth service (local auth.db XOR service+Postgres), OAuth PKCE, global memory with fail-closed scoping       |
+| Field                 | Value                                                                                                                                                                                                                                                                                       |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sprint Name**       | R4 — separable auth service (local auth.db XOR service+Postgres), OAuth PKCE, global memory with fail-closed scoping                                                                                                                                                                        |
 | **Sprint Goal**       | Complete the auth service as a sepably-deployable process/store (editor core has zero auth dependency), implement OAuth external-browser + PKCE with broker-held tokens, and land the global memory system with provenance, scope, retention and fail-closed synced reads when auth is off. |
-| **Duration Estimate** | ~4 weeks                                                                                                                |
-| **Priority**          | P1                                                                                                                      |
-| **Sprint Type**       | Feature/Security                                                                                                        |
-| **Primary Owner**     | auth-core                                                                                                               |
-| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §6 (auth + memory), §10 R4; RFC 8252 |
-| **Depends On**        | Sprint 9 (R3 harness; auth seams from Sprint 6)                                                                         |
-| **Status**            | ⏳ Planned                                                                                                              |
+| **Duration Estimate** | ~4 weeks                                                                                                                                                                                                                                                                                    |
+| **Priority**          | P1                                                                                                                                                                                                                                                                                          |
+| **Sprint Type**       | Feature/Security                                                                                                                                                                                                                                                                            |
+| **Primary Owner**     | auth-core                                                                                                                                                                                                                                                                                   |
+| **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §6 (auth + memory), §10 R4; RFC 8252                                                                                                                       |
+| **Depends On**        | Sprint 9 (R3 harness; auth seams from Sprint 6)                                                                                                                                                                                                                                             |
+| **Status**            | ⏳ Planned                                                                                                                                                                                                                                                                                  |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -45,15 +45,15 @@ node scripts/sanitize-repo.mjs --dry-run
 
 ### S10-001 — Auth service MVP (local mode: own auth.db + loopback service)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S10-001                                                                |
-| **Title**            | Auth service MVP — local mode implementation behind the versioned auth API |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                                               |
+| -------------------- | --------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S10-001                                                                                             |
+| **Title**            | Auth service MVP — local mode implementation behind the versioned auth API                          |
+| **Priority**         | P0                                                                                                  |
+| **Type**             | Feature                                                                                             |
+| **Estimated Effort** | L                                                                                                   |
 | **Source Finding**   | Invest. Rev 2.0 §6.1 (separable service, local auth.db), §6.4 (store sketch), Sprint 6 S6-006 seams |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                          |
 
 #### Context
 
@@ -74,15 +74,15 @@ usable with zero auth users (anonymous local profile, `local-project` scope only
 
 ### S10-002 — Independent mode + storage swap (Postgres, build-time flag)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S10-002                                                                |
+| Field                | Value                                                                            |
+| -------------------- | -------------------------------------------------------------------------------- |
+| **Ticket ID**        | S10-002                                                                          |
 | **Title**            | Independent mode: separate process/container + Postgres backend, build-time flag |
-| **Priority**         | P1                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | L                                                                      |
-| **Source Finding**   | Invest. Rev 2.0 §6.1 (independent mode first-class, not "file only"), §6.4 |
-| **Status**           | ⏳ Planned                                                             |
+| **Priority**         | P1                                                                               |
+| **Type**             | Feature                                                                          |
+| **Estimated Effort** | L                                                                                |
+| **Source Finding**   | Invest. Rev 2.0 §6.1 (independent mode first-class, not "file only"), §6.4       |
+| **Status**           | ⏳ Planned                                                                       |
 
 #### Context
 
@@ -100,15 +100,15 @@ The editor sees only the versioned auth API, never the DB.
 
 ### S10-003 — OAuth external-browser + PKCE (RFC 8252) with broker-held tokens
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S10-003                                                                |
+| Field                | Value                                                                    |
+| -------------------- | ------------------------------------------------------------------------ |
+| **Ticket ID**        | S10-003                                                                  |
 | **Title**            | OAuth authorization-code + PKCE via external browser + loopback redirect |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature/Security                                                        |
-| **Estimated Effort** | L                                                                      |
-| **Source Finding**   | Invest. Rev 2.0 §6.2 (OAuth [SPEC]); RFC 8252 native apps              |
-| **Status**           | ⏳ Planned                                                             |
+| **Priority**         | P0                                                                       |
+| **Type**             | Feature/Security                                                         |
+| **Estimated Effort** | L                                                                        |
+| **Source Finding**   | Invest. Rev 2.0 §6.2 (OAuth [SPEC]); RFC 8252 native apps                |
+| **Status**           | ⏳ Planned                                                               |
 
 #### Context
 
@@ -128,15 +128,15 @@ rule as BYOK keys §8.5).
 
 ### S10-004 — Global memory system (provenance, scope, retention, embeddings lifecycle)
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S10-004                                                                |
-| **Title**            | Memory store with service_scope, provenance, retention + derived-artifact cleanup |
-| **Priority**         | P0                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | L                                                                      |
+| Field                | Value                                                                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S10-004                                                                                                                                |
+| **Title**            | Memory store with service_scope, provenance, retention + derived-artifact cleanup                                                      |
+| **Priority**         | P0                                                                                                                                     |
+| **Type**             | Feature                                                                                                                                |
+| **Estimated Effort** | L                                                                                                                                      |
 | **Source Finding**   | Invest. Rev 2.0 §6.3 (memory [SPEC]) — provenance, retrieval filtered by scope, forget=source+derived, memory never grants permissions |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ⏳ Planned                                                                                                                             |
 
 #### Context
 
@@ -156,15 +156,15 @@ derived artifacts deleted when the source is deleted (forget = source + derived)
 
 ### S10-005 — Multi-project workspaces + per-project context isolation
 
-| Field                | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Ticket ID**        | S10-005                                                                |
+| Field                | Value                                                                     |
+| -------------------- | ------------------------------------------------------------------------- |
+| **Ticket ID**        | S10-005                                                                   |
 | **Title**            | Workspaces with per-project context isolation (chat/history/memory views) |
-| **Priority**         | P1                                                                     |
-| **Type**             | Feature                                                                |
-| **Estimated Effort** | M                                                                      |
-| **Source Finding**   | Invest. Rev 2.0 §10 R4 (multi-project workspaces); Sprint 9 chat UI    |
-| **Status**           | ⏳ Planned                                                             |
+| **Priority**         | P1                                                                        |
+| **Type**             | Feature                                                                   |
+| **Estimated Effort** | M                                                                         |
+| **Source Finding**   | Invest. Rev 2.0 §10 R4 (multi-project workspaces); Sprint 9 chat UI       |
+| **Status**           | ⏳ Planned                                                                |
 
 #### Context
 

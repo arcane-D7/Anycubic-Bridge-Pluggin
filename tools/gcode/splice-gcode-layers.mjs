@@ -34,7 +34,9 @@ import fs from "node:fs";
 
 const [, , inPath, outPath, startArg] = process.argv;
 if (!inPath || !outPath || startArg === undefined) {
-  console.error("usage: node tools/gcode/splice-gcode-layers.mjs <in.gcode> <out.gcode> <startLayer>");
+  console.error(
+    "usage: node tools/gcode/splice-gcode-layers.mjs <in.gcode> <out.gcode> <startLayer>",
+  );
   process.exit(2);
 }
 const START = Number(startArg);

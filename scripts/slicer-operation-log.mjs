@@ -35,7 +35,11 @@ export function readSlicerOperations({ limit = 50, operation } = {}) {
   const operations = lines
     .slice(-Math.min(Math.max(limit, 1), 500))
     .map((line) => {
-      try { return JSON.parse(line); } catch { return null; }
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
     })
     .filter(Boolean)
     .filter((item) => !operation || item.operation === operation);

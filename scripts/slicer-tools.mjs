@@ -658,7 +658,12 @@ export function registerSlicerTools(server, z) {
         process_id: z.number().int().positive().optional(),
         window_title: z.string().max(160).optional(),
       },
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     },
     async (args) => {
       try {
@@ -679,7 +684,12 @@ export function registerSlicerTools(server, z) {
         process_id: z.number().int().positive().optional(),
         window_title: z.string().max(160).optional(),
       },
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     },
     async (args) => {
       try {
@@ -694,12 +704,18 @@ export function registerSlicerTools(server, z) {
     "slicer_live_snapshot",
     {
       title: "Snapshot live slicer settings",
-      description: "Read-only. Captures the current live slicer session settings for a later verified rollback.",
+      description:
+        "Read-only. Captures the current live slicer session settings for a later verified rollback.",
       inputSchema: {
         process_id: z.number().int().positive().optional(),
         window_title: z.string().max(160).optional(),
       },
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
     },
     async (args) => {
       try {
@@ -714,18 +730,25 @@ export function registerSlicerTools(server, z) {
     "slicer_live_rollback",
     {
       title: "Rollback live slicer settings",
-      description: "Write (gated). Restores a snapshot from slicer_live_snapshot, refreshes the UI and verifies the restored settings. It does not save or slice.",
+      description:
+        "Write (gated). Restores a snapshot from slicer_live_snapshot, refreshes the UI and verifies the restored settings. It does not save or slice.",
       inputSchema: {
         process_id: z.number().int().positive().optional(),
         window_title: z.string().max(160).optional(),
         snapshot: z.record(z.string(), z.unknown()),
         confirm: z.boolean().default(false),
       },
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     },
     async (args) => {
       try {
-        if (args.confirm !== true) throw new Error("slicer_live_rollback requires confirm: true. Nothing was changed.");
+        if (args.confirm !== true)
+          throw new Error("slicer_live_rollback requires confirm: true. Nothing was changed.");
         return out({ ok: true, ...rollbackLiveSlicerSettings(args) });
       } catch (error) {
         return fail(error);
@@ -737,21 +760,32 @@ export function registerSlicerTools(server, z) {
     "slicer_preflight",
     {
       title: "Preflight a slicer job",
-      description: "Read-only. Verifies the input project exists, resolves machine/process/filament profiles and reports compatibility assumptions before slicing.",
+      description:
+        "Read-only. Verifies the input project exists, resolves machine/process/filament profiles and reports compatibility assumptions before slicing.",
       inputSchema: {
         input_file: z.string().min(1),
         machine: z.string().max(120).optional(),
         process: z.string().max(120).optional(),
         filament: z.string().max(120).optional(),
       },
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     },
     async (args) => {
       try {
         const inputFile = path.resolve(args.input_file);
         const exe = discoverSlicerExecutable();
         if (!exe) throw new Error("Anycubic Slicer Next executable was not found.");
-        const presets = resolvePresets({ slicerExe: exe, machine: args.machine ?? "", process: args.process ?? "", filament: args.filament ?? "" });
+        const presets = resolvePresets({
+          slicerExe: exe,
+          machine: args.machine ?? "",
+          process: args.process ?? "",
+          filament: args.filament ?? "",
+        });
         return out({
           ok: existsSync(inputFile) && !!presets.machine && !!presets.process,
           input_file: inputFile,
@@ -785,15 +819,28 @@ export function registerSlicerTools(server, z) {
         output_dir: z.string().optional(),
         plate: z.number().int().min(0).max(64).default(0),
       },
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     },
     async (args) => {
       try {
         const inputFile = path.resolve(args.input_file);
         const exe = discoverSlicerExecutable();
         if (!exe) throw new Error("Anycubic Slicer Next executable was not found.");
-        const presets = resolvePresets({ slicerExe: exe, machine: args.machine ?? "", process: args.process ?? "", filament: args.filament ?? "" });
-        const sessions = listLiveSlicerSessions({ process_id: args.process_id, window_title: args.window_title });
+        const presets = resolvePresets({
+          slicerExe: exe,
+          machine: args.machine ?? "",
+          process: args.process ?? "",
+          filament: args.filament ?? "",
+        });
+        const sessions = listLiveSlicerSessions({
+          process_id: args.process_id,
+          window_title: args.window_title,
+        });
         const live = sessions[0] ?? null;
         const requestedSettings = Object.keys(args.settings ?? {});
         const steps = [
@@ -810,7 +857,11 @@ export function registerSlicerTools(server, z) {
           input_file: inputFile,
           input_exists: existsSync(inputFile),
           executable: exe,
-          profiles: { machine: presets.machine, process: presets.process, filament: presets.filament ?? null },
+          profiles: {
+            machine: presets.machine,
+            process: presets.process,
+            filament: presets.filament ?? null,
+          },
           live_session_available: !!live,
           live_process_id: live?.process_id ?? null,
           requested_settings: requestedSettings,
@@ -832,16 +883,25 @@ export function registerSlicerTools(server, z) {
     "slicer_operation_history",
     {
       title: "Read slicer agentic operation history",
-      description: "Read-only. Returns recent redacted agentic slicer operations, outcomes, artifacts and compatibility results.",
+      description:
+        "Read-only. Returns recent redacted agentic slicer operations, outcomes, artifacts and compatibility results.",
       inputSchema: {
         limit: z.number().int().min(1).max(500).default(50),
         operation: z.string().max(80).optional(),
       },
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     },
     async (args) => {
-      try { return out({ ok: true, ...readSlicerOperations(args) }); }
-      catch (error) { return fail(error); }
+      try {
+        return out({ ok: true, ...readSlicerOperations(args) });
+      } catch (error) {
+        return fail(error);
+      }
     },
   );
 
@@ -849,31 +909,67 @@ export function registerSlicerTools(server, z) {
     "slicer_capability_catalog",
     {
       title: "Describe Anycubic slicer control capabilities",
-      description: "Read-only. Returns the verified MCP/CLI/UIA surface and native binary evidence, separating confirmed capabilities from unresolved Workbench ABI items.",
+      description:
+        "Read-only. Returns the verified MCP/CLI/UIA surface and native binary evidence, separating confirmed capabilities from unresolved Workbench ABI items.",
       inputSchema: {},
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     },
-    async () => out({
-      ok: true,
-      confirmed: {
-        cli: ["load-settings", "load-filaments", "load-filament-ids", "slice", "export-3mf", "export-settings", "arrange", "orient"],
-        live_session: ["slicer_live_sessions", "slicer_live_settings", "slicer_live_snapshot", "slicer_apply_project_settings", "slicer_refresh_project", "slicer_live_rollback"],
-        workflows: ["slicer_preflight", "slicer_agentic_plan", "slicer_agentic_slice", "slicer_operation_history"],
-        uia: ["uia_tree", "uia_read", "uia_click", "uia_type", "uia_key"],
-        native_evidence: ["Workbench.getPackageInfo", "Workbench.registerHandler", "CloudMqtt.CreateTopic", "CloudMqtt.PushMessage", "MachMqtt_CreateClient", "mqtt_publish", "mqtt_subscribe"],
-      },
-      unresolved: [
-        "Workbench.registerHandler ABI",
-        "Workbench project apply/reload event",
-        "native in-memory preset mutation contract",
-        "native save transaction contract",
-      ],
-      safety: {
-        printer_dispatch: "separate confirmation-gated tools only",
-        native_binary_mutation: "not exposed",
-        cli_slice: "confirmation-gated and locally compatibility-validated",
-      },
-    }),
+    async () =>
+      out({
+        ok: true,
+        confirmed: {
+          cli: [
+            "load-settings",
+            "load-filaments",
+            "load-filament-ids",
+            "slice",
+            "export-3mf",
+            "export-settings",
+            "arrange",
+            "orient",
+          ],
+          live_session: [
+            "slicer_live_sessions",
+            "slicer_live_settings",
+            "slicer_live_snapshot",
+            "slicer_apply_project_settings",
+            "slicer_refresh_project",
+            "slicer_live_rollback",
+          ],
+          workflows: [
+            "slicer_preflight",
+            "slicer_agentic_plan",
+            "slicer_agentic_slice",
+            "slicer_operation_history",
+          ],
+          uia: ["uia_tree", "uia_read", "uia_click", "uia_type", "uia_key"],
+          native_evidence: [
+            "Workbench.getPackageInfo",
+            "Workbench.registerHandler",
+            "CloudMqtt.CreateTopic",
+            "CloudMqtt.PushMessage",
+            "MachMqtt_CreateClient",
+            "mqtt_publish",
+            "mqtt_subscribe",
+          ],
+        },
+        unresolved: [
+          "Workbench.registerHandler ABI",
+          "Workbench project apply/reload event",
+          "native in-memory preset mutation contract",
+          "native save transaction contract",
+        ],
+        safety: {
+          printer_dispatch: "separate confirmation-gated tools only",
+          native_binary_mutation: "not exposed",
+          cli_slice: "confirmation-gated and locally compatibility-validated",
+        },
+      }),
   );
 
   server.registerTool(
@@ -887,7 +983,12 @@ export function registerSlicerTools(server, z) {
         window_title: z.string().max(160).optional(),
         confirm: z.boolean().default(false),
       },
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     },
     async (args) => {
       try {
@@ -933,14 +1034,24 @@ export function registerSlicerTools(server, z) {
     async (args) => {
       try {
         if (args.confirm !== true)
-          throw new Error("slicer_agentic_slice requires confirm: true. Nothing was changed or sliced.");
+          throw new Error(
+            "slicer_agentic_slice requires confirm: true. Nothing was changed or sliced.",
+          );
         const sessions = listLiveSlicerSessions(args);
         const liveProcess = sessions[0];
         if (!liveProcess) throw new Error("No matching Anycubic Slicer Next process is running.");
         const liveSession = liveProcess.sessions[0];
-        if (!liveSession) throw new Error("No active project session was found for the slicer process.");
+        if (!liveSession)
+          throw new Error("No active project session was found for the slicer process.");
         const workflowId = crypto.randomUUID();
-        appendSlicerOperation({ operation: "slicer_agentic_slice", workflow_id: workflowId, phase: "started", input_file: args.input_file, settings: args.settings, process_id: liveProcess.process_id });
+        appendSlicerOperation({
+          operation: "slicer_agentic_slice",
+          workflow_id: workflowId,
+          phase: "started",
+          input_file: args.input_file,
+          settings: args.settings,
+          process_id: liveProcess.process_id,
+        });
 
         let liveApply = null;
         if (Object.keys(args.settings ?? {}).length) {
@@ -990,7 +1101,9 @@ export function registerSlicerTools(server, z) {
           compatibility: inspectCompatibility(file),
         }));
         if (!artifacts.length) throw new Error("Agentic slice produced no artifacts.");
-        const incompatible = artifacts.filter((artifact) => artifact.compatibility.compatible !== true);
+        const incompatible = artifacts.filter(
+          (artifact) => artifact.compatibility.compatible !== true,
+        );
         const result = {
           ok: incompatible.length === 0,
           workflow_id: workflowId,
@@ -1006,10 +1119,21 @@ export function registerSlicerTools(server, z) {
             ? "The slice completed, but at least one artifact failed compatibility validation. Nothing was sent to a printer."
             : "Validated locally only. Nothing was sent to a printer.",
         };
-        appendSlicerOperation({ operation: "slicer_agentic_slice", workflow_id: workflowId, phase: "completed", result });
+        appendSlicerOperation({
+          operation: "slicer_agentic_slice",
+          workflow_id: workflowId,
+          phase: "completed",
+          result,
+        });
         return out(result);
       } catch (error) {
-        try { appendSlicerOperation({ operation: "slicer_agentic_slice", phase: "failed", error: error.message }); } catch {}
+        try {
+          appendSlicerOperation({
+            operation: "slicer_agentic_slice",
+            phase: "failed",
+            error: error.message,
+          });
+        } catch {}
         return fail(error);
       }
     },
