@@ -12,7 +12,16 @@
 | **Primary Owner**     | platform-core                                                                                                                                                                                                                                                |
 | **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §5, §6 (auth-separable), §7 (UI), §10 R0, §3.0a (dual slicing modes — persisted per project); Sprint 5 gates                |
 | **Depends On**        | Sprint 5 (architecture + quality gates)                                                                                                                                                                                                                      |
-| **Status**            | ⏳ Planned                                                                                                                                                                                                                                                   |
+| **Status**            | ✅ Complete (2026-09-28) — all 6 tickets delivered; see ticket rows for commits                                                                                                                                                                              |
+
+## Sprint Execution Summary
+
+- **S6-001** Desktop shell scaffold (Tauri 2 + React 19 + R3F 9) — ✅ Complete, commit `ee62574` (2026-09-28)
+- **S6-002** Rust broker skeleton + workspace DB — ✅ Complete (earlier sprint run, see ticket row)
+- **S6-003** Machine capability contract v1 — ✅ Complete (see ticket row)
+- **S6-004** Versioned project schema + content-addressed artifacts — ✅ Complete (see ticket row)
+- **S6-005** Read-only loopback bridge to preserved Node MCP server — ✅ Complete, commit `a61782e` (2026-09-28)
+- **S6-006** Auth service scaffold (separable) — ✅ Complete (see ticket row)
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -51,7 +60,7 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Type**             | Feature                                                          |
 | **Estimated Effort** | XL                                                               |
 | **Source Finding**   | Invest. Rev 2.0 §7.1/§7.2; Sprint 5 architecture (S5-001/002)    |
-| **Status**           | ⏳ Planned                                                       |
+| **Status**           | ✅ Complete (2026-09-28, commit `ee62574`)                       |
 
 #### Context
 
@@ -63,12 +72,46 @@ all Sprint 5 quality gates from day one.
 
 #### Acceptance Criteria
 
-- [ ] `apps/editor` workspace member boots `pnpm tauri dev` with the §7.2 panel layout; window title/branding independent of Blender.
-- [ ] React 19 + TS strict; `pnpm run typecheck` green for the workspace; no `any` in new code (lint enforces).
-- [ ] State via Zustand/Jotai (scene/selection stubs), TanStack Query wired to a mocked bridge endpoint.
-- [ ] Build plate placeholder is **profile-driven** (reads a stub machine profile), never a hardcoded 220x220 default.
-- [ ] R3F 9 (stable) used; R3F 10 alpha explicitly not installed (license/pinning note in `docs/licenses.md` if applicable).
-- [ ] Health gate `pnpm run check` green.
+- [x] `apps/editor` workspace member boots `pnpm tauri dev` with the §7.2 panel layout; window title/branding independent of Blender.
+- [x] React 19 + TS strict; `pnpm run typecheck` green for the workspace; no `any` in new code (lint enforces).
+- [x] State via Zustand/Jotai (scene/selection stubs), TanStack Query wired to a mocked bridge endpoint.
+- [x] Build plate placeholder is **profile-driven** (reads a stub machine profile), never a hardcoded 220x220 default.
+- [x] R3F 9 (stable) used; R3F 10 alpha explicitly not installed (license/pinning note in `docs/licenses.md` if applicable).
+- [x] Health gate `pnpm run check` green.
+
+#### Implementation Notes
+
+- `apps/editor` — Tauri 2.12.0 Rust shell (`src-tauri`, standalone Cargo workspace `editor_lib`
+  lib; `tauri.conf.json` productName/identifier `com.anycubic-bridge.editor`, devUrl :1420,
+  `bundle.active:false`) + Vite 8.3.1 + React 19.3.0 + TS strict. R3F 9.8.1 / drei 10.7.9 pinned
+  exact — **R3F 10 alpha explicitly NOT installed** (note + binding row in
+  `docs/licenses.md` "Tauri shell pinning note (S6-001, R0 editor scaffold)").
+- §7.2 panel layout: header (self-owned branding "Anycubic Bridge Editor", bridge state), left
+  object tree, center R3F viewport (BuildPlate + per-object `SceneObjectModel` colored by
+  watertight/selection), right chat placeholder, bottom timeline. All panels resizable via
+  `PanelDivider` (pointer-capture; distinct `aria-label`s; `data-testid`).
+- State: Zustand `useScene`/`useUi` stubs + TanStack Query keyed `["bridge","scene"]` to
+  `apps/editor/src/bridge/mock.ts` (`fetchSceneSnapshot` → `BridgeHandle`) mirroring the S6-005
+  bridge types; `STUB_PROFILE` machine type placeholder `<MACHINE_TYPE>`, build volume
+  **never hardcoded 220×220** — comes from the machine-profile contract (deliberate comment).
+- Timeline slicing-mode selector **disabled** until the machine profile declares the named
+  capability `continuous_z` (profile-driven, fail-closed — mirror of the §5.1 capability
+  contract).
+- Lint: `@typescript-eslint/no-explicit-any: error` applied to `apps/editor/src/**`;
+  `eslint.config.mjs` ignores `apps/*/src-tauri/{target,gen}/**`.
+- Rust: standalone Cargo workspace (Cargo forbids nested workspaces — crates/Cargo.toml
+  member attempt reverted); `check-rust.mjs` runs `cargo check` for the editor workspace too.
+- `check-licenses.mjs` rewritten: keys by full `@scope/name`, walks member `node_modules`
+  (was missing scoped direct deps) → 38 direct deps OK.
+- Icons: `scripts/gen-editor-icons.mjs` (PNG via node:zlib) + canonical
+  `pnpm exec tauri icon app-icon.png -o src-tauri/icons`; `.gitignore` exceptions keep
+  `icon.ico`/`icon.png`/all `icons/**` tracked (global `*.png` rule would otherwise exclude
+  them and break tauri-build on clean Windows clones).
+- Boot: `pnpm tauri dev` requires cargo on PATH (`$env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"`);
+  window + live React shell verified 2026-09-28 (boot + browser snapshot of full §7.2 layout).
+- Full health gate green (`ee62574`): format/lint/typecheck, 192 unit + 5 integration,
+  check:rust (incl. editor + crates), build, smoke 106, e2e:ui, licenses 38, architecture,
+  sanitizer dry-run 0 files.
 
 ### S6-002 — Rust broker skeleton + workspace DB
 
@@ -251,7 +294,7 @@ establish the seams.
 git add -A
 git commit -m "feat(sprint-6): R0 foundation — shell, capability contract, project schema, bridge"
 
-- S6-001: Tauri 2 + React 19 scaffold (apps/editor)
+- S6-001: Tauri 2 + React 19 scaffold (apps/editor) — ✅ `ee62574`
 - S6-002: Rust broker skeleton + workspace.db (no auth dep)
 - S6-003: machine capability contract v1 + 3 ingestion paths
 - S6-004: versioned project schema + content-addressed artifacts

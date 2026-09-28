@@ -9,6 +9,7 @@ AnycubicSlicerNextControl/
 *.png
 !apps/editor/app-icon.png
 !apps/editor/src-tauri/icons/
+!apps/editor/src-tauri/icons/**
 .sweep-events.json
 .control-events.json
 .bridge-routes.txt
