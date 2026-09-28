@@ -1,17 +1,34 @@
 # Sprint Overview — Anycubic Bridge CAD Engine
 
-**Last updated:** 2026-09-13
+**Last updated:** 2026-09-28
 **Canonical source:** This file is the authoritative index for sprint status,
 ticket coverage, execution order, and roadmap.
 
 ## Delivery Status
 
-- **All 4 sprints complete** — S1 `892f39d` (test 132/132, smoke 79), S2 `6739dfc`
-  (test 144/144, smoke 80), S3 `df28066` (test 155/155, smoke 82), S4 docs.
+### Legacy CAD engine (Sprints 1–4) — complete
+
+- S1 `892f39d` (test 132/132, smoke 79), S2 `6739dfc` (test 144/144, smoke 80),
+  S3 `df28066` (test 155/155, smoke 82), S4 docs.
 - Health gate per sprint: `pnpm install` + `pnpm run test` + `node scripts/smoke.mjs`
   (S4 docs-only: `git diff --stat`).
-- All new runtime deps are MIT/Apache-2.0 (three, three-mesh-bvh, three-bvh-csg,
+- All runtime deps are MIT/Apache-2.0 (three, three-mesh-bvh, three-bvh-csg,
   manifold-3d, replicad, replicad-opencascadejs).
+
+### New custom slicer/editor roadmap (Sprints 5–13) — planned
+
+Per [custom-slicer-editor-investigation-2026-09-27.md](../docs/research/custom-slicer-editor-investigation-2026-09-27.md)
+Rev 2.0 (R0–R7).
+
+- **License policy (user-confirmed 2026-09-28, binding)**: direct use/implementation
+  = **Apache-2.0 and MIT only**. All other licenses (GPL, AGPL, BSD-3, LGPL, MPL…)
+  are reference-of-information / comparison / code-example only — never copied,
+  imported, linked or bundled. External-process prerequisites (pinned Blender GPL,
+  Anycubic Slicer Next CLI for validation) are user-installed/discovered, never
+  bundled; versions + legal notices travel with docs. Enforced by a CI gate
+  `scripts/check-licenses.mjs` (Sprint 5, S5-005).
+- Health gates per new sprint: unit + typing + integration + e2e checks introduced
+  by S5-006 and applied in every sprint after (see per-sprint Health Check Commands).
 
 ## Sprint Summary Table
 
@@ -21,6 +38,15 @@ ticket coverage, execution order, and roadmap.
 | 2 | P1 | Parametric engine (Manifold + Replicad) | 5 | L | ✅ Done | [sprint](sprint-2/sprint.md) | `6739dfc` |
 | 3 | P1 | AI text-to-cad (prompt → parametric script → mesh) | 4 | L | ✅ Done | [sprint](sprint-3/sprint.md) | `df28066` |
 | 4 | P2 | Electron packaging (plan-only) | 3 | M | ✅ Done | [sprint](sprint-4/sprint.md) | docs commit |
+| 5 | P0 | Architecture + code quality (SOLID/DRY, boundaries, licenses) | 6 | M | ⏳ Planned | [sprint](sprint-5/sprint.md) | — |
+| 6 | P0 | R0 foundation (Tauri 2 shell, broker, machine contract, schemas) | 6 | L | ⏳ Planned | [sprint](sprint-6/sprint.md) | — |
+| 7 | P0 | R1 Blender-primary editing core (parity corpus, IPC, undo) | 6 | XL | ⏳ Planned | [sprint](sprint-7/sprint.md) | — |
+| 8 | P0 | R2 own planar core (S1 spike, IR + independent validator, preview) | 5 | XL | ⏳ Planned | [sprint](sprint-8/sprint.md) | — |
+| 9 | P0 | R3 harness v1 (BYOK, WASI sandbox, tool lifecycle, journal, chat) | 6 | XL | ⏳ Planned | [sprint](sprint-9/sprint.md) | — |
+| 10 | P1 | R4 separable auth service + memory (fail-closed sync) | 5 | L | ⏳ Planned | [sprint](sprint-10/sprint.md) | — |
+| 11 | P1 | R5 non-planar S2 (curved-top, per-machine gates, coupon) | 5 | XL | ⏳ Planned | [sprint](sprint-11/sprint.md) | — |
+| 12 | P1 | R6 non-planar S3 conformal/field (paper study, OSQP, art gate) | 5 | XL | ⏳ Planned | [sprint](sprint-12/sprint.md) | — |
+| 13 | P2 | R7 T3b VM sandbox + S4 multi-axis research (catalog-profiled) | 4 | L | ⏳ Planned | [sprint](sprint-13/sprint.md) | — |
 
 ## Finding Coverage Matrix
 
@@ -33,6 +59,45 @@ ticket coverage, execution order, and roadmap.
 | Test coverage (unit/integration/e2e) | 1,2,3 | S1-004, S2-005, S3-004 | `node --test` suites + bundle smoke + browser e2e for cad.html |
 | SOLID/DRY architecture | 1,2,3 | all | Pure engine modules; MCP tools as thin adapters; shared mesh/export helpers |
 | Future Electron packaging | 4 | S4-001..S4-003 | Plan-only: structure, assets, distribution checklist |
+| Architecture design (process model, IPC contract, module boundaries, retirement) | 5 | S5-001 | `docs/architecture.md`, C4 Mermaid, license annotations, retirement boundary |
+| Repository boundaries + preserved/retired split (vendor/schemas/presets/tests preserved; tools.json superset-compat; sanitizer 0) | 5 | S5-002 | Boundary test asserting the preserved MCP contract remains a superset of the smoke list |
+| Code-quality gates (tsconfig strict + typecheck incl. checkJs, eslint flat, prettier, Knip, check-licenses CI) | 5 | S5-003, S5-006 | `pnpm run check` unified gate; test:unit/test:type/test:integration/test:e2e scripts |
+| SOLID/DRY doctrine (SRP/OCP via registries/ISP per tier/DIP broker→capability names) | 5 | S5-004 | `docs/solid-dry-rules.md` + `scripts/check-architecture.mjs` |
+| LICENSE POLICY (Apache/MIT direct; other licenses study-only; CI gate) | 5 | S5-005, S5-006 | `docs/licenses.md` rows incl. footnote BSD-3 = not Apache/MIT → study-only |
+| R0 desktop shell (Tauri 2 + React 19, profile-driven build plate) | 6 | S6-001 | apps/editor scaffold; R3F 9 stable; no hardcoded 220×220 |
+| Broker + workspace DB + keystore AB (BYOK + auth never in SQLite) | 6 | S6-002 | rusqlite single-writer; keystore trait DPAPI/Stronghold + file fake; editor works with auth absent |
+| Machine capability contract v1 (JSONC 1.0; fail-closed pre-flight; qualification lifecycle) | 6 | S6-003 | 3 read-only ingestion paths; event-driven revocation; bundled reference profile = placeholders only |
+| Versioned project schema + content-addressed artifacts + crash recovery | 6 | S6-004 | sha256 dedupe; undo graph skeleton; v1→v2 migration test; autosave replay test |
+| Loopback bridge to preserved Node MCP server (session token, get-only) | 6 | S6-005 | legacy `ui/cad.html` frozen; no data-loss integration test |
+| Auth service skeleton (who/scope/sync API; local auth.db; editor runs with auth killed) | 6 | S6-006 | auth tenant ≠ printer creds |
+| R1 Blender-primary editing (pinned version, T2 worker, parity corpus, IPC, undo, I/O) | 7 | S7-001..S7-006 | Blender external prerequisite (GPL) never bundled; framed stdio/framed IPC contract; ≥3 meshes/≥20 ops corpus; journal undo/recovery; STL/OBJ/3MF/glTF + OCCT conversion-only |
+| R2 own planar core as validation baseline (S1 parity budget declared) | 8 | S8-001, S8-002 | `scripts/compare-planar-runs.mjs`; `crates/planar-core` clean Rust, deterministic; docs/evidence budget pre-declared |
+| Profiles mapping (catalog → §5 schema; unknown=null; conflicts human-resolved) | 8 | S8-003 | source of truth = contract; no silent defaults |
+| Context-dependent op IR + independent emitted-program validator | 8 | S8-004 | IR v1 (pose/orientation/bead/flow/cooling/speed/collision-free/provenance); seeded-bug test; journaled rejections |
+| Per-machine kinematics-aware postprocessor + layer preview | 8 | S8-005 | whitelist-only emission; cartesian identity FK vs rotary joint targets; e2e slice→IR→postprocess→validate→preview |
+| R3 harness v1: BYOK (broker-held keys, AirRouter primary, local first-class, egress pinning) | 9 | S9-001 | adapter trait; keystore-only keys; quota/cost; loopback enforced for local providers |
+| Wasmtime WASI / wasip2 capability sandbox (deny-by-default) + MANDATORY external watchdog; bpy excluded | 9 | S9-002 | fuel/epochs cannot interrupt blocking host calls → watchdog kills (integration test); T3b off-by-default on Windows |
+| Generated-tool lifecycle (manifest→…→approval hash-bound→registration→revocation) | 9 | S9-003 | registry by content hash; revocation kills next tick; no host shell granted |
+| Named-capability broker proxy to pinned workers (geometry capability; no raw Blender handle) | 9 | S9-004 | disposable AI-job sessions; hash-equality e2e |
+| Continuous-learning journal v1 + deterministic safety box (retrieval/optimization/training gates; holdout by machine+material; shadow→bounded→promotion; clamp in validator; E-stop independent) | 9 | S9-005 | structural impossibility test; journaled rejects; rollback atomic |
+| Chat UI v1 (context sources, token budget, approval cards, spend; injection posture) | 9 | S9-006 | approvals journaled (prompt/tool-args hashes); model has no direct printer capability |
+| R4 separable auth service (local auth.db ↔ Postgres, build-time flag; editor zero auth dep) | 10 | S10-001, S10-002 | storage-agnostic API; anonymous local profile; migration path |
+| OAuth external-browser + PKCE (RFC 8252); broker-held tokens; no desktop DB creds | 10 | S10-003 | loopback 127.0.0.1 only; token redaction test; tenant ≠ printer creds |
+| Global memory (provenance + scope + retention; forget=source+derived; fail-closed synced reads) | 10 | S10-004 | auth off → synced = empty + UI marker; memory never grants permissions |
+| Multi-project workspaces + per-project context isolation | 10 | S10-005 | isolation test A→B sees none |
+| R5 non-planar S2 (height-field lift; per-machine slope rejection; §3.3 Z/E) | 11 | S11-001, S11-002 | no h/cosθ; pre-flight fail-closed; unknown/absence = reject, never silent degrade |
+| Swept-envelope collision (full tool_envelope, not nozzle cone) | 11 | S11-003 | shape-aware unit tests (cone vs capsule) |
+| S2 per-machine gcode + independent validation; physical coupon on placeholder-only reference profile | 11 | S11-004, S11-005 | seeded-bug validator test; declared coupon budget pre-print; `/poc-output/` gitignored |
+| R6 non-planar S3 (CurviSlicer paper study only; AGPL never imported) | 12 | S12-001 | design doc locks algorithm; license note; §11 unknowns updated |
+| OSQP QP solver in Rust (field strategies) | 12 | S12-002 | convex QP fixtures vs analytic; graceful failure; determinism |
+| Deform/inverse-map conformal strategy (bounded distortion) | 12 | S12-003 | no over-claim for general free-form |
+| Variable-thickness validation + paint-ability check (art/decorative flag until structural acceptance) | 12 | S12-004 | E re-derived from variable A_bead(s); seeded-bug test; UI "experimental" warning |
+| S3 tolerance vs planar baseline (declared budget; S1 corpus + 2 curved) | 12 | S12-005 | `scripts/compare-conformal-runs.mjs`; flag flip only on measured pass |
+| R7 T3b VM sandbox (design spike + Windows off-by-default decision) | 13 | S13-001 | Linux dev-VM first; never auto-enabled; no silent T1 fallback |
+| T3b throwaway-VM worker (capability-gated, watchdog, kill/reap) | 13 | S13-002 | VM session dead after run; native never downgraded |
+| S4 continuous multi-axis feasibility on actually-existing catalog profiles only | 13 | S13-003 | no in-catalog machine → research-only note, no claim; LinuxCNC study; S3-Slicer/Open5x/S4_Slicer/FullControl rows = study/inspiration |
+| Full-tier matrix integration test (T0/T1/T3a/T2/T3b) + T3b journal/safety-box audit | 13 | S13-004 | wrong-tier request fails; journal record completeness; revocation e2e |
+| Health gates: unit + typing + integration + e2e per sprint | 5–13 | S5-006 + per-sprint HS | `pnpm run check` (unit/type/lint/format/knip/licenses) + sprint-specific runner + sanitizer dry-run |
 
 ## Legend
 
@@ -40,5 +105,12 @@ ticket coverage, execution order, and roadmap.
 
 ## Execution Order
 
-1. Sprint 1 → 2 → 3 → 4 (dependencies point to earlier sprints only).
-2. Sprint 4 is plan-only (documentation + packaging checklist, no runnable Electron shell).
+1. **Legacy (complete):** Sprint 1 → 2 → 3 → 4.
+2. **New roadmap (planned):** Sprint 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13,
+   strictly sequential — each new sprint depends only on earlier sprints:
+   - Sprint 5 (architecture + code-quality foundations) is the **first** new sprint
+     (user-approved "primeiro passo").
+   - Sprints 6–13 map R0–R7 of the investigation roadmap: R0 shell (6), R1
+     editing core (7), R2 planar baseline (8), R3 harness (9), R4 auth/memory (10),
+     R5 S2 (11), R6 S3 (12), R7 T3b + S4 research (13).
+3. Sprint 4 is plan-only (documentation + packaging checklist, no runnable Electron shell).
