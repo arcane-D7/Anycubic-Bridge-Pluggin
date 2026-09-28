@@ -45,6 +45,9 @@ jobs:
       - name: Integration tests
         run: pnpm run test:integration
 
+      - name: Rust workspace (check + test)
+        run: pnpm run check:rust
+
       - name: Build
         run: pnpm run build
 

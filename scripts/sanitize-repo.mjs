@@ -115,6 +115,7 @@ const SKIP_DIRS = new Set([
   "local-scripts",
   "renders",
   "tests",
+  "target", // Rust build artifacts (crates/*/target) — never sanitized
 ]);
 const SKIP_FILES = new Set([
   "package.json",

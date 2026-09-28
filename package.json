@@ -27,7 +27,8 @@
     "test:type": "tsc --noEmit",
     "test:integration": "node --test \"tests/integration/*.test.mjs\"",
     "test:e2e": "node tests/e2e/cad-ui.e2e.mjs",
-    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test:unit && pnpm run test:integration && pnpm run build && pnpm run smoke && pnpm run e2e:ui && pnpm run check:licenses && pnpm run check:architecture && node scripts/sanitize-repo.mjs --dry-run"
+    "check:rust": "node scripts/check-rust.mjs",
+    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test:unit && pnpm run test:integration && pnpm run check:rust && pnpm run build && pnpm run smoke && pnpm run e2e:ui && pnpm run check:licenses && pnpm run check:architecture && node scripts/sanitize-repo.mjs --dry-run"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
