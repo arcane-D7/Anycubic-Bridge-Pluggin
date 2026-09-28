@@ -169,7 +169,7 @@ native snapshot is a renderer bug (snapshot wins).
 | **Type**             | Feature                                                                                   |
 | **Estimated Effort** | L                                                                                         |
 | **Source Finding**   | Invest. Rev 2.0 §4.6 (undo/recovery), §3.5 (journal discipline), Sprint 6 S6-004 skeleton |
-| **Status**           | ⏳ Planned                                                                                |
+| **Status**           | ✅ Done (commit `3b1c4ce`, 2026-09-28)                                                    |
 
 #### Context
 
@@ -181,11 +181,11 @@ the contract.
 
 #### Acceptance Criteria
 
-- [ ] Undo: replay inverse sequence to target revision re-validated; a would-leave-stale-selection undo is refused with a documented reason (unit test).
-- [ ] Redo: replay forward to a committed revision only.
-- [ ] Autosave: periodic BLEND snapshot + journal; crash recovery integration test kills the Blender worker and replays to the last committed revision with no stale selection.
-- [ ] Undo/redo parity on the corpus (R1 matrix row "Undo/redo") — Blender-undo equivalence measured on corpus ops.
-- [ ] Health gate green.
+- [x] Undo: replay inverse sequence to target revision re-validated; a would-leave-stale-selection undo is refused with a documented reason (unit test).
+- [x] Redo: replay forward to a committed revision only.
+- [x] Autosave: periodic BLEND snapshot + journal; crash recovery integration test kills the Blender worker and replays to the last committed revision with no stale selection.
+- [x] Undo/redo parity on the corpus (R1 matrix row "Undo/redo") — Blender-undo equivalence measured on corpus ops.
+- [x] Health gate green.
 
 ### S7-006 — Import/Export: STL/OBJ/3MF/glTF (+ STEP/IGES conversion-only note)
 
