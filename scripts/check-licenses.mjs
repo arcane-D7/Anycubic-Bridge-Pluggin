@@ -27,6 +27,20 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const pkgJson = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 
 // ---------------------------------------------------------------------------
+// Workspace members (S6-001): apps/* are pnpm workspace packages with their
+// OWN dependency sets (the Tauri/React shell). Their direct deps are validated
+// against the same Apache/MIT policy.
+// ---------------------------------------------------------------------------
+const workspaceMembers = [];
+const appsDir = join(root, "apps");
+if (existsSync(appsDir)) {
+  for (const name of readdirSync(appsDir)) {
+    const pkgPath = join(appsDir, name, "package.json");
+    if (existsSync(pkgPath)) workspaceMembers.push(pkgPath);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Allowlist for explicitly-approved exceptions (dev-only tooling).
 // Every entry must carry a justification comment.
 // ---------------------------------------------------------------------------
@@ -51,6 +65,13 @@ const ALLOWLIST = new Map([
 
 const SPDX_APPROVED_DIRECT = new Set(["MIT", "Apache-2.0", "Apache-2.0 WITH LLVM-exception"]);
 
+/** Accept "Apache-2.0 OR MIT", "MIT OR Apache-2.0" style dual licenses. */
+function isApprovedOrSplit(lic) {
+  if (SPDX_APPROVED_DIRECT.has(lic)) return true;
+  const parts = lic.split(" OR ").map((s) => s.trim());
+  return parts.length > 1 && parts.every((p) => SPDX_APPROVED_DIRECT.has(p));
+}
+
 function spdxOrFallback(license) {
   if (!license) return null;
   if (typeof license === "string") return license.trim();
@@ -62,25 +83,37 @@ function spdxOrFallback(license) {
 
 function collectDeps() {
   const out = new Map();
-  const add = (dir) => {
+  // Reads a node_modules dir into the map using the FULL package name as key
+  // (scoped packages are "@scope/name"; descending into @scope dirs collects
+  // them under their real names so direct deps resolve).
+  const add = (dir, scopePrefix = "") => {
     if (!existsSync(dir)) return;
     for (const name of readdirSync(dir)) {
       if (name.startsWith(".")) continue;
-      const pkgPath = join(dir, name, "package.json");
-      if (!existsSync(pkgPath)) continue;
-      try {
-        const meta = JSON.parse(readFileSync(pkgPath, "utf8"));
-        out.set(name, {
-          version: meta.version ?? "?",
-          license: spdxOrFallback(meta.license),
-        });
-      } catch {
-        /* skip malformed */
+      const sub = join(dir, name);
+      const pkgPath = join(sub, "package.json");
+      const fullName = scopePrefix ? `${scopePrefix}/${name}` : name;
+      if (existsSync(pkgPath)) {
+        try {
+          const meta = JSON.parse(readFileSync(pkgPath, "utf8"));
+          out.set(fullName, {
+            version: meta.version ?? "?",
+            license: spdxOrFallback(meta.license),
+          });
+        } catch {
+          /* skip malformed */
+        }
+      } else if (name.startsWith("@")) {
+        // scoped dirs (@scope/name) — recurse one level, carrying the prefix
+        add(sub, name);
       }
     }
   };
   add(join(root, "node_modules"));
-  add(join(root, "node_modules", ".pnpm")); // pnpm virtual store shape fallback
+  for (const memberPkg of workspaceMembers) {
+    const memberDir = dirname(memberPkg);
+    add(join(memberDir, "node_modules"));
+  }
   return out;
 }
 
@@ -88,6 +121,24 @@ const directDeps = {
   ...pkgJson.dependencies,
   ...pkgJson.devDependencies,
 };
+
+const depOwner = new Map(); // dep name -> source package.json path (for messages)
+for (const [name] of Object.entries(directDeps)) depOwner.set(name, join(root, "package.json"));
+
+for (const memberPkg of workspaceMembers) {
+  let member;
+  try {
+    member = JSON.parse(readFileSync(memberPkg, "utf8"));
+  } catch {
+    console.error(`check-licenses: could not parse ${memberPkg}`);
+    process.exit(1);
+  }
+  const deps = { ...member.dependencies, ...member.devDependencies };
+  for (const name of Object.keys(deps)) {
+    directDeps[name] ??= deps[name];
+    depOwner.set(name, memberPkg);
+  }
+}
 
 const installed = collectDeps();
 const failures = [];
@@ -104,8 +155,8 @@ for (const [name] of Object.entries(directDeps)) {
     }
   }
   if (!meta) {
-    // Scoped packages live under node_modules/@scope/name — collectDeps handles
-    // only the top level; record as missing so `pnpm install` is validated.
+    // Dependency not installed anywhere — record as missing so a broken
+    // install is caught (scoped packages now resolve via collectDeps).
     missing.push(name);
     continue;
   }
@@ -114,14 +165,14 @@ for (const [name] of Object.entries(directDeps)) {
     failures.push(`${name}@${meta.version}: no SPDX license field`);
     continue;
   }
-  if (SPDX_APPROVED_DIRECT.has(lic)) continue;
+  if (isApprovedOrSplit(lic)) continue;
   const allow = ALLOWLIST.get(name);
   if (allow) {
     console.log(`[ok/allowlist] ${name}@${meta.version} — ${lic} — ${allow}`);
     continue;
   }
   failures.push(
-    `${name}@${meta.version}: license "${lic}" is NOT Apache-2.0/MIT and not allowlisted — see docs/licenses.md`,
+    `${name}@${meta.version}: license "${lic}" is NOT Apache-2.0/MIT and not allowlisted — see docs/licenses.md (required by ${depOwner.get(name) ?? root})`,
   );
 }
 

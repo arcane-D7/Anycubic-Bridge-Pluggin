@@ -7,6 +7,8 @@ AnycubicSlicerNextControl/
 
 # Capture artefacts (screenshots, event dumps) — reproducible, large
 *.png
+!apps/editor/app-icon.png
+!apps/editor/src-tauri/icons/
 .sweep-events.json
 .control-events.json
 .bridge-routes.txt
@@ -31,12 +33,14 @@ node_modules/
 # Rust build artifacts (new workspace members under crates/)
 target/
 **/target/
+apps/*/src-tauri/target/
 
 # Blender scratch / external prerequisite artifacts — never commit
 *.blend
 *.blend1
 apps/*/dist/
 apps/*/node_modules/
+apps/*/src-tauri/gen/
 
 # Quality tooling caches
 .vitest/

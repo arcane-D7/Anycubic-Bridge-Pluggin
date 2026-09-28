@@ -8,6 +8,10 @@ import { join, resolve } from "node:path";
 
 const root = resolve(process.cwd());
 const manifest = join(root, "crates", "Cargo.toml");
+// S6-001: the Tauri shell is a SEPARATE Cargo workspace (apps/editor/src-tauri)
+// because Cargo cannot nest workspaces. check-rust validates both workspaces so
+// the health gate covers the Rust editor shell too.
+const editorManifest = join(root, "apps", "editor", "src-tauri", "Cargo.toml");
 
 function findCargo() {
   if (process.env.CARGO) return process.env.CARGO;
@@ -37,4 +41,10 @@ const run = (args) => {
 console.log(`[check-rust] using cargo: ${cargo}`);
 run(["check", "--workspace", "--manifest-path", manifest]);
 run(["test", "--workspace", "--manifest-path", manifest]);
+
+if (existsSync(editorManifest)) {
+  console.log("[check-rust] editor shell workspace present — checking it too");
+  run(["check", "--workspace", "--manifest-path", editorManifest]);
+}
+
 console.log("[check-rust] OK — cargo check + test passed");

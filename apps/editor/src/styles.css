@@ -1,0 +1,204 @@
+:root {
+  --bg: #12141a;
+  --bg-panel: #191c24;
+  --bg-raised: #1f2330;
+  --border: #2a2f3d;
+  --text: #cdd3e0;
+  --text-dim: #8b93a7;
+  --accent: #4f9cf7;
+  --danger: #b36a5e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 13px;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100%;
+}
+
+.app-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-brand {
+  font-weight: 650;
+  letter-spacing: 0.2px;
+}
+
+.app-sub {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.app-main {
+  display: flex;
+  min-height: 0;
+}
+
+.panel-left,
+.panel-right {
+  width: var(--left-panel-size, 280px);
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  overflow: auto;
+  min-width: 0;
+}
+
+.panel-right {
+  width: var(--right-panel-size, 300px);
+  border-right: none;
+  border-left: 1px solid var(--border);
+}
+
+.viewport-host {
+  flex: 1 1 auto;
+  min-width: 0;
+  position: relative;
+  background: #101218;
+}
+
+.panel-divider {
+  flex: 0 0 6px;
+  background: transparent;
+  cursor: col-resize;
+  transition: background 120ms ease;
+  touch-action: none;
+}
+
+.panel-divider:hover,
+.panel-divider:active {
+  background: var(--accent);
+}
+
+.panel-divider-horizontal {
+  cursor: row-resize;
+  height: 6px;
+  width: 100%;
+}
+
+.app-footer {
+  height: var(--bottom-panel-size, 180px);
+  border-top: 1px solid var(--border);
+  background: var(--bg-panel);
+  overflow: auto;
+}
+
+.panel-title {
+  padding: 8px 12px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 11px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-hint {
+  padding: 8px 12px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+/* Object tree */
+.object-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+}
+
+.object-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.object-item:hover {
+  background: var(--bg-raised);
+}
+
+.object-item.selected {
+  background: rgba(79, 156, 247, 0.16);
+  outline: 1px solid var(--accent);
+}
+
+.object-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.object-meta {
+  color: var(--text-dim);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* Chat placeholder */
+.chat-empty {
+  padding: 12px;
+  color: var(--text-dim);
+}
+
+/* Timeline / slicing */
+.timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+}
+
+.timeline-label {
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+}
+
+select {
+  background: var(--bg-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+code {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  background: var(--bg-raised);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+}

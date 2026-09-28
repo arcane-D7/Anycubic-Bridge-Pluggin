@@ -3,6 +3,8 @@ packages:
 allowBuilds:
   esbuild: true
   husky: true
+  "@tauri-apps/cli": true
 onlyBuiltDependencies:
   - esbuild
   - husky
+  - "@tauri-apps/cli"

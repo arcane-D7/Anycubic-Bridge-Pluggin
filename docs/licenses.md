@@ -57,6 +57,23 @@ with this justification; the migration is tracked in Sprint 10+ (auth service re
 | node-forge@1.4.0             | BSD-3-Clause OR GPL-2.0 | `scripts/anycubic-cloud.mjs` (cloud PKI cert verification) | Replace with WebCrypto-based verification (no bundled cert parser) when the cloud module is refactored                          |
 | replicad-opencascadejs@1.1.0 | LGPL-2.1-only           | `scripts/cad-step-export.mjs` (optional STEP export)       | Already graceful-fallback to STL; keep optional, never a hard dep — migrate to Apache-2.0 OCCT wrapper if STEP export must stay |
 
+## Tauri shell pinning note (S6-001, R0 editor scaffold)
+
+| Package                    | License           | Allowed use | Rationale / citation                                                                                                      |
+| -------------------------- | ----------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------- |
+| @react-three/fiber@9.8.1   | MIT               | Direct      | React renderer for three.js; **9.x (stable) is pinned. 10.x is an EARLY-ALPHA — never installed** (S6-001 AC: R3F 9 only) |
+| @react-three/drei@10.7.9   | MIT               | Direct      | Helper lib built on R3F 9 (OrbitControls etc.)                                                                            |
+| @tanstack/react-query@5.x  | MIT               | Direct      | Server-state (bridge) queries for the editor shell                                                                        |
+| zustand@5.x                | MIT               | Direct      | Scene/UI client state (R0 stub stores)                                                                                    |
+| vite (dev)                 | MIT               | Direct      | Frontend bundler/dev server for the Tauri shell (dev-only, not bundled)                                                   |
+| @vitejs/plugin-react (dev) | MIT               | Direct      | React JSX transform for Vite (dev-only)                                                                                   |
+| @tauri-apps/* (2.x)        | Apache-2.0 OR MIT | Direct      | Tauri 2 Rust shell + CLI + API (dev/build-time; WebView2 runtime is a Windows component)                                  |
+| @types/three@0.186.0 (dev) | MIT               | Direct      | Type defs for three@0.186.0 (three@0.186 does not bundle its own d.ts)                                                    |
+
+> **R3F pinning (binding):** the R3F 10 alpha is explicitly **not** installed. Any
+> future upgrade to R3F 10 must be a deliberate, licensed, reviewed step — see the
+> S6-001 acceptance criteria. This note records the pin until that decision.
+
 [^1]: BSD-3 is permissive but not Apache/MIT. Per user policy it is **reference-only** — BSD-3 _code_ is not copied.
 
 ## Direct-use dependency allowlist (dev-only tooling)

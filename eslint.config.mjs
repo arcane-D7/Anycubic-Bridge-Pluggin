@@ -12,6 +12,8 @@ export default tseslint.config(
       "target/**",
       "apps/*/dist/**",
       "apps/*/node_modules/**",
+      "apps/*/src-tauri/target/**",
+      "apps/*/src-tauri/gen/**",
       "vendor/**",
       "poc-output/**",
       "local-scripts/**",
@@ -43,6 +45,8 @@ export default tseslint.config(
     rules: {
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/consistent-type-imports": ["error", { prefer: "type-imports" }],
+      // S6-001 AC: no `any` in new workspace code.
+      "@typescript-eslint/no-explicit-any": "error",
     },
   },
 );
