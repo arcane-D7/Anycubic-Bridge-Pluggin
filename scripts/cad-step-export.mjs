@@ -39,11 +39,19 @@ export async function tryInitReplicad() {
 
 /**
  * Exports a mesh (shared contract) to a STEP file at targetPath.
+ *
+ * S7-006 (AC-3): STEP is **conversion-only** — the generic mesh→B-rep path
+ * here degrades to a bbox-cuboid solid when OCCT is unavailable, and that
+ * path is explicitly labeled `conversion_only:true` + `deprecation_note`.
+ * Never present bbox-cuboid as a real mesh→STEP (no silent success).
+ *
  * @param {{positions:number[], tris:{a,b,c}[]}} mesh
  * @param {string} targetPath absolute output path (e.g. plugin output dir)
  * @param {object} [opts] { name, tolerance }
  * @returns {Promise<object>}
- *   { ok:true, file_path, bytes, engine:"replicad" } on success,
+ *   { ok:true, file_path, bytes, engine:"replicad", conversion_only:false } on real STEP,
+ *   { ok:true, file_path, bytes, engine:"replicad", conversion_only:true,
+ *     deprecation_note, fidelity_budget } on bbox-cuboid STEP,
  *   { ok:false, error, engine:"replicad", fallback:"stl" } on graceful failure.
  */
 export async function exportStep(mesh, targetPath, opts = {}) {
@@ -58,8 +66,8 @@ export async function exportStep(mesh, targetPath, opts = {}) {
         fallback: "stl",
       };
     }
-    // Build a solid from the mesh bounding box... Actually the cleanest
-    // generic path is creating a bounding-box solid from the mesh extents.
+    // S7-006: the generic mesh→STEP path is conversion-only business logic.
+    // Build a solid from the mesh bounding box was the ONLY generic path.
     const bounds = meshBounds(mesh);
     const { makeBox, exportSTEP } = replicad;
     const solid = makeBox(bounds.x, bounds.y, bounds.z);
@@ -73,11 +81,25 @@ export async function exportStep(mesh, targetPath, opts = {}) {
     const { dirname } = await import("node:path");
     await mkdir(dirname(targetPath), { recursive: true });
     await writeFile(targetPath, bytes);
-    return { ok: true, file_path: targetPath, bytes: bytes.length, engine: "replicad" };
+    return {
+      ok: true,
+      file_path: targetPath,
+      bytes: bytes.length,
+      engine: "replicad",
+      // AC-3: always labeled — this IS the degraded bbox-cuboid path, and the
+      // fidelity budget documents the degradation is never silent.
+      conversion_only: true,
+      fidelity_budget:
+        "bbox-cuboid solid: dihedral error unbounded; topology is a box, not the source mesh; volume within mesh bbox extents exactly; DEPRECATED — do not extend, replace with real mesh→B-rep",
+      deprecation_note:
+        "bbox-cuboid STEP is deprecated (S7-006); real mesh→STEP conversion is research-only at R3",
+    };
   } catch (error) {
+    // AC-3: the degradation is never silent — the error names the bbox-cuboid
+    // fallback explicitly (e.g. OCCT WebAssembly.Exception on Node 24).
     return {
       ok: false,
-      error: error?.message ?? String(error),
+      error: `STEP bbox-cuboid export failed: ${error?.message ?? String(error)}`,
       engine: "replicad",
       fallback: "stl",
     };

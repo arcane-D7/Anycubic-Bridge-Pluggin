@@ -12,7 +12,7 @@
 | **Primary Owner**     | geometry-core                                                                                                                                                                                                                                               |
 | **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §4 (decision + parity matrix + build options + IPC), §7.4, §10 R1; Sprint 5/6 gates                                        |
 | **Depends On**        | Sprint 6 (R0)                                                                                                                                                                                                                                               |
-| **Status**            | ⏳ Planned                                                                                                                                                                                                                                                  |
+| **Status**            | ✅ Done (all 6 tickets, 2026-09-28)                                                                                                                                                                                                                         |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -197,7 +197,7 @@ the contract.
 | **Type**             | Feature                                                                                           |
 | **Estimated Effort** | L                                                                                                 |
 | **Source Finding**   | Invest. Rev 2.0 §10 R1 (import/export list), §4.4 (STEP/IGES conversion-only, degraded bbox path) |
-| **Status**           | ⏳ Planned                                                                                        |
+| **Status**           | ✅ Done (commit `feat(s7-006)`, 2026-09-28)                                                       |
 
 #### Context
 
@@ -207,11 +207,11 @@ bbox-cuboid path ([BUG] STEP bbox) and must not be presented as real mesh→STEP
 
 #### Acceptance Criteria
 
-- [ ] Import: STL/OBJ/3MF/glTF → scene objects through the contract (round-trip volume/bbox preserved within declared tolerance).
-- [ ] Export: STL/OBJ/3MF/glTF from the Blender scene; 3MF write support added (R0 read-only becomes read/write).
-- [ ] STEP/IGES: OCCT conversion service behind the contract, clearly labeled conversion-only; mesh→STEP fidelity budget documented; the bbox-cuboid path is deprecated with a warning (no silent output).
-- [ ] E2E: import fixture → transform → export → import again; geometric identity asserted.
-- [ ] Health gate green.
+- [x] Import: STL/OBJ/3MF/glTF → scene objects through the contract (round-trip volume/bbox preserved within declared tolerance).
+- [x] Export: STL/OBJ/3MF/glTF from the Blender scene; 3MF write support added (R0 read-only becomes read/write).
+- [x] STEP/IGES: OCCT conversion service behind the contract, clearly labeled conversion-only; mesh→STEP fidelity budget documented; the bbox-cuboid path is deprecated with a warning (no silent output).
+- [x] E2E: import fixture → transform → export → import again; geometric identity asserted.
+- [x] Health gate green.
 
 ## Sprint Commit
 

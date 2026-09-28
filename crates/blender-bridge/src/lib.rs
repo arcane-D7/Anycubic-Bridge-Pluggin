@@ -14,13 +14,17 @@
 //!   (bpy has no UI undo stack) with validated undo plans (refuses
 //!   stale-selection), committed-only redo and snapshot-based crash recovery.
 //!   (S7-005)
+//! - [`io`]: pure-std import/export codecs (STL binary+ASCII, OBJ) + a 3MF
+//!   write boundary and an explicit glTF coverage stub. (S7-006)
 
 pub mod discovery;
+pub mod io;
 pub mod ipc;
 pub mod journal;
 pub mod spawn;
 
 pub use discovery::{resolve, BlenderInstall, DiscoveryError, InstallKind};
+pub use io::{IoError, MeshData};
 pub use journal::{Journal, JournalEntry, JournalError, OpKind, Snapshot, UndoPlan};
 pub use spawn::{
     spawn_blender, transport_for, BlenderWorker, CapturedOutput, SpawnError, SpawnOptions,
