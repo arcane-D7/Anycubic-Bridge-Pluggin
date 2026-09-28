@@ -2,6 +2,7 @@ import { memo, useMemo } from "react";
 import * as THREE from "three";
 import type { ObjectMeshInfo } from "../bridge/types";
 import { useScene } from "../state/scene";
+import { useViewport } from "../state/viewport";
 
 /**
  * Scene object model placeholder (R0). The preserved server repacks mesh
@@ -21,7 +22,15 @@ interface SceneObjectModelProps {
 
 export const SceneObjectModel = memo(function SceneObjectModel({ info }: SceneObjectModelProps) {
   const selected = useScene((s) => (s.selected?.name === info.name ? s.selected : null));
-  const color = selected ? SELECTED : info.watertight ? NEUTRAL : NON_WATERTIGHT;
+  // Selection highlight derives from the AUTHORITATIVE snapshot selection_state
+  // (S7-004): object-mode selection is a name in `selection.objectModeNames`;
+  // edit-mode verts/faces/edges map to element indices per object, but the
+  // editor only owns names in object mode here. Never a UI-local twin.
+  const authoritativeSelected = useViewport(
+    (s) => s.selection?.objectModeNames.includes(info.name) ?? false,
+  );
+  const color =
+    selected || authoritativeSelected ? SELECTED : info.watertight ? NEUTRAL : NON_WATERTIGHT;
 
   // Deterministic unit box scaled to the object's real size (mm) from bounds.
   const { position, scale } = useMemo(() => {

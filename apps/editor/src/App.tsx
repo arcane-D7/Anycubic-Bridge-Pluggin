@@ -81,7 +81,7 @@ export function App() {
         />
         <section className="viewport-host" aria-label="3D viewport">
           <Viewport scene={scene} />
-        </section>
+        </section>{" "}
         <PanelDivider
           axis="vertical"
           ariaLabel="Resize chat panel"

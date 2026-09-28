@@ -82,6 +82,13 @@ body,
   background: #101218;
 }
 
+.viewport-frame {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+}
+
 .panel-divider {
   flex: 0 0 6px;
   background: transparent;

@@ -1,0 +1,36 @@
+import { useEffect } from "react";
+import type { BridgeHandle } from "../bridge/mock";
+import { useViewport } from "../state/viewport";
+import { checkRendererSnapshotConsistency } from "../state/viewport-core";
+
+/**
+ * S7-004 renderer-vs-snapshot guard (pure rule in viewport-core:
+ * `checkRendererSnapshotConsistency`). The native snapshot is AUTHORITATIVE —
+ * a renderer that disagrees with it is a renderer BUG, and the editor must
+ * surface it as an error rather than re-render a twin (never a silent merge).
+ *
+ * Component wiring: after each authoritative snapshot (revision > 0), compute
+ * what the renderer ACTUALLY emitted and compare against the snapshot's
+ * triangle count. On mismatch → `invalidate(reason)` (session invalidated,
+ * re-import offered). The pure rule is unit-tested headless.
+ */
+export function RendererGuard({ scene }: { readonly scene: BridgeHandle | undefined }) {
+  const revision = useViewport((s) => s.revision);
+  const invalidate = useViewport((s) => s.invalidate);
+
+  const snapshotTriangleCount = scene?.objects.reduce((acc, o) => acc + o.triangles, 0) ?? null;
+
+  useEffect(() => {
+    if (revision === 0 || snapshotTriangleCount === null) return;
+    // What the renderer actually emitted. In this shell every object renders
+    // exactly one unit box (12 triangles) — a PLACEHOLDER renderer. When R1
+    // ships native-snapshot geometry this becomes the real emitted count.
+    const rendererTriangleCount = scene ? scene.objects.length * 12 : 0;
+    const mismatch = checkRendererSnapshotConsistency(rendererTriangleCount, snapshotTriangleCount);
+    if (mismatch) {
+      invalidate({ expected: mismatch.expected, actual: mismatch.actual });
+    }
+  }, [revision, snapshotTriangleCount, scene, invalidate]);
+
+  return null;
+}

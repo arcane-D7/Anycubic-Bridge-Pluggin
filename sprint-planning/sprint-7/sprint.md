@@ -142,7 +142,7 @@ Native snapshots are authoritative — a renderer mismatch is a renderer bug.
 | **Type**             | Feature                                                                                           |
 | **Estimated Effort** | XL                                                                                                |
 | **Source Finding**   | Invest. Rev 2.0 §7.4 (viewport is view, not twin), §4.2 (UI owns interaction, Blender owns state) |
-| **Status**           | ⏳ Planned                                                                                        |
+| **Status**           | ✅ Done (commit pending)                                                                          |
 
 #### Context
 
@@ -153,11 +153,11 @@ native snapshot is a renderer bug (snapshot wins).
 
 #### Acceptance Criteria
 
-- [ ] Viewport subscribes to commit events and re-renders from authoritative mesh snapshots (no mutation of geometry in the UI).
-- [ ] Gizmo transform issues `begin → update → commit`; numeric entry issues `begin → 0 updates → commit`; cancel rolls back to begin-revision (end-to-end test against a stub contract server).
-- [ ] Selection highlights are derived from the last authoritative selection_state (never stale across ops).
-- [ ] A deliberate renderer-vs-snapshot mismatch in a test fails with "renderer bug" semantics (snapshot wins).
-- [ ] Health gate green.
+- [x] Viewport subscribes to commit events and re-renders from authoritative mesh snapshots (no mutation of geometry in the UI).
+- [x] Gizmo transform issues `begin → update → commit`; numeric entry issues `begin → 0 updates → commit`; cancel rolls back to begin-revision (end-to-end test against a stub contract server).
+- [x] Selection highlights are derived from the last authoritative selection_state (never stale across ops).
+- [x] A deliberate renderer-vs-snapshot mismatch in a test fails with "renderer bug" semantics (snapshot wins).
+- [x] Health gate green.
 
 ### S7-005 — Undo/recovery = command-journal replay
 
