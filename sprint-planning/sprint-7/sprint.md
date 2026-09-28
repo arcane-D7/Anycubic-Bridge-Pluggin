@@ -142,7 +142,7 @@ Native snapshots are authoritative — a renderer mismatch is a renderer bug.
 | **Type**             | Feature                                                                                           |
 | **Estimated Effort** | XL                                                                                                |
 | **Source Finding**   | Invest. Rev 2.0 §7.4 (viewport is view, not twin), §4.2 (UI owns interaction, Blender owns state) |
-| **Status**           | ✅ Done (commit pending)                                                                          |
+| **Status**           | ✅ Done (commit `0ce147b`, 2026-09-28)                                                            |
 
 #### Context
 
