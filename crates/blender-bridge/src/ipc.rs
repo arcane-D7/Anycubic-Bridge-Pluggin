@@ -500,6 +500,15 @@ mod tests {
     }
 
     #[test]
+    fn direct_topology_op_outside_modal_session_rejected() {
+        let mut mgr = SessionManager::new();
+        // A topology op framed as an update without a begin → rejected.
+        let id = SessionId("never-begun".into());
+        let err = mgr.update(&id, Revision(1)).unwrap_err();
+        assert!(matches!(err, SessionError::NotActive(_)));
+    }
+
+    #[test]
     fn committed_session_closes() {
         let mut mgr = SessionManager::new();
         let id = SessionId("s2".into());
