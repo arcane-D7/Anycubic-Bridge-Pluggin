@@ -1,18 +1,15 @@
 [package]
-name = "broker"
+name = "project-store"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [dependencies]
+broker = { path = "../broker" }
 rusqlite = { version = "0.32", features = ["bundled"] }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
-
-[features]
-default = []
-file-keystore = []
-
-[dev-dependencies]
+sha2 = "0.10"
+hex = "0.4"
 tempfile = "3"

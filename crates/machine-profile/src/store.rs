@@ -6,7 +6,7 @@
 //! hash-checked, user-approve to apply, and it can never silently override
 //! manual/measured data (conflict → error).
 
-use crate::{Capability, MachineProfile, ProfileError, Qualification, SourceClass};
+use crate::{MachineProfile, ProfileError, Qualification, SourceClass};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
