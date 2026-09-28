@@ -1,0 +1,22 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["apps/editor/src/**/*.{ts,tsx}"],
+  "project": ["apps/editor/src/**/*.{ts,tsx}"],
+  "ignoreDependencies": [
+    "@types/node",
+    "typescript",
+    "@types/pngjs",
+    "esbuild",
+    "basic-ftp",
+    "manifold-3d",
+    "mqtt",
+    "node-forge",
+    "pngjs",
+    "replicad",
+    "replicad-opencascadejs",
+    "three",
+    "three-bvh-csg",
+    "three-mesh-bvh"
+  ],
+  "ignoreBinaries": []
+}

@@ -28,5 +28,16 @@ poc-output/
 dist/
 node_modules/
 
-# Tooling caches
+# Rust build artifacts (new workspace members under crates/)
+target/
+**/target/
+
+# Blender scratch / external prerequisite artifacts — never commit
+*.blend
+*.blend1
+apps/*/dist/
+apps/*/node_modules/
+
+# Quality tooling caches
 .vitest/
+.knip/

@@ -1,0 +1,64 @@
+name: health
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  health:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      ANYCUBIC_ACCESS_CODE: "" # agnostic default — never hardcode device data
+      ANYCUBIC_PRINTER_IPS: "" # agnostic default
+      ANYCUBIC_CLOUD_TOKEN: "" # agnostic default
+      ANYCUBIC_CLOUD_REGION: "en"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Format (prettier)
+        run: pnpm run format:check
+        # NO `|| true` — a formatting drift fails the gate crisply.
+
+      - name: Lint (eslint)
+        run: pnpm run lint
+
+      - name: Typecheck (tsc --noEmit)
+        run: pnpm run typecheck
+
+      - name: Unit tests
+        run: pnpm run test:unit
+
+      - name: Integration tests
+        run: pnpm run test:integration
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Smoke
+        run: pnpm run smoke
+
+      - name: E2E (legacy UI, headless)
+        run: pnpm run test:e2e
+
+      - name: Licenses policy
+        run: pnpm run check:licenses
+
+      - name: Architecture rules
+        run: pnpm run check:architecture
+
+      - name: Sanitizer (no personal data)
+        run: node scripts/sanitize-repo.mjs --dry-run

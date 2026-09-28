@@ -15,11 +15,19 @@
     "test": "node --test \"tests/*.test.mjs\"",
     "smoke": "node scripts/smoke.mjs",
     "e2e:ui": "node tests/e2e/cad-ui.e2e.mjs",
-    "check": "pnpm run build && pnpm run test && pnpm run smoke && pnpm run e2e:ui",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
-    "prepare": "husky"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "knip": "knip",
+    "check:licenses": "node scripts/check-licenses.mjs",
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "test:unit": "node --test \"tests/*.test.mjs\"",
+    "test:type": "tsc --noEmit",
+    "test:integration": "node --test \"tests/integration/*.test.mjs\"",
+    "test:e2e": "node tests/e2e/cad-ui.e2e.mjs",
+    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test:unit && pnpm run test:integration && pnpm run build && pnpm run smoke && pnpm run e2e:ui && pnpm run check:licenses && pnpm run check:architecture && node scripts/sanitize-repo.mjs --dry-run"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
@@ -36,15 +44,19 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "26.3.0",
     "@types/pngjs": "^6.0.5",
     "esbuild": "0.28.2",
+    "eslint": "^10.11.0",
     "husky": "^9.1.7",
+    "knip": "^6.38.0",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
     "puppeteer-core": "^25.10.0",
     "tsx": "4.20.6",
-    "typescript": "7.0.2"
+    "typescript": "5.9.3",
+    "typescript-eslint": "^8.70.1"
   },
   "packageManager": "pnpm@11.19.0"
 }
