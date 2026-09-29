@@ -12,7 +12,7 @@
 | **Primary Owner**     | engine-core                                                                                                                                                                                                                                                                                                |
 | **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §3 (own engine, S1, §3.3, §3.6, §3.7), §3.0a (dual modes — standard default), §5 (profiles), §10 R2, §2 (presets/catalog.json)                                            |
 | **Depends On**        | Sprint 7 (R1)                                                                                                                                                                                                                                                                                              |
-| **Status**            | ⏳ Planned                                                                                                                                                                                                                                                                                                 |
+| **Status**            | ✅ Done (2026-09-29)                                                                                                                                                                                                                                                                                       |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -262,7 +262,7 @@ segment id.
 | **Type**             | Feature                                                                                                         |
 | **Estimated Effort** | L                                                                                                               |
 | **Source Finding**   | Invest. Rev 2.0 §3.7 (per-machine FK → joint targets), §5.1 (joints/controller dialect), §10 R2 (layer preview) |
-| **Status**           | ⏳ Planned                                                                                                      |
+| **Status**           | ✅ Done                                                                                                         |
 
 #### Context
 
@@ -274,11 +274,46 @@ the R3F viewport for inspection. In **standard mode** the preview renders layer-
 
 #### Acceptance Criteria
 
-- [ ] Postprocessor emits only whitelisted dialect codes from the profile (`gcode_whitelist`); a code outside the whitelist fails the validator test.
-- [ ] Kinematics-aware: for a cartesian profile the FK is identity (X/Y/Z); for a rotary profile the joint targets are computed from IR pose (rectilinear segments; continuous multi-axis is R7/S4 — no over-claim).
-- [ ] Layer preview: viewport shows per-layer toolpaths + infill/walls overlays from IR; layer slider works; `mode` metadata consumed (standard renders layer-aligned; nonplanar segments render as ramps, not layer jumps).
-- [ ] E2E: slice fixture → IR → postprocess → validate → preview renders without errors, in `standard` (default) mode.
-- [ ] Health gate green.
+- [x] Postprocessor emits only whitelisted dialect codes from the profile (`gcode_whitelist`); a code outside the whitelist fails the validator test.
+- [x] Kinematics-aware: for a cartesian profile the FK is identity (X/Y/Z); for a rotary profile the joint targets are computed from IR pose (rectilinear segments; continuous multi-axis is R7/S4 — no over-claim).
+- [x] Layer preview: viewport shows per-layer toolpaths + infill/walls overlays from IR; layer slider works; `mode` metadata consumed (standard renders layer-aligned; nonplanar segments render as ramps, not layer jumps).
+- [x] E2E: slice fixture → IR → postprocess → validate → preview renders without errors, in `standard` (default) mode.
+- [x] Health gate green.
+
+#### Implementation Notes
+
+- **`scripts/gcode-postprocessor.mjs`**: `POSTPROCESSOR_VERSION`, `KNOWN_GCODES`, `resolveKinematics(profile)`
+  (cartesian / rotary / unknown fail-closed `UNSUPPORTED_KINEMATICS`), `fkToJointTargets` (cartesian
+  returns `{from,to,rotaryJointsPresent,axes}`; rotary throws `ROTARY_NOT_IMPLEMENTED` — never claims
+  support), `emitLine(code,params,whitelist)` (word order X Y Z A B C E F, trimmed decimals), full
+  pass emitting whitelist-only G0/G1 + chain-gap G0 repositioning (no E) with placement preflight
+  (`PLACEMENT_REQUIRED` without finite placement; `INVALID_BUILD_VOLUME` / `EMPTY_PATH` /
+  `INVALID_POSE` / `OUT_OF_VOLUME` / `JOINT_LIMIT`, never clamps).
+- **`validateEmittedProgram(program, expectedProfile)`** is an **independent** validator: it derives
+  the whitelist, volume and joint limits ONLY from `expectedProfile` (never trusts `program.whitelist`),
+  and rejects `PROGRAM_REJECTED` / `EMPTY_MOTION` / `INVALID_PROFILE` / `MALFORMED_WORD` /
+  `OUT_OF_VOLUME` / `JOINT_LIMIT` / `GCODE_NOT_SUPPORTED` / `DIALECT_MISMATCH` / `MACHINE_MISMATCH`.
+- **Same-binary reality (honest note)**: the rotary path is emitted as a hard rejection
+  (`ROTARY_NOT_IMPLEMENTED`) because the earlier atan2+XY-passthrough FK was physically unsound — we
+  do not claim rotary support until continuous multi-axis (R7/S4). Tests assert the rejection.
+- **IR loader + preview**: `apps/editor/src/bridge/ir.ts` (strict runtime `parseIrDocument` — mode
+  pinned, Z-ramp rejected for extrusion kinds in standard, 200k cap, deep-frozen) →
+  `viewport/preview-model.ts` (`buildPreviewModel`, `previewLayerAt` ramp-bridging) → R3F
+  `LayerPreview.tsx` (line segments, walls/infill colours, `previewFit`). IR loading in the UI pins
+  the slicing mode and switches to Preview.
+- **Operator profile / capability gate**: `profile/operatorProfile.ts` (catalog machine kobra-s1,
+  `continuousZ` declaration, slope/joint semantics) + `capabilities.ts` — operator-declared
+  precedence; **unknown ≠ unsupported**; `printQualified` is unconditionally false (a declaration
+  never certifies printing; output is not print-qualified until a validated generation + envelope
+  pipeline exists).
+- **Editor UI (slicer-style)**: light slicer theme, Printer/Filament/Process `SettingsPanel` with
+  settings export (`slicer-settings-draft.json`), plate heading + viewport volume + Orca-style
+  `BuildPlate` (front-left axes origin, backplate, grid), `FitCamera` framing the plate+preview,
+  Timeline concise states (`nonplanar-blocked` / `nonplanar-qualified` / `nonplanar-pending`,
+  mode pinned while preview loaded), mobile layout fix (min-width:0/width:0 on flex children —
+  canvas no longer 1104px in a 390px viewport).
+- Commit `a11b7cb` — `feat(s8-005): …` (gate EXIT:0; unit 287, integration 11, smoke 106, licenses 38,
+  sanitize 0).
 
 ## Sprint Commit
 

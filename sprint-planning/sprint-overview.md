@@ -1,6 +1,6 @@
 # Sprint Overview — Anycubic Bridge CAD Engine
 
-**Last updated:** 2026-09-28
+**Last updated:** 2026-09-29
 **Canonical source:** This file is the authoritative index for sprint status,
 ticket coverage, execution order, and roadmap.
 
@@ -35,6 +35,22 @@ Rev 2.0 (R0–R7).
   STL/OBJ/3MF/glTF with a conversion-only STEP/IGES tier (S7-006) — see
   [sprint-7/sprint.md](sprint-7/sprint.md) execution summary.
 
+- **Sprint 8 done (2026-09-29, commits `a85050d`+`e041614`+`ccbb872`+`a11b7cb`)**: R2 own planar core —
+  S1 spike declared parity budget + comparator (S8-001), clean Rust planar core layers/walls/infill
+  (S8-002), catalog→§5 profile mapper (S8-003), context-dependent op IR v1 + independent
+  emitted-program validator (S8-004), kinematics-aware postprocessor (whitelist FK fail-closed,
+  cartesian ok / rotary rejected) + validated IR loader + R3F layer preview + slicer-style editor
+  UI with operator profile & continuous-Z gate (S8-005). Gate per ticket EXIT:0 — see
+  [sprint-8/sprint.md](sprint-8/sprint.md) execution notes.
+
+- **Sprint 8 done (2026-09-29, commits `a85050d`+`e041614`+`ccbb872`+`a11b7cb`)**: R2 own planar core —
+  S1 spike declared parity budget + comparator (S8-001), clean Rust planar core layers/walls/infill
+  (S8-002), catalog→§5 profile mapper (S8-003), context-dependent op IR v1 + independent
+  emitted-program validator (S8-004), kinematics-aware postprocessor (whitelist FK fail-closed,
+  cartesian ok / rotary rejected) + validated IR loader + R3F layer preview + slicer-style editor
+  UI with operator profile & continuous-Z gate (S8-005). Gate per ticket EXIT:0 — see
+  [sprint-8/sprint.md](sprint-8/sprint.md) execution notes.
+
 - **License policy (user-confirmed 2026-09-28, binding)**: direct use/implementation
   = **Apache-2.0 and MIT only**. All other licenses (GPL, AGPL, BSD-3, LGPL, MPL…)
   are reference-of-information / comparison / code-example only — never copied,
@@ -56,7 +72,7 @@ Rev 2.0 (R0–R7).
 |   5 |    P0    | Architecture + code quality (SOLID/DRY, boundaries, licenses)      |       6 | M      | ✅ Done    | [sprint](sprint-5/sprint.md)  | `c06dfd6`   |
 |   6 |    P0    | R0 foundation (Tauri 2 shell, broker, machine contract, schemas)   |       6 | L      | ✅ Done    | [sprint](sprint-6/sprint.md)  | `ee62574`   |
 |   7 |    P0    | R1 Blender-primary editing core (parity corpus, IPC, undo)         |       6 | XL     | ✅ Done    | [sprint](sprint-7/sprint.md)  | `9d89dd0`   |
-|   8 |    P0    | R2 own planar core (S1 spike, IR + independent validator, preview) |       5 | XL     | ⏳ Planned | [sprint](sprint-8/sprint.md)  | —           |
+|   8 |    P0    | R2 own planar core (S1 spike, IR + independent validator, preview) |       5 | XL     | ✅ Done    | [sprint](sprint-8/sprint.md)  | `a11b7cb`   |
 |   9 |    P0    | R3 harness v1 (BYOK, WASI sandbox, tool lifecycle, journal, chat)  |       6 | XL     | ⏳ Planned | [sprint](sprint-9/sprint.md)  | —           |
 |  10 |    P1    | R4 separable auth service + memory (fail-closed sync)              |       5 | L      | ⏳ Planned | [sprint](sprint-10/sprint.md) | —           |
 |  11 |    P1    | R5 non-planar S2 (curved-top, per-machine gates, coupon)           |       5 | XL     | ⏳ Planned | [sprint](sprint-11/sprint.md) | —           |
