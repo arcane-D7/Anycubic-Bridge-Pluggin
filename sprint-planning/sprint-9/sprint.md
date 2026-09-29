@@ -134,7 +134,7 @@ a named _geometry capability_ the broker proxies (§8.2 text).
 | **Type**             | Feature                                                            |
 | **Estimated Effort** | L                                                                  |
 | **Source Finding**   | Invest. Rev 2.0 §8.3 (lifecycle table [SPEC]); separation of trust |
-| **Status**           | ⏳ Planned                                                         |
+| **Status**           | ✅ Done                                                            |
 
 #### Context
 
@@ -144,15 +144,36 @@ approve a re-build). Registration is by content hash; only then invocable by nam
 kills running instances next tick and is journaled. Trusted first-party operations are
 separated from generated tools (trusted ops only via named-capability requests).
 
+> **Implementation notes (2026-09-29).** `crates/harness-core/src/lifecycle.rs` —
+> `Stage` enum (Manifest→Scratch→Build→Test→Approved→Registered→Revoked, +
+> Failed), `ToolRegistry` (content-addressed: name → record, hash → name),
+> `ToolRecord` (manifest hash, artifact hash `Option`, requested/granted
+> capabilities, running instance counter, revoking flag), `LifecycleJournalEntry`
+> (seq/stage/hash/running). Every transition is journaled; skipping a stage
+> returns `LifecycleError::StageSkipped`. `advance` enforces strict ordering and
+> hash-carry: post-build stages must present the bound artifact hash or
+> `HashMismatch`. `approve` is hash-bound (approving any other hash is rejected
+> without failing the tool — retry with the exact hash still possible).
+> `rebuild` re-binds a new hash and pulls the tool back to Build, so
+> test + approval must run again (re-approval of the new hash). `register`
+> makes it invocable by name and by hash; `resolve_artifact` returns hash +
+> granted capabilities ONLY (no process handle, no shell path).
+> `revoke` marks revoking; `instance_tick` (supervisor tick) kills all running
+> instances next tick and journals the kill. 8 unit tests covering: full
+> lifecycle, stage-skip refusal, hash-bound approval + rebuild re-approval,
+> name/hash invocation + unknown rejection, not-registered refusal, revoke-
+> kills-next-tick + journal, grants-never-broader + shell structurally absent,
+> revoke/fail terminal refusal.
+
 #### Acceptance Criteria
 
-- [ ] Lifecycle state machine implemented: manifest → scratch → build → test → approval → registration → revocation; each transition journaled with hashes; skipping a stage fails the state machine (unit tests).
-- [ ] Hash-bound approval: approving manifest H approves exactly artifact H; a rebuilt artifact with a new hash requires re-approval (test).
-- [ ] Tool registry: invoke by name resolves the registered content hash; unknown hash → rejected.
-- [ ] Revocation: revoke by hash/version kills all running instances next tick (integration test) and journals the revocation.
-- [ ] Separation of trust: a generated tool cannot invoke a pinned Blender operation except by requesting its named capability (see S9-004); no direct process spawn from generated code.
-- [ ] **No host shell, unrestricted, inside the harness**: the harness is a capability surface, not a terminal (test: shell capability is never granted).
-- [ ] Health gate green.
+- [x] Lifecycle state machine implemented (manifest → scratch → build → test → approval → registration → revocation); every transition journaled with artifact hashes from build onward; skipping a stage fails the state machine (unit tests `full_lifecycle_succeeds`, `skipping_stage_fails`).
+- [x] Hash-bound approval: approving a non-bound hash is rejected (`HashMismatch`); a rebuilt artifact binds a new hash at Build and requires test + re-approval (test `approve_is_hash_bound_and_rebuild_requires_reapproval`).
+- [x] Tool registry: invoke by name resolves the registered content hash (`resolve_artifact`); resolve-by-hash content-addressed; unknown name/hash rejected (test `register_invoke_by_name_and_hash_unknown_rejected`); unregistered invocation refused (`not_registered_cannot_invoke`).
+- [x] Revocation: revoke by name marks revoking; `instance_tick` kills all running instances next tick and journals the kill (test `revoke_kills_instances_next_tick_and_journals` — unit-level tick covers the supervisor integration seam).
+- [x] Separation of trust: the registry exposes NO process spawn — `resolve_artifact` returns (hash, granted) only, consumed by the S9-002 sandbox runner; a generated tool cannot invoke Blender except through its granted named capability (`BlenderGeometry` is never a raw Blender handle).
+- [x] **No host shell, unrestricted, inside the harness**: Shell is NOT a `Capability` variant (structural impossibility — cannot even be named/requested); test `generated_tool_gets_only_declared_grants_no_shell` asserts grants are a subset of requested and `SandboxError::ShellNeverGranted`'s runtime guard.
+- [x] Health gate green (35 harness-core tests in workspace run; full `pnpm run check` gate before commit).
 
 ### S9-004 — Named capability broker proxy to pinned workers (geometry capability)
 

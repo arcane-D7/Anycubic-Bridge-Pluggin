@@ -9,6 +9,7 @@
 
 pub mod capability;
 pub mod http;
+pub mod lifecycle;
 pub mod provider;
 pub mod sandbox;
 pub mod watchdog;
@@ -18,6 +19,7 @@ pub use capability::{
     SandboxError,
 };
 pub use http::{call_chat, ChatMessage, ChatRequest, HttpResponse, HttpTransport, StubTransport};
+pub use lifecycle::{LifecycleError, LifecycleJournalEntry, Stage, ToolRecord, ToolRegistry};
 pub use provider::{resolve_key, Provider, ProviderError, ProviderKind, ProviderRegistry};
 pub use sandbox::{backend_available, run_sandboxed, t3b_available, watch_worker, SandboxConfig};
 pub use watchdog::{run_watchdog, DeadlinePolicy, WatchdogVerdict, WorkerGuard};

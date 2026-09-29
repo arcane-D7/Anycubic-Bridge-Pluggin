@@ -52,13 +52,13 @@ pub enum SandboxError {
 }
 
 /// Requested capability set (from the tool manifest).
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RequestedCapabilities {
     pub capabilities: Vec<Capability>,
 }
 
 /// The granted subset after broker policy. Never broader than requested.
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GrantedCapabilities {
     pub capabilities: Vec<Capability>,
 }
