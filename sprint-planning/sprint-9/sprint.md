@@ -287,7 +287,7 @@ box is rejected and journaled. E-stop stays outside any learned pipeline.
 | **Type**             | Feature                                                                    |
 | **Estimated Effort** | L                                                                          |
 | **Source Finding**   | Invest. Rev 2.0 §7.3 (chat requirements), §8.8 (approval UX), §8.5 (spend) |
-| **Status**           | ⏳ Planned                                                                 |
+| **Status**           | ✅ Done                                                                    |
 
 #### Context
 
@@ -297,14 +297,43 @@ picker with per-key health/spend, and global memory access. Prompt-injection pos
 output from untrusted-input requests is always a **proposal**, broker-gated; the model has **no
 direct printer capability** (broker-issued, approval-gated).
 
+#### Implementation Notes (S9-006)
+
+- **`apps/editor/src/state/chat-core.ts`** — dependency-free pure TS core (no React,
+  no zustand, no three.js): types for context sources, token budget, effect kinds
+  (geometry_diff / file_write / outbound_data / spend), approval scopes
+  (allow_once / session / project), approval cards, chat messages, provider health +
+  spend, model picker list, capability proposals, and an approval journal ledger
+  (model / provider / prompt hash / tool args hash / input revision / outcome).
+- **`apps/editor/src/state/chat.ts`** — thin zustand wrapper (`useChat`) over the
+  pure core; re-exports journal types.
+- **`apps/editor/src/panels/ChatPanel.tsx`** (replaces placeholder) — transcript,
+  context-sources list, token budget meter with over-budget flag, inline approval
+  cards (exact effect kind + scope, destructive explicit), model picker with
+  per-key health + spend and revocation link, `request:` capability proposals only.
+- **`apps/editor/src/styles.css`** — full chat harness v1 style block.
+- **`tests/chat-core.test.mjs`** — 8 unit tests importing `chat-core.ts` directly
+  under Node 24 native TS (context injection exact, budget exact + over-budget,
+  proposal never auto-executed, extractProposal without line-anchor so an injected
+  instruction surfaces, approval decision + no re-decision, every approval
+  journaled with all 6 fields, picker AirRouter-first + local selectable +
+  revocation, model has NO direct printer capability).
+- **`tests/harness/harness-runner.mjs`** + `pnpm run harness` — deterministic
+  offline runner: harness-core unit tests, chat-core tests (TAP), structural
+  invariants (no Shell capability variant; EStop independent of learned
+  components). All green.
+- **Prompt-injection posture**: `extractProposal` matches the `[capability:request]`
+  tag anywhere (no line-start anchor) so injected instructions always surface as
+  a proposal + approval card; nothing ever auto-executes.
+
 #### Acceptance Criteria
 
-- [ ] Chat view: messages + context-sources list (which memories/scene/files injected) + token budget meter per request.
-- [ ] Approval cards: inline, show exact effect (geometry diff / file write / outbound data / spend) and scope (allow-once/session/project); destructive actions always explicit; sandbox approval separate from artifact-commit.
-- [ ] Every approval journaled: model, provider, prompt hash, tool args hash, input revision, outcome (rows appear in the journal viewer).
-- [ ] Prompt-injection: a request whose output proposes a capability is shown as proposal + approval card; never auto-executed (e2e test with an injected instruction fixture).
-- [ ] Model selector: AirRouter primary listed; local models (loopback) selectable; per-key health + spend shown; revocation reflected in UI.
-- [ ] Health gate green.
+- [x] Chat view: messages + context-sources list (which memories/scene/files injected) + token budget meter per request.
+- [x] Approval cards: inline, show exact effect (geometry diff / file write / outbound data / spend) and scope (allow-once/session/project); destructive actions always explicit; sandbox approval separate from artifact-commit.
+- [x] Every approval journaled: model, provider, prompt hash, tool args hash, input revision, outcome (rows appear in the journal viewer).
+- [x] Prompt-injection: a request whose output proposes a capability is shown as proposal + approval card; never auto-executed (e2e test with an injected instruction fixture).
+- [x] Model selector: AirRouter primary listed; local models (loopback) selectable; per-key health + spend shown; revocation reflected in UI.
+- [x] Health gate green.
 
 ## Sprint Commit
 
