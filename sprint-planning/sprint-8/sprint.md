@@ -174,7 +174,7 @@ mode-aware validator checks against.
 | **Type**             | Feature                                                                                                                 |
 | **Estimated Effort** | M                                                                                                                       |
 | **Source Finding**   | Invest. Rev 2.0 §10 R2 (profiles import from `presets/catalog.json` mapped into §5.1), §5 (contract is source of truth) |
-| **Status**           | ⏳ Planned                                                                                                              |
+| **Status**           | ✅ Done                                                                                                                 |
 
 #### Context
 
@@ -185,11 +185,30 @@ the catalog is a _provider_. Unmapped keys are flagged `unknown`/null, never gue
 
 #### Acceptance Criteria
 
-- [ ] Mapper crate/TS: catalog preset → `machine-profile` schema fields; process presets → slicing params; filaments → material capability entries.
-- [ ] Every unmapped or conflicting field is stored as `unknown`/null or flagged with provenance + confidence — no silent default (unit tests).
-- [ ] Conflicts between catalog/profile entries raise a human-resolution workflow entry (journaled), never auto-preference.
-- [ ] A profile is only _qualified_ for a feature after the §5 qualification rules pass (ties into S6-003).
-- [ ] Health gate green.
+- [x] Mapper crate/TS: catalog preset → `machine-profile` schema fields; process presets → slicing params; filaments → material capability entries.
+- [x] Every unmapped or conflicting field is stored as `unknown`/null or flagged with provenance + confidence — no silent default (unit tests).
+- [x] Conflicts between catalog/profile entries raise a human-resolution workflow entry (journaled), never auto-preference.
+- [x] A profile is only _qualified_ for a feature after the §5 qualification rules pass (ties into S6-003).
+- [x] Health gate green.
+
+#### Implementation Notes
+
+- **Pure mapper** `scripts/catalog-mapper.mjs` (no MCP wiring — the catalog provider loaders
+  stay in `scripts/presets-tools.mjs`): `mapCatalogPreset` (known capability fields
+  `build_volume_*`/`nozzle_diameter_mm`/`continuous_z` + process params
+  layer_height/wall_loops/infill_* → typed fields; **every other key → `unknownKeys` with a
+  named reason, never guessed**), `catalogProfileFromCapabilities` (§5 MachineProfile shape,
+  `source_class=catalog`, `provenance=catalog@<version>`, `unknown=true` + null value when
+  unmapped), `mapFilamentsToMaterialEntries` (material_type/nozzle/bed temps — never
+  invented; name-only filaments stay unknown), `blockingMissingCapabilities` (S6-003 §5
+  qualification gate: undeclared or unknown capability → blocked with named reason),
+  `journalResolutionEntry` (conflict/unknown → human-resolution journal entry,
+  `resolution:null` — never auto-preference).
+- **Composition with the real catalog verified**: `marble-mix-2-colors` maps machine
+  "Anycubic Kobra S1" → profile; its (unexpected) absent capabilities stay unknown and the
+  qualification gate blocks — fail-closed, truthful.
+- Gate EXIT:0 (unit 215 = 207+8 new, integration 10, smoke 106, licenses 38, sanitize 0).
+- Commit `e041614` — `feat(s8-003): catalog→§5 profile mapper …`.
 
 ### S8-004 — Context-dependent op IR + independent emitted-program validator
 
