@@ -77,6 +77,7 @@ export function ModalInteraction({ bridge }: { readonly bridge?: BridgeHandle })
       </button>
       <input
         type="number"
+        aria-label="Transform value"
         data-testid="numeric-entry"
         onBlur={(e) => runNumeric(e.currentTarget.value)}
         onKeyDown={(e) => {

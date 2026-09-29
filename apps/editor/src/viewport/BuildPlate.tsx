@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import type { BuildVolume } from "../bridge/types";
 
 /**
@@ -16,7 +16,30 @@ interface BuildPlateProps {
 
 /** Footprint dimensions (mm) — plate is a 2D footprint; height is the Z max. */
 export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) {
-  if (volume.widthMm <= 0 || volume.depthMm <= 0 || volume.heightMm <= 0) {
+  const grid = useMemo(() => {
+    const positions: number[] = [];
+    if (
+      ![volume.widthMm, volume.depthMm, volume.heightMm].every(
+        (value) => Number.isFinite(value) && value > 0,
+      )
+    )
+      return new Float32Array();
+    const halfWidth = volume.widthMm / 2;
+    const halfDepth = volume.depthMm / 2;
+    const pitch = Math.max(10, Math.max(volume.widthMm, volume.depthMm) / 512);
+    for (let xCoord = -halfWidth; xCoord <= halfWidth; xCoord += pitch) {
+      positions.push(xCoord, 0.08, -halfDepth, xCoord, 0.08, halfDepth);
+    }
+    for (let zCoord = -halfDepth; zCoord <= halfDepth; zCoord += pitch) {
+      positions.push(-halfWidth, 0.08, zCoord, halfWidth, 0.08, zCoord);
+    }
+    return new Float32Array(positions);
+  }, [volume.widthMm, volume.depthMm]);
+  if (
+    ![volume.widthMm, volume.depthMm, volume.heightMm].every(
+      (value) => Number.isFinite(value) && value > 0,
+    )
+  ) {
     return null;
   }
   // Plate centered on the XY origin, footprint from the profile.
@@ -39,20 +62,21 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
         </mesh>
       ))}
 
-      {/* Top plate surface + grid following the profile footprint. */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-        <planeGeometry args={[volume.widthMm, volume.depthMm]} />
-        <meshStandardMaterial color="#2b2d31" metalness={0.35} roughness={0.85} />
+      <mesh position={[0, -1.3, 0]}>
+        <boxGeometry args={[volume.widthMm, 2.6, volume.depthMm]} />
+        <meshStandardMaterial color="#454b47" metalness={0.15} roughness={0.85} />
       </mesh>
-      <gridHelper
-        args={[
-          Math.max(volume.widthMm, volume.depthMm),
-          Math.max(volume.widthMm, volume.depthMm) / 5,
-          "#4a4e57",
-          "#383b42",
-        ]}
-        position={[0, 0.02, 0]}
-      />
+      <mesh position={[0, -1.3, halfD + 4]}>
+        <boxGeometry args={[volume.widthMm * 0.2, 2.6, 8]} />
+        <meshStandardMaterial color="#454b47" roughness={0.85} />
+      </mesh>
+      <lineSegments>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[grid, 3]} />
+        </bufferGeometry>
+        <lineBasicMaterial color="#748078" transparent opacity={0.55} />
+      </lineSegments>
+      <axesHelper args={[25]} position={[-halfW, 0.15, halfD]} />
     </group>
   );
 });

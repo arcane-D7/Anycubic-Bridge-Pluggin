@@ -1,29 +1,49 @@
 import type { BridgeHandle } from "../bridge/mock";
 import type { SlicingMode } from "../contract";
+import type { NonPlanarEligibility } from "../profile/capabilities";
+import { resolveNonPlanarEligibility } from "../profile/capabilities";
+import type { OperatorProfile } from "../profile/operatorProfile";
 
 /**
  * Bottom panel — timeline/undo graph + slicing mode (R0 shell).
  *
  * The slicing-mode selector is a real piece of the contract (§3.0a dual-mode
- * slicing, persisted per project) — it renders as a disabled control until a
- * machine profile declares non-planar capabilities, and shows the named reason
- * why when it is unavailable (never a silent fallback). The timeline itself
- * (undo graph, slicing progress, job queue) is an R2+ placeholder.
+ * slicing, persisted per project). Eligibility is NOT inferred from the scene
+ * handle's capability token list alone: callers pass an explicit profile /
+ * eligibility so "profile not loaded / unknown" is distinguishable from an
+ * explicit "unsupported" verdict. Selecting non-planar here enables authoring
+ * only — it never claims the engine output is print-qualified.
  */
 
 interface TimelineProps {
   readonly scene: BridgeHandle | undefined;
   readonly mode: SlicingMode;
   readonly onModeChange: (m: SlicingMode) => void;
+  readonly modeLockReason?: string;
+  readonly operatorProfile?: OperatorProfile;
+  readonly eligibility?: NonPlanarEligibility;
 }
 
-export function Timeline({ scene, mode, onModeChange }: TimelineProps) {
-  const capabilities = new Set(scene?.capabilities ?? []);
-  const nonPlanarAvailable = capabilities.has("continuous_z");
+export function Timeline({
+  scene,
+  mode,
+  onModeChange,
+  modeLockReason,
+  operatorProfile,
+  eligibility,
+}: TimelineProps) {
+  const resolved =
+    eligibility ??
+    resolveNonPlanarEligibility(
+      scene?.capabilities,
+      operatorProfile === undefined ? undefined : operatorProfile,
+    );
+  const { canAuthor, printQualified, explanation, capability } = resolved;
+  const modeLocked = modeLockReason !== undefined;
 
   return (
     <section className="panel-timeline" aria-label="Timeline and slicing">
-      <header className="panel-title">Timeline</header>
+      <header className="panel-title">Slicing mode</header>
       <div className="timeline-row">
         <label className="timeline-label" htmlFor="slicing-mode">
           Slicing mode
@@ -32,18 +52,32 @@ export function Timeline({ scene, mode, onModeChange }: TimelineProps) {
           id="slicing-mode"
           value={mode}
           onChange={(e) => onModeChange(e.target.value as SlicingMode)}
-          disabled={!nonPlanarAvailable}
+          disabled={modeLocked}
         >
           <option value="standard">Standard (planar)</option>
-          <option value="nonplanar">Non-planar (experimental)</option>
+          <option value="nonplanar" disabled={!canAuthor}>
+            Non-planar (experimental)
+          </option>
         </select>
-        {!nonPlanarAvailable && (
-          <span className="panel-hint">
-            Non-planar disabled — machine profile does not declare <code>continuous_z</code>.
+        {!canAuthor ? (
+          <span className="panel-hint" data-testid="nonplanar-blocked" title={explanation}>
+            Continuous Z declared unsupported. Imported paths remain viewable.
+          </span>
+        ) : printQualified ? (
+          <span className="panel-hint" data-testid="nonplanar-qualified">
+            {explanation}
+          </span>
+        ) : (
+          <span className="panel-hint" data-testid="nonplanar-pending" title={explanation}>
+            {capability.status === "supported"
+              ? "Continuous Z supported"
+              : "Continuous Z not yet declared"}
+            {capability.source === "operator-declared" ? " (operator)" : ""}. Non-planar editing
+            enabled; print generation pending validation.
           </span>
         )}
       </div>
-      <p className="panel-hint">Undo graph, slicing progress and job queue land here (R2).</p>
+      {modeLocked ? <p className="panel-hint">{modeLockReason}</p> : null}
     </section>
   );
 }
