@@ -1,0 +1,22 @@
+[package]
+name = "harness-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "BYOK provider registry, egress pinning, quota/cost accounting, capability policy (S9)"
+
+[features]
+default = []
+# Real Wasmtime wasip2 backend (heavy). OFF by default → run_sandboxed
+# fails closed with BackendUnavailable (never a silent downgrade).
+wasmtime-exec = ["dep:wasmtime"]
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+broker = { path = "../broker" } # Keystore trait + MemoryKeystore for provider keys
+wasmtime = { version = "29", optional = true }
+
+[dev-dependencies]
+tempfile = "3"

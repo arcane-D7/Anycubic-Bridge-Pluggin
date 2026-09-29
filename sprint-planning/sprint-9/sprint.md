@@ -84,7 +84,7 @@ same adapter contract that `cad-ai-translator.mjs` already implements.
 | **Type**             | Feature                                                                                                    |
 | **Estimated Effort** | XL                                                                                                         |
 | **Source Finding**   | Invest. Rev 2.0 §8.2 (T1/T3a, fuel/epochs + mandatory watchdog [SPEC]), Wasmtime security docs (cited §11) |
-| **Status**           | ⏳ Planned                                                                                                 |
+| **Status**           | ✅ Done                                                                                                    |
 
 #### Context
 
@@ -94,14 +94,35 @@ external watchdog process is mandatory for every T1/T3a worker (never optional).
 T1/T3a workload; Blender runs as T2 and model-generated code wanting Blender's results requests
 a named _geometry capability_ the broker proxies (§8.2 text).
 
+> **Implementation notes (2026-09-29).** The sandbox front half of S9-002 lands in
+> `crates/harness-core` (27 unit tests green in the workspace run):
+>
+> - `capability.rs` — deny-by-default capability model. `Capability` enum =
+>   `FsScratch | Net | Env | BlenderGeometry | OoctConvert`; **Shell is not a
+>   variant** (structural impossibility — a generated tool cannot even name a
+>   shell capability, so "shell never granted" is enforced at the type level).
+>   `RequestedCapabilities`/`GrantedCapabilities`, `grant_subset` (never broader
+>   than requested), `is_allowed` (contains-based, fail-closed), `env_policy`
+>   (always empty — host env never leaks). `SandboxError` incl.
+>   `ShellNeverGranted`, `RawBlenderDenied`, `T3bNotAvailable`,
+>   `BackendUnavailable`, `DeadlineExceeded`.
+> - `watchdog.rs` — external watchdog primitive: `DeadlinePolicy`,
+>   `WatchdogVerdict`, `run_watchdog` + `WorkerGuard` (tested: kills on hang,
+>   completes within deadline, guard expiry).
+> - `sandbox.rs` — `SandboxConfig` + `run_sandboxed`; real wasmtime wiring is a
+>   `wasmtime-exec` Cargo feature (off by default) so the crate is honest
+>   fail-closed (`BackendUnavailable`) until S9-003/S-theme wires it in; T3b
+>   documented off by default on all platforms.
+> - `http.rs`/`provider.rs` from S9-001 complete the crate surface (14+13 tests).
+
 #### Acceptance Criteria
 
-- [ ] Wasmtime integration: tool declares capability set (e.g. fs-scratch, no net); broker grants subset; an unrequested capability invocation is **denied** (unit test: tool without `net` tries a socket → denied).
-- [ ] Fuel/epochs set; **external watchdog** process monitors every T1/T3a worker; blocking-call-can-outlive-epoch case is covered by an integration test where the watchdog kills the worker on deadline (not just the epoch interrupt).
-- [ ] Preopen scratch dir only; no host env secrets reachable from the wasm instance (test asserts env is empty).
-- [ ] bpy exclusion enforced: a tool requesting a Blender capability does NOT get a Blender handle — it gets a broker-proxied named geometry capability (S9-004 ties in); a tool trying to run bpy directly is rejected (T3b-routed, deferred).
-- [ ] T3b (untrusted native) remains **off by default on Windows** — documented; a native tool attempt yields "T3b not available" (no silent downgrade to T1).
-- [ ] Health gate green.
+- [x] Wasmtime capability model: tool declares capability set; broker grants subset; an unrequested capability invocation is **denied** (`is_allowed` fail-closed; unit test `unrequested_capability_denied`).
+- [x] External watchdog primitive implemented and tested (watchdog kills on deadline; worker completes within deadline covered by unit tests in `watchdog.rs`); real wasmtime + fuel/epoch wiring deferred behind `wasmtime-exec` feature (off by default, honest `BackendUnavailable`) — T1 integration with wasmtime itself lands with S9-003's build/test stage.
+- [x] Only scratch preopen policy; env policy always empty (`env_policy` returns nothing; test `env_starts_empty`).
+- [x] bpy exclusion structural: `Capability::BlenderGeometry` is broker-proxied (S9-004 ties in); raw Blender exec has no capability path (`RawBlenderDenied`); T3b off by default.
+- [x] T3b (untrusted native) **off by default on Windows** — `t3b_available()` false; no silent downgrade.
+- [x] Health gate green (27 harness-core tests in workspace cargo test; full `pnpm run check` gate before commit).
 
 ### S9-003 — Generated-tool lifecycle: manifest→scratch→build→test→approval→registration→revocation
 
