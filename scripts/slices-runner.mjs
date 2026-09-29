@@ -16,7 +16,7 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -88,58 +88,130 @@ async function referenceSlice(slicerExe, inputFile) {
   return null;
 }
 
-// Estimated material coefficient: reference extrusion per model mm³.
-// E in filament-length units: E = V_material / A_filament, with A_filament =
-// π·(1.75/2)² = 2.405 mm² and the effective fill fraction (walls + 15% infill
-// + shells vs the bounding volume) ≈ 0.436 for the flat-slab class of parts.
-// 1/2.405 × 0.436 ≈ 0.1813. Calibrated against the cube-20mm reference.
-const E_PER_MM3 = 0.1813;
-
 /**
- * Layer "volume" from the part bbox — a cube uses its full bounded volume; a
- * rough geometric estimate is fine for the parity proxy (the real planar
- * core computes real volumes in S8-002).
+ * Candidate slice — the own planar core. Invokes the `slice-json` binary
+ * (crates/planar-core) on the fixture STL + a pinned process profile, parses
+ * the deterministic SliceMeta IR, and builds a summary in the SAME units the
+ * comparator expects:
+ *   - per-layer wall count = len(layer.per_loop_wall) (loops, not segments)
+ *   - totalExtrusion = sum of segment delta_e_mm (filament-length units, the
+ *     same unit analyzeGcode sums for reference gcode E)
+ *   - bbox = extents over segment endpoints
+ * This keeps comparePlanarRuns unchanged (no wall-count segment-vs-loop bug).
  */
-function approximateVolume(meta) {
-  const [x0, y0, z0, x1, y1, z1] = meta.bbox;
-  let vol = (x1 - x0) * (y1 - y0) * (z1 - z0);
-  if (meta.name === "cylinder") vol *= Math.PI / 4; // cylinder vs its box
-  return vol;
-}
+const CORE_PROFILE = {
+  dialect: "anycubic",
+  mode: "standard",
+  layer_height_mm: 0.2,
+  wall_loops: 2,
+  infill_pattern: "Grid",
+  infill_density_pct: 15.0,
+  top_bottom_layers: 4,
+  brim_mskirt: null,
+  line_width_mm: 0.45,
+  nozzle_diameter_mm: 0.4,
+  filament: { diameter_mm: 1.75 },
+  build_volume: { x: 220, y: 220, z: 250 },
+};
 
-/** Candidate slice — the own planar core. In R2 the candidate is its IR. */
 function candidateSlice(inputFile, ref = null) {
-  // S8-002/004 will produce IR; until then the runner looks for a local
-  // candidate summary json or uses a deterministic geometric proxy (same
-  // bbox, wall count from profile) so the harness is wired end-to-end.
-  const meta = CORPUS.find((c) => c.file && inputFile.endsWith(c.file));
-  const nLayers = ref?.layers?.length || 11;
-  const volume = meta ? approximateVolume(meta) : 8000;
-  const perLayer = (volume * E_PER_MM3) / nLayers;
-  const bbox = meta ? [...meta.bbox] : [0, 0, 0, 20, 20, 20];
-  // The planar core (S8-002) will compute per-layer walls from geometry. Until
-  // then this proxy uses a deterministic rule: 2 walls on body layers, 1 on
-  // the top/bottom skin layers (the outer wall is replaced by the surface
-  // pass — Anycubic Slicer Next does the same). Computed from geometry alone,
-  // never read from the reference.
-  const wallCountFor = (i) => (i === 0 || i === nLayers - 1 ? 1 : 2);
-  return {
-    layers: Array.from({ length: nLayers }, (_, i) => ({
-      index: i,
-      z: (i + 1) * (ref?.layers?.at(-1)?.z / nLayers || 0.2),
-      wallCount: wallCountFor(i),
-      infillExtrusion: perLayer,
+  // Real planar core invocation (S8-002): slice-json on the fixture.
+  const profilePath = join(POC, "core-profile.json");
+  writeFileSync(profilePath, JSON.stringify(CORE_PROFILE, null, 2));
+  const stdin = spawnSync(
+    cargoExe(),
+    [
+      "run",
+      "-q",
+      "-p",
+      "planar-core",
+      "--bin",
+      "slice-json",
+      "--manifest-path",
+      join(root, "crates", "Cargo.toml"),
+      "--",
+      inputFile,
+      profilePath,
+    ],
+    { encoding: "utf8", timeout: 240000, cwd: root },
+  );
+  if (stdin.status !== 0 || !stdin.stdout?.trim()) {
+    console.log(
+      `[slices] candidate FAILED (status=${stdin.status}): ${(stdin.stderr ?? "").slice(0, 300)}`,
+    );
+    return null;
+  }
+  const ir = JSON.parse(stdin.stdout.trim());
+  if (!ir?.layers?.length) return null;
+  const layers = ir.layers.map((ly) => {
+    let infillExtrusion = 0;
+    let totalExtrusion = 0;
+    const bbox = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+    for (const seg of ly.segments) {
+      const e = Number(seg.delta_e_mm ?? 0);
+      totalExtrusion += e;
+      if (
+        String(seg.kind ?? "")
+          .toUpperCase()
+          .includes("INFILL")
+      )
+        infillExtrusion += e;
+      for (const p of [seg.from, seg.to]) {
+        bbox[0] = Math.min(bbox[0], p.x);
+        bbox[1] = Math.min(bbox[1], p.y);
+        bbox[2] = Math.min(bbox[2], p.z);
+        bbox[3] = Math.max(bbox[3], p.x);
+        bbox[4] = Math.max(bbox[4], p.y);
+        bbox[5] = Math.max(bbox[5], p.z);
+      }
+    }
+    return {
+      index: Number(ly.index),
+      z: Number(ly.z),
+      wallCount: (ly.per_loop_wall ?? []).length,
+      infillExtrusion: +infillExtrusion.toFixed(6),
       solidExtrusion: 0,
-      totalExtrusion: perLayer,
+      totalExtrusion: +totalExtrusion.toFixed(6),
       eValue: 0,
       bbox,
-      hasWallType: true,
-    })),
-    layerCount: nLayers,
+      hasWallType: (ly.per_loop_wall ?? []).length > 0,
+    };
+  });
+  const gbbox = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+  let totalExtrusion = 0;
+  for (const l of layers) {
+    totalExtrusion += l.totalExtrusion;
+    const b = l.bbox;
+    for (let i = 0; i < 6; i++) {
+      if (i < 3) gbbox[i] = Math.min(gbbox[i], b[i]);
+      else gbbox[i] = Math.max(gbbox[i], b[i]);
+    }
+  }
+  const bbox = [
+    gbbox[0] === Infinity ? 0 : gbbox[0],
+    gbbox[1] === Infinity ? 0 : gbbox[1],
+    gbbox[2] === Infinity ? 0 : gbbox[2],
+    gbbox[3] === -Infinity ? 0 : gbbox[3],
+    gbbox[4] === -Infinity ? 0 : gbbox[4],
+    gbbox[5] === -Infinity ? 0 : gbbox[5],
+  ];
+  return {
+    layers,
+    layerCount: layers.length,
     bbox,
-    totalExtrusion: nLayers * perLayer,
-    perLayerWalls: Array.from({ length: nLayers }, (_, i) => wallCountFor(i)),
+    totalExtrusion,
+    perLayerWalls: layers.map((l) => l.wallCount),
   };
+}
+
+function cargoExe() {
+  const homeBin = join(
+    homedir(),
+    ".cargo",
+    "bin",
+    process.platform === "win32" ? "cargo.exe" : "cargo",
+  );
+  return process.env.CARGO || (existsSync(homeBin) ? homeBin : "cargo");
 }
 
 async function main() {
@@ -187,6 +259,16 @@ async function main() {
       continue;
     }
     const cand = candidateSlice(inputPath, ref);
+    if (!cand) {
+      console.log(`[slices] ${part.name}: candidate slice FAILED (no IR)`);
+      results.push({
+        part: part.name,
+        status: "ERROR",
+        detail: "planar core candidate produced no summary",
+      });
+      allPass = false;
+      continue;
+    }
     const cmp = comparePlanarRuns(ref, cand, {
       wallCountDelta: 0,
       infillVolumePct: 15,
