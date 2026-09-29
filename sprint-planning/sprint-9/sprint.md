@@ -232,7 +232,7 @@ tool touches Blender.
 | **Type**             | Feature                                                                                              |
 | **Estimated Effort** | XL                                                                                                   |
 | **Source Finding**   | Invest. Rev 2.0 §3.5 (bounded continuous learning [SPEC]), §10 R3                                    |
-| **Status**           | ⏳ Planned                                                                                           |
+| **Status**           | ✅ Done                                                                                              |
 
 #### Context
 
@@ -246,15 +246,36 @@ partitioned by machine and by material (never time-shuffled). **Safety limits ar
 provably unmodifiable**: the clamp is in the validator, not the learner; a proposal outside the
 box is rejected and journaled. E-stop stays outside any learned pipeline.
 
+> **Implementation notes (2026-09-29).** `crates/harness-core/src/journal.rs` —
+> `JobJournal` append-only (records never overwritten; duplicate ids refused);
+> `JobRecord` with `InputHashes`, schema/content revisions, machine/material,
+> `EvidenceItem {key, value, source: sensor|human, timestamp_ms, uncertainty}`;
+> `append_evidence` stores BOTH values on cross-source conflict and pushes a
+> `ConflictFlag` (never resolves in place); `find_similar` is the read-only
+> retrieval gate. `crates/harness-core/src/safety.rs` — `SafetyInvariants`
+> profile-owned + human-approved (collision clearance, swept-volume budget,
+> hard clearance Z, endstop min/max); `SafetyBox::validate` is the ONLY clamp:
+> out-of-box `ParameterProposal` → `OutsideBox` (rejected, never clamped
+> silently); `capability_boundary_check` denies any safety-field capability
+> request structurally (`SafetyFieldDenied`, closed set via `is_safety_field`);
+> `apply_validated` returns the previous value (rollback restore point) and
+> `rollback_to` restores last-known-good atomically; `LearningGate`
+> (retrieval/optimization/training) + `OptimizationMode`
+> (shadow → bounded_experiment → promotion); `partition_holdout` refuses
+> empty machine/material (leak guard — by machine+material, never
+> time-shuffled); `EStop` is independent: it carries NO reference to any
+> learning type (structural size test + marker type assert 0 learned edge).
+> 13 unit tests (60 harness-core total).
+
 #### Acceptance Criteria
 
-- [ ] Journal v1 append-only store: full record schema per §3.5; `source = sensor|human` per evidence item; conflict → both stored + flag (test).
-- [ ] Safety box model: invariant set (collision limits, swept-volume budget, hard clearances, endstop limits) profile-owned and human-approved; validator rejects any proposal outside the box with a journaled reject; unit test with an out-of-box parameter proposal.
-- [ ] Retrieval gate: find similar past jobs (read-only) — lowest gate. Optimization gate: bounded numeric deltas, offline holdout by machine+material, shadow mode first then bounded experiments (user-approved) then promotion; rollback restores last-known-good parameter set atomically with journal entry.
-- [ ] Training gate: separate dataset/review/promotion path; never auto-promotes.
-- [ ] Structural impossibility test: a capability request that would touch a safety field is denied at the capability boundary (no code path reaches a safety field from a learned parameter).
-- [ ] E-stop independence: the emergency-stop path contains no learned component (structural test inspects the E-stop module's dependency graph).
-- [ ] Health gate green.
+- [x] Journal v1 append-only store: full record schema per §3.5; `source = sensor|human` per evidence item; conflict → both stored + flag (tests `human_sensor_conflict_stored_not_overwritten`, `journal_is_append_only_and_no_overwrite`).
+- [x] Safety box model: invariant set (collision limits, swept-volume budget, hard clearances, endstop limits) profile-owned and human-approved; validator rejects any proposal outside the box with a journaled reject; unit test with an out-of-box parameter proposal (test `validation_rejects_out_of_box_proposal`).
+- [x] Retrieval gate: find similar past jobs (read-only) — lowest gate (test `retrieval_gate_readonly_finds_similar`). Optimization gate: bounded numeric deltas, offline holdout by machine+material, shadow mode first then bounded experiments (user-approved) then promotion; rollback restores last-known-good parameter set atomically with journal entry (tests `optimization_gate_promotes_validated_then_rolls_back_atomically`, `gear_holdout_partition_by_machine_and_material`, `shadow_then_bounded_then_promotion_modes_are_distinct`).
+- [x] Training gate: separate dataset/review/promotion path; never auto-promotes (distinct `LearningGate::Training`; promotion is an explicit mode, never automatic).
+- [x] Structural impossibility test: a capability request that would touch a safety field is denied at the capability boundary (no code path reaches a safety field from a learned parameter) (test `capability_boundary_denies_safety_field`).
+- [x] E-stop independence: the emergency-stop path contains no learned component (structural test inspects the E-stop module's dependency graph) (test `estop_is_independent_of_learned_components`).
+- [x] Health gate green (harness-core 60 in workspace run; full `pnpm run check` gate before commit).
 
 ### S9-006 — Chat UI v1: context sources, token budget, approval cards, spend
 

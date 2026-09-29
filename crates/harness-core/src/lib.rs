@@ -9,9 +9,11 @@
 
 pub mod capability;
 pub mod http;
+pub mod journal;
 pub mod lifecycle;
 pub mod provider;
 pub mod proxy;
+pub mod safety;
 pub mod sandbox;
 pub mod watchdog;
 
@@ -20,12 +22,19 @@ pub use capability::{
     SandboxError,
 };
 pub use http::{call_chat, ChatMessage, ChatRequest, HttpResponse, HttpTransport, StubTransport};
+pub use journal::{
+    ConflictFlag, EvidenceItem, EvidenceSource, InputHashes, JobJournal, JobRecord, JournalError,
+};
 pub use lifecycle::{LifecycleError, LifecycleJournalEntry, Stage, ToolRecord, ToolRegistry};
 pub use provider::{resolve_key, Provider, ProviderError, ProviderKind, ProviderRegistry};
 pub use proxy::{
     content_hash, CapabilityRegistry, CapabilitySchema, GeometryBroker, GeometryCapabilityKind,
     GeometryWorker, GrantedGeometryCapabilities, ProxyError, SessionId, SessionState,
     StubGeometryWorker, WorkerKind, WorkerOutput, WorkerSession,
+};
+pub use safety::{
+    is_safety_field, partition_holdout, EStop, GateError, LearningGate, OptimizationDecision,
+    OptimizationMode, ParameterProposal, SafetyBox, SafetyError, SafetyInvariants,
 };
 pub use sandbox::{backend_available, run_sandboxed, t3b_available, watch_worker, SandboxConfig};
 pub use watchdog::{run_watchdog, DeadlinePolicy, WatchdogVerdict, WorkerGuard};
