@@ -43,13 +43,19 @@ Rev 2.0 (R0–R7).
   UI with operator profile & continuous-Z gate (S8-005). Gate per ticket EXIT:0 — see
   [sprint-8/sprint.md](sprint-8/sprint.md) execution notes.
 
-- **Sprint 8 done (2026-09-29, commits `a85050d`+`e041614`+`ccbb872`+`a11b7cb`)**: R2 own planar core —
-  S1 spike declared parity budget + comparator (S8-001), clean Rust planar core layers/walls/infill
-  (S8-002), catalog→§5 profile mapper (S8-003), context-dependent op IR v1 + independent
-  emitted-program validator (S8-004), kinematics-aware postprocessor (whitelist FK fail-closed,
-  cartesian ok / rotary rejected) + validated IR loader + R3F layer preview + slicer-style editor
-  UI with operator profile & continuous-Z gate (S8-005). Gate per ticket EXIT:0 — see
-  [sprint-8/sprint.md](sprint-8/sprint.md) execution notes.
+- **Sprint 9 done (2026-09-29, commits `704afca`+`d68a0fb`+`3a9ae54`+`8b70498`+`549827e`)**: R3
+  harness v1 — BYOK provider adapter (broker keystore keys, AirRouter primary, local loopback
+  first-class, egress pinning + quota/spend/revoke) (S9-001), T1/T3a capability sandbox with
+  mandatory external watchdog (Shell structurally absent; deny-by-default granted subset; env
+  always empty; wasmtime behind opt-in feature) (S9-002), hash-bound generated-tool lifecycle
+  manifest→scratch→build→test→approval→registration→revocation with journaled registry and no
+  host shell (S9-003), named-capability broker proxy to pinned geometry workers with disposable
+  confirmed-dead sessions (S9-004), continuous-learning journal v1 (append-only, conflicts
+  stored) + deterministic safety box (only clamp, rollback, holdout, E-stop independent)
+  (S9-005), and chat UI v1 (context sources + token budget + approval cards + spend feed,
+  prompt-injection proposal gating, model picker with health/spend/revocation) with `pnpm run
+harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — see
+  [sprint-9/sprint.md](sprint-9/sprint.md) execution summary.
 
 - **License policy (user-confirmed 2026-09-28, binding)**: direct use/implementation
   = **Apache-2.0 and MIT only**. All other licenses (GPL, AGPL, BSD-3, LGPL, MPL…)
@@ -73,7 +79,7 @@ Rev 2.0 (R0–R7).
 |   6 |    P0    | R0 foundation (Tauri 2 shell, broker, machine contract, schemas)   |       6 | L      | ✅ Done    | [sprint](sprint-6/sprint.md)  | `ee62574`   |
 |   7 |    P0    | R1 Blender-primary editing core (parity corpus, IPC, undo)         |       6 | XL     | ✅ Done    | [sprint](sprint-7/sprint.md)  | `9d89dd0`   |
 |   8 |    P0    | R2 own planar core (S1 spike, IR + independent validator, preview) |       5 | XL     | ✅ Done    | [sprint](sprint-8/sprint.md)  | `a11b7cb`   |
-|   9 |    P0    | R3 harness v1 (BYOK, WASI sandbox, tool lifecycle, journal, chat)  |       6 | XL     | ⏳ Planned | [sprint](sprint-9/sprint.md)  | —           |
+|   9 |    P0    | R3 harness v1 (BYOK, WASI sandbox, tool lifecycle, journal, chat)  |       6 | XL     | ✅ Done    | [sprint](sprint-9/sprint.md)  | `549827e`   |
 |  10 |    P1    | R4 separable auth service + memory (fail-closed sync)              |       5 | L      | ⏳ Planned | [sprint](sprint-10/sprint.md) | —           |
 |  11 |    P1    | R5 non-planar S2 (curved-top, per-machine gates, coupon)           |       5 | XL     | ⏳ Planned | [sprint](sprint-11/sprint.md) | —           |
 |  12 |    P1    | R6 non-planar S3 conformal/field (paper study, OSQP, art gate)     |       5 | XL     | ⏳ Planned | [sprint](sprint-12/sprint.md) | —           |
@@ -146,3 +152,5 @@ Rev 2.0 (R0–R7).
      editing core (7), R2 planar baseline (8), R3 harness (9), R4 auth/memory (10),
      R5 S2 (11), R6 S3 (12), R7 T3b + S4 research (13).
 3. Sprint 4 is plan-only (documentation + packaging checklist, no runnable Electron shell).
+4. **Completed so far (2026-09-29):** Sprints 5–9 delivered (R0–R3: foundation, editing
+   core, planar baseline, harness). Next active: **Sprint 10 (R4 auth + memory)**.

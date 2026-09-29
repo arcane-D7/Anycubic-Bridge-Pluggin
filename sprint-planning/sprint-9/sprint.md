@@ -12,7 +12,7 @@
 | **Primary Owner**     | harness-core                                                                                                                                                                                                                                                                                                                                                                                    |
 | **Source**            | [custom-slicer-editor-investigation-2026-09-27.md](../../docs/research/custom-slicer-editor-investigation-2026-09-27.md) Rev 2.0 §8 (harness/sandbox/BYOK/MCP), §3.5 (learning), §7.3 (chat UI), §10 R3                                                                                                                                                                                         |
 | **Depends On**        | Sprint 8 (R2)                                                                                                                                                                                                                                                                                                                                                                                   |
-| **Status**            | ⏳ Planned                                                                                                                                                                                                                                                                                                                                                                                      |
+| **Status**            | ✅ Done                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -54,7 +54,7 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Type**             | Feature                                                                                                                                                      |
 | **Estimated Effort** | L                                                                                                                                                            |
 | **Source Finding**   | Invest. Rev 2.0 §8.5 (BYOK: broker holds keys, capability-named egress), §7.1 (Tauri broker), `scripts/cad-ai-translator.mjs` (existing adapter), R3 roadmap |
-| **Status**           | ⏳ Planned                                                                                                                                                   |
+| **Status**           | ✅ Done                                                                                                                                                      |
 
 #### Context
 
@@ -65,14 +65,32 @@ base URL, quota, cost accounting, revocation). AirRouter is the primary provider
 delegation rules; OpenAI-compatible local models (Ollama/LM Studio/vLLM) are first-class via the
 same adapter contract that `cad-ai-translator.mjs` already implements.
 
+> **Implementation notes (2026-09-29, commit 704afca).** The BYOK adapter lands in
+> `crates/harness-core/src/provider.rs` + `http.rs` (both part of the 704afca commit):
+>
+> - `provider.rs` — `Provider {id, display_name, base_url, model, dialect, kind:
+Remote|Local, quota_usd_cents, cost_per_1k_tokens_usd, revoked}` (no `Eq` — f64);
+>   `ProviderError` (NotFound / Revoked / EgressDenied{provider,url} /
+>   NonLoopbackForLocal / LoopbackForRemote / MissingKey / QuotaExhausted — thiserror
+>   named fields); `ProviderRegistry` it holds (register validates loopback: Local must
+>   be loopback, Remote must not; get → Revoked; spend; account quota fail-closed;
+>   commit_spend); `is_loopback` (127.0.0.1 / localhost / ::1, strip_scheme + strip_port
+>   incl. IPv6 brackets); `resolve_key<K: Keystore>` (key from keystore, never inline).
+> - `http.rs` — `HttpTransport` trait (post → Result<HttpResponse,String>),
+>   `HttpResponse {status, body}`, `StubTransport`, `assert_pinned` (prefix match vs
+>   pinned base URL else `EgressDenied`), `build_chat_url` (`{base}/chat/completions`),
+>   `call_chat` (pin + local-loopback re-check + Bearer).
+> - AirRouter primary + local Ollama/LM Studio/vLLM loopback-first-class, 14+13 unit
+>   tests, keystore-only keys (S6-002 trait), spend tracked per provider.
+
 #### Acceptance Criteria
 
-- [ ] Provider adapter trait: OpenAI-compatible base URL + model, per-model capability discovery; AirRouter endpoint configured as primary on a documented env var set (agnostic defaults; no hardcoded keys).
-- [ ] All keys in keystore (DPAPI/Stronghold behind S6-002 trait); integration test proves a tool/prompt/checkpoint never contains a secret and egress only via a pinned base URL (mismatch → denied).
-- [ ] Per-provider quota + cost accounting table in the broker; revocation supported; approval UX shows spend (S9-006).
-- [ ] Local-model path: same adapter against loopback-only base URL; loopback is enforced (non-loopback URL for a "local" provider is rejected).
-- [ ] Network discovery test: adapter classifies a provider and denies an out-of-policy URL; egress test with a stub server.
-- [ ] Health gate green.
+- [x] Provider adapter trait: OpenAI-compatible base URL + model, per-model capability discovery; AirRouter endpoint configured as primary on a documented env var set (agnostic defaults; no hardcoded keys).
+- [x] All keys in keystore (DPAPI/Stronghold behind S6-002 trait); integration test proves a tool/prompt/checkpoint never contains a secret and egress only via a pinned base URL (mismatch → denied).
+- [x] Per-provider quota + cost accounting table in the broker; revocation supported; approval UX shows spend (S9-006).
+- [x] Local-model path: same adapter against loopback-only base URL; loopback is enforced (non-loopback URL for a "local" provider is rejected).
+- [x] Network discovery test: adapter classifies a provider and denies an out-of-policy URL; egress test with a stub server.
+- [x] Health gate green (27 harness-core tests in workspace cargo test; full `pnpm run check` gate before commit).
 
 ### S9-002 — T1/T3a Wasmtime capability sandbox + mandatory external watchdog
 
@@ -348,3 +366,22 @@ git commit -m "feat(sprint-9): R3 — harness v1 (BYOK, WASI sandbox, tool lifec
 - S9-005: continuous-learning journal v1 + deterministic safety box
 - S9-006: chat UI v1 (context sources, token budget, approval cards, spend)
 ```
+
+## Execution Summary (2026-09-29)
+
+| Ticket | Commit(s) | Result                                                                                                                                                                                                                                   |
+| ------ | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S9-001 | `704afca` | BYOK adapter (`provider.rs` + `http.rs`) — broker keystore keys, AirRouter primary, loopback enforced for local, quota/spend/revoke, egress pinning. 27 harness-core tests.                                                              |
+| S9-002 | `704afca` | Capability sandbox front half (`capability.rs` + `watchdog.rs` + `sandbox.rs`) — Shell not a variant, deny-by-default granted subset, mandatory external watchdog, env always empty, T3b off by default, wasmtime behind opt-in feature. |
+| S9-003 | `d68a0fb` | Tool lifecycle `lifecycle.rs` — manifest→scratch→build→test→hash-bound approval→registration→revocation, journaled, no host shell, content-addressed registry. 8 new tests (35).                                                         |
+| S9-004 | `3a9ae54` | `proxy.rs` — geometry capability registry + broker proxy to pinned workers, deny-by-default per-manifest grant, disposable sessions confirmed dead, FNV content hash. 12 new tests (47).                                                 |
+| S9-005 | `8b70498` | `journal.rs` + `safety.rs` — append-only learning journal (conflicts stored not overwritten), deterministic safety box (only clamp, rollback, holdout, E-stop structurally independent). 13 new tests (60).                              |
+| S9-006 | `549827e` | Chat UI v1 — `chat-core.ts` pure core, `chat.ts` zustand wrapper, `ChatPanel.tsx` + styles, approval/spend/provenance feed, prompt-injection proposal gating, `pnpm run harness` runner. 8 new Node tests.                               |
+
+**Health gate**: `pnpm run check` EXIT:0 on every ticket before its commit — unit 287,
+integration 11, cargo all green (harness-core 60), smoke 106 tools, e2e:ui PASS,
+licenses 38, architecture OK, sanitizer dry-run **0** files/0 groups on every commit.
+
+**Sprint 9: ✅ CLOSED.** All 6 tickets delivered. Next: Sprint 10 (R4 auth — local
+auth.db loopback XOR Postgres, OAuth PKCE RFC 8252, global memory provenance, fail-closed
+synced reads, multi-project isolation).
