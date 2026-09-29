@@ -112,7 +112,7 @@ gates R2.
 | **Type**             | Feature                                                                                                                     |
 | **Estimated Effort** | XL                                                                                                                          |
 | **Source Finding**   | Invest. Rev 2.0 §3 (own engine), §3.8 S1 (thin: layer + walls + infill), §10 R2; §🔒 policy (Kiri/libSlic3r reference-only) |
-| **Status**           | ⏳ Planned                                                                                                                  |
+| **Status**           | ✅ Done                                                                                                                     |
 
 #### Context
 
@@ -127,13 +127,42 @@ mode-aware validator checks against.
 
 #### Acceptance Criteria
 
-- [ ] Rust `crates/planar-core` slices baseline parts: uniform layers, wall loops, infill pattern (grid/gyroid subset), brim/skirt basic.
-- [ ] Extrusion computed per §3.3 (mm path length × local bead section; filament-length E; volumetric Q); unit tests pin the closed-form formulas and the constant-section assumptions.
-- [ ] Deterministic: same input + profile → byte-identical slice metadata (hash test); no float nondeterminism.
-- [ ] Machine capability gates: build volume from profile (never hardcoded); unsupported dialect → pre-flight rejection (reuses §5 contract).
-- [ ] Output: intermediate IR (S8-004) + per-machine gcode subset via postprocessor (S8-005); no generic Cartesian emitter claim yet.
-- [ ] **Standard-mode role**: runs without any non-planar capability; a `standard` job never contains a Z-ramp or non-planar segment (validator enforces, §3.0a).
-- [ ] Health gate green.
+- [x] Rust `crates/planar-core` slices baseline parts: uniform layers, wall loops, infill pattern (grid/gyroid subset), brim/skirt basic.
+- [x] Extrusion computed per §3.3 (mm path length × local bead section; filament-length E; volumetric Q); unit tests pin the closed-form formulas and the constant-section assumptions.
+- [x] Deterministic: same input + profile → byte-identical slice metadata (hash test); no float nondeterminism.
+- [x] Machine capability gates: build volume from profile (never hardcoded); unsupported dialect → pre-flight rejection (reuses §5 contract).
+- [x] Output: intermediate IR (S8-004) + per-machine gcode subset via postprocessor (S8-005); no generic Cartesian emitter claim yet — engine emits `SliceMeta` (layer/toolpath/segment IR) as the seam S8-004/S8-005 consume; no generic Cartesian gcode emitter.
+- [x] **Standard-mode role**: runs without any non-planar capability; a `standard` job never contains a Z-ramp or non-planar segment (validator enforces, §3.0a; engine invariant verified by tests).
+- [x] Health gate green.
+
+#### Implementation Notes
+
+- **Crate** `crates/planar-core` (workspace member, edition 2021, rust-version 1.98; deps only
+  serde/serde_json/thiserror + path `machine-profile` — Apache/MIT policy clean): `slice.rs`
+  (engine), `extrusion.rs` (§3.3 closed forms), `infill.rs` (grid + gyroid subset),
+  `offset.rs` (loop insets/outset), `lib.rs`, `tests_meta.rs` (34 tests),
+  `bin/slice-json.rs` (CLI: STL + profile JSON → `SliceMeta` JSON).
+- **Extrusion §3.3**: `ΔE = A_bead·ℓ / A_filament` (filament-length mode) with `A_bead` from the
+  planar crown-section model; `volumetric_q` steady-state `Q = A_bead·v`. Unit tests pin the
+  closed forms (incl. extrusion conservation: bead volume ≈ Σ(ΔE·A_filament)).
+- **Determinism**: integer-ordered layer/wall/segment generation, FNV-1a 64 fingerprint over
+  normalized floats/metadata; same input + profile → byte-identical JSON (hash test).
+- **Machine gates**: `build_volume` read from the profile (never hardcoded — `slice-json` maps
+  `build_volume` → `machine_profile::Volume`); dialect allowlist `anycubic|cura` rejected
+  pre-flight (`UnsupportedDialect`), unsupported infill pattern rejected (`UnsupportedInfillPattern`).
+- **Correctness (this ticket)**: layer count = part height (`bbox.max_z − bbox.min_z`), z offset
+  by `bbox.min_z`; solid top/bottom shells (`top_bottom_layers`); bead line width 0.45 mm;
+  infill clipped to innermost wall ring interior. 34 tests incl. `layer_count_matches_part_height`,
+  `solid_shells_heavier_than_sparse_infill`, `zero_shells_disables_solid_fill`, planet invariants.
+- **Parity (S1 budget, measured 2026-09-29 via real Anycubic CLI)**: cube −11.08% infill,
+  cylinder +9.13%, bracket −2.07% (all ≤15% budget); walls ±0; bbox ±0.200 mm (≤1.0 mm).
+  Journal: `docs/evidence/s1-parity-results-20260929.json` + `s1-ref-20260929.json`.
+- **Runner wiring**: `scripts/slices-runner.mjs` `candidateSlice` now invokes the real Rust core
+  via `cargo run -q -p planar-core --bin slice-json` (`CORE_PROFILE` exact JSON shape); parity
+  journal updated by `pnpm run slices` — 3/3 PASS.
+- Gate EXIT:0 (unit 207, integration 10, planar-core 34, smoke 106, licenses 38, architecture,
+  sanitize 0 files).
+- Commit `a85050d` — `feat(s8-002): planar-core Rust clean slice engine …`.
 
 ### S8-003 — Profiles mapping: presets/catalog.json → §5 machine capability schema
 
