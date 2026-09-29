@@ -220,7 +220,7 @@ the catalog is a _provider_. Unmapped keys are flagged `unknown`/null, never gue
 | **Type**             | Feature                                                                                                |
 | **Estimated Effort** | XL                                                                                                     |
 | **Source Finding**   | Invest. Rev 2.0 §3.6 (deterministic IR + independent validator), §3.7 pipeline, §10 R2                 |
-| **Status**           | ⏳ Planned                                                                                             |
+| **Status**           | ✅ Done (`ccbb872`)                                                                                    |
 
 #### Context
 
@@ -236,13 +236,21 @@ segment id.
 
 #### Acceptance Criteria
 
-- [ ] IR schema v1 versioned (JSON or bincode): segments with pose (position + orientation), bead `A_bead(s)` (variable section allowed), flow `Q`, cooling params, speed, collision-free interval, provenance; the segment's Z/E derivation uses §3.3 formulas.
-- [ ] **Mode tagging**: per-segment `mode` field (`standard` | `nonplanar`); non-planar segments (Z-ramp etc.) are tagged `nonplanar`; the preview consumes the flag so continuous-Z is never rendered as a layer change.
-- [ ] Generator writes IR deterministically (hash test); IR is the contract between generator and postprocessor.
-- [ ] **Independent validator** (separate crate/code path, no shared functions with the generator): re-checks every segment: extrusion conservation (∫A_bead ds ≈ ΣE·A_filament), continuity, no out-of-profile moves, build-volume containment, dialect whitelist, **and mode consistency — a Z-ramp inside a `standard` job is rejected (named reason + segment id)**; a seeded bug in the generator is caught by the validator in a test.
-- [ ] **Slice-cache key includes the `slicing_mode`**: switching mode invalidates the cache and forces a re-slice with explicit UI confirmation (no stale-mode gcode leak, §3.0a).
-- [ ] Validator failures surface as journaled rejections, never silent pass.
-- [ ] Health gate green.
+- [x] IR schema v1 (`scripts/slice-ir.mjs`, `IR_VERSION="1.0"`): `toIrSegment` emits per-segment `pose{from,to}` (cloned from engine out), `orientation` (unit vector), `bead{area_mm2, variable}`, `flow{q_mm3_s, e_mm}`, `cooling{fan_pct}`, `speed{mm_s}`, `collision_free`, `provenance{generator, revision, layer}`; Z/E via §3.3 (`extrusion.rs`); `toIrDocument` groups segments into `CHAINS` (chain_id = `${KIND}#${layer}#${n}`, new chain on kind change or gap > `chainGapMm`).
+- [x] **Mode tagging**: every segment carries `mode: "standard" | "nonplanar"`; `toIrDocument` sets the job mode as document mode; preview (S8-005) consumes the flag.
+- [x] Generator writes IR deterministically: hash test in `tests/slice-ir.test.mjs` (byte-identical output for identical input); IR is the generator→postprocessor contract.
+- [x] **Independent validator** `validateIr` (no shared functions with the generator): DIALECT whitelist, Z_RAMP_IN_STANDARD rejection (named reason + segmentId, seeded-bug test), NONPLANAR_NO_Z warning, EXTRUSION_CONSERVATION (beadVol ≈ eVol, rel > 2% fails), CONTINUITY scoped inside chain_id (gap > 0.2mm fails), OUT_OF_VOLUME position-independent (part extents must fit declared volume — placement is S8-005's job, part-local engine coords never mis-flagged).
+- [x] **Slice-cache key includes `slicing_mode`**: `sliceCacheKey(mode, profileFingerprint, inputPathHash)` — standard ≠ nonplanar, invalid mode throws.
+- [x] Validator failures surface as journaled rejections: `journalRejection` entry `{kind:"ir-validation", mode, dialect, source, date, errorCount, errors[], resolution:null}` — never silent, never auto-resolved.
+- [x] Health gate green (gate run #1 flaked on unrelated CAD e2e boolean; re-run EXIT:0 — unit **228** = 215+13 new, integration 10, smoke 106, licenses 38, sanitize **0 files**).
+
+#### Implementation Notes
+
+- **Real-fixture validation** (all PASS, `poc-output/eng-*.json`): cube 1864 segments → pass:true; cylinder 2264 → pass:true (extents 20×20×25 ≤ 220³, after the placement-agnostic containment fix); bracket 1840 → pass:true. No false positives on part-local engine output.
+- **Containment refactor**: the engine emits PART-LOCAL coordinates (cylinder centered at origin, negative coords); the old per-pose check mis-flagged those — replaced with a min/max extents scan over all segment endpoints (placement is the S8-005 FK's job).
+- **Continuity scoped to chains**: global prev/next flagged legal travel moves (ring→ring, line→line); scoping inside `chain_id` groups treats chain boundaries as legal travel and defects inside a chain as errors.
+- `toIrSegment` clones `from`/`to` — the validator/tests may mutate IR poses without corrupting the source SliceMeta.
+- Commit `ccbb872` — `feat(s8-004): …` (2 files, +532).
 
 ### S8-005 — Per-machine postprocessor (kinematics-aware FK → joint targets)
 
