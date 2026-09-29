@@ -185,7 +185,7 @@ separated from generated tools (trusted ops only via named-capability requests).
 | **Type**             | Feature                                                                                      |
 | **Estimated Effort** | M                                                                                            |
 | **Source Finding**   | Invest. Rev 2.0 §8.2 (bpy exclusion + named geometry capability), §8.3 (separation of trust) |
-| **Status**           | ⏳ Planned                                                                                   |
+| **Status**           | ✅ Done                                                                                      |
 
 #### Context
 
@@ -194,13 +194,33 @@ the broker proxies to the pinned Blender process — the model never obtains a B
 untrusted Python/Blender scripts are T3b (VM), not T1. This broker proxy is the only way a T1/T3a
 tool touches Blender.
 
+> **Implementation notes (2026-09-29).** `crates/harness-core/src/proxy.rs` —
+> `CapabilityRegistry::declared()` holds the four named capabilities
+> `geometry.boolean` / `geometry.extrude` / `mesh.validate` / `occt.convert`
+> with JSON input schemas and worker kinds (`WorkerKind::Blender` for the
+> first three, `WorkerKind::Occt` for the conversion-only tier), mapping to the
+> S9-002 capability surface (`BlenderGeometry` / `OoctConvert` + `GeometryOp`).
+> `GeometryBroker::grant_for_manifest` is deny-by-default: it intersects the
+> requested names with the registry (subset only, replaced per manifest —
+> never unioned across tools), rejects any unlisted geometry op with
+> `UnlistedOperation`, and rejects raw Blender exec names (`blender.exec`,
+> `bpy`, `raw.blender`, `blender.script`) with `RawBlenderDenied`
+> (T3b-routed). A granted capability spawns a disposable worker session
+> (`spawn_session` → `SessionId` + simulated `pid`), runs against the
+> fixture input via the `GeometryWorker` trait (in-crate deterministic
+> `StubGeometryWorker` mirrors the pinned-worker boundary exactly like
+> `StubTransport` in `http.rs`), records the FNV-1a 64 content hash, and is
+> disposed (`dispose` → `Exited`; `live_sessions`/`live_pids` are the
+> confirmed-dead check). Effectively no actual Blender handle is ever
+> exposed to a tool. 12 unit tests (47 harness-core total).
+
 #### Acceptance Criteria
 
-- [ ] Capability registry: `geometry.boolean`, `geometry.extrude`, `mesh.validate`, `occt.convert`, … declared with schemas; broker grants a subset to a requesting tool based on its manifest.
-- [ ] Proxy worker: a granted geometry capability runs on the pinned (T2) Blender/OCCT process with read-only inputs (or scratch copy), outputs to scratch, dies after (AI-job disposable session per §4.6); never shares the user session process state.
-- [ ] A tool requesting an unlisted geometry op is denied; a tool requesting raw Blender exec is denied (T3b-routed).
-- [ ] E2E: generate a Wasm tool that requests `geometry.boolean`; broker runs it against a fixture mesh in a disposable session; result hash equals the direct-run hash; the disposable process is confirmed dead.
-- [ ] Health gate green.
+- [x] Capability registry: `geometry.boolean`, `geometry.extrude`, `mesh.validate`, `occt.convert`, … declared with schemas; broker grants a subset to a requesting tool based on its manifest (test `registry_declares_four_geometry_caps_with_schemas`; `grant_is_subset_of_requested_and_never_broader`; `grant_resets_between_manifests_never_unions`).
+- [x] Proxy worker: a granted geometry capability runs on the pinned (T2) Blender/OCCT process with read-only inputs (or scratch copy), outputs to scratch, dies after (AI-job disposable session per §4.6); never shares the user session process state (test `proxy_run_hash_equals_direct_run_hash_e2e` asserts input unchanged + hash equality; `sessions_are_independent_never_share_user_state` asserts distinct pids/purity).
+- [x] A tool requesting an unlisted geometry op is denied; a tool requesting raw Blender exec is denied (T3b-routed) (tests `unlisted_geometry_op_denied`, `raw_blender_exec_denied_t3b_routed` for `blender.exec`/`bpy`/`raw.blender`/`blender.script`).
+- [x] E2E: generate a Wasm tool that requests `geometry.boolean`; broker runs it against a fixture mesh in a disposable session; result hash equals the direct-run hash; the disposable process is confirmed dead (test `proxy_run_hash_equals_direct_run_hash_e2e` + `disposable_session_confirmed_dead`; `live_sessions`/`live_pids` drop to 0).
+- [x] Health gate green (harness-core 47 in workspace run; full `pnpm run check` gate before commit).
 
 ### S9-005 — Continuous-learning journal v1 + deterministic safety box
 
