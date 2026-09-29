@@ -22,3 +22,5 @@ assets/
 *.gz
 *.zip
 pnpm-lock.yaml
+# Machine-generated evidence journals (runner output, not human-authored)
+docs/evidence/*.json

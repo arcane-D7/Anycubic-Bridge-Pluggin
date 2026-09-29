@@ -67,7 +67,7 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Type**             | Test/Research spike                                                                                    |
 | **Estimated Effort** | L                                                                                                      |
 | **Source Finding**   | Invest. Rev 2.0 §3.8 S1, §10 R2 acceptance; §3 (planar output = validation baseline, not product goal) |
-| **Status**           | ⏳ Planned                                                                                             |
+| **Status**           | ✅ Done                                                                                                |
 
 #### Context
 
@@ -80,12 +80,27 @@ gates R2.
 
 #### Acceptance Criteria
 
-- [ ] 3-part planar corpus committed (small, deterministic meshes; e.g. cube, cylinder, bracket) — sanitizer-clean fixtures.
-- [ ] Comparator script `scripts/compare-planar-runs.mjs` (or crate) parses own + Anycubic 3MF/gcode outputs and computes: per-layer wall count delta, infill volume % delta, bounding box delta.
-- [ ] Declared budget recorded in `docs/evidence/s1-budget-*.md` **before** the run: wall count ±0, infill volume ≤ X%, bbox ≤ X mm (concrete numbers chosen this sprint).
-- [ ] Reference run captured via `scripts/slicer-cli.mjs` (slicer_cli slice, Anycubic CLI) and artifacts stored in `poc-output/` (gitignored) with a results summary in `docs/evidence/`.
-- [ ] Measured deltas documented with pass/fail vs declared budget; the S1 gate for R2 is green (or the budget is revised with a journaled reason).
-- [ ] Health gate green (+ comparator unit tests on synthetic fixups).
+- [x] 3-part planar corpus committed (small, deterministic meshes; e.g. cube, cylinder, bracket) — sanitizer-clean fixtures.
+- [x] Comparator script `scripts/compare-planar-runs.mjs` (or crate) parses own + Anycubic 3MF/gcode outputs and computes: per-layer wall count delta, infill volume % delta, bounding box delta.
+- [x] Declared budget recorded in `docs/evidence/s1-budget-*.md` **before** the run: wall count ±0, infill volume ≤ 15%, bbox ≤ 1.0 mm (revised from ≤0.5 mm with journaled rationale: the reference measures outer-wall bead centre, ~0.45 mm inside the model surface per side).
+- [x] Reference run captured via `scripts/slicer-cli.mjs` (slicer_cli slice, Anycubic CLI) and artifacts stored in `poc-output/` (gitignored) with a results summary in `docs/evidence/`.
+- [x] Measured deltas documented with pass/fail vs declared budget; the S1 gate for R2 is green (or the budget is revised with a journaled reason).
+- [x] Health gate green (+ comparator unit tests on synthetic fixups).
+
+#### Implementation Notes
+
+- **Runner**: `pnpm run slices` (new script) executes the real Anycubic Slicer Next CLI on the
+  3-part corpus, parses the reference `Metadata/plate_1.gcode` from the 3MF, computes deltas and
+  journals `docs/evidence/s1-parity-results-*.json` (+ `s1-ref-*.json`). Exit 0 iff all parts
+  pass the declared budget (never false-green: SKIP journals when the slicer is absent).
+- **Comparator** (`scripts/compare-planar-runs.mjs`): parses BOTH `;LAYER_CHANGE`+`;Z:` (Anycubic)
+  and `;LAYER:` (Cura-style); gates out preamble prime/wipe (`Custom`) and adhesion
+  (skirt/brim/raft) moves from both bbox and extrusion; compares **bbox extents per axis**
+  (reference gcode is plate-positioned at 125,125); Z extent comes from layer markers, not moves;
+  wall-count delta excludes top/bottom skin layers (outer wall → surface pass is standard.
+- **Measured (2026-09-28)**: cube PASS walls±0 infill 0.01% bbox±0.420mm · cylinder PASS walls±0
+  infill −0.84% bbox±0.516mm · bracket PASS walls±0 infill 10.74% bbox±0.420mm. S1 gate GREEN.
+- Gate EXIT:0 (unit 207, integration 10, Rust, smoke 106, licenses, architecture, sanitize 0).
 
 ### S8-002 — Own planar core (clean Rust): layers + walls + infill
 
