@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (UI)                                                                                                                                                                                                                |
 | **Source**            | Consultor report 2026-09-30 ronda 2 §3 (dock verdict: purpose-built minimal dock + motion; NOT react-rnd/grid-layout) + user Mandate B                                                                                          |
 | **Depends On**        | Sprint 9.1 (shadcn + tokens + overlay root readiness)                                                                                                                                                                           |
-| **Status**            | 🔄 In Progress                                                                                                                                                                                                                  |
+| **Status**            | ✅ Delivered                                                                                                                                                                                                                    |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -154,7 +154,7 @@ move the panel; visible focus ring on the floating chrome. Esc = collapse to pil
 | **Priority**         | P0                                                               |
 | **Type**             | Quality                                                          |
 | **Estimated Effort** | S                                                                |
-| **Status**           | ⏳ Planned                                                       |
+| **Status**           | ✅ Done                                                          |
 
 #### Context
 
@@ -167,3 +167,22 @@ move the panel; visible focus ring on the floating chrome. Esc = collapse to pil
 #### Acceptance criteria
 
 - [x] `pnpm run check` EXIT:0; sanitizer 0; motion admitted by licenses; webview drag/snap verified; commit closes the sprint.
+
+## Execution Summary
+
+| Ticket    | Deliverable                                                | Commit    | Gate |
+| --------- | ---------------------------------------------------------- | --------- | ---- |
+| S9.1a-001 | Overlay root portal + z-ladder + viewport isolation        | `a9b3604` | ✅   |
+| S9.1a-002 | Dock store + drag/snap/resize host + persistence           | `88a6f18` | ✅   |
+| S9.1a-003 | Chat detach affordances (⇱ / ⇲ / pill)                     | `4f22ec4` | ✅   |
+| S9.1a-004 | A11y non-modal dialog + focus rings + Alt+Shift+move       | `8fa7aa7` | ✅   |
+| fixes     | Webview-verified dock fixes (pointer-events, drag, resize) | `3dc8ad7` | ✅   |
+| S9.1a-005 | Full gate + sanitizer + motion license + webview verify    | `3dc8ad7` | ✅   |
+
+### Webview verification (S9.1a-005 AC)
+
+Verified in Chromium (same engine as Tauri WebView2): detach → floating dialog
+with `role="dialog"`; drag moves panel with rAF translate3d; SE resize grows
+rect; Alt+Shift+arrows move by 5% viewport; Esc collapses to pill; ⇲ docks;
+focus ring renders in both themes; canvas keeps receiving pointer events
+outside the panel rect (overlay pointer-events:none discipline).
