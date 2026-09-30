@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport + scene)                                                                                              |
 | **Source**            | Consultor report 2026-09-30 §2 (9.2) + audit G1/G4/G5/G6/G10/G34/G41                                                        |
 | **Depends On**        | Sprint 9.1 (tokens)                                                                                                         |
-| **Status**            | 🔄 In Progress — 3/6 tickets done (S9.2-001/002/003), gate EXIT:0 per ticket                                                |
+| **Status**            | 🔄 In Progress — 4/6 tickets done (S9.2-001/002/003/004), gate EXIT:0 per ticket                                            |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -174,7 +174,7 @@ hover highlight + selection outline (2px `--sel-outline-3d` + 6px glow halo, per
 | **Priority**         | P0                                                                          |
 | **Type**             | Feature                                                                     |
 | **Estimated Effort** | M                                                                           |
-| **Status**           | ⏳ Planned                                                                  |
+| **Status**           | ✅ Done                                                                     |
 
 #### Context
 
@@ -187,6 +187,33 @@ Add (import)/Duplicate/Delete/Arrange buttons.
 
 - [x] All tree actions work against the graph store; row density ≤32px; meta uses mono tabular.
 - [x] Inline rename via double-click; context menu (right-click) wired.
+
+#### Implementation notes
+
+- `ObjectTree.tsx` full rework reading `objects/selectedNames/anchorName/select/toggleSelect/
+rename/duplicate/remove/toggleVisible/toggleLock` from `useScene`; rows ≤32px with
+  right-aligned mono tabular meta (triangle/vertex counts).
+- **Store hydration**: `App.tsx` hydrates `useScene` when the bridge snapshot arrives
+  (`hydrate(scene.objects)`), making the graph store the object source for the tree
+  (previously the store stayed empty and the tree read the handle directly).
+- **Persist + reconcile pattern**: every mutation is persisted via `scene.mutateObject(...)`
+  and followed by `queryClient.invalidateQueries(["bridge","scene"])` (authoritative refetch);
+  duplicates/removes are persisted ONLY when the store accepts (`duplicate()!==null` /
+  `remove()` returns steps) so a refetch never "magically" re-adds objects.
+- Inline rename on double-click (input focused + selected; Enter/blur commit, Escape cancel);
+  right-click + ⋮ chevron open a controlled Radix DropdownMenu with Duplicate/Rename/Hide/
+  Delete (destructive); footer Add/Duplicate/Delete/Arrange icon buttons (Add disabled until
+  S9.2-005 import lands). `data-name`, `aria-selected`, hidden/locked row dimming.
+- `RendererGuard.tsx` now aggregates REAL per-object triangle counts (was the 12-tri placeholder)
+  so the renderer-vs-snapshot guard no longer false-invalidates with real geometry.
+- `styles.css`: `.object-list`/`.object-item` (32px, hover `--bg-raised`, selected accent rail +
+  outline, left rail), `.object-meta` mono tabular `--text-dim`, footer styles.
+- 5 flow tests in `tests/object-tree-flow.test.mjs` pairing the pure `reduceSceneGraph` with
+  live mock persistence (`fetchSceneSnapshot().mutateObject`): select+rename roundtrip,
+  multi-select toggle, duplicate (begin→update→commit + copy selected + mock persists
+  "cube-copy"), delete (store removes + clears anchor + mock persists), toggle visible/lock.
+- Full gate EXIT:0 (333 unit tests, e2e:ui PASS, smoke 106 tools, licenses 59, sanitize 0);
+  commit `eef1b68`.
 
 ### S9.2-005 — Import dialog + drag-drop
 
