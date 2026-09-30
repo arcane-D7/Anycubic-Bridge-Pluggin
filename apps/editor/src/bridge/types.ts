@@ -23,6 +23,29 @@ export interface ObjectMeshInfo {
   readonly watertight: boolean;
 }
 
+/**
+ * Real triangle buffers behind a scene object (S9.2-001). The snapshot's
+ * geometry-agnostic fields stay frozen; geometry is added behind them, so a
+ * future real-bridge swap is a provider change, never a type change.
+ */
+export interface ObjectGeometry {
+  readonly positions: Float32Array;
+  readonly normals: Float32Array;
+  readonly indices: Uint32Array;
+}
+
+/**
+ * Full scene object: the frozen mesh-info mirror PLUS the geometry lane and
+ * graph flags (S9.2-002 will lift these into the scene store).
+ */
+export interface SceneObjectSnapshot extends ObjectMeshInfo {
+  readonly geometry?: ObjectGeometry;
+  readonly visible: boolean;
+  readonly locked: boolean;
+  readonly parentId?: string | null;
+  readonly transform?: { readonly x: number; readonly y: number; readonly z: number };
+}
+
 /** Scene snapshot as served by the read-only bridge (S6-005). */
 export interface SceneSnapshot {
   readonly ok: boolean;
@@ -30,6 +53,25 @@ export interface SceneSnapshot {
   readonly groups: readonly string[];
   readonly objects: readonly ObjectMeshInfo[];
 }
+
+/**
+ * CRUD mutation lane for the scene graph (S9.2-001). Mirrors the S7-002 modal
+ * contract where destructive ops route through begin→update→commit; the
+ * returned `objects` are the authoritative post-commit list.
+ */
+export type ObjectMutation =
+  | { readonly kind: "add"; readonly object: SceneObjectSnapshot }
+  | { readonly kind: "remove"; readonly name: string }
+  | { readonly kind: "rename"; readonly from: string; readonly to: string }
+  | { readonly kind: "duplicate"; readonly name: string }
+  | { readonly kind: "toggleVisible"; readonly name: string }
+  | { readonly kind: "toggleLock"; readonly name: string }
+  | {
+      readonly kind: "setTransform";
+      readonly name: string;
+      readonly transform: { x: number; y: number; z: number };
+    }
+  | { readonly kind: "commitObject"; readonly name: string };
 
 /** Build plate footprint (mm) driven by the machine profile, never hardcoded. */
 export interface BuildVolume {
