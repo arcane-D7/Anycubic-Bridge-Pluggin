@@ -14,6 +14,7 @@ import type { PreviewModel } from "./viewport/preview-model";
 import { Viewport } from "./viewport/Viewport";
 import { resolveNonPlanarEligibility } from "./profile/capabilities";
 import { useOperatorProfile } from "./profile/useOperatorProfile";
+import { ThemeToggle } from "./components/theme-toggle";
 
 /**
  * Editor shell — single-window, resizable panels per §7.2:
@@ -146,6 +147,7 @@ export function App() {
               ? "Demo geometry"
               : "bridge: unavailable"}
         </span>
+        <ThemeToggle />
       </header>
 
       <main className="app-main">

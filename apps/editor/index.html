@@ -4,6 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Anycubic Bridge Editor</title>
+    <script>
+      // Theme resolution pre-paint (S9.1-002): avoid flash of wrong theme.
+      // Order: localStorage 'anycubic-theme' (light|dark|system) → system
+      // preference via matchMedia → light default. Applied on <html>.
+      (function () {
+        try {
+          var stored = localStorage.getItem("anycubic-theme");
+          var resolved = stored === "light" || stored === "dark" ? stored : null;
+          if (!resolved) {
+            resolved = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          }
+          document.documentElement.setAttribute("data-theme", resolved);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "light");
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

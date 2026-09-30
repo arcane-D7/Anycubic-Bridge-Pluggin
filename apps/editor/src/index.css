@@ -337,3 +337,14 @@
     box-shadow: var(--shadow-inset-hi), var(--shadow-1);
   }
 }
+
+/* Reduced-motion / reduced-transparency (S9.1-002 AC): drop the blur so
+   frosted glass never fights OS transparency preferences. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-surface,
+  .glass-fill,
+  [class*="backdrop-blur-"] {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

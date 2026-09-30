@@ -21,6 +21,22 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
   const volume = buildVolume ?? scene?.buildVolume;
   const objects = scene?.objects ?? [];
 
+  // Live theme-aware canvas backdrop (S9.1-002): read the --viewport-bg CSS
+  // token imperatively and re-resolve when data-theme changes — no re-render
+  // of the R3F tree, just a THREE.Color swap.
+  const [viewportBg, setViewportBg] = useState<string>(() =>
+    getComputedStyle(document.documentElement).getPropertyValue("--viewport-bg").trim(),
+  );
+  useEffect(() => {
+    const root = document.documentElement;
+    const read = () =>
+      setViewportBg(getComputedStyle(root).getPropertyValue("--viewport-bg").trim() || "#d9ddd8");
+    read();
+    const obs = new MutationObserver(read);
+    obs.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
+
   const [layerIndex, setLayerIndex] = useState(0);
   const [showWalls, setShowWalls] = useState(true);
   const [showInfill, setShowInfill] = useState(true);
@@ -39,7 +55,7 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
         dpr={[1, 2]}
         gl={{ preserveDrawingBuffer: true }}
       >
-        <color attach="background" args={["#d9ddd8"]} />
+        <color attach="background" args={[viewportBg]} />
         <ambientLight intensity={0.55} />
         <directionalLight position={[80, 160, 120]} intensity={1} />
         <directionalLight position={[-100, 60, -60]} intensity={0.35} color="#9fb4ff" />
