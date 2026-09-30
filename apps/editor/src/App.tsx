@@ -17,6 +17,7 @@ import { useOperatorProfile } from "./profile/useOperatorProfile";
 import { ThemeToggle } from "./components/theme-toggle";
 import { StatusBar } from "./components/status-bar";
 import { ToastViewport } from "./components/toast-viewport";
+import { OverlayRoot } from "./components/dock/overlay-root";
 import { useUi } from "./state/ui";
 
 /**
@@ -278,6 +279,7 @@ export function App() {
         />
       </footer>
       <ToastViewport />
+      <OverlayRoot />
     </div>
   );
 }

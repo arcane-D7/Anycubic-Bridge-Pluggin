@@ -499,3 +499,42 @@
     opacity: 0.5;
   }
 }
+
+/* ============================================================
+ * Z-ladder (S9.1a-001) — single source of truth for stacking.
+ *   canvas z-0 · ViewportHud z-10 · floating panels z-40 ·
+ *   Radix Dialog/Dropdown portals z-50 · toasts z-60
+ * ============================================================ */
+@layer components {
+  #overlay-root {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-overlay, 40);
+    pointer-events: none;
+  }
+  #overlay-root > * {
+    pointer-events: none;
+  }
+  #overlay-root > .floating-panel-host {
+    pointer-events: auto;
+  }
+}
+
+/* z-index scale tokens (consumed by the ladder classes above) */
+:root {
+  --z-canvas: 0;
+  --z-hud: 10;
+  --z-panel: 40;
+  --z-dialog: 50;
+  --z-toast: 60;
+}
+
+/* viewport frame isolates its children; canvas never escapes */
+.viewport-frame {
+  position: relative;
+  isolation: isolate;
+}
+.viewport-frame > canvas {
+  z-index: var(--z-canvas);
+  touch-action: none;
+}
