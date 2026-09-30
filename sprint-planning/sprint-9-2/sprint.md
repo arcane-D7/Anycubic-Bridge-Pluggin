@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport + scene)                                                                                              |
 | **Source**            | Consultor report 2026-09-30 §2 (9.2) + audit G1/G4/G5/G6/G10/G34/G41                                                        |
 | **Depends On**        | Sprint 9.1 (tokens)                                                                                                         |
-| **Status**            | 🔄 In Progress — 1/6 tickets done (S9.2-001), gate EXIT:0 per ticket                                                        |
+| **Status**            | 🔄 In Progress — 2/6 tickets done (S9.2-001/002), gate EXIT:0 per ticket                                                    |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -92,7 +92,7 @@ functions with the S7-002 framed modal contract (begin→update→commit) where 
 | **Priority**         | P0                                                                                |
 | **Type**             | Refactor                                                                          |
 | **Estimated Effort** | M                                                                                 |
-| **Status**           | ⏳ Planned                                                                        |
+| **Status**           | ✅ Done                                                                           |
 
 #### Context
 
@@ -107,6 +107,19 @@ rebase-able.
 
 - [x] Graph store with full CRUD + multi-select; old consumer API intact.
 - [x] Delete/hide/duplicate route through the framed modal reducer (no undo-less destructive ops).
+
+#### Implementation notes
+
+- `state/scene-core.ts` is a dependency-free pure reducer (viewport-core pattern) so Node
+  runs it headless: `hydrate/select/multiSelectToggle/add/remove/rename/duplicate/
+toggleVisible/toggleLock/setTransform`. Destructive ops (`remove`/`duplicate`) return an
+  S7-002 `pipeline` (`begin→update→commit`) plus a bridge `mutation` payload; `duplicate`
+  deep-copies geometry buffers (`slice()`) so the copy never aliases the source.
+- `state/scene.ts` keeps the frozen `selected/select/clear` API (ObjectTree/SceneObjectModel
+  untouched) and adds `selectedNames` multi-select with `toggleSelect` (shift-click) plus all
+  CRUD actions. `hydrate` replaces the graph from the authoritative snapshot and clears
+  selection (no stale data survives).
+- 12/12 `tests/scene-graph.test.mjs` green; full gate EXIT:0; commit `a47ca0d`.
 
 ### S9.2-003 — Real mesh rendering
 
