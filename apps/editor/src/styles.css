@@ -85,7 +85,7 @@ body,
   width: 0;
   min-width: 0;
   position: relative;
-  background: #d5d9d6;
+  background: var(--viewport-bg, #d5d9d6);
 }
 
 .viewport-frame {

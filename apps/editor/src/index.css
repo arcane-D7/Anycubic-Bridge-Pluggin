@@ -1,0 +1,339 @@
+@import "tailwindcss";
+
+/*
+ * Design System — "Liquid Glass × Engineering HUD" (Sprint 9.1)
+ * ------------------------------------------------------------
+ * Tailwind v4 CSS-first embedding (Consultor ronda 2 §2):
+ * tokens land in `@theme inline` so they become utilities, the
+ * raw var() layer stays the single source of truth, and the shadcn
+ * semantic layer consumes our tokens. Legacy classes keep working
+ * via the alias block in `@layer base` (zero-regression rule).
+ */
+
+/* Tailwind dark variant binds to our data-theme attribute (never media). */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* shadcn enter/exit animations (tailwindcss-animate, MIT). */
+@plugin "tailwindcss-animate";
+
+@theme {
+  --font-sans: "Inter", "SF Pro Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
+  --radius: 6px;
+
+  /* Timing */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 120ms;
+  --transition-medium: 200ms;
+  --transition-slow: 320ms;
+}
+
+/* Expose token namespaces as Tailwind utilities:
+   bg-glass-1, backdrop-blur-glass-2, text-primary, border-default, … */
+@theme inline {
+  --color-bg-base: var(--bg-base);
+  --color-bg-raised-1: var(--bg-raised-1);
+  --color-bg-raised-2: var(--bg-raised-2);
+  --color-bg-sunken: var(--bg-sunken);
+  --color-bg-dialog: var(--bg-dialog);
+  --color-glass-fill-1: var(--glass-fill-1);
+  --color-glass-fill-2: var(--glass-fill-2);
+  --color-glass-fill-3: var(--glass-fill-3);
+  --color-glass-stroke: var(--glass-stroke);
+  --color-glass-spec: var(--glass-spec);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-border-focus: var(--border-focus);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-disabled: var(--text-disabled);
+  --color-text-on-accent: var(--text-on-accent);
+  --color-brand: var(--brand);
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ring: var(--accent-ring);
+  --color-sema-success: var(--sema-success);
+  --color-sema-success-soft: var(--sema-success-soft);
+  --color-sema-warning: var(--sema-warning);
+  --color-sema-warning-soft: var(--sema-warning-soft);
+  --color-sema-error: var(--sema-error);
+  --color-sema-error-soft: var(--sema-error-soft);
+  --color-sema-info: var(--sema-info);
+  --color-sema-info-soft: var(--sema-info-soft);
+  --color-sel-bg: var(--sel-bg);
+  --color-sel-hover: var(--sel-hover);
+  --color-sel-active: var(--sel-active);
+  --color-sel-outline-3d: var(--sel-outline-3d);
+  --color-sel-outline-glow: var(--sel-outline-glow);
+  --color-ctrl-bg: var(--ctrl-bg);
+  --color-ctrl-bg-hover: var(--ctrl-bg-hover);
+  --color-ctrl-well: var(--ctrl-well);
+  --color-ctrl-border: var(--ctrl-border);
+  --color-track-fill: var(--track-fill);
+  --color-track-empty: var(--track-empty);
+  --color-overlay-scrim: var(--overlay-scrim);
+  --color-viewport-bg: var(--viewport-bg);
+  --color-viewport-grid: var(--viewport-grid);
+  --color-viewport-grid-strong: var(--viewport-grid-strong);
+
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+  --shadow-inset-hi: var(--shadow-inset-hi);
+  --shadow-inset-io: var(--shadow-inset-io);
+
+  --blur-glass-1: var(--blur-1);
+  --blur-glass-2: var(--blur-2);
+  --blur-glass-3: var(--blur-3);
+
+  /* shadcn semantic utilities */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+/* ============================================================
+ * Token sets — light (spec §3.2) + dark (§3.3)
+ * The raw var() layer is the SINGLE SOURCE OF TRUTH; @theme
+ * inline above maps them to utilities. Imperative canvas reads
+ * (RendererGuard) consume these vars directly — untouched by
+ * Tailwind.
+ * ============================================================ */
+
+:root,
+:root[data-theme="light"] {
+  --bg-base: #e9ebe8; /* app backdrop            */
+  --bg-raised-1: #f2f4f1; /* panels (opaque fallback)*/
+  --bg-raised-2: #e2e5e1; /* raised controls         */
+  --bg-sunken: #dde0dc; /* inputs wells, footer    */
+  --bg-dialog: #f6f7f5; /* modal base              */
+
+  --glass-fill-1: rgb(240 243 239 / 0.72); /* side panels / header    */
+  --glass-fill-2: rgb(246 248 245 / 0.85); /* floating toolbar        */
+  --glass-fill-3: rgb(250 251 249 / 0.92); /* dialogs / toasts        */
+  --glass-stroke: rgb(255 255 255 / 0.55); /* glass hairline (white)  */
+  --glass-spec: rgb(255 255 255 / 0.8); /* top-edge highlight      */
+
+  --border-default: rgb(25 31 28 / 0.12);
+  --border-strong: rgb(25 31 28 / 0.2);
+  --border-focus: #4f9cf7;
+
+  --text-primary: #191f1c; /* ≈15.9:1 on panels — AA+ */
+  --text-secondary: #555e59; /* ≈6.4:1 on panels  — AA  */
+  --text-tertiary: #6b746f;
+  --text-disabled: rgb(25 31 28 / 0.38);
+  --text-on-accent: #ffffff;
+
+  --brand: #247348;
+  --accent-primary: #247348;
+  --accent-strong: #1d5e3c;
+  --accent-soft: rgb(36 115 72 / 0.1);
+  --accent-ring: rgb(36 115 72 / 0.28);
+
+  --sema-success: #2a7a50;
+  --sema-success-soft: rgb(42 122 80 / 0.1);
+  --sema-warning: #9a6b16;
+  --sema-warning-soft: rgb(176 116 24 / 0.12);
+  --sema-error: #c23b2e;
+  --sema-error-soft: rgb(194 59 46 / 0.1);
+  --sema-info: #2f6bb5;
+  --sema-info-soft: rgb(47 107 181 / 0.1);
+
+  --sel-bg: rgb(36 115 72 / 0.12);
+  --sel-hover: rgb(25 31 28 / 0.05);
+  --sel-active: rgb(36 115 72 / 0.16);
+  --sel-outline-3d: #4f9cf7;
+  --sel-outline-glow: rgb(79 156 247 / 0.45);
+
+  --ctrl-bg: rgb(255 255 255 / 0.55);
+  --ctrl-bg-hover: rgb(255 255 255 / 0.85);
+  --ctrl-well: rgb(25 31 28 / 0.045);
+  --ctrl-border: rgb(25 31 28 / 0.16);
+  --track-fill: #247348;
+  --track-empty: rgb(25 31 28 / 0.1);
+
+  --overlay-scrim: rgb(21 26 23 / 0.32);
+  --viewport-bg: #d9ddd8; /* replaces hard-coded #d5d9d6 */
+  --viewport-grid: rgb(25 31 28 / 0.08);
+  --viewport-grid-strong: rgb(25 31 28 / 0.16);
+}
+
+:root[data-theme="dark"] {
+  --bg-base: #10130f;
+  --bg-raised-1: #171b17;
+  --bg-raised-2: #1d221d;
+  --bg-sunken: #0c0f0c;
+  --bg-dialog: #1a1f1a;
+
+  --glass-fill-1: rgb(24 29 24 / 0.66);
+  --glass-fill-2: rgb(30 36 30 / 0.8);
+  --glass-fill-3: rgb(34 40 34 / 0.9);
+  --glass-stroke: rgb(255 255 255 / 0.08);
+  --glass-spec: rgb(255 255 255 / 0.1);
+
+  --border-default: rgb(255 255 255 / 0.09);
+  --border-strong: rgb(255 255 255 / 0.18);
+  --border-focus: #6aaef7;
+
+  --text-primary: #e7ece7;
+  --text-secondary: #a3ada5;
+  --text-tertiary: #8b958d;
+  --text-disabled: rgb(231 236 231 / 0.36);
+  --text-on-accent: #ffffff;
+
+  --brand: #3fa06b;
+  --accent-primary: #3fa06b;
+  --accent-strong: #4cb57c;
+  --accent-soft: rgb(63 160 107 / 0.16);
+  --accent-ring: rgb(63 160 107 / 0.45);
+
+  --sema-success: #4cb57c;
+  --sema-success-soft: rgb(76 181 124 / 0.14);
+  --sema-warning: #e2a63d;
+  --sema-warning-soft: rgb(226 166 61 / 0.14);
+  --sema-error: #e2634f;
+  --sema-error-soft: rgb(226 99 79 / 0.14);
+  --sema-info: #7fb0e8;
+  --sema-info-soft: rgb(127 176 232 / 0.14);
+
+  --sel-bg: rgb(63 160 107 / 0.16);
+  --sel-hover: rgb(255 255 255 / 0.05);
+  --sel-active: rgb(63 160 107 / 0.22);
+  --sel-outline-3d: #6aaef7;
+  --sel-outline-glow: rgb(106 174 247 / 0.55);
+
+  --ctrl-bg: rgb(255 255 255 / 0.05);
+  --ctrl-bg-hover: rgb(255 255 255 / 0.1);
+  --ctrl-well: rgb(0 0 0 / 0.28);
+  --ctrl-border: rgb(255 255 255 / 0.14);
+  --track-fill: #3fa06b;
+  --track-empty: rgb(255 255 255 / 0.1);
+
+  --overlay-scrim: rgb(0 0 0 / 0.55);
+  --viewport-bg: #151a15;
+  --viewport-grid: rgb(255 255 255 / 0.06);
+  --viewport-grid-strong: rgb(255 255 255 / 0.12);
+}
+
+/* ============================================================
+ * Shared / theme-independent tokens (spec §3.1)
+ * ============================================================ */
+:root {
+  /* ---------- Type ---------- */
+  --t-xs: 10px;
+  --t-sm: 11px;
+  --t-md: 12px;
+  --t-base: 13px;
+  --t-lg: 14px;
+  --t-xl: 16px;
+  --t-2xl: 18px;
+  --t-mono-sm: 11px;
+  --t-mono-md: 12px;
+  --t-mono-lg: 14px;
+  --track-wide: 0.04em;
+  --track-num: -0.01em;
+
+  /* ---------- Shape ---------- */
+  --r-none: 0;
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 10px;
+  --r-pill: 999px;
+  --r-chamfer-sm: 4px;
+  --r-chamfer-lg: 14px;
+
+  /* ---------- Spacing (4px grid) ---------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+
+  /* ---------- Blur levels ---------- */
+  --blur-1: 16px;
+  --blur-2: 24px;
+  --blur-3: 32px;
+
+  /* ---------- Elevation ---------- */
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.05), 0 4px 12px rgb(0 0 0 / 0.06);
+  --shadow-2: 0 2px 4px rgb(0 0 0 / 0.06), 0 12px 28px rgb(0 0 0 / 0.1);
+  --shadow-3: 0 4px 8px rgb(0 0 0 / 0.08), 0 24px 48px rgb(0 0 0 / 0.16);
+  --shadow-inset-hi: inset 0 1px 0 rgb(255 255 255 / 0.55);
+  --shadow-inset-io: inset 0 0 0 1px rgb(255 255 255 / 0.08), inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+
+/* ============================================================
+ * shadcn semantic layer — consumes OUR tokens
+ * ============================================================ */
+:root {
+  --background: var(--bg-base);
+  --foreground: var(--text-primary);
+  --card: var(--glass-fill-1);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-dialog);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--accent-primary);
+  --primary-foreground: var(--text-on-accent);
+  --secondary: var(--bg-raised-2);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-raised-1);
+  --muted-foreground: var(--text-tertiary);
+  --accent: var(--accent-primary);
+  --accent-foreground: var(--text-on-accent);
+  --destructive: var(--sema-error);
+  --destructive-foreground: var(--text-on-accent);
+  --border: var(--border-default);
+  --input: var(--ctrl-border);
+  --ring: var(--accent-ring);
+  --radius: 6px;
+}
+
+/* ============================================================
+ * ALIAS-COMPAT BLOCK — legacy class names resolve (zero regression)
+ * ============================================================ */
+@layer base {
+  :root {
+    --bg: var(--bg-base);
+    --bg-panel: var(--bg-raised-1);
+    --bg-raised: var(--bg-raised-2);
+    --border: var(--border-default);
+    --text: var(--text-primary);
+    --text-dim: var(--text-secondary);
+    --accent: var(--accent-primary);
+    --danger: var(--sema-error);
+  }
+}
+
+/* ============================================================
+ * Component recipes (spec §3.4)
+ * ============================================================ */
+@layer components {
+  .glass-surface {
+    background: var(--glass-fill-1);
+    -webkit-backdrop-filter: blur(var(--blur-1)) saturate(1.15);
+    backdrop-filter: blur(var(--blur-1)) saturate(1.15);
+    border: 1px solid var(--glass-stroke);
+    box-shadow: var(--shadow-inset-hi), var(--shadow-1);
+  }
+}

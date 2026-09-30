@@ -39,7 +39,7 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
         dpr={[1, 2]}
         gl={{ preserveDrawingBuffer: true }}
       >
-        <color attach="background" args={["#d5d9d6"]} />
+        <color attach="background" args={["#d9ddd8"]} />
         <ambientLight intensity={0.55} />
         <directionalLight position={[80, 160, 120]} intensity={1} />
         <directionalLight position={[-100, 60, -60]} intensity={0.35} color="#9fb4ff" />

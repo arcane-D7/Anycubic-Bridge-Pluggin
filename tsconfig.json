@@ -16,7 +16,10 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./apps/editor/src/*"]
+    }
   },
   "include": [
     "apps/editor/src/**/*.ts",
