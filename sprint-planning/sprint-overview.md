@@ -1,6 +1,6 @@
 # Sprint Overview — Anycubic Bridge CAD Engine
 
-**Last updated:** 2026-09-29
+**Last updated:** 2026-09-30
 **Canonical source:** This file is the authoritative index for sprint status,
 ticket coverage, execution order, and roadmap.
 
@@ -69,21 +69,30 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
 
 ## Sprint Summary Table
 
-|   # | Priority | Focus                                                              | Tickets | Effort | Status     | Plan                          | Commit      |
-| --: | :------: | ------------------------------------------------------------------ | ------: | ------ | ---------- | ----------------------------- | ----------- |
-|   1 |    P1    | Robust in-browser CSG (three-bvh-csg)                              |       4 | M      | ✅ Done    | [sprint](sprint-1/sprint.md)  | `892f39d`   |
-|   2 |    P1    | Parametric engine (Manifold + Replicad)                            |       5 | L      | ✅ Done    | [sprint](sprint-2/sprint.md)  | `6739dfc`   |
-|   3 |    P1    | AI text-to-cad (prompt → parametric script → mesh)                 |       4 | L      | ✅ Done    | [sprint](sprint-3/sprint.md)  | `df28066`   |
-|   4 |    P2    | Electron packaging (plan-only)                                     |       3 | M      | ✅ Done    | [sprint](sprint-4/sprint.md)  | docs commit |
-|   5 |    P0    | Architecture + code quality (SOLID/DRY, boundaries, licenses)      |       6 | M      | ✅ Done    | [sprint](sprint-5/sprint.md)  | `c06dfd6`   |
-|   6 |    P0    | R0 foundation (Tauri 2 shell, broker, machine contract, schemas)   |       6 | L      | ✅ Done    | [sprint](sprint-6/sprint.md)  | `ee62574`   |
-|   7 |    P0    | R1 Blender-primary editing core (parity corpus, IPC, undo)         |       6 | XL     | ✅ Done    | [sprint](sprint-7/sprint.md)  | `9d89dd0`   |
-|   8 |    P0    | R2 own planar core (S1 spike, IR + independent validator, preview) |       5 | XL     | ✅ Done    | [sprint](sprint-8/sprint.md)  | `a11b7cb`   |
-|   9 |    P0    | R3 harness v1 (BYOK, WASI sandbox, tool lifecycle, journal, chat)  |       6 | XL     | ✅ Done    | [sprint](sprint-9/sprint.md)  | `549827e`   |
-|  10 |    P1    | R4 separable auth service + memory (fail-closed sync)              |       5 | L      | ⏳ Planned | [sprint](sprint-10/sprint.md) | —           |
-|  11 |    P1    | R5 non-planar S2 (curved-top, per-machine gates, coupon)           |       5 | XL     | ⏳ Planned | [sprint](sprint-11/sprint.md) | —           |
-|  12 |    P1    | R6 non-planar S3 conformal/field (paper study, OSQP, art gate)     |       5 | XL     | ⏳ Planned | [sprint](sprint-12/sprint.md) | —           |
-|  13 |    P2    | R7 T3b VM sandbox + S4 multi-axis research (catalog-profiled)      |       4 | L      | ⏳ Planned | [sprint](sprint-13/sprint.md) | —           |
+|    # | Priority | Focus                                                              | Tickets | Effort | Status     | Plan                            | Commit      |
+| ---: | :------: | ------------------------------------------------------------------ | ------: | ------ | ---------- | ------------------------------- | ----------- |
+|    1 |    P1    | Robust in-browser CSG (three-bvh-csg)                              |       4 | M      | ✅ Done    | [sprint](sprint-1/sprint.md)    | `892f39d`   |
+|    2 |    P1    | Parametric engine (Manifold + Replicad)                            |       5 | L      | ✅ Done    | [sprint](sprint-2/sprint.md)    | `6739dfc`   |
+|    3 |    P1    | AI text-to-cad (prompt → parametric script → mesh)                 |       4 | L      | ✅ Done    | [sprint](sprint-3/sprint.md)    | `df28066`   |
+|    4 |    P2    | Electron packaging (plan-only)                                     |       3 | M      | ✅ Done    | [sprint](sprint-4/sprint.md)    | docs commit |
+|    5 |    P0    | Architecture + code quality (SOLID/DRY, boundaries, licenses)      |       6 | M      | ✅ Done    | [sprint](sprint-5/sprint.md)    | `c06dfd6`   |
+|    6 |    P0    | R0 foundation (Tauri 2 shell, broker, machine contract, schemas)   |       6 | L      | ✅ Done    | [sprint](sprint-6/sprint.md)    | `ee62574`   |
+|    7 |    P0    | R1 Blender-primary editing core (parity corpus, IPC, undo)         |       6 | XL     | ✅ Done    | [sprint](sprint-7/sprint.md)    | `9d89dd0`   |
+|    8 |    P0    | R2 own planar core (S1 spike, IR + independent validator, preview) |       5 | XL     | ✅ Done    | [sprint](sprint-8/sprint.md)    | `a11b7cb`   |
+|    9 |    P0    | R3 harness v1 (BYOK, WASI sandbox, tool lifecycle, journal, chat)  |       6 | XL     | ✅ Done    | [sprint](sprint-9/sprint.md)    | `549827e`   |
+|  9.1 |    P0    | Design System (Tailwind v4 + shadcn, liquid glass, light/dark)     |       6 | M      | ⏳ Planned | [sprint](sprint-9-1/sprint.md)  | —           |
+| 9.1a |    P1    | Dock / Panel-Layout Foundation (floating detachable panels, chat)  |       5 | M      | ⏳ Planned | [sprint](sprint-9-1a/sprint.md) | —           |
+|  9.2 |    P0    | Real Geometry, Import & Scene Graph (kill unit boxes)              |       6 | L      | ⏳ Planned | [sprint](sprint-9-2/sprint.md)  | —           |
+|  9.3 |    P0    | Transform Controls, Numeric Inspector & Shortcuts (object control) |       5 | L      | ⏳ Planned | [sprint](sprint-9-3/sprint.md)  | —           |
+|  9.4 |    P0    | Plate, Auto-Arrange, Toolbar & View Presets                        |       6 | M      | ⏳ Planned | [sprint](sprint-9-4/sprint.md)  | —           |
+|  9.5 |    P0    | Slice / Preview / Print Flow (G25 close)                           |       6 | L      | ⏳ Planned | [sprint](sprint-9-5/sprint.md)  | —           |
+|  9.6 |    P1    | Presets, Object Properties, Undo Surface & Isolated Chat History   |       9 | M      | ⏳ Planned | [sprint](sprint-9-6/sprint.md)  | —           |
+|  9.7 |    P1    | Boolean Modeling, Snapping & Repair                                |       5 | M      | ⏳ Planned | [sprint](sprint-9-7/sprint.md)  | —           |
+|  9.8 |    P1    | Interaction Polish, Labels, Measure, i18n                          |       7 | M      | ⏳ Planned | [sprint](sprint-9-8/sprint.md)  | —           |
+|   10 |    P1    | R4 separable auth service + memory (fail-closed sync)              |       5 | L      | ⏳ Planned | [sprint](sprint-10/sprint.md)   | —           |
+|   11 |    P1    | R5 non-planar S2 (curved-top, per-machine gates, coupon)           |       5 | XL     | ⏳ Planned | [sprint](sprint-11/sprint.md)   | —           |
+|   12 |    P1    | R6 non-planar S3 conformal/field (paper study, OSQP, art gate)     |       5 | XL     | ⏳ Planned | [sprint](sprint-12/sprint.md)   | —           |
+|   13 |    P2    | R7 T3b VM sandbox + S4 multi-axis research (catalog-profiled)      |       4 | L      | ⏳ Planned | [sprint](sprint-13/sprint.md)   | —           |
 
 ## Finding Coverage Matrix
 
@@ -118,6 +127,11 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
 | Named-capability broker proxy to pinned workers (geometry capability; no raw Blender handle)                                                                                                     | 9              | S9-004                                                              | disposable AI-job sessions; hash-equality e2e                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | Continuous-learning journal v1 + deterministic safety box (retrieval/optimization/training gates; holdout by machine+material; shadow→bounded→promotion; clamp in validator; E-stop independent) | 9              | S9-005                                                              | structural impossibility test; journaled rejects; rollback atomic                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Chat UI v1 (context sources, token budget, approval cards, spend; injection posture)                                                                                                             | 9              | S9-006                                                              | approvals journaled (prompt/tool-args hashes); model has no direct printer capability                                                                                                                                                                                                                                                                                                                                                                               |
+| Floating detachable panel host (drag/snap/resize/collapse, R3F isolation, a11y non-modal)                                                                                                        | 9.1a           | S9.1a-001..004                                                      | purpose-built dock + motion; `pointer-events:none` overlay root; Radix Dialog `modal={false}`; localStorage `anycubic:dock-state:v1`                                                                                                                                                                                                                                                                                                                                |
+| Dock gate + motion license (MIT)                                                                                                                                                                 | 9.1a           | S9.1a-005                                                           | `check:licenses` admits motion; webview drag/snap over canvas verified                                                                                                                                                                                                                                                                                                                                                                                              |
+| Isolated multi-conversation chat history (per-conversation messages/context/approvals; wrap-only)                                                                                                | 9.6            | S9.6-006, S9.6-007                                                  | `state/chat-conversations.ts` wrapping `chat-core.ts`; `<ChatThread key={activeId}/>` remount + `setMessages` hydrate; sidebar + floating header list UI                                                                                                                                                                                                                                                                                                            |
+| Broker chat persistence lane (`%APPDATA%` env-resolved, atomic JSON + NDJSON deltas)                                                                                                             | 9.6            | S9.6-008                                                            | temp-file rename + corruption-safe replay; debounced 500ms + flush on close                                                                                                                                                                                                                                                                                                                                                                                         |
+| Broker AI-egress loopback `POST /chat` (AI SDK stream, BYOK keystore, CORS/CSP/ATS trio)                                                                                                         | 9.6            | S9.6-009                                                            | `useChat` + `DefaultChatTransport` → Rust broker; mock dev default; `check:architecture` zero provider URLs in webview                                                                                                                                                                                                                                                                                                                                              |
 | R4 separable auth service (local auth.db ↔ Postgres, build-time flag; editor zero auth dep)                                                                                                      | 10             | S10-001, S10-002                                                    | storage-agnostic API; anonymous local profile; migration path                                                                                                                                                                                                                                                                                                                                                                                                       |
 | OAuth external-browser + PKCE (RFC 8252); broker-held tokens; no desktop DB creds                                                                                                                | 10             | S10-003                                                             | loopback 127.0.0.1 only; token redaction test; tenant ≠ printer creds                                                                                                                                                                                                                                                                                                                                                                                               |
 | Global memory (provenance + scope + retention; forget=source+derived; fail-closed synced reads)                                                                                                  | 10             | S10-004                                                             | auth off → synced = empty + UI marker; memory never grants permissions                                                                                                                                                                                                                                                                                                                                                                                              |
@@ -144,13 +158,27 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
 ## Execution Order
 
 1. **Legacy (complete):** Sprint 1 → 2 → 3 → 4.
-2. **New roadmap (planned):** Sprint 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13,
+2. **New roadmap (planned):** Sprint 5 → 6 → 7 → 8 → 9 → 9.1 → 9.1a → 9.2 → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 → 10 → 11 → 12 → 13,
    strictly sequential — each new sprint depends only on earlier sprints:
    - Sprint 5 (architecture + code-quality foundations) is the **first** new sprint
      (user-approved "primeiro passo").
+   - **Sprints 9.1–9.8 (intermediate, user-requested 2026-09-30)** complete the local
+     system before Sprint 10: design system in **Tailwind v4 + shadcn + liquid glass** (9.1),
+     **dock/panel-layout foundation — floating detachable panels incl. chat (9.1a)**,
+     real geometry + import + scene graph (9.2), transform controls + inspector +
+     shortcuts (9.3), plate + arrange + toolbar + view presets (9.4), slice/preview/print
+     flow (9.5), presets + object properties + undo + **isolated conversation history +
+     broker AI loopback (9.6)**, boolean + snapping + repair (9.7), polish + labels +
+     measure + i18n (9.8). Source: `docs/ui-gap-audit-2026-09-30.md` + Consultor report
+     2026-09-30 (ronda 1 + ronda 2: Tailwind v4 + shadcn/ui + AI SDK + dockable chat).
    - Sprints 6–13 map R0–R7 of the investigation roadmap: R0 shell (6), R1
      editing core (7), R2 planar baseline (8), R3 harness (9), R4 auth/memory (10),
      R5 S2 (11), R6 S3 (12), R7 T3b + S4 research (13).
 3. Sprint 4 is plan-only (documentation + packaging checklist, no runnable Electron shell).
 4. **Completed so far (2026-09-29):** Sprints 5–9 delivered (R0–R3: foundation, editing
-   core, planar baseline, harness). Next active: **Sprint 10 (R4 auth + memory)**.
+   core, planar baseline, harness).
+5. **Next active (2026-09-30):** **Sprint 9.1 (Design System — Tailwind v4 + shadcn + liquid
+   glass)** — the user requested completing the full local UI system via intermediate sprints
+   before Sprint 10 (auth/db), with Mandate A (Tailwind v4 + shadcn/AI-SDK), Mandate B
+   (detachable floating Chat tab = Sprint 9.1a), Mandate C (isolated conversation history =
+   9.6) confirmed by Consultor ronda 2. Sprint 10 is planned but **not** the next active sprint.

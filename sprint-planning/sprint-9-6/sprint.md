@@ -1,0 +1,259 @@
+# Sprint 9.6 — Presets, Object Properties, Undo Surface & Isolated Chat History
+
+## Sprint Metadata
+
+| Field                 | Value                                                                                                                                                                                                                                                                                                           |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sprint Name**       | Slicer-expected presets, per-object overrides, journal-backed undo/redo UI + isolated conversation history (dockable chat)                                                                                                                                                                                      |
+| **Sprint Goal**       | P1 depth: printer/filament/quality presets the user expects in any slicer, per-object print settings, object placement columns, a real undo/redo surfaced from the S7-005 journal, AND the isolated multi-conversation chat with broker-backed persistence + local AI egress (Mandate C, Consultor ronda 2 §3). |
+| **Duration Estimate** | ~2 weeks                                                                                                                                                                                                                                                                                                        |
+| **Priority**          | P1                                                                                                                                                                                                                                                                                                              |
+| **Sprint Type**       | Feature                                                                                                                                                                                                                                                                                                         |
+| **Primary Owner**     | apps/editor (panels)                                                                                                                                                                                                                                                                                            |
+| **Source**            | Consultor report 2026-09-30 §2 (9.6) + audit G14/G20/G21/G22/G23/G30/G36 + Consultor ronda 2 §3 (chat)                                                                                                                                                                                                          |
+| **Depends On**        | Sprint 9.5 (slice consumes presets) + Sprint 9.1a (dock host)                                                                                                                                                                                                                                                   |
+| **Status**            | ⏳ Planned                                                                                                                                                                                                                                                                                                      |
+
+## ⚠️ MANDATORY COMPLETION REQUIREMENT
+
+> **MANDATORY: 100% of the tickets in this sprint MUST be completed. The sprint will
+> NOT be accepted as delivered if any ticket remains incomplete.**
+>
+> Every ticket must pass its acceptance criteria AND the full health check suite
+> (`pnpm run check` EXIT:0) before the sprint commit is made. Commit per ticket with
+> Conventional Commits (`feat(s9.6-001): …`). Sanitizer dry-run 0 files before every commit.
+
+## Sprint Goal Statement
+
+Depth the user expects in any slicer: printer presets dropdown (machine/nozzle/temps/flow from
+the catalog, `kobra-s1` still default), filament presets + color swatches (palette swatch UI,
+not bare numerics), quality presets (0.08/0.2/0.28 mm + custom). Per-object print settings +
+filament assignment (fork current object's settings; reset-to-parent). Object table gains
+placement columns (center x/y/z, footprint, volume — G14). Undo/redo: journal events render as
+a real timeline strip in the bottom panel with click-to-seek; Ctrl+Z/Y now operate the journal,
+not just soft-reflow.
+
+## Health Check Commands (must pass before commit)
+
+```bash
+pnpm run check
+node scripts/sanitize-repo.mjs --dry-run
+```
+
+## Tickets
+
+### S9.6-001 — Preset system
+
+| Field                | Value                                                                                              |
+| -------------------- | -------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S9.6-001                                                                                           |
+| **Title**            | Printer/filament/quality preset dropdowns + swatches (`state/presets.ts`, `components/Swatch.tsx`) |
+| **Priority**         | P1                                                                                                 |
+| **Type**             | Feature                                                                                            |
+| **Estimated Effort** | L                                                                                                  |
+| **Status**           | ⏳ Planned                                                                                         |
+
+#### Context
+
+G21/G22/G23. Read presets from the preserved catalog (`presets/catalog.json`) — **never
+hardcoded IDs**. Printer preset: machine/nozzle/temps/flow; filament: material + color swatch
+UI; quality: 0.08/0.2/0.28 + custom. `SettingsPanel.tsx` gains the dropdowns; Supports/Brim
+checkboxes flip from disabled to functional now that the pipeline is wired (still gated by
+watertight preflight).
+
+#### Acceptance criteria
+
+- [x] All three dropdowns populate from catalog; filament shows color swatches; custom quality editable.
+- [x] Selecting a preset writes the SettingsPanel draft state (export path unchanged).
+
+### S9.6-002 — Per-object print settings + filament assignment
+
+| Field                | Value                                          |
+| -------------------- | ---------------------------------------------- |
+| **Ticket ID**        | S9.6-002                                       |
+| **Title**            | Per-object settings fork + filament assignment |
+| **Priority**         | P1                                             |
+| **Type**             | Feature                                        |
+| **Estimated Effort** | M                                              |
+| **Status**           | ⏳ Planned                                     |
+
+#### Context
+
+G20. Per-object overrides fork the current global settings; reset-to-parent restores. Filament
+assignment per object (prepares G19 painting later). UI in the object detail section (right
+panel) with a clear "using global / overridden" indicator.
+
+#### Acceptance criteria
+
+- [x] Object override toggle works; reset-to-parent restores; slice honors per-object values.
+
+### S9.6-003 — Object placement columns
+
+| Field                | Value                                                                      |
+| -------------------- | -------------------------------------------------------------------------- |
+| **Ticket ID**        | S9.6-003                                                                   |
+| **Title**            | `panels/ObjectTree.tsx` placement columns: center x/y/z, footprint, volume |
+| **Priority**         | P1                                                                         |
+| **Type**             | Feature                                                                    |
+| **Estimated Effort** | M                                                                          |
+| **Status**           | ⏳ Planned                                                                 |
+
+#### Context
+
+G14. Columns for center x/y/z (mono tabular), footprint (width × depth), volume. Values come
+from the graph store + mesh bounds computed at import/transform time.
+
+#### Acceptance criteria
+
+- [x] Columns render real values, update on transform, sortable where sensible.
+
+### S9.6-004 — Journal undo/redo UI
+
+| Field                | Value                                                                                     |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S9.6-004                                                                                  |
+| **Title**            | `panels/Timeline.tsx` journal strip (S7-005) with click-to-seek; Ctrl+Z/Y operate journal |
+| **Priority**         | P1                                                                                        |
+| **Type**             | Feature                                                                                   |
+| **Estimated Effort** | L                                                                                         |
+| **Status**           | ⏳ Planned                                                                                |
+
+#### Context
+
+G30. Journal events render as a filmstrip in the bottom panel: commit glyphs + delta chips
+(`+move`, `+bool`), mono timestamps, click-to-seek (restore authoritative snapshot at revision).
+Ctrl+Z/Y now drive the journal instead of soft reflow (upgrading the 9.3 soft hooks).
+
+#### Acceptance criteria
+
+- [x] Journal strip lists real events with delta chips; click-to-seek restores the revision.
+- [x] Ctrl+Z/Y step the journal; redo works until head; seek on the strip syncs undo state.
+
+### S9.6-005 — Multi-conversation chat store
+
+| Field                | Value                                                                                     |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S9.6-005                                                                                  |
+| **Title**            | `state/chat-conversations.ts`: conversations store wrapping `state/chat-core.ts` (S9-006) |
+| **Priority**         | P1                                                                                        |
+| **Type**             | Feature                                                                                   |
+| **Estimated Effort** | L                                                                                         |
+| **Status**           | ⏳ Planned                                                                                |
+
+#### Context
+
+Mandate C: cada conversa tem **histórico isolado**. `state/chat-conversations.ts` WRAPS
+`state/chat-core.ts` — `contextSources`, `tokenBudget`, `approvals` ficam intactos como payload
+por conversa. `interface Conversation { id; title; messages: UIMessage[]; contextSources; tokenBudget; approvals; createdAt; updatedAt; revision }`.
+Store: `conversations: Record<string,Conversation>`, `activeId`, create/switch/rename/delete,
+`upsertMessages`. Mount per active: `<ChatThread key={activeId}/>` remount + hydrate via
+`setMessages(convo.messages)` + snapshot back in `onFinish`/on switch. The store is the source
+of truth — do NOT rely on `useChat`'s id-keyed localStorage persistence. Offline mock:
+`bridge/mock.ts` exports a `ChatTransport` (canned UIMessageStream) as dev default; broker lane
+on `ANYCUBIC_BROKER_URL` env.
+
+#### Acceptance criteria
+
+- [x] create/switch/rename/delete conversations; per-conversation messages/contextSources/tokenBudget/approvals; `ChatThread` keyed-remount + `setMessages` hydrate.
+- [x] `state/chat-core.ts` untouched (wrap-only); `chat-conversations.ts` has unit tests.
+
+### S9.6-006 — Conversation list UI
+
+| Field                | Value                                                                                                                   |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S9.6-006                                                                                                                |
+| **Title**            | List UI: sidebar slice + docked-header Popover (create/switch/rename/delete, dirty dot, token budget bar, source count) |
+| **Priority**         | P1                                                                                                                      |
+| **Type**             | Feature                                                                                                                 |
+| **Estimated Effort** | M                                                                                                                       |
+| **Status**           | ⏳ Planned                                                                                                              |
+
+#### Context
+
+Sidebar Chat slice lists conversations; a `Popover` on the floating panel header (9.1a) adds
+quick-switch. Each row: title, dirty dot (unsaved), mono token-budget bar, "uses context:
+N sources · M approvals". Wire into the 9.1a dock for both docked and floating states.
+
+#### Acceptance criteria
+
+- [x] List + create/switch/rename/delete in sidebar and floating header; dirty dot; token bar; works docked and floating.
+
+### S9.6-007 — Broker chat-store persistence lane
+
+| Field                | Value                                                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S9.6-007                                                                                                                              |
+| **Title**            | Broker filesystem lane: `GET/PUT <APPDATA>/anycubic-bridge/chat/<id>.json` (env-resolved, debounced, corruption-safe) + NDJSON deltas |
+| **Priority**         | P1                                                                                                                                    |
+| **Type**             | Feature                                                                                                                               |
+| **Estimated Effort** | L                                                                                                                                     |
+| **Status**           | ⏳ Planned                                                                                                                            |
+
+#### Context
+
+Persistence via **Rust broker filesystem lane** (machine-agnostic): path resolved from
+`ANYCUBIC_CHAT_DIR` env, default `%APPDATA%/anycubic-bridge/chat/` (never repo-relative,
+never real-user paths). `GET/PUT chat/<id>.json` (write via temp-file + rename, corruption-safe
+read with fallback to last good NDJSON replay). Append-only `<id>.ndjson` deltas per conversation
+(S7-005 journal-style). Debounced 500ms writes + flush on close.
+
+#### Acceptance criteria
+
+- [x] Conversations persist across restarts; writes atomic + corruption-safe; deltas replayed to recover;
+- [x] Env-resolved path honored; no repo literals; unit-tested round-trip.
+
+### S9.6-008 — Broker AI-egress loopback (`POST /chat`, AI SDK stream)
+
+| Field                | Value                                                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Ticket ID**        | S9.6-008                                                                                                                        |
+| **Title**            | Broker loopback `POST /chat` implementing AI SDK UI stream protocol; pinned-egress AirRouter/local; BYOK keystore; CORS+CSP+ATS |
+| **Priority**         | P1                                                                                                                              |
+| **Type**             | Feature                                                                                                                         |
+| **Estimated Effort** | L                                                                                                                               |
+| **Status**           | ⏳ Planned                                                                                                                      |
+
+#### Context
+
+Validated architecture (Consultor ronda 2 §4): **client-side `useChat` + explicit transport →
+Rust broker loopback HTTP endpoint**. Broker does pinned-egress streaming to AirRouter/local
+models with keystore-held keys (S9-001 BYOK). API: `import { useChat } from '@ai-sdk/react';` +
+`new DefaultChatTransport({ api: BROKER_CHAT_URL })`. Phase 1: text parts; Phase 2: typed
+parts tool cards.
+
+**Tauri networking trio** (must pass in the real webview):
+
+1. **CORS** — broker answers `Access-Control-Allow-Origin` for dev `http://127.0.0.1:1420` and
+   prod `tauri://localhost` (Vite proxy `/chat`→broker as dev alternative);
+2. **CSP** — `tauri.conf.json` `app.security.csp` adds `connect-src ... http://127.0.0.1:* http://localhost:*`;
+3. **macOS ATS** — `NSAllowsLocalNetworking` in Info.plist.
+
+Mock transport is dev default; broker lane switches on `ANYCUBIC_BROKER_URL` env. WebView2 /
+WebKitGTK support streaming fetch POST. **No provider URLs / egress in webview code**
+(`check:architecture` invariant).
+
+#### Acceptance criteria
+
+- [x] `POST /chat` streams AI SDK UI protocol over the broker lane; mock works offline (dev default).
+- [x] CORS dev+prod, CSP `connect-src`, macOS ATS all verified; keystore-held keys (BYOK) — no clear-text keys in repo.
+- [x] `check:architecture` passes: zero provider URLs/egress in webview code.
+
+### S9.6-009 — Gate + sanitizer (extended)
+
+| Field                | Value                                                              |
+| -------------------- | ------------------------------------------------------------------ |
+| **Ticket ID**        | S9.6-009                                                           |
+| **Title**            | Full gate EXIT:0 + sanitizer 0 + chat persistence/round-trip tests |
+| **Priority**         | P0                                                                 |
+| **Type**             | Quality                                                            |
+| **Estimated Effort** | S                                                                  |
+| **Status**           | ⏳ Planned                                                         |
+
+#### Context
+
+`pnpm run check` + unit tests for presets + journal seek + chat store + persistence round-trip;
+sanitizer 0; commit closes sprint.
+
+#### Acceptance criteria
+
+- [x] `pnpm run check` EXIT:0; sanitizer 0; commit closes the sprint.
