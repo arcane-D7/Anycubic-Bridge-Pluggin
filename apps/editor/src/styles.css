@@ -869,6 +869,153 @@ input {
   color: var(--text);
   background: var(--bg-panel);
 }
+
+/* S9.2-005 — import dialog + drag-drop surface */
+.import-dialog {
+  gap: 12px;
+}
+
+.import-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.import-browse {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px dashed var(--ctrl-border);
+  border-radius: 6px;
+  background: var(--ctrl-well);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.import-browse:hover:not(:disabled) {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.import-preview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--ctrl-well);
+}
+
+.import-preview dt {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+}
+
+.import-preview dd {
+  margin: 2px 0 0;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.import-dims {
+  font-size: 11px;
+}
+
+.import-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.import-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.import-option input {
+  accent-color: var(--accent-primary);
+}
+
+.import-error {
+  margin: 0;
+  color: var(--danger, #cf4a3a);
+  font-size: 12px;
+}
+
+.import-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.import-cancel,
+.import-commit {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.import-cancel {
+  border: 1px solid var(--ctrl-border);
+  background: var(--ctrl-bg);
+  color: var(--text-secondary);
+}
+
+.import-commit {
+  border: 1px solid transparent;
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.import-commit:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.viewport-frame.import-dragging {
+  outline: 2px dashed var(--accent-primary);
+  outline-offset: -6px;
+}
+
+.viewport-drop-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 10px 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--glass-fill-1);
+  backdrop-filter: blur(8px);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  z-index: 20;
+}
 @media (max-width: 760px) {
   .app-header {
     flex-wrap: wrap;

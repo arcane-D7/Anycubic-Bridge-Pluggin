@@ -1,9 +1,11 @@
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type * as THREE from "three";
 import type { BridgeHandle } from "../bridge/mock";
 import type { BuildVolume } from "../bridge/types";
+import { useImportCommit } from "../bridge/import-actions";
+import { classifyFile } from "../bridge/import-core";
 import { BuildPlate } from "./BuildPlate";
 import { LayerPreview, previewFit } from "./LayerPreview";
 import { ModalInteraction } from "./ModalInteraction";
@@ -168,6 +170,10 @@ function FitCamera({ radius }: { readonly radius: number }) {
  * flows are usable without leaving the canvas. The live bridge handle is the
  * contract subject — the interaction strip subscribes to commit events (AC-1)
  * and issues begin→update→commit|cancel against it (AC-2).
+ *
+ * S9.2-005: the frame is also a drag-drop import surface (entry point #2).
+ * Dragging an .stl/.3mf onto the viewport imports it through the same
+ * `useImportCommit` path as the dialog (entry point #1).
  */
 function ViewportFrame({
   bridge,
@@ -176,10 +182,55 @@ function ViewportFrame({
   readonly bridge: BridgeHandle | undefined;
   readonly children: React.ReactNode;
 }) {
+  const { commitFile } = useImportCommit(bridge);
+  const [dragActive, setDragActive] = useState(false);
+  const depth = useRef(0);
+
+  const onDragEnter = (e: React.DragEvent) => {
+    const file = e.dataTransfer?.files?.[0];
+    if (!file || !classifyFile(file.name)) return;
+    e.preventDefault();
+    depth.current += 1;
+    setDragActive(true);
+  };
+  const onDragOver = (e: React.DragEvent) => {
+    const file = e.dataTransfer?.files?.[0];
+    if (!file || !classifyFile(file.name)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+  const onDragLeave = (_e: React.DragEvent) => {
+    depth.current = Math.max(0, depth.current - 1);
+    if (depth.current === 0) setDragActive(false);
+  };
+  const onDrop = (e: React.DragEvent) => {
+    const file = e.dataTransfer?.files?.[0];
+    e.preventDefault();
+    depth.current = 0;
+    setDragActive(false);
+    if (!file) return;
+    if (!classifyFile(file.name)) {
+      return; // non-importable — leave the drag alone
+    }
+    void commitFile(file, { center: true, orientFlat: true });
+  };
+
   return (
-    <section className="viewport-frame">
+    <section
+      className={`viewport-frame${dragActive ? " import-dragging" : ""}`}
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      data-testid="viewport-frame"
+    >
       {children}
       <ModalInteraction bridge={bridge} />
+      {dragActive ? (
+        <div className="viewport-drop-hint" data-testid="viewport-drop-hint" role="status">
+          Drop to import
+        </div>
+      ) : null}
     </section>
   );
 }

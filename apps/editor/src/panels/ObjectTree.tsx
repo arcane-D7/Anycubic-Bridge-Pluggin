@@ -29,6 +29,8 @@ import { useScene } from "../state/scene";
 
 interface ObjectTreeProps {
   readonly scene: BridgeHandle | undefined;
+  /** S9.2-005: footer Add opens the import dialog (entry point #1). */
+  readonly onOpenImport: () => void;
 }
 
 function fmtCount(n: number): string {
@@ -41,7 +43,7 @@ function metaOf(o: SceneObjectSnapshot): string {
   return `${fmtCount(o.triangles)} tri · ${fmtCount(o.vertices)} vtx`;
 }
 
-export function ObjectTree({ scene }: ObjectTreeProps) {
+export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
   const queryClient = useQueryClient();
   const objects = useScene((s) => s.objects);
   const selectedNames = useScene((s) => s.selectedNames);
@@ -282,6 +284,7 @@ export function ObjectTree({ scene }: ObjectTreeProps) {
           title="Add object (import)"
           data-testid="object-add"
           disabled={!scene}
+          onClick={onOpenImport}
         >
           <Icon name="plus" size={14} /> Add
         </button>

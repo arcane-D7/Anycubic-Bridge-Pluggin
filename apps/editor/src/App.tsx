@@ -6,6 +6,7 @@ import { parseIrDocument } from "./bridge/ir";
 import type { SlicingMode } from "./contract";
 import { PanelDivider } from "./layout/PanelDivider";
 import { ChatPanel } from "./panels/ChatPanel";
+import { ImportDialog } from "./panels/ImportDialog";
 import { ObjectTree } from "./panels/ObjectTree";
 import { Timeline } from "./panels/Timeline";
 import { SettingsPanel } from "./panels/SettingsPanel";
@@ -83,6 +84,8 @@ export function App() {
   const [sidebarView, setSidebarView] = useState<"settings" | "objects" | "chat">("settings");
   const [workspaceView, setWorkspaceView] = useState<"prepare" | "preview">("prepare");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  // S9.2-005: import dialog (footer Add entry point).
+  const [importOpen, setImportOpen] = useState(false);
   const [previewIr, setPreviewIr] = useState<IrDocument | null>(null);
   const [irError, setIrError] = useState<string | null>(null);
   const loadSeq = useRef(0);
@@ -212,7 +215,9 @@ export function App() {
           <div hidden={sidebarView !== "settings"}>
             <SettingsPanel profile={operatorProfile} onProfileChange={setOperatorProfile} />
           </div>
-          {sidebarView === "objects" ? <ObjectTree scene={scene} /> : null}{" "}
+          {sidebarView === "objects" ? (
+            <ObjectTree scene={scene} onOpenImport={() => setImportOpen(true)} />
+          ) : null}{" "}
           {sidebarView === "chat" ? <ChatPanel /> : null}
           <section className="panel-section" aria-label="IR preview loader">
             <header className="panel-title">IR preview</header>
@@ -307,6 +312,7 @@ export function App() {
       <OverlayRoot>
         <DockPanel />
       </OverlayRoot>
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} scene={scene} />
     </div>
   );
 }

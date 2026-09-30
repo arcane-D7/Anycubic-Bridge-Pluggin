@@ -26,6 +26,7 @@ export type IconName =
   | "lock"
   | "eye"
   | "measure"
+  | "folder"
   | "snap"
   | "grid"
   | "redo"
@@ -143,6 +144,15 @@ const PATHS: Record<IconName, ReactNode> = {
     <>
       <circle cx="8" cy="8" r="5.5" />
       <circle cx="8" cy="8" r="1" />
+    </>
+  ),
+  folder: (
+    <>
+      <path
+        d="M2.5 4.5v8a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-4.4L6.3 4a1 1 0 0 0-.8-.4H3.5a1 1 0 0 0-1 1z"
+        strokeLinejoin="round"
+      />
+      <path d="M2.5 7h11" strokeLinecap="round" />
     </>
   ),
   grid: (
