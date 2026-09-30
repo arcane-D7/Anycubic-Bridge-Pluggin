@@ -1,13 +1,12 @@
-:root {
-  --bg: #e5e7e6;
-  --bg-panel: #f4f5f3;
-  --bg-raised: #e9ece8;
-  --border: #ced3ce;
-  --text: #272e2c;
-  --text-dim: #606962;
-  --accent: #247348;
-  --danger: #a53c32;
-}
+/*
+ * LEGACY stylesheet — kept as the layout/component layer for existing
+ * features (Sprint 9.1 rule: zero visual regression in legacy classes).
+ * Design tokens live in src/index.css (Tailwind v4 + data-theme sets) and
+ * are the single source of truth; this file only CONSUMES them via the
+ * alias block (--bg, --bg-panel, --border, --text, --accent, --danger).
+ * Specifically: do NOT redefine :root var() values here or they would
+ * override the theme-specific sets from index.css.
+ */
 
 * {
   box-sizing: border-box;
@@ -41,8 +40,12 @@ body,
   align-items: center;
   gap: 12px;
   padding: 8px 14px;
-  background: var(--bg-panel);
-  border-bottom: 1px solid var(--border);
+  /* Liquid glass (S9.1-003): frosted fill-1 + blur-1 + hairline + specular. */
+  background: var(--glass-fill-1);
+  -webkit-backdrop-filter: blur(var(--blur-1)) saturate(1.15);
+  backdrop-filter: blur(var(--blur-1)) saturate(1.15);
+  border-bottom: 1px solid var(--glass-stroke);
+  box-shadow: var(--shadow-inset-hi);
 }
 
 .app-brand {
@@ -66,10 +69,13 @@ body,
 .panel-right {
   flex-shrink: 0;
   width: var(--left-panel-size, 280px);
-  background: var(--bg-panel);
-  border-right: 1px solid var(--border);
+  background: var(--glass-fill-1);
+  -webkit-backdrop-filter: blur(var(--blur-1)) saturate(1.15);
+  backdrop-filter: blur(var(--blur-1)) saturate(1.15);
+  border-right: 1px solid var(--glass-stroke);
   overflow: auto;
   min-width: 0;
+  box-shadow: var(--shadow-inset-hi);
 }
 
 .panel-right {
@@ -117,8 +123,11 @@ body,
 
 .app-footer {
   height: var(--bottom-panel-size, 180px);
-  border-top: 1px solid var(--border);
-  background: var(--bg-panel);
+  border-top: 1px solid var(--glass-stroke);
+  background: var(--glass-fill-1);
+  -webkit-backdrop-filter: blur(var(--blur-1)) saturate(1.15);
+  backdrop-filter: blur(var(--blur-1)) saturate(1.15);
+  box-shadow: var(--shadow-inset-hi);
   overflow: auto;
 }
 
@@ -489,9 +498,16 @@ code {
   gap: 10px;
   max-width: calc(100% - 24px);
   padding: 6px 10px;
-  background: rgba(244, 245, 243, 0.96);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  /* Floating tool (S9.1-003): fill-2/blur-2 + strong inner hairline. */
+  background: var(--glass-fill-2);
+  -webkit-backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  border: 1px solid var(--glass-stroke);
+  box-shadow:
+    var(--shadow-inset-hi),
+    inset 0 0 0 1px var(--border-strong),
+    var(--shadow-2);
+  border-radius: var(--r-lg);
   font-size: 11px;
   color: var(--text-dim);
 }
