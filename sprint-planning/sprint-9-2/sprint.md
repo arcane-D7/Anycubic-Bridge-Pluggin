@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport + scene)                                                                                              |
 | **Source**            | Consultor report 2026-09-30 §2 (9.2) + audit G1/G4/G5/G6/G10/G34/G41                                                        |
 | **Depends On**        | Sprint 9.1 (tokens)                                                                                                         |
-| **Status**            | ⏳ Planned                                                                                                                  |
+| **Status**            | 🔄 In Progress — 1/6 tickets done (S9.2-001), gate EXIT:0 per ticket                                                        |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -52,7 +52,7 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Priority**         | P0                                                                              |
 | **Type**             | Feature                                                                         |
 | **Estimated Effort** | L                                                                               |
-| **Status**           | ⏳ Planned                                                                      |
+| **Status**           | ✅ Done                                                                         |
 
 #### Context
 
@@ -66,6 +66,22 @@ functions with the S7-002 framed modal contract (begin→update→commit) where 
 - [x] `GET /objects` shape unchanged; new geometry fields + CRUD lanes added behind it.
 - [x] New `bridge/import.ts` parses STL (binary+ASCII) / 3MF into triangle buffers (units mm).
 - [x] Existing tests referencing the frozen shape pass unchanged.
+
+#### Implementation notes
+
+- `import.ts` is a pure module (no three.js) so Node runs it headless. `parseStl` detects
+  binary via declared–length match, falls back to ASCII when the header is printable.
+  `parseThreemf` scans the zip central directory, raw-inflates the `.model` part with a
+  hand-rolled fixed/dynamic Huffman decoder (verified byte-for-byte against `node:zlib`
+  `deflateRawSync`), rejects non-mm units (`THREEMF_UNIT`), and captures the first object
+  mesh (`THREEMF_NO_MESHES` / `THREEMF_EMPTY` otherwise). `isWatertight` is edge-based
+  (every edge shared exactly 2×) so it works on per-triangle repacked buffers.
+- Debug findings: the test zip builder wrote the compression method at the wrong central
+  header offset, making the parser treat deflated data as stored — fixed in the fixture.
+- `mock.ts` now serves real cone/cube/sphere geometry (mm) with `let sceneObjects` and the
+  `mutateObject` CRUD lane (add/remove/rename/duplicate/toggleVisible/toggleLock/
+  setTransform/commitObject) returning authoritative `objects` or `{ok:false}` error.
+- 10/10 `tests/import-parser.test.mjs` green; full gate EXIT:0; commit `6e2be6f`.
 
 ### S9.2-002 — Scene graph store
 
