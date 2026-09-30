@@ -59,18 +59,21 @@ export function FloatingPanelHost({
         const startX = e.clientX;
         const startY = e.clientY;
         const startRect = panel.rect;
+        // Track the resized rect in a closure so `up` commits the final
+        // (not the stale store) value.
+        let cur = { ...startRect };
         setInlineRect({ w: startRect.w, h: startRect.h });
 
         const move = (ev: PointerEvent) => {
           const dw = (ev.clientX - startX) / window.innerWidth;
           const dh = (ev.clientY - startY) / window.innerHeight;
-          setInlineRect({ w: startRect.w + dw, h: startRect.h + dh });
+          cur = { ...startRect, w: startRect.w + dw, h: startRect.h + dh };
+          setInlineRect({ w: cur.w, h: cur.h });
         };
         const up = () => {
           window.removeEventListener("pointermove", move);
           window.removeEventListener("pointerup", up);
-          const r = useDock.getState().panels[id].rect;
-          setPanelRect(id, { ...r });
+          setPanelRect(id, cur);
           setInlineRect(null);
         };
         window.addEventListener("pointermove", move);
@@ -151,6 +154,12 @@ export function FloatingPanelHost({
         // Ladder: baseline --z-panel (40) + focus-bumps keep us in the panel band (< dialog 50 / toast 60).
         zIndex: `calc(var(--z-panel) + ${panel.z - 1})`,
       }}
+      // Drag uses setPointerCapture: Radix modal={false} fires pointerdown-
+      // outside as soon as the pointer is captured, which would collapse the
+      // panel the moment you grab the header. Pointer-based interaction is
+      // owned by the drag/resize handlers, so dismiss stays Esc/API-only.
+      onPointerDownOutside={(e) => e.preventDefault()}
+      onInteractOutside={(e) => e.preventDefault()}
       onPointerDown={onPointerDown}
       onFocusCapture={() => focusPanel(id)}
       onKeyDown={handleKeyDown}

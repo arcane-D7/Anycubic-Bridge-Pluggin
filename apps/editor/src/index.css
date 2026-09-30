@@ -513,10 +513,9 @@
     pointer-events: none;
   }
   #overlay-root > * {
+    /* wrapper .overlay-root inherits none — specific chrome opts back in
+     * with pointer-events: auto on its own class (see below). */
     pointer-events: none;
-  }
-  #overlay-root > .floating-panel-host {
-    pointer-events: auto;
   }
 }
 
@@ -558,6 +557,9 @@
     color: var(--text-primary);
     overflow: hidden;
     will-change: transform;
+    /* Opts back into the input path — the overlay wrapper is pointer-events:
+       none so the R3F canvas keeps events wherever the panel rect isn't. */
+    pointer-events: auto;
   }
 
   .floating-header {
@@ -699,6 +701,8 @@
     color: var(--text-primary);
     font-size: var(--t-md);
     cursor: pointer;
+    /* Also inside the overlay wrapper — opts back into the input path. */
+    pointer-events: auto;
   }
   .dock-pill:hover {
     background: var(--glass-fill-3);

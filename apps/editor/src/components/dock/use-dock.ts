@@ -11,7 +11,12 @@ import { useDock, type PanelId } from "../../state/dock";
  */
 
 export interface DockDragHandlers {
-  onPointerDown: (e: { pointerId: number; clientX: number; clientY: number }) => void;
+  onPointerDown: (e: {
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    target: EventTarget | null;
+  }) => void;
 }
 
 export function useDockDrag(id: PanelId) {
@@ -21,9 +26,19 @@ export function useDockDrag(id: PanelId) {
   const elRef = useRef<HTMLElement | null>(null);
 
   /** Anchor the drag: element must already be positioned via store rect. */
-  function onPointerDown(e: { pointerId: number; clientX: number; clientY: number }) {
+  function onPointerDown(e: {
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    target: EventTarget | null;
+  }) {
     const el = elRef.current;
     if (!el) return;
+    // Only drag when grabbing the header bar itself, not its buttons
+    // (dock/collapse) — setPointerCapture redirects pointerup+click to the
+    // captured element, which would swallow button clicks.
+    const target = e.target as HTMLElement | null;
+    if (target && target.closest("button, a, input, textarea, select, [data-resize]")) return;
     startRef.current = { x: e.clientX, y: e.clientY };
     el.setPointerCapture?.(e.pointerId);
   }
