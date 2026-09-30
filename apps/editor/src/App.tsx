@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchSceneSnapshot } from "./bridge/mock";
 import type { IrDocument } from "./bridge/ir";
 import { parseIrDocument } from "./bridge/ir";
@@ -15,6 +15,9 @@ import { Viewport } from "./viewport/Viewport";
 import { resolveNonPlanarEligibility } from "./profile/capabilities";
 import { useOperatorProfile } from "./profile/useOperatorProfile";
 import { ThemeToggle } from "./components/theme-toggle";
+import { StatusBar } from "./components/status-bar";
+import { ToastViewport } from "./components/toast-viewport";
+import { useUi } from "./state/ui";
 
 /**
  * Editor shell — single-window, resizable panels per §7.2:
@@ -31,7 +34,23 @@ import { ThemeToggle } from "./components/theme-toggle";
 const QUERY_KEY = ["bridge", "scene"] as const;
 const MAX_IR_FILE_BYTES = 20 * 1024 * 1024;
 
+/** Single demo toast on boot so the bus is visibly alive (S9.1-005 AC). */
+function useDemoToast() {
+  const pushToast = useUi((s) => s.pushToast);
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      pushToast({
+        kind: "info",
+        title: "Ready",
+        message: "Liquid-glass shell initialized.",
+      });
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [pushToast]);
+}
+
 export function App() {
+  useDemoToast();
   const sceneQuery = useQuery({
     queryKey: QUERY_KEY,
     queryFn: fetchSceneSnapshot,
@@ -244,6 +263,7 @@ export function App() {
         onSizeChange={setBottomSize}
       />
       <footer className="app-footer">
+        <StatusBar scene={scene} buildVolume={operatorProfile.buildVolume ?? undefined} />
         <Timeline
           scene={scene}
           mode={mode}
@@ -257,6 +277,7 @@ export function App() {
           }
         />
       </footer>
+      <ToastViewport />
     </div>
   );
 }

@@ -382,3 +382,120 @@
     height: 36px;
   }
 }
+
+/* ============================================================
+ * Toast bus (S9.1-005) — top-right stacked, fill-3/blur-3, LED
+ * ============================================================ */
+@layer components {
+  .toast-viewport {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: min(320px, calc(100vw - 24px));
+    pointer-events: none;
+  }
+  .toast-viewport.empty {
+    display: none;
+  }
+
+  .toast-card {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--glass-fill-3);
+    -webkit-backdrop-filter: blur(var(--blur-3)) saturate(1.15);
+    backdrop-filter: blur(var(--blur-3)) saturate(1.15);
+    border: 1px solid var(--glass-stroke);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-inset-hi), var(--shadow-3);
+    color: var(--text-primary);
+    font-size: var(--t-base);
+    animation: toast-in var(--transition-medium) var(--ease-out);
+  }
+
+  .toast-led {
+    flex: 0 0 8px;
+    width: 8px;
+    height: 8px;
+    margin-top: 5px;
+    border-radius: var(--r-pill);
+    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 0%, transparent);
+  }
+
+  .toast-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .toast-title {
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .toast-message {
+    color: var(--text-secondary);
+    font-size: var(--t-md);
+    line-height: 1.35;
+  }
+
+  .toast-dismiss {
+    flex: 0 0 auto;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    font-size: 14px;
+    line-height: 1;
+    padding: 2px 4px;
+    cursor: pointer;
+    border-radius: var(--r-sm);
+  }
+  .toast-dismiss:hover {
+    color: var(--text-primary);
+    background: var(--sel-hover);
+  }
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* ============================================================
+ * Status bar (S9.1-005) — 28px strip, mono tabular-nums
+ * ============================================================ */
+@layer components {
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 14px;
+    font-size: var(--t-md);
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--glass-stroke);
+    background: var(--glass-fill-1);
+  }
+
+  .status-item {
+    white-space: nowrap;
+  }
+
+  .status-sep {
+    opacity: 0.5;
+  }
+}
