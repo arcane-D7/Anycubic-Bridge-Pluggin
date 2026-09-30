@@ -147,41 +147,165 @@ body,
   font-size: 12px;
 }
 
-/* Object tree */
+/* Object tree (S9.2-004) */
 .object-list {
   list-style: none;
   margin: 0;
-  padding: 6px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .object-item {
   display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 8px;
+  align-items: center;
+  gap: 2px;
+  height: 32px;
+  max-height: 32px; /* ≤32px row density (AC) */
+  padding: 0 6px;
   border-radius: 4px;
   cursor: pointer;
+  border-left: 2px solid transparent; /* accent rail space */
+  color: var(--text-primary);
 }
 
 .object-item:hover {
-  background: var(--bg-raised);
+  background: var(--sel-hover);
 }
 
 .object-item.selected {
-  background: rgba(79, 156, 247, 0.16);
-  outline: 1px solid var(--accent);
+  background: var(--sel-bg);
+  border-left-color: var(--accent-primary);
+}
+
+.object-item.anchor:not(.selected) {
+  background: var(--sel-hover);
+}
+
+.object-item.hidden-obj {
+  opacity: 0.45;
+}
+
+.object-item.locked {
+  cursor: default;
+}
+
+.object-item.locked .object-name {
+  color: var(--text-secondary);
+}
+
+.obj-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.obj-action:hover {
+  background: var(--ctrl-bg-hover);
+  color: var(--text-primary);
+}
+
+.obj-action[aria-pressed="true"] {
+  color: var(--accent-primary);
+}
+
+.obj-eye {
+  order: 0;
+}
+
+.obj-lock {
+  order: 1;
 }
 
 .object-name {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  order: 2;
+}
+
+.obj-rename {
+  flex: 1 1 auto;
+  min-width: 0;
+  order: 2;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid var(--border-focus);
+  border-radius: 4px;
+  background: var(--ctrl-well);
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
 }
 
 .object-meta {
-  color: var(--text-dim);
-  font-size: 11px;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-family: var(--font-mono, ui-monospace, "Cascadia Mono", monospace);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  order: 3;
+  padding-left: 6px;
+}
+
+.obj-more {
+  order: 4;
+  width: 20px;
+  height: 20px;
+  opacity: 0;
+}
+
+.object-item:hover .obj-more,
+.object-item.selected .obj-more {
+  opacity: 1;
+}
+
+/* Footer actions */
+.object-footer {
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
+  background: var(--glass-fill-1);
+}
+
+.obj-footer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--ctrl-border);
+  border-radius: 4px;
+  background: var(--ctrl-bg);
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.obj-footer-btn:hover:not(:disabled) {
+  background: var(--ctrl-bg-hover);
+  color: var(--text-primary);
+}
+
+.obj-footer-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* Chat harness v1 (S9-006) */

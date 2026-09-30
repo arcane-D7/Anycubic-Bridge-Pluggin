@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import type { BridgeHandle } from "../bridge/mock";
+import { useScene } from "../state/scene";
 import { useViewport } from "../state/viewport";
 import { checkRendererSnapshotConsistency } from "../state/viewport-core";
 
@@ -20,17 +21,17 @@ export function RendererGuard({ scene }: { readonly scene: BridgeHandle | undefi
 
   const snapshotTriangleCount = scene?.objects.reduce((acc, o) => acc + o.triangles, 0) ?? null;
 
+  // S9.2-003: the renderer emits one triangle list per object — the scene
+  // store owns the ACTUAL emitted count (real buffers, not unit boxes).
+  const emittedTriangleCount = useScene((s) => s.objects.reduce((acc, o) => acc + o.triangles, 0));
+
   useEffect(() => {
     if (revision === 0 || snapshotTriangleCount === null) return;
-    // What the renderer actually emitted. In this shell every object renders
-    // exactly one unit box (12 triangles) — a PLACEHOLDER renderer. When R1
-    // ships native-snapshot geometry this becomes the real emitted count.
-    const rendererTriangleCount = scene ? scene.objects.length * 12 : 0;
-    const mismatch = checkRendererSnapshotConsistency(rendererTriangleCount, snapshotTriangleCount);
+    const mismatch = checkRendererSnapshotConsistency(emittedTriangleCount, snapshotTriangleCount);
     if (mismatch) {
       invalidate({ expected: mismatch.expected, actual: mismatch.actual });
     }
-  }, [revision, snapshotTriangleCount, scene, invalidate]);
+  }, [revision, snapshotTriangleCount, emittedTriangleCount, invalidate]);
 
   return null;
 }

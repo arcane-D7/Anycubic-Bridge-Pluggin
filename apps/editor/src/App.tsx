@@ -20,6 +20,7 @@ import { ToastViewport } from "./components/toast-viewport";
 import { OverlayRoot } from "./components/dock/overlay-root";
 import { DockPanel } from "./components/dock/dock-panel";
 import { useDock } from "./state/dock";
+import { useScene } from "./state/scene";
 import { useUi } from "./state/ui";
 
 /**
@@ -60,6 +61,15 @@ export function App() {
     staleTime: 30_000,
   });
   const scene = sceneQuery.data;
+
+  // S9.2-004: hydrate the scene store from the authoritative snapshot. The
+  // ObjectTree/SceneObjectModel consume the store, so the snapshot must flow
+  // into it exactly once per fetch — selection is cleared on hydrate.
+  const hydrate = useScene((s) => s.hydrate);
+  useEffect(() => {
+    if (!scene) return;
+    hydrate(scene.objects);
+  }, [scene, hydrate]);
 
   const [operatorProfile, setOperatorProfile] = useOperatorProfile();
   const eligibility = useMemo(
@@ -202,7 +212,7 @@ export function App() {
           <div hidden={sidebarView !== "settings"}>
             <SettingsPanel profile={operatorProfile} onProfileChange={setOperatorProfile} />
           </div>
-          {sidebarView === "objects" ? <ObjectTree scene={scene} /> : null}
+          {sidebarView === "objects" ? <ObjectTree scene={scene} /> : null}{" "}
           {sidebarView === "chat" ? <ChatPanel /> : null}
           <section className="panel-section" aria-label="IR preview loader">
             <header className="panel-title">IR preview</header>
