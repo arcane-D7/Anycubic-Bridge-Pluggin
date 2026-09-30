@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (UI)                                                                                                                                                                                                                |
 | **Source**            | Consultor report 2026-09-30 ronda 2 §3 (dock verdict: purpose-built minimal dock + motion; NOT react-rnd/grid-layout) + user Mandate B                                                                                          |
 | **Depends On**        | Sprint 9.1 (shadcn + tokens + overlay root readiness)                                                                                                                                                                           |
-| **Status**            | ⏳ Planned                                                                                                                                                                                                                      |
+| **Status**            | 🔄 In Progress                                                                                                                                                                                                                  |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -58,7 +58,7 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Priority**         | P0                                                                                                      |
 | **Type**             | Feature                                                                                                 |
 | **Estimated Effort** | M                                                                                                       |
-| **Status**           | ⏳ Planned                                                                                              |
+| **Status**           | ✅ Done                                                                                                 |
 
 #### Context
 
@@ -82,7 +82,7 @@ Radix Dialog/Dropdown portals `z-50`; toasts `z-60`. Any floating chrome renders
 | **Priority**         | P0                                                                                                                                               |
 | **Type**             | Feature                                                                                                                                          |
 | **Estimated Effort** | L                                                                                                                                                |
-| **Status**           | ⏳ Planned                                                                                                                                       |
+| **Status**           | ✅ Done                                                                                                                                          |
 
 #### Context
 
@@ -108,7 +108,7 @@ the existing single-conversation `ChatPanel` (glass fill-2/blur-2) for now.
 | **Priority**         | P0                                                                           |
 | **Type**             | Feature                                                                      |
 | **Estimated Effort** | M                                                                            |
-| **Status**           | ⏳ Planned                                                                   |
+| **Status**           | ✅ Done                                                                      |
 
 #### Context
 
