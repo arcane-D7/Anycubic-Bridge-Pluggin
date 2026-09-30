@@ -538,3 +538,175 @@
   z-index: var(--z-canvas);
   touch-action: none;
 }
+
+/* ============================================================
+ * Floating dock panels (S9.1a-002/003) — glass fill-2/blur-2,
+ * header drag region (data-drag), 8-way resize handles, pill
+ * ============================================================ */
+@layer components {
+  .floating-panel-host {
+    display: flex;
+    flex-direction: column;
+    min-width: 280px;
+    min-height: 180px;
+    border-radius: var(--r-lg);
+    background: var(--glass-fill-2);
+    -webkit-backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+    backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+    border: 1px solid var(--glass-stroke);
+    box-shadow: var(--shadow-inset-hi), var(--shadow-3);
+    color: var(--text-primary);
+    overflow: hidden;
+    will-change: transform;
+  }
+
+  .floating-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 30px;
+    padding: 0 6px 0 12px;
+    cursor: grab;
+    user-select: none;
+    border-bottom: 1px solid var(--glass-stroke);
+    background: var(--glass-fill-1);
+    flex: 0 0 auto;
+  }
+  .floating-header:active {
+    cursor: grabbing;
+  }
+  .floating-title {
+    flex: 1 1 auto;
+    font-size: var(--t-md);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .floating-icon-btn {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+  }
+  .floating-icon-btn:hover {
+    background: var(--sel-hover);
+    color: var(--text-primary);
+  }
+
+  .floating-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .resize-handle {
+    position: absolute;
+    z-index: 2;
+  }
+  .resize-handle-se {
+    right: -3px;
+    bottom: -3px;
+    width: 12px;
+    height: 12px;
+    cursor: nwse-resize;
+    border: none;
+    background: transparent;
+  }
+  .resize-handle-se::after {
+    content: "";
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    width: 6px;
+    height: 6px;
+    border-right: 2px solid var(--text-tertiary);
+    border-bottom: 2px solid var(--text-tertiary);
+    opacity: 0.7;
+  }
+  .resize-handle-n {
+    top: -3px;
+    left: 12px;
+    right: 24px;
+    height: 4px;
+    cursor: ns-resize;
+  }
+  .resize-handle-s {
+    bottom: -3px;
+    left: 12px;
+    right: 24px;
+    height: 4px;
+    cursor: ns-resize;
+  }
+  .resize-handle-e {
+    right: -3px;
+    top: 12px;
+    bottom: 24px;
+    width: 4px;
+    cursor: ew-resize;
+  }
+  .resize-handle-w {
+    left: -3px;
+    top: 12px;
+    bottom: 24px;
+    width: 4px;
+    cursor: ew-resize;
+  }
+  .resize-handle-ne {
+    top: -3px;
+    right: -3px;
+    width: 12px;
+    height: 12px;
+    cursor: nesw-resize;
+  }
+  .resize-handle-nw {
+    top: -3px;
+    left: -3px;
+    width: 12px;
+    height: 12px;
+    cursor: nwse-resize;
+  }
+  .resize-handle-sw {
+    left: -3px;
+    bottom: -3px;
+    width: 12px;
+    height: 12px;
+    cursor: nesw-resize;
+  }
+
+  .dock-pill {
+    position: fixed;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: var(--r-pill);
+    background: var(--glass-fill-2);
+    -webkit-backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+    backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+    border: 1px solid var(--glass-stroke);
+    box-shadow: var(--shadow-inset-hi), var(--shadow-2);
+    color: var(--text-primary);
+    font-size: var(--t-md);
+    cursor: pointer;
+  }
+  .dock-pill:hover {
+    background: var(--glass-fill-3);
+  }
+  .dock-pill-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--r-pill);
+    background: var(--accent-primary);
+  }
+}
