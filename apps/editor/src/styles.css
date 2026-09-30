@@ -587,6 +587,19 @@ input {
   flex: 1;
   text-transform: capitalize;
 }
+.sidebar-detach {
+  flex: 0 0 28px;
+  border-color: transparent;
+  background: transparent;
+  border-radius: 0;
+  font-size: 14px;
+  color: var(--text-secondary, var(--text));
+  cursor: pointer;
+}
+.sidebar-detach:hover {
+  color: var(--accent);
+  background: #e3ede5;
+}
 .settings-heading {
   display: flex;
   justify-content: space-between;

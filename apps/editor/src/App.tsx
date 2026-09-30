@@ -18,6 +18,8 @@ import { ThemeToggle } from "./components/theme-toggle";
 import { StatusBar } from "./components/status-bar";
 import { ToastViewport } from "./components/toast-viewport";
 import { OverlayRoot } from "./components/dock/overlay-root";
+import { DockPanel } from "./components/dock/dock-panel";
+import { useDock } from "./state/dock";
 import { useUi } from "./state/ui";
 
 /**
@@ -183,6 +185,19 @@ export function App() {
                 {view}
               </button>
             ))}
+            <button
+              type="button"
+              className="sidebar-detach"
+              title="Detach chat to floating panel"
+              aria-label="Detach chat"
+              data-testid="chat-detach"
+              onClick={() => {
+                useDock.getState().focusPanel("chat");
+                useDock.getState().setPanelMode("chat", "floating");
+              }}
+            >
+              ⇱
+            </button>
           </nav>
           <div hidden={sidebarView !== "settings"}>
             <SettingsPanel profile={operatorProfile} onProfileChange={setOperatorProfile} />
@@ -279,7 +294,9 @@ export function App() {
         />
       </footer>
       <ToastViewport />
-      <OverlayRoot />
+      <OverlayRoot>
+        <DockPanel />
+      </OverlayRoot>
     </div>
   );
 }
