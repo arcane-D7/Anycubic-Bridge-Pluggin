@@ -348,3 +348,37 @@
     backdrop-filter: none;
   }
 }
+
+/* ============================================================
+ * Density & typography refinements (spec §5/§6 — S9.1-004)
+ * Standard button hit area 28px, numeric fields 36px mono
+ * tabular-nums, panel titles/micro-labels.
+ * ============================================================ */
+@layer components {
+  .micro-label {
+    font-size: var(--t-sm, 11px);
+    font-weight: 650;
+    text-transform: uppercase;
+    letter-spacing: var(--track-wide, 0.04em);
+  }
+
+  .mono-num {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* shadcn button density: 28px default rows, 24px min hit area */
+  button[data-slot="button"] {
+    min-height: 28px;
+  }
+
+  /* Numeric inputs: 36px tall, mono tabular-nums per spec */
+  input[type="number"],
+  .numeric-field {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    height: 36px;
+  }
+}
