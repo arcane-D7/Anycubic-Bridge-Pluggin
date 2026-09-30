@@ -26,6 +26,9 @@ interface UiState {
   /** Right panel visibility (chat). */
   readonly rightOpen: boolean;
   readonly toggleRight: () => void;
+  /** Global scene view flags (S9.2-003): wireframe edges overlay toggle. */
+  readonly sceneViewEdges: boolean;
+  readonly toggleSceneViewEdges: () => void;
   /** Toast bus (S9.1-005). Top-right stacked, auto-dismiss. */
   readonly toasts: readonly Toast[];
   readonly pushToast: (t: Omit<Toast, "id" | "createdAt">) => void;
@@ -41,6 +44,8 @@ export const useUi = create<UiState>()((set, get) => ({
   toggleLeft: () => set((s) => ({ leftOpen: !s.leftOpen })),
   rightOpen: true,
   toggleRight: () => set((s) => ({ rightOpen: !s.rightOpen })),
+  sceneViewEdges: true,
+  toggleSceneViewEdges: () => set((s) => ({ sceneViewEdges: !s.sceneViewEdges })),
   toasts: [],
   pushToast: ({ kind, title, message }) => {
     const id = toastSeq++;
