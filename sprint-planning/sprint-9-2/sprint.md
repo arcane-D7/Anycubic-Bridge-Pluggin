@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport + scene)                                                                                              |
 | **Source**            | Consultor report 2026-09-30 §2 (9.2) + audit G1/G4/G5/G6/G10/G34/G41                                                        |
 | **Depends On**        | Sprint 9.1 (tokens)                                                                                                         |
-| **Status**            | 🔄 In Progress — 4/6 tickets done (S9.2-001/002/003/004), gate EXIT:0 per ticket                                            |
+| **Status**            | 🔄 In Progress — 5/6 tickets done (S9.2-001/002/003/004/005), gate EXIT:0 per ticket                                        |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -224,7 +224,7 @@ rename/duplicate/remove/toggleVisible/toggleLock` from `useScene`; rows ≤32px 
 | **Priority**         | P0                                                                         |
 | **Type**             | Feature                                                                    |
 | **Estimated Effort** | M                                                                          |
-| **Status**           | ⏳ Planned                                                                 |
+| **Status**           | ✅ Done                                                                    |
 
 #### Context
 
@@ -236,6 +236,33 @@ store placed above the plate (z=0).
 
 - [x] STL (binary/ASCII) + 3MF import via three entry points; dialog honors scale/center/orient.
 - [x] Imported object appears in tree + viewport immediately, watertight status computed.
+
+#### Implementation notes
+
+- Three entry points share one code path (`bridge/import-actions.ts` `useImportCommit` →
+  `commitFile`): (1) object-panel footer Add opens `ImportDialog` (footer button was disabled
+  since 9.2-004, now active), (2) in-dialog file browse, (3) drag-drop a `.stl`/`.3mf` onto
+  the viewport frame (drag-enter/over/leave/drop on `ViewportFrame`, drop-hint overlay).
+- `bridge/import-core.ts` is the dependency-free normalization core: `prepareImportedObject`
+  (scale/center/orient-flat applied to the geometry buffers, min→(0,0,0), X/Y centered in the
+  buffers because `SceneObjectModel` renders from buffers and snapshot `transform` stays a
+  no-op `{0,0,0}`), `toSceneObject` (store `add` payload), `classifyFile`, `fitFactor`
+  (auto-fit largest extent to 220mm bed when scale is disabled).
+- `ImportDialog` (Radix `Dialog` `modal={false}` per 9.1a rule): hidden file input, dashed
+  browse button, tri/vert/size preview, center/orient/keep-units (mm) checkboxes. The
+  "Keep units (mm)" checkbox is wired: ON → scale=1, OFF → `fitFactor` auto-shrink.
+- Commit sequence: store `add(payload)` first (UI reacts), then `scene.mutateObject({kind:
+"add"})`, then `invalidateQueries(["bridge","scene"])`; unique name collision loop against
+  live graph (`cube` → `cube-1`…). Success toast carries tri/vert/watertight counts.
+- Drag-drop (`Viewport.tsx`): `depth` ref counter for enter/leave pairing, `dropEffect="copy"`,
+  `dragActive` toggles `.import-dragging` + drop-hint; non-importable drops ignored.
+- Watertight disclosure: `isWatertight` is edge-based (closed manifold). The `cube-20mm.stl`
+  fixture is an OPEN cube (bounds `[-1,0,0]..[20,20,20]`, missing base edges) so it correctly
+  reports non-watertight; the fixture test validates counts/geometry, not watertight.
+- 8 unit tests in `tests/import-core.test.mjs` (classify, fitFactor, orient-flat, center,
+  scale, toSceneObject shape, real STL parse); `import.ts` remains headless-testable.
+- Full gate EXIT:0 (e2e:ui PASS objects=4, smoke 106 tools, licenses 59, sanitize 0);
+  commit `d0718c7`.
 
 ### S9.2-006 — Hygiene: Clock deprecation + HMR 500 + gate
 
