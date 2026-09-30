@@ -1,14 +1,28 @@
-import { useCallback, useState, type ReactNode } from "react";
-import { motion } from "motion/react";
+import {
+  useCallback,
+  useState,
+  type ReactNode,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useDock, type PanelId } from "../../state/dock";
 import { useDockDrag } from "./use-dock";
 
 /**
- * FloatingPanelHost (S9.1a-002) — renders a floating panel's content. Owns
- * the drag (useDockDrag, ref-based + rAF), 8-way resize handles, collapse to
- * pill and the accessory chrome (header + dock button). Position comes from
- * the dock store (viewport fractions); the drag applies a translate3d during
- * motion and commits fractions on drag-stop.
+ * FloatingPanelHost (S9.1a-002/004) — renders a floating panel's content.
+ *
+ * The outer element is Radix `Dialog.Content` (`modal={false}`, wired in
+ * `dock-panel.tsx`) so the panel behaves as a NON-MODAL dialog: `role="dialog"`,
+ * Esc → onOpenChange(false) → collapse-to-pill, focus management, NO body
+ * scroll-lock and NO focus trap (events outside the rect still reach the R3F
+ * canvas — Consultor §3.1).
+ *
+ * Owns the drag (useDockDrag, ref-based + rAF), the SE resize handle, the
+ * header chrome (title + dock/collapse) and the a11y extras added in
+ * S9.1a-004: soft Tab trap (only while focus is inside), Alt+Shift+arrows
+ * move the panel, visible focus ring via CSS. Position comes from the dock
+ * store (viewport fractions); the drag applies a translate3d and commits
+ * fractions on drag-stop.
  */
 
 export type FloatingPanelKind = "chat";
@@ -21,6 +35,8 @@ interface FloatingPanelHostProps {
   readonly onDock: () => void;
   readonly onCollapse: () => void;
 }
+
+const MOVE_STEP = 0.05; // viewport fraction per Alt+Shift+arrow press
 
 export function FloatingPanelHost({
   id,
@@ -38,7 +54,7 @@ export function FloatingPanelHost({
   const isFloating = panel.mode === "floating";
 
   const handleResize = useCallback(
-    (e: React.PointerEvent, which: string) => {
+    (e: ReactPointerEvent, which: string) => {
       if (which === "se") {
         const startX = e.clientX;
         const startY = e.clientY;
@@ -64,10 +80,66 @@ export function FloatingPanelHost({
     [id, panel.rect, setPanelRect],
   );
 
+  /** Soft focus trap: only wraps Tab while focus is inside the panel. */
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      // Alt+Shift+arrows move the panel (S9.1a-004 AC-2).
+      if (e.altKey && e.shiftKey) {
+        let dx = 0;
+        let dy = 0;
+        switch (e.key) {
+          case "ArrowLeft":
+            dx = -MOVE_STEP;
+            break;
+          case "ArrowRight":
+            dx = MOVE_STEP;
+            break;
+          case "ArrowUp":
+            dy = -MOVE_STEP;
+            break;
+          case "ArrowDown":
+            dy = MOVE_STEP;
+            break;
+          default:
+            break;
+        }
+        if (dx !== 0 || dy !== 0) {
+          e.preventDefault();
+          const r = useDock.getState().panels[id].rect;
+          setPanelRect(id, { x: r.x + dx, y: r.y + dy, w: r.w, h: r.h });
+          return;
+        }
+      }
+
+      // Soft Tab trap (only active while focus is inside this panel).
+      if (e.key === "Tab") {
+        const el = e.currentTarget as HTMLElement;
+        const focusables = Array.from(
+          el.querySelectorAll<HTMLElement>(
+            'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter((n) => n.offsetParent !== null);
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (!first || !last) return;
+        const active = document.activeElement as HTMLElement | null;
+        if (e.shiftKey && (active === first || active === el)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    },
+    [id, setPanelRect],
+  );
+
   return (
-    <motion.div
+    <DialogPrimitive.Content
       ref={bindElement}
-      className="floating-panel-host"
+      className="floating-panel-host data-[state=open]:animate-in data-[state=open]:fade-in-0 duration-200"
       data-panel={id}
       data-testid={`floating-panel-${id}`}
       style={{
@@ -76,18 +148,17 @@ export function FloatingPanelHost({
         top: `${panel.rect.y * 100}%`,
         width: `${(inlineRect?.w ?? panel.rect.w) * 100}%`,
         height: `${(inlineRect?.h ?? panel.rect.h) * 100}%`,
-        zIndex: panel.z,
+        // Ladder: baseline --z-panel (40) + focus-bumps keep us in the panel band (< dialog 50 / toast 60).
+        zIndex: `calc(var(--z-panel) + ${panel.z - 1})`,
       }}
-      initial={false}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
       onPointerDown={onPointerDown}
       onFocusCapture={() => focusPanel(id)}
+      onKeyDown={handleKeyDown}
     >
       <div className="floating-header" data-drag>
-        <span className="floating-title" title={title}>
+        <DialogPrimitive.Title className="floating-title" title={title}>
           {title}
-        </span>
+        </DialogPrimitive.Title>
         <button
           type="button"
           className="floating-icon-btn"
@@ -107,7 +178,12 @@ export function FloatingPanelHost({
           –
         </button>
       </div>
-      <div className="floating-body">{children}</div>
+      <div className="floating-body">
+        {children}
+        <DialogPrimitive.Description className="sr-only">
+          Floating {title} panel
+        </DialogPrimitive.Description>
+      </div>
       {isFloating && (
         <>
           <button
@@ -126,7 +202,7 @@ export function FloatingPanelHost({
           <div className="resize-handle resize-handle-sw" data-resize="sw" />
         </>
       )}
-    </motion.div>
+    </DialogPrimitive.Content>
   );
 }
 

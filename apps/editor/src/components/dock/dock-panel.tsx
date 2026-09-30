@@ -1,13 +1,18 @@
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useDock } from "../../state/dock";
 import { FloatingPanelHost, CollapsedPill } from "./FloatingPanelHost";
 import { ChatPanel } from "../../panels/ChatPanel";
 
 /**
  * DockPanel (S9.1a-003) — the chat panel's dock/float orchestrator. Renders:
- *   - mode "floating": FloatingPanelHost portaled via OverlayRoot with the
- *     existing single-conversation ChatPanel as content.
+ *   - mode "floating": non-modal Radix Dialog (S9.1a-004) hosting the
+ *     FloatingPanelHost with the existing single-conversation ChatPanel.
  *   - mode "collapsed": pill at the docked edge; click re-opens floating.
  *   - mode "docked": renders nothing here (the sidebar chat tab owns it).
+ *
+ * A11y (S9.1a-004, Consultor §3.1): `modal={false}` — Esc fires
+ * onOpenChange(false) → collapse-to-pill, no body scroll-lock, focus
+ * management + role="dialog" from Radix without trapping focus.
  */
 export function DockPanel() {
   const panel = useDock((s) => s.panels.chat);
@@ -21,17 +26,26 @@ export function DockPanel() {
     setPanelMode("chat", "floating");
   };
 
-  if (panel.mode === "floating") {
-    return (
-      <FloatingPanelHost id="chat" title="AI Chat" kind="chat" onDock={dock} onCollapse={collapse}>
-        <ChatPanel />
-      </FloatingPanelHost>
-    );
-  }
-
-  if (panel.mode === "collapsed") {
-    return <CollapsedPill id="chat" title="AI Chat" onExpand={expand} />;
-  }
-
-  return null;
+  return (
+    <>
+      <DialogPrimitive.Root
+        open={panel.mode === "floating"}
+        onOpenChange={(open) => {
+          if (!open) collapse();
+        }}
+        modal={false}
+      >
+        <FloatingPanelHost
+          id="chat"
+          title="AI Chat"
+          kind="chat"
+          onDock={dock}
+          onCollapse={collapse}
+        >
+          <ChatPanel />
+        </FloatingPanelHost>
+      </DialogPrimitive.Root>
+      {panel.mode === "collapsed" && <CollapsedPill id="chat" title="AI Chat" onExpand={expand} />}
+    </>
+  );
 }

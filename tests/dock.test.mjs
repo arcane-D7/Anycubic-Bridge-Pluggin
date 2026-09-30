@@ -53,3 +53,33 @@ test("clampRect rounds tiny widths/heights up to the minimum", () => {
   assert.ok(got.w >= 0.2);
   assert.ok(got.h >= 0.2);
 });
+
+// S9.1a-004 — Alt+Shift+arrows move the panel by MOVE_STEP (0.05) viewport
+// fractions; clampRect keeps the moved rect inside the visible band.
+const MOVE_STEP = 0.05;
+
+test("a11y move step keeps the rect inside the clampable viewport", () => {
+  // Panel near the bottom-right edge, moved down-right once more.
+  const near = { x: 0.85, y: 0.75, w: 0.3, h: 0.3 };
+  const moved = dock.clampRect({
+    x: near.x + MOVE_STEP,
+    y: near.y + MOVE_STEP,
+    w: near.w,
+    h: near.h,
+  });
+  assert.ok(moved.x <= 0.9);
+  assert.ok(moved.y <= 0.8);
+  assert.ok(moved.x >= 0.85);
+  assert.ok(moved.y >= 0.75);
+});
+
+test("a11y move step from origin stays strictly positive", () => {
+  const origin = { x: 0, y: 0, w: 0.3, h: 0.3 };
+  const moved = dock.clampRect({
+    x: origin.x - MOVE_STEP,
+    y: origin.y - MOVE_STEP,
+    w: origin.w,
+    h: origin.h,
+  });
+  assert.deepEqual({ x: moved.x, y: moved.y }, { x: 0, y: 0 });
+});
