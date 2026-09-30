@@ -80,7 +80,7 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
 |    7 |    P0    | R1 Blender-primary editing core (parity corpus, IPC, undo)         |       6 | XL     | ✅ Done    | [sprint](sprint-7/sprint.md)    | `9d89dd0`   |
 |    8 |    P0    | R2 own planar core (S1 spike, IR + independent validator, preview) |       5 | XL     | ✅ Done    | [sprint](sprint-8/sprint.md)    | `a11b7cb`   |
 |    9 |    P0    | R3 harness v1 (BYOK, WASI sandbox, tool lifecycle, journal, chat)  |       6 | XL     | ✅ Done    | [sprint](sprint-9/sprint.md)    | `549827e`   |
-|  9.1 |    P0    | Design System (Tailwind v4 + shadcn, liquid glass, light/dark)     |       6 | M      | ⏳ Planned | [sprint](sprint-9-1/sprint.md)  | —           |
+|  9.1 |    P0    | Design System (Tailwind v4 + shadcn, liquid glass, light/dark)     |       6 | M      | ✅ Done    | [sprint](sprint-9-1/sprint.md)  | `85b72e3`   |
 | 9.1a |    P1    | Dock / Panel-Layout Foundation (floating detachable panels, chat)  |       5 | M      | ⏳ Planned | [sprint](sprint-9-1a/sprint.md) | —           |
 |  9.2 |    P0    | Real Geometry, Import & Scene Graph (kill unit boxes)              |       6 | L      | ⏳ Planned | [sprint](sprint-9-2/sprint.md)  | —           |
 |  9.3 |    P0    | Transform Controls, Numeric Inspector & Shortcuts (object control) |       5 | L      | ⏳ Planned | [sprint](sprint-9-3/sprint.md)  | —           |

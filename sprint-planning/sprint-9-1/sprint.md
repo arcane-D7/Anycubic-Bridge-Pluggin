@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (UI)                                                                                                                                                                                                      |
 | **Source**            | Consultor report 2026-09-30 §3 (design system spec) + ronda 2 (Tailwind v4 + shadcn + AI SDK) + `docs/ui-gap-audit-2026-09-30.md` G39/G40                                                                             |
 | **Depends On**        | Sprint 9 (R3)                                                                                                                                                                                                         |
-| **Status**            | ⏳ Planned                                                                                                                                                                                                            |
+| **Status**            | ✅ Delivered (2026-10-01, commits 3b7c2e0 → 85b72e3)                                                                                                                                                                  |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -67,7 +67,7 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Priority**         | P0                                                                                                       |
 | **Type**             | Refactor                                                                                                 |
 | **Estimated Effort** | L                                                                                                        |
-| **Status**           | ⏳ Planned                                                                                               |
+| **Status**           | ✅ Delivered (3b7c2e0)                                                                                   |
 
 #### Context
 
@@ -132,7 +132,7 @@ Token namespace flat kebab-case under `:root`, grouped by prefix: `--bg-*`, `--g
 | **Priority**         | P0                                                                               |
 | **Type**             | Feature                                                                          |
 | **Estimated Effort** | M                                                                                |
-| **Status**           | ⏳ Planned                                                                       |
+| **Status**           | ✅ Delivered (d891fe4)                                                           |
 
 #### Context
 
@@ -164,7 +164,7 @@ inline script to avoid flash. `@media (prefers-reduced-transparency: reduce)` dr
 | **Priority**         | P0                                                                                                             |
 | **Type**             | Feature                                                                                                        |
 | **Estimated Effort** | M                                                                                                              |
-| **Status**           | ⏳ Planned                                                                                                     |
+| **Status**           | ✅ Delivered (95fefa5)                                                                                         |
 
 #### Context
 
@@ -191,7 +191,7 @@ solid** (`--viewport-bg` — blur behind canvas is unbudgeted GPU cost).
 | **Priority**         | P1                                                                                                                                                                            |
 | **Type**             | Feature                                                                                                                                                                       |
 | **Estimated Effort** | L                                                                                                                                                                             |
-| **Status**           | ⏳ Planned                                                                                                                                                                    |
+| **Status**           | ✅ Delivered (2b83689)                                                                                                                                                        |
 
 #### Context
 
@@ -219,7 +219,7 @@ toolpath-glyph aesthetic fits the spec better; keeps the Apache/MIT-only gate gr
 | **Priority**         | P1                                                                 |
 | **Type**             | Feature                                                            |
 | **Estimated Effort** | M                                                                  |
-| **Status**           | ⏳ Planned                                                         |
+| **Status**           | ✅ Delivered (85b72e3)                                             |
 
 #### Context
 
@@ -244,7 +244,7 @@ Shortcut scaffolding registry (`state/shortcuts.ts`) is stubbed here (real short
 | **Priority**         | P0                                                      |
 | **Type**             | Quality                                                 |
 | **Estimated Effort** | S                                                       |
-| **Status**           | ⏳ Planned                                              |
+| **Status**           | ✅ Delivered (2026-10-01)                               |
 
 #### Context
 
@@ -257,3 +257,23 @@ Run `pnpm run check` (format/lint/typecheck/unit/integration/rust/build/smoke/e2
 #### Acceptance criteria
 
 - [x] `pnpm run check` EXIT:0; sanitizer dry-run 0; commit closes the sprint.
+
+## Execution Summary (2026-10-01)
+
+**Result: ✅ Sprint delivered — all 6 tickets, `pnpm run check` EXIT:0 per commit, sanitizer dry-run 0 on every commit.**
+
+| Commit  | Ticket   | What landed                                                                                                                                                                                                                                                                                                                                                    |
+| ------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3b7c2e0 | S9.1-001 | Tailwind v4 token layers (`@import "tailwindcss"` + `@theme`/`@theme inline` + `@custom-variant dark`); **manual shadcn scaffold** (CLI is interactive-killed in this monorepo) — `components.json` + `src/lib/utils.ts` + 13 Radix UI components hand-written, `iconLibrary: none` (no lucide-react, ISC excluded); alias-compat block; `--viewport-bg` token |
+| d891fe4 | S9.1-002 | `data-theme` light/dark + system boot resolution (pre-paint inline script, no flash) + `localStorage['anycubic-theme']`; `theme-toggle.tsx` (dropdown: Light/Dark/System); canvas bg + grid follow theme via CSS var + MutationObserver                                                                                                                        |
+| 95fefa5 | S9.1-003 | Liquid-glass shell: `.app-header`/`.panel-left`/`.panel-right`/`.app-footer` frosted (fill-1/blur-1), `.viewport-preview-controls` fill-2/blur-2; removed legacy `:root` in styles.css (tokens single source in index.css)                                                                                                                                     |
+| 2b83689 | S9.1-004 | `components/icons.tsx` inline-SVG set (19 icons, no lucide); density layer (28px buttons, 36px numeric inputs, mono tabular-nums)                                                                                                                                                                                                                              |
+| 85b72e3 | S9.1-005 | Toast bus (`ui.ts` toasts slice) + `toast-viewport.tsx` (fill-3/blur-3, semantic LED, auto-dismiss, aria-live) + `status-bar.tsx` (objects/units/volume/revision) + `shortcuts.ts` registry stub + boot demo toast                                                                                                                                             |
+| gate    | S9.1-006 | `pnpm run check` EXIT:0 (format/lint/typecheck/unit 295/integration/rust/5+35/build/smoke 106 tools/e2e:ui 4 objects/licenses 59 OK/architecture); sanitizer dry-run 0                                                                                                                                                                                         |
+
+**Notes:**
+
+- shadcn init CLI (Nova/Lucide preset prompt) is interactive and killed by the terminal harness — manual scaffold is the deterministic path here. Keep `iconLibrary: "none"`.
+- `styles.css` legacy `:root` block removed so it cannot override the new token layer (import order: `index.css` first, then `styles.css`).
+- Viewport canvas bg reads `--viewport-bg` at runtime with a `MutationObserver` on `data-theme` — theme swap needs no re-render.
+- License gate green: 59 direct deps, all Apache/MIT or allowlisted (knip ISC dev-only, node-forge/replicad legacy). `motion@13.4.6` (MIT) admitted for 9.1a dock.
