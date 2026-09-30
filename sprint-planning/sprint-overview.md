@@ -82,7 +82,7 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
 |    9 |    P0    | R3 harness v1 (BYOK, WASI sandbox, tool lifecycle, journal, chat)  |       6 | XL     | ✅ Done    | [sprint](sprint-9/sprint.md)    | `549827e`   |
 |  9.1 |    P0    | Design System (Tailwind v4 + shadcn, liquid glass, light/dark)     |       6 | M      | ✅ Done    | [sprint](sprint-9-1/sprint.md)  | `85b72e3`   |
 | 9.1a |    P1    | Dock / Panel-Layout Foundation (floating detachable panels, chat)  |       5 | M      | ✅ Done    | [sprint](sprint-9-1a/sprint.md) | `3dc8ad7`   |
-|  9.2 |    P0    | Real Geometry, Import & Scene Graph (kill unit boxes)              |       6 | L      | 🔄 2/6     | [sprint](sprint-9-2/sprint.md)  | `a47ca0d`   |
+|  9.2 |    P0    | Real Geometry, Import & Scene Graph (kill unit boxes)              |       6 | L      | 🔄 3/6     | [sprint](sprint-9-2/sprint.md)  | `db77faf`   |
 |  9.3 |    P0    | Transform Controls, Numeric Inspector & Shortcuts (object control) |       5 | L      | ⏳ Planned | [sprint](sprint-9-3/sprint.md)  | —           |
 |  9.4 |    P0    | Plate, Auto-Arrange, Toolbar & View Presets                        |       6 | M      | ⏳ Planned | [sprint](sprint-9-4/sprint.md)  | —           |
 |  9.5 |    P0    | Slice / Preview / Print Flow (G25 close)                           |       6 | L      | ⏳ Planned | [sprint](sprint-9-5/sprint.md)  | —           |

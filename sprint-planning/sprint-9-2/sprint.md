@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport + scene)                                                                                              |
 | **Source**            | Consultor report 2026-09-30 §2 (9.2) + audit G1/G4/G5/G6/G10/G34/G41                                                        |
 | **Depends On**        | Sprint 9.1 (tokens)                                                                                                         |
-| **Status**            | 🔄 In Progress — 2/6 tickets done (S9.2-001/002), gate EXIT:0 per ticket                                                    |
+| **Status**            | 🔄 In Progress — 3/6 tickets done (S9.2-001/002/003), gate EXIT:0 per ticket                                                |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -130,7 +130,7 @@ toggleVisible/toggleLock/setTransform`. Destructive ops (`remove`/`duplicate`) r
 | **Priority**         | P0                                                            |
 | **Type**             | Feature                                                       |
 | **Estimated Effort** | M                                                             |
-| **Status**           | ⏳ Planned                                                    |
+| **Status**           | ✅ Done                                                       |
 
 #### Context
 
@@ -144,6 +144,26 @@ hover highlight + selection outline (2px `--sel-outline-3d` + 6px glow halo, per
 - [x] Imported objects render real geometry, not unit boxes (visual check + snapshot test).
 - [x] Watertight tint, non-watertight tint, hover, selection outline all correct.
 - [x] Wireframe edges toggleable (per object / global view mode).
+
+#### Implementation notes
+
+- `SceneObjectModel.tsx` renders the snapshot geometry lane (`positions/normals/indices` in
+  mm, per-face normals, CCW indexed triangle list) as a real `THREE.BufferGeometry` with
+  `computeBoundingBox`; the unit-box placeholder is dead. Mesh-info-only objects (no
+  geometry) keep a bounds-box fallback mesh.
+- Render-state decision (tint/visibility/outline) lives in the dependency-free
+  `viewport/scene-model-render.ts` (`resolveModelRenderState` + `geometryExists`,
+  `MODEL_COLORS` frozen) so Node asserts the matrix headless — 6 new tests in
+  `tests/scene-object-model.test.mjs` (watertight `#7a8699`, non-watertight `#b36a5e`,
+  selected `#4f9cf7`, hover `#aeb9c9`, locked rejects hover, `visible:false→null`,
+  real-geometry-only selection outline).
+- Edges overlay default-on via `edgesGeometry` on the real mesh; `state/ui.ts` gains
+  `sceneViewEdges` (default `true`) + `toggleSceneViewEdges` — the global view toggle AC.
+- Selection highlight derives from BOTH the scene anchor and the authoritative snapshot
+  `selection.objectModeNames` (S7-004); outline = 1.02× bounds wireframe
+  (`--sel-outline-3d`, opacity 0.9) + 1.06× glow halo (`--sel-outline-glow`, 0.35).
+- Full gate EXIT:0 (328 unit tests, e2e:ui PASS objects=4, smoke 106 tools, sanitize 0);
+  commit `db77faf`.
 
 ### S9.2-004 — Object tree full rework
 
