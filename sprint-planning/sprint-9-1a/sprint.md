@@ -131,7 +131,7 @@ shows the existing chat (single conversation for now; multi-conversation lands 9
 | **Priority**         | P1                                                                                                                     |
 | **Type**             | Feature                                                                                                                |
 | **Estimated Effort** | S                                                                                                                      |
-| **Status**           | ⏳ Planned                                                                                                             |
+| **Status**           | ✅ Done                                                                                                                |
 
 #### Context
 
