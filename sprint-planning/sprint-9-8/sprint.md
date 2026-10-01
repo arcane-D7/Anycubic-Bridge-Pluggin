@@ -283,7 +283,7 @@ loaded via `React.lazy` chunk (keeps the main scene bundle lean).
 | **Priority**         | P0                                                                           |
 | **Type**             | Quality                                                                      |
 | **Estimated Effort** | S                                                                            |
-| **Status**           | ✅ Delivered @ `408a2a0` (2026-10-02)                                        |
+| **Status**           | ✅ Delivered @ `e5408b4` (2026-10-02)                                        |
 
 #### Context
 
@@ -322,7 +322,7 @@ Sprint 9.8 delivered (2026-09-30 → 2026-10-02):
 | 004    | Dirty-state indicator + save/restore     | `21be623` |
 | 005    | i18n PT/EN string table                  | `741e748` |
 | 006    | Perf pass (context-loss, lazy chat, dpr) | `95d0697` |
-| 007    | Final gate + licensing + handover        | `408a2a0` |
+| 007    | Final gate + licensing + handover        | `e5408b4` |
 
 Final state: `pnpm run check` EXIT:0 with unit 586, integration 11, smoke 106, e2e ×2 PASS,
 licenses 59, architecture OK, sanitizer 0. **9.x complete — local system production-shaped,

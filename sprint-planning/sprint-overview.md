@@ -88,7 +88,7 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
 |  9.5 |    P0    | Slice / Preview / Print Flow (G25 close)                           |       6 | L      | ✅ Done (6/6)      | [sprint](sprint-9-5/sprint.md)  | `014ea28`   |
 |  9.6 |    P1    | Presets, Object Properties, Undo Surface & Isolated Chat History   |       9 | M      | ✅ Completed (9/9) | [sprint](sprint-9-6/sprint.md)  | `fd74016`   |
 |  9.7 |    P1    | Boolean Modeling, Snapping & Repair                                |       5 | M      | ✅ Completed (5/5) | [sprint](sprint-9-7/sprint.md)  | `bdb1097`   |
-|  9.8 |    P1    | Interaction Polish, Labels, Measure, i18n                          |       7 | M      | ✅ Complete (7/7)  | [sprint](sprint-9-8/sprint.md)  | `408a2a0`   |
+|  9.8 |    P1    | Interaction Polish, Labels, Measure, i18n                          |       7 | M      | ✅ Complete (7/7)  | [sprint](sprint-9-8/sprint.md)  | `e5408b4`   |
 |   10 |    P1    | R4 separable auth service + memory (fail-closed sync)              |       5 | L      | ⏳ Planned         | [sprint](sprint-10/sprint.md)   | —           |
 |   11 |    P1    | R5 non-planar S2 (curved-top, per-machine gates, coupon)           |       5 | XL     | ⏳ Planned         | [sprint](sprint-11/sprint.md)   | —           |
 |   12 |    P1    | R6 non-planar S3 conformal/field (paper study, OSQP, art gate)     |       5 | XL     | ⏳ Planned         | [sprint](sprint-12/sprint.md)   | —           |
