@@ -9,6 +9,7 @@ import {
   type ShortcutEventLike,
 } from "../state/shortcuts-core";
 import { useUi, grabToolToMode } from "../state/ui";
+import { useJournal } from "../state/journal";
 
 /**
  * S9.3-003 — global keyboard shortcut layer (G32).
@@ -112,19 +113,25 @@ function applyAction(
     }
     case "undo":
     case "redo": {
-      // Soft journal re-import (S9.3-004 wires the real mutating lane; today
-      // the authoritative snapshot is simply re-fetched — the reducer guards
-      // stale revisions, never data loss).
-      ui.pushToast({
-        kind: "info",
-        title: action.kind === "undo" ? "Undo" : "Redo",
-        message:
-          action.kind === "undo"
-            ? "Journal undo (soft) — snapshot re-import."
-            : "Journal redo (soft) — snapshot re-import.",
-      });
-      if (bridge) {
-        void queryClient.invalidateQueries({ queryKey: ["bridge", "scene"] });
+      // S9.6-004 (G30): Ctrl+Z/Y now step the real journal (seek the
+      // viewport to the previous/next revision via the soft re-import lane).
+      // The strip and the shortcut share the same cursor store.
+      const step = useJournal.getState().step;
+      const before = useJournal.getState().cursor;
+      step(action.kind);
+      const after = useJournal.getState().cursor;
+      if (after !== before) {
+        ui.pushToast({
+          kind: "info",
+          title: action.kind === "undo" ? "Undo" : "Redo",
+          message: `Journal ${action.kind} to revision ${after}.`,
+        });
+      } else {
+        ui.pushToast({
+          kind: "info",
+          title: action.kind === "undo" ? "Undo" : "Redo",
+          message: action.kind === "redo" ? "Already at the journal head." : "Nothing to undo.",
+        });
       }
       return;
     }

@@ -898,6 +898,122 @@ body,
 }
 
 /* Timeline / slicing */
+.journal-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--glass-fill-1);
+  overflow-x: auto;
+  min-height: 34px;
+}
+
+.journal-chips {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  padding: 2px 0;
+}
+
+.journal-commit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.journal-commit:hover {
+  background: var(--sel-hover);
+  color: var(--text-primary);
+}
+
+.journal-commit.active {
+  border-color: var(--accent-primary);
+  background: var(--sel-bg);
+  color: var(--text-primary);
+}
+
+.journal-commit.head .commit-dot {
+  background: var(--accent-primary);
+}
+
+.commit-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  flex: 0 0 auto;
+}
+
+.journal-commit.active .commit-dot {
+  background: var(--accent-primary);
+}
+
+.journal-rev {
+  font-variant-numeric: tabular-nums;
+}
+
+.journal-deltas {
+  display: inline-flex;
+  gap: 3px;
+  flex-wrap: nowrap;
+}
+
+.delta-chip {
+  font-size: 9px;
+  line-height: 1;
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: var(--ctrl-bg);
+  color: var(--text-secondary);
+}
+
+.delta-chip.move {
+  color: #4da3ff;
+}
+
+.delta-chip.rotate {
+  color: #7fbf4d;
+}
+
+.delta-chip.scale {
+  color: #d6a24d;
+}
+
+.journal-nav {
+  flex: 0 0 auto;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--ctrl-border);
+  border-radius: 4px;
+  background: var(--ctrl-bg);
+  color: var(--text-secondary);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.journal-nav:hover:not(:disabled) {
+  background: var(--ctrl-bg-hover);
+  color: var(--text-primary);
+}
+
+.journal-nav:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .timeline-row {
   display: flex;
   align-items: center;
