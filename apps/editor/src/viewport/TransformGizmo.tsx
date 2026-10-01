@@ -6,6 +6,7 @@ import type { BridgeContract } from "../bridge/mock";
 import type { SceneObjectSnapshot } from "../bridge/types";
 import { useViewport } from "../state/viewport";
 import { useUi, type ToolMode } from "../state/ui";
+import { constrainToAxis } from "./transform-core";
 
 /**
  * S9.3-001 — real drei <TransformControls> gizmo on the selected object.
@@ -50,7 +51,6 @@ interface TransformGizmoProps {
 }
 
 export function TransformGizmo({ bridge, selectedName }: TransformGizmoProps) {
-  const setTool = useUi((s) => s.setTool);
   const tool = useUi((s) => s.tool);
   const revision = useViewport((s) => s.revision);
   const sessionStatus = useViewport((s) => s.sessionStatus);
@@ -130,26 +130,9 @@ export function TransformGizmo({ bridge, selectedName }: TransformGizmoProps) {
     });
   }, [mode, target]);
 
-  // Minimal Q/W/E/R tool switch so the gizmo is reachable (full shortcut
-  // layer with G/R/S + axes + delete + undo is S9.3-003). Target check:
-  // never fire while typing in an input/textarea/contenteditable.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement | null;
-      const tag = el?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || el?.isContentEditable) return;
-      const key = e.key.toLowerCase();
-      if (key === "q") setTool("select");
-      else if (key === "w") setTool("move");
-      else if (key === "e") setTool("rotate");
-      else if (key === "r") setTool("scale");
-      else return;
-      e.preventDefault();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [setTool]);
-
+  // Q/W/E/R tool switching moved to the central shortcut layer (S9.3-003,
+  // hooks/useShortcuts.ts) — one keydown listener owns the whole map and
+  // guards against text inputs; the gizmo just reacts to `useUi.tool`.
   const handleObjectChange = useCallback(() => {
     const obj = target;
     if (!obj || !selectedName || !bridge) return;
@@ -168,10 +151,16 @@ export function TransformGizmo({ bridge, selectedName }: TransformGizmoProps) {
       };
     }
     // Provisional persist through the mutation lane (mock applies it).
-    void bridge.mutateObject({
-      kind: "setTransform",
-      name: selectedName,
-      transform: {
+    // S9.3-003: an active keyboard grab with an axis lock constrains the
+    // draft (move → slide plane, rotate → locked axis only, scale → unit
+    // on other axes). The gizmo drag produces a free draft; the lock is
+    // applied here so the persisted value honors X/Y/Z. `kind` for the
+    // constraint = the grab gesture (fallback to the gizmo mode).
+    const grab = useUi.getState().grab;
+    const constraintKind =
+      grab?.kind ?? (tool === "move" ? "move" : tool === "rotate" ? "rotate" : "scale");
+    const draft = constrainToAxis(
+      {
         x: obj.position.x,
         y: obj.position.y,
         z: obj.position.z,
@@ -182,8 +171,15 @@ export function TransformGizmo({ bridge, selectedName }: TransformGizmoProps) {
         sy: obj.scale.y,
         sz: obj.scale.z,
       },
+      grab?.axis ?? null,
+      constraintKind as "move" | "rotate" | "scale",
+    );
+    void bridge.mutateObject({
+      kind: "setTransform",
+      name: selectedName,
+      transform: draft,
     });
-  }, [selectedName, bridge, target]);
+  }, [selectedName, bridge, target, tool]);
 
   const handleMouseUp = useCallback(() => {
     if (!bridge) return;

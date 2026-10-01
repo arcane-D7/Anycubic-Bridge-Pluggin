@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { grabStart, grabToggleAxis, type GestureKind, type GrabState } from "./shortcuts-core";
 
 /**
  * Local UI state (R0 panels + S9.1-005 toast bus).
@@ -49,6 +50,16 @@ interface UiState {
     kinds: readonly ("position" | "rotation" | "scale")[] | null,
   ) => void;
   readonly clearDirtyTransform: () => void;
+  /**
+   * Keyboard grab session (S9.3-003, G/R/S). A grab starts a modal transform:
+   * the gizmo mounts in that mode until Enter confirms or Esc cancels (which
+   * restores the previous tool). X/Y/Z constrain the active grab axis.
+   */
+  readonly grab: GrabState | null;
+  readonly startGrab: (kind: GestureKind) => void;
+  readonly toggleGrabAxis: (axis: "x" | "y" | "z") => void;
+  readonly confirmGrab: () => void;
+  readonly cancelGrab: () => void;
   /** Toast bus (S9.1-005). Top-right stacked, auto-dismiss. */
   readonly toasts: readonly Toast[];
   readonly pushToast: (t: Omit<Toast, "id" | "createdAt">) => void;
@@ -72,6 +83,22 @@ export const useUi = create<UiState>()((set, get) => ({
   dirtyKinds: null,
   setDirtyTransform: (name, kinds) => set({ dirtyTransformName: name, dirtyKinds: kinds }),
   clearDirtyTransform: () => set({ dirtyTransformName: null, dirtyKinds: null }),
+  grab: null,
+  startGrab: (kind) =>
+    set((s) => {
+      if (s.grab) return {}; // modal already active — ignore
+      return {
+        grab: grabStart(kind, s.tool === "select" ? "tool.select" : grabToolFor(s.tool)),
+      };
+    }),
+  toggleGrabAxis: (axis) => set((s) => ({ grab: s.grab ? grabToggleAxis(s.grab, axis) : null })),
+  confirmGrab: () => set({ grab: null }),
+  cancelGrab: () =>
+    set((s) => {
+      if (!s.grab) return {};
+      const out = { grab: null, tool: grabToolToMode(s.grab.prevTool) };
+      return out;
+    }),
   toasts: [],
   pushToast: ({ kind, title, message }) => {
     const id = toastSeq++;
@@ -87,3 +114,21 @@ export const useUi = create<UiState>()((set, get) => ({
   },
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 }));
+
+/** ToolMode → ToolCommandId (registry ids share names 1:1). */
+export function grabToolFor(mode: ToolMode): "tool.move" | "tool.rotate" | "tool.scale" {
+  return mode === "move" ? "tool.move" : mode === "rotate" ? "tool.rotate" : "tool.scale";
+}
+
+/** ToolCommandId → ToolMode (Esc restores the pre-grab tool). */
+export function grabToolToMode(
+  id: "tool.select" | "tool.move" | "tool.rotate" | "tool.scale",
+): ToolMode {
+  return id === "tool.select"
+    ? "select"
+    : id === "tool.move"
+      ? "move"
+      : id === "tool.rotate"
+        ? "rotate"
+        : "scale";
+}

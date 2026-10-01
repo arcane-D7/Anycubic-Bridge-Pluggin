@@ -73,3 +73,48 @@ export function isOverlayPanel(
 ): boolean {
   return rects.some((r) => x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height);
 }
+
+/** Axis names in scene order (X/Y/Z position, rotation around X/Y/Z, scale). */
+export const AXES = ["x", "y", "z"] as const;
+export type AxisName = (typeof AXES)[number];
+
+/**
+ * S9.3-003 — constrain a draft transform to one axis (keyboard X/Y/Z).
+ *
+ * Works per gesture kind:
+ * - move    — zero every position axis except the constrained one
+ *             (keeps the FIRST OTHER axis the user dragged/typed, so the
+ *             object slides along the remaining free plane only).
+ * - rotate  — zero rotation around the axes that are NOT locked.
+ * - scale   — one axis → that axis scale = free value, others = 1; two axes
+ *             → the given plane scales uniformly (S stays proportional).
+ * - free    — passthrough.
+ */
+export function constrainToAxis(
+  draft: SceneTransform,
+  axis: AxisName | null,
+  kind: "move" | "rotate" | "scale",
+): SceneTransform {
+  if (!axis) return draft;
+  return kind === "move"
+    ? {
+        ...draft,
+        x: axis === "x" ? draft.x : 0,
+        y: axis === "y" ? draft.y : 0,
+        z: axis === "z" ? draft.z : 0,
+      }
+    : kind === "rotate"
+      ? {
+          ...draft,
+          rx: axis === "x" ? (draft.rx ?? 0) : 0,
+          ry: axis === "y" ? (draft.ry ?? 0) : 0,
+          rz: axis === "z" ? (draft.rz ?? 0) : 0,
+        }
+      : /* scale */
+        {
+          ...draft,
+          sx: axis === "x" ? (draft.sx ?? 1) : 1,
+          sy: axis === "y" ? (draft.sy ?? 1) : 1,
+          sz: axis === "z" ? (draft.sz ?? 1) : 1,
+        };
+}

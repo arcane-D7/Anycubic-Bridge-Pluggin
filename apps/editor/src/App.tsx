@@ -19,6 +19,8 @@ import { useOperatorProfile } from "./profile/useOperatorProfile";
 import { ThemeToggle } from "./components/theme-toggle";
 import { StatusBar } from "./components/status-bar";
 import { ToastViewport } from "./components/toast-viewport";
+import { ShortcutHelp } from "./components/shortcut-help";
+import { useShortcuts } from "./hooks/useShortcuts";
 import { OverlayRoot } from "./components/dock/overlay-root";
 import { DockPanel } from "./components/dock/dock-panel";
 import { useDock } from "./state/dock";
@@ -63,6 +65,12 @@ export function App() {
     staleTime: 30_000,
   });
   const scene = sceneQuery.data;
+
+  // S9.3-003: global keyboard shortcut layer (G32). One keydown listener owns
+  // the whole map (G/R/S grabs, X/Y/Z axis constrain, Enter/Esc, Q/W/E/R tools,
+  // F frame, Delete/Ctrl+D, Ctrl+Z/Y soft journal) — decisions in the pure
+  // `shortcuts-core`, actions here against the stores + bridge mutation lane.
+  useShortcuts(scene);
 
   // S9.2-004: hydrate the scene store from the authoritative snapshot. The
   // ObjectTree/SceneObjectModel consume the store, so the snapshot must flow
@@ -183,6 +191,12 @@ export function App() {
               ? "Demo geometry"
               : "bridge: unavailable"}
         </span>
+        <details className="shortcut-help-popover" data-testid="shortcut-help-toggle">
+          <summary aria-label="Keyboard shortcuts help" title="Keyboard shortcuts">
+            ?
+          </summary>
+          <ShortcutHelp />
+        </details>
         <ThemeToggle />
       </header>
 

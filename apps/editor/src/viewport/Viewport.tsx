@@ -8,6 +8,7 @@ import { useImportCommit } from "../bridge/import-actions";
 import { classifyFile } from "../bridge/import-core";
 import { useScene } from "../state/scene";
 import { BuildPlate } from "./BuildPlate";
+import { FrameSelectedCamera } from "./FrameSelectedCamera";
 import { LayerPreview, previewFit } from "./LayerPreview";
 import { ModalInteraction } from "./ModalInteraction";
 import { RendererGuard } from "./RendererGuard";
@@ -82,6 +83,7 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
           objects.map((o) => <SceneObjectModel key={o.name} info={o} />)
         )}
         {!preview && scene ? <TransformGizmo bridge={scene} selectedName={selectedName} /> : null}
+        {!preview ? <FrameSelectedCamera /> : null}
         <OrbitControls makeDefault enableDamping />
       </Canvas>
       {preview ? (
