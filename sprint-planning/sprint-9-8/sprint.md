@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (polish)                                                                                                 |
 | **Source**            | Consultor report 2026-09-30 §2 (9.8) + audit G34/G35/G37/G38/G42/G44/G45/G46                                         |
 | **Depends On**        | Sprints 9.1–9.7 (everything)                                                                                         |
-| **Status**            | ⏳ Planned                                                                                                           |
+| **Status**            | 🔄 In progress (1/7) — 001 delivered (2026-10-02)                                                                    |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -52,7 +52,7 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Priority**         | P1                                                                 |
 | **Type**             | Feature                                                            |
 | **Estimated Effort** | M                                                                  |
-| **Status**           | ⏳ Planned                                                         |
+| **Status**           | ✅ Delivered @ `eea837a` (2026-10-02)                              |
 
 #### Context
 
@@ -64,6 +64,16 @@ duplicate/delete), timeline (seek/journal actions).
 #### Acceptance criteria
 
 - [x] All four surfaces open the same menu component with correct items; keyboard operable.
+
+#### Implementation notes
+
+- New files: `components/context-menu-core.ts` (pure headless: types, clamp, item builders),
+  `components/context-menu-items.ts` (object/plate/journal builders), `components/ContextMenu.tsx`
+  (portal + backdrop + keyboard nav), `state/context-menu.ts` (zustand store), `tests/context-menu.test.mjs` (9).
+- Four surfaces wired: ObjectTree rows + "…" button, Viewport background (arrange/measure/import),
+  PlateTabs chips, Timeline journal chips. Object meshes stop propagation (no scene menu over geometry).
+- Gate 2026-10-02: prettier/lint/typecheck OK, unit 555 pass, integration 11, smoke 106,
+  e2e:ui PASS (objects=4), e2e:editor-reload PASS, licenses 59, architecture OK, sanitize DRY-RUN 0.
 
 ### S9.8-002 — Viewport object labels
 
