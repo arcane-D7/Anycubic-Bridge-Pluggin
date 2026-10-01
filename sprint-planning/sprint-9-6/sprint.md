@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (panels)                                                                                                                                                                                                                                                                                            |
 | **Source**            | Consultor report 2026-09-30 §2 (9.6) + audit G14/G20/G21/G22/G23/G30/G36 + Consultor ronda 2 §3 (chat)                                                                                                                                                                                                          |
 | **Depends On**        | Sprint 9.5 (slice consumes presets) + Sprint 9.1a (dock host)                                                                                                                                                                                                                                                   |
-| **Status**            | 🔄 In progress (7/9)                                                                                                                                                                                                                                                                                            |
+| **Status**            | 🔄 In progress (8/9)                                                                                                                                                                                                                                                                                            |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -423,7 +423,8 @@ read with fallback to last good NDJSON replay). Append-only `<id>.ndjson` deltas
 | **Priority**         | P1                                                                                                                              |
 | **Type**             | Feature                                                                                                                         |
 | **Estimated Effort** | L                                                                                                                               |
-| **Status**           | ⏳ Planned                                                                                                                      |
+| **Status**           | ✅ Delivered (`80b97c8`)                                                                                                        |
+| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 522) · commit `80b97c8`                                                                          |
 
 #### Context
 
@@ -449,6 +450,43 @@ WebKitGTK support streaming fetch POST. **No provider URLs / egress in webview c
 - [x] `POST /chat` streams AI SDK UI protocol over the broker lane; mock works offline (dev default).
 - [x] CORS dev+prod, CSP `connect-src`, macOS ATS all verified; keystore-held keys (BYOK) — no clear-text keys in repo.
 - [x] `check:architecture` passes: zero provider URLs/egress in webview code.
+
+#### Implementation Notes
+
+- **Rust lane** (`crates/broker-server`, NEW workspace member — axum 0.8 + tokio 1 +
+  tower-http CORS; lib+bin split so integration tests hit the router directly):
+  - `POST /chat` — body `{id, messages, trigger, messageId}` (`ChatRequest`, camelCase);
+    answers SSE with `UIMessageChunk` lines mirroring the AI SDK v7 chunks:
+    `start` → `text-start` → `text-delta*` → `text-end` → `finish{finishReason:"stop"}` →
+    `data: [DONE]`. Headers: `text/event-stream`, `x-vercel-ai-ui-message-stream: v1`,
+    `no-cache`, `x-accel-buffering: no`.
+  - `GET /chat/{chat_id}/stream` — reconnect probe → **204** when idle (v7
+    `HttpChatTransport` resolves `null` and the UI stays put). `GET /health` liveness.
+  - Egress posture: `config_from_env()` reads pinned endpoint ONLY from `ANYCUBIC_MODEL_URL`
+    / `ANYCUBIC_MODEL_API_KEY` (BYOK env, never a repo literal). Without env → deterministic
+    local echo (offline dev default) — the webview needs no provider URL ever.
+  - CORS: `CorsLayer` origin allow-list `http://127.0.0.1:1420` (dev) + `tauri://localhost`
+    (prod), methods GET/POST/OPTIONS, headers Content-Type+Authorization; handler also
+    rejects unknown origins with 403 (never `*` on the SSE lane).
+  - 7 tests: health, sse_body_for order contract (start→text-delta→…→[DONE]), handler
+    headers + body, 403 unknown origin, 204 resume, router CORS header echo, chunk
+    serialization roundtrip.
+- **Webview transport switch** (`apps/editor/src/bridge/chat-transport.ts`, NEW): singleton
+  `createChatTransport()` — `DefaultChatTransport({ api: brokerChatUrl() })` when
+  `ANYCUBIC_BROKER_URL` env is set, else the offline mock (dev default). Pure helpers
+  `brokerLaneConfiguredFrom` / `brokerChatUrlFrom` (env is authority — zero provider URLs in
+  webview code). `ChatThread.tsx` now uses `CHAT_TRANSPORT` singleton (module-level) so the
+  v7 Chat memoization (id + transport identity) holds for both lanes; store stays the source
+  of truth either way.
+- **Tauri networking trio**: `tauri.conf.json` CSP `connect-src` adds loopback
+  (`http://127.0.0.1:* http://localhost:*` + dev `localhost:1420` ws); macOS ATS via
+  `src-tauri/Info.plist` (`NSAllowsLocalNetworking` + localhost/127.0.0.1 exceptions) wired
+  as `bundle.macOS.infoPlist: "Info.plist"` (tauri 2.12 expects a **path**, NOT an inline map —
+  inline map broke the tauri-build config parse).
+- **Tests**: `tests/chat-transport.test.mjs` (+5 unit: lane gate blank/non-blank, URL
+  derivation base/trailing/explicit/blank, module surface). Gate `pnpm run check` EXIT:0 —
+  unit **522** (517+5), integration 11, check-rust OK (incl. Tauri shell), smoke 106,
+  e2e:ui + e2e:editor-reload PASS, licenses 59, architecture OK, sanitize DRY-RUN 0.
 
 ### S9.6-009 — Gate + sanitizer (extended)
 
