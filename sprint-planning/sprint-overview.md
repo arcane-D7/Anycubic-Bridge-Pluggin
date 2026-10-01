@@ -69,30 +69,30 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
 
 ## Sprint Summary Table
 
-|    # | Priority | Focus                                                              | Tickets | Effort | Status               | Plan                            | Commit      |
-| ---: | :------: | ------------------------------------------------------------------ | ------: | ------ | -------------------- | ------------------------------- | ----------- |
-|    1 |    P1    | Robust in-browser CSG (three-bvh-csg)                              |       4 | M      | ✅ Done              | [sprint](sprint-1/sprint.md)    | `892f39d`   |
-|    2 |    P1    | Parametric engine (Manifold + Replicad)                            |       5 | L      | ✅ Done              | [sprint](sprint-2/sprint.md)    | `6739dfc`   |
-|    3 |    P1    | AI text-to-cad (prompt → parametric script → mesh)                 |       4 | L      | ✅ Done              | [sprint](sprint-3/sprint.md)    | `df28066`   |
-|    4 |    P2    | Electron packaging (plan-only)                                     |       3 | M      | ✅ Done              | [sprint](sprint-4/sprint.md)    | docs commit |
-|    5 |    P0    | Architecture + code quality (SOLID/DRY, boundaries, licenses)      |       6 | M      | ✅ Done              | [sprint](sprint-5/sprint.md)    | `c06dfd6`   |
-|    6 |    P0    | R0 foundation (Tauri 2 shell, broker, machine contract, schemas)   |       6 | L      | ✅ Done              | [sprint](sprint-6/sprint.md)    | `ee62574`   |
-|    7 |    P0    | R1 Blender-primary editing core (parity corpus, IPC, undo)         |       6 | XL     | ✅ Done              | [sprint](sprint-7/sprint.md)    | `9d89dd0`   |
-|    8 |    P0    | R2 own planar core (S1 spike, IR + independent validator, preview) |       5 | XL     | ✅ Done              | [sprint](sprint-8/sprint.md)    | `a11b7cb`   |
-|    9 |    P0    | R3 harness v1 (BYOK, WASI sandbox, tool lifecycle, journal, chat)  |       6 | XL     | ✅ Done              | [sprint](sprint-9/sprint.md)    | `549827e`   |
-|  9.1 |    P0    | Design System (Tailwind v4 + shadcn, liquid glass, light/dark)     |       6 | M      | ✅ Done              | [sprint](sprint-9-1/sprint.md)  | `85b72e3`   |
-| 9.1a |    P1    | Dock / Panel-Layout Foundation (floating detachable panels, chat)  |       5 | M      | ✅ Done              | [sprint](sprint-9-1a/sprint.md) | `3dc8ad7`   |
-|  9.2 |    P0    | Real Geometry, Import & Scene Graph (kill unit boxes)              |       6 | L      | ✅ Done              | [sprint](sprint-9-2/sprint.md)  | `c691c3f`   |
-|  9.3 |    P0    | Transform Controls, Numeric Inspector & Shortcuts (object control) |       5 | L      | ✅ Done              | [sprint](sprint-9-3/sprint.md)  | `8f8069b`   |
-|  9.4 |    P0    | Plate, Auto-Arrange, Toolbar & View Presets                        |       6 | M      | ✅ Done (6/6)        | [sprint](sprint-9-4/sprint.md)  | `b1abbe5`   |
-|  9.5 |    P0    | Slice / Preview / Print Flow (G25 close)                           |       6 | L      | ✅ Done (6/6)        | [sprint](sprint-9-5/sprint.md)  | `014ea28`   |
-|  9.6 |    P1    | Presets, Object Properties, Undo Surface & Isolated Chat History   |       9 | M      | ✅ Completed (9/9)   | [sprint](sprint-9-6/sprint.md)  | `fd74016`   |
-|  9.7 |    P1    | Boolean Modeling, Snapping & Repair                                |       5 | M      | ✅ Completed (5/5)   | [sprint](sprint-9-7/sprint.md)  | `bdb1097`   |
-|  9.8 |    P1    | Interaction Polish, Labels, Measure, i18n                          |       7 | M      | 🔄 In progress (6/7) | [sprint](sprint-9-8/sprint.md)  | `95d0697`   |
-|   10 |    P1    | R4 separable auth service + memory (fail-closed sync)              |       5 | L      | ⏳ Planned           | [sprint](sprint-10/sprint.md)   | —           |
-|   11 |    P1    | R5 non-planar S2 (curved-top, per-machine gates, coupon)           |       5 | XL     | ⏳ Planned           | [sprint](sprint-11/sprint.md)   | —           |
-|   12 |    P1    | R6 non-planar S3 conformal/field (paper study, OSQP, art gate)     |       5 | XL     | ⏳ Planned           | [sprint](sprint-12/sprint.md)   | —           |
-|   13 |    P2    | R7 T3b VM sandbox + S4 multi-axis research (catalog-profiled)      |       4 | L      | ⏳ Planned           | [sprint](sprint-13/sprint.md)   | —           |
+|    # | Priority | Focus                                                              | Tickets | Effort | Status             | Plan                            | Commit      |
+| ---: | :------: | ------------------------------------------------------------------ | ------: | ------ | ------------------ | ------------------------------- | ----------- |
+|    1 |    P1    | Robust in-browser CSG (three-bvh-csg)                              |       4 | M      | ✅ Done            | [sprint](sprint-1/sprint.md)    | `892f39d`   |
+|    2 |    P1    | Parametric engine (Manifold + Replicad)                            |       5 | L      | ✅ Done            | [sprint](sprint-2/sprint.md)    | `6739dfc`   |
+|    3 |    P1    | AI text-to-cad (prompt → parametric script → mesh)                 |       4 | L      | ✅ Done            | [sprint](sprint-3/sprint.md)    | `df28066`   |
+|    4 |    P2    | Electron packaging (plan-only)                                     |       3 | M      | ✅ Done            | [sprint](sprint-4/sprint.md)    | docs commit |
+|    5 |    P0    | Architecture + code quality (SOLID/DRY, boundaries, licenses)      |       6 | M      | ✅ Done            | [sprint](sprint-5/sprint.md)    | `c06dfd6`   |
+|    6 |    P0    | R0 foundation (Tauri 2 shell, broker, machine contract, schemas)   |       6 | L      | ✅ Done            | [sprint](sprint-6/sprint.md)    | `ee62574`   |
+|    7 |    P0    | R1 Blender-primary editing core (parity corpus, IPC, undo)         |       6 | XL     | ✅ Done            | [sprint](sprint-7/sprint.md)    | `9d89dd0`   |
+|    8 |    P0    | R2 own planar core (S1 spike, IR + independent validator, preview) |       5 | XL     | ✅ Done            | [sprint](sprint-8/sprint.md)    | `a11b7cb`   |
+|    9 |    P0    | R3 harness v1 (BYOK, WASI sandbox, tool lifecycle, journal, chat)  |       6 | XL     | ✅ Done            | [sprint](sprint-9/sprint.md)    | `549827e`   |
+|  9.1 |    P0    | Design System (Tailwind v4 + shadcn, liquid glass, light/dark)     |       6 | M      | ✅ Done            | [sprint](sprint-9-1/sprint.md)  | `85b72e3`   |
+| 9.1a |    P1    | Dock / Panel-Layout Foundation (floating detachable panels, chat)  |       5 | M      | ✅ Done            | [sprint](sprint-9-1a/sprint.md) | `3dc8ad7`   |
+|  9.2 |    P0    | Real Geometry, Import & Scene Graph (kill unit boxes)              |       6 | L      | ✅ Done            | [sprint](sprint-9-2/sprint.md)  | `c691c3f`   |
+|  9.3 |    P0    | Transform Controls, Numeric Inspector & Shortcuts (object control) |       5 | L      | ✅ Done            | [sprint](sprint-9-3/sprint.md)  | `8f8069b`   |
+|  9.4 |    P0    | Plate, Auto-Arrange, Toolbar & View Presets                        |       6 | M      | ✅ Done (6/6)      | [sprint](sprint-9-4/sprint.md)  | `b1abbe5`   |
+|  9.5 |    P0    | Slice / Preview / Print Flow (G25 close)                           |       6 | L      | ✅ Done (6/6)      | [sprint](sprint-9-5/sprint.md)  | `014ea28`   |
+|  9.6 |    P1    | Presets, Object Properties, Undo Surface & Isolated Chat History   |       9 | M      | ✅ Completed (9/9) | [sprint](sprint-9-6/sprint.md)  | `fd74016`   |
+|  9.7 |    P1    | Boolean Modeling, Snapping & Repair                                |       5 | M      | ✅ Completed (5/5) | [sprint](sprint-9-7/sprint.md)  | `bdb1097`   |
+|  9.8 |    P1    | Interaction Polish, Labels, Measure, i18n                          |       7 | M      | ✅ Complete (7/7)  | [sprint](sprint-9-8/sprint.md)  | `408a2a0`   |
+|   10 |    P1    | R4 separable auth service + memory (fail-closed sync)              |       5 | L      | ⏳ Planned         | [sprint](sprint-10/sprint.md)   | —           |
+|   11 |    P1    | R5 non-planar S2 (curved-top, per-machine gates, coupon)           |       5 | XL     | ⏳ Planned         | [sprint](sprint-11/sprint.md)   | —           |
+|   12 |    P1    | R6 non-planar S3 conformal/field (paper study, OSQP, art gate)     |       5 | XL     | ⏳ Planned         | [sprint](sprint-12/sprint.md)   | —           |
+|   13 |    P2    | R7 T3b VM sandbox + S4 multi-axis research (catalog-profiled)      |       4 | L      | ⏳ Planned         | [sprint](sprint-13/sprint.md)   | —           |
 
 ## Finding Coverage Matrix
 
@@ -177,8 +177,9 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
 3. Sprint 4 is plan-only (documentation + packaging checklist, no runnable Electron shell).
 4. **Completed so far (2026-09-29):** Sprints 5–9 delivered (R0–R3: foundation, editing
    core, planar baseline, harness).
-5. **Next active (2026-09-30):** **Sprint 9.1 (Design System — Tailwind v4 + shadcn + liquid
-   glass)** — the user requested completing the full local UI system via intermediate sprints
-   before Sprint 10 (auth/db), with Mandate A (Tailwind v4 + shadcn/AI-SDK), Mandate B
-   (detachable floating Chat tab = Sprint 9.1a), Mandate C (isolated conversation history =
-   9.6) confirmed by Consultor ronda 2. Sprint 10 is planned but **not** the next active sprint.
+5. **Next active (2026-10-02):** **Sprint 10 (R4 separable auth service + memory, fail-closed
+   sync)** — `9.1 → 9.1a → 9.2 → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8` all delivered (2026-10-02):
+   **the 9.x series is complete and the local system is production-shaped** (final gate
+   EXIT:0 — unit 586, licenses 59, architecture zero-egress, sanitizer 0). Sprint 10 = auth.db
+   loopback XOR Postgres, OAuth PKCE RFC 8252, global memory fail-closed, multi-project
+   isolation.

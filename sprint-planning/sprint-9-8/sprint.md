@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (polish)                                                                                                 |
 | **Source**            | Consultor report 2026-09-30 §2 (9.8) + audit G34/G35/G37/G38/G42/G44/G45/G46                                         |
 | **Depends On**        | Sprints 9.1–9.7 (everything)                                                                                         |
-| **Status**            | 🔄 In progress (6/7) — 001–005 delivered, 006 delivered (2026-10-02)                                                 |
+| **Status**            | ✅ Complete (7/7) — 001–006 delivered, 007 final gate (2026-10-02)                                                   |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -283,7 +283,7 @@ loaded via `React.lazy` chunk (keeps the main scene bundle lean).
 | **Priority**         | P0                                                                           |
 | **Type**             | Quality                                                                      |
 | **Estimated Effort** | S                                                                            |
-| **Status**           | ⏳ Planned                                                                   |
+| **Status**           | ✅ Delivered @ `408a2a0` (2026-10-02)                                        |
 
 #### Context
 
@@ -298,3 +298,32 @@ routes through the broker — Consultor ronda 2).
 
 - [x] Full gate EXIT:0; sanitizer 0; overview/memory updated; 9.x closed, Sprint 10 next.
 - [x] `check:architecture` passes on the entire app (incl. chat) — zero provider URLs/egress in webview.
+
+#### Implementation notes
+
+- Final gate 2026-10-02 (check1): **GATE_EXIT=0** — unit 586 pass / 0 fail, integration 11,
+  check-rust OK, build OK (dist/server.mjs 254883 bytes), smoke 106 tools, e2e:ui PASS
+  (objects=4) + e2e:editor-reload PASS (0 page errors, 0 HTTP 5xx), check-licenses OK — 59
+  direct deps all Apache/MIT or allowlisted (tailwindcss, @tailwindcss/vite, Radix set,
+  ai/@ai-sdk/react, motion, cva, clsx, tailwind-merge are Apache/MIT native), check-architecture
+  OK — no SOLID/DRY violations, sanitizer DRY-RUN 0 files.
+- **9.x series closed**: 9.1 → 9.1a → 9.2 → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 all delivered.
+  Local system is production-shaped. Next active sprint = **Sprint 10 (R4 auth/db)**.
+
+## Execution Summary
+
+Sprint 9.8 delivered (2026-09-30 → 2026-10-02):
+
+| Ticket | Deliverable                              | Commit    |
+| ------ | ---------------------------------------- | --------- |
+| 001    | Context menus everywhere                 | `eea837a` |
+| 002    | Viewport object labels                   | `c6f7e3e` |
+| 003    | Measure tool                             | `f7d2aad` |
+| 004    | Dirty-state indicator + save/restore     | `21be623` |
+| 005    | i18n PT/EN string table                  | `741e748` |
+| 006    | Perf pass (context-loss, lazy chat, dpr) | `95d0697` |
+| 007    | Final gate + licensing + handover        | `408a2a0` |
+
+Final state: `pnpm run check` EXIT:0 with unit 586, integration 11, smoke 106, e2e ×2 PASS,
+licenses 59, architecture OK, sanitizer 0. **9.x complete — local system production-shaped,
+next active = Sprint 10 (auth/db).**
