@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport + toolbar)                                                                                                                                             |
 | **Source**            | Consultor report 2026-09-30 §2 (9.4) + audit G7/G12/G13/G15/G16/G36                                                                                                          |
 | **Depends On**        | Sprint 9.3 (arrange targets need real transforms)                                                                                                                            |
-| **Status**            | 🚧 In progress (5/6 tickets delivered)                                                                                                                                       |
+| **Status**            | ✅ Done (6/6 tickets delivered, 2026-10-02)                                                                                                                                  |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -281,14 +281,14 @@ plate dims; right revision + dirty chip (`● 3 unsaved`). Pairs with G36/G44 sc
 
 ### S9.4-006 — Gate + sanitizer
 
-| Field                | Value                          |
-| -------------------- | ------------------------------ |
-| **Ticket ID**        | S9.4-006                       |
-| **Title**            | Full gate EXIT:0 + sanitizer 0 |
-| **Priority**         | P0                             |
-| **Type**             | Quality                        |
-| **Estimated Effort** | S                              |
-| **Status**           | ⏳ Planned                     |
+| Field                | Value                                        |
+| -------------------- | -------------------------------------------- |
+| **Ticket ID**        | S9.4-006                                     |
+| **Title**            | Full gate EXIT:0 + sanitizer 0               |
+| **Priority**         | P0                                           |
+| **Type**             | Quality                                      |
+| **Estimated Effort** | S                                            |
+| **Status**           | ✅ Delivered (2026-10-02, closes sprint 9.4) |
 
 #### Context
 
@@ -298,3 +298,16 @@ the sprint.
 #### Acceptance criteria
 
 - [x] `pnpm run check` EXIT:0; sanitizer 0; commit closes the sprint.
+
+#### Implementation notes
+
+- Full gate run (S9.4-005 check): `pnpm run check` EXIT:0 — format:check, lint,
+  typecheck, unit **415 pass / 0 fail** (plates + arrange + statusbar cores),
+  integration 11 pass, check:rust, build, smoke (106 tools), e2e:ui PASS,
+  e2e:editor-reload PASS, check:licenses OK, check:architecture OK,
+  **sanitize DRY-RUN 0 files / 0 substitution groups (usr=mafsc)**.
+- Every sprint commit passed the pre-commit hook (prettier + sanitize dry-run):
+  `6c76647` (001), `a6e61e9` (002), `2e50c75` (003), `3e6e06c` (004),
+  `afa5dec` (005), docs `0bf8fdf` / `49ee6e3` / `b1abbe5`.
+- Sprint 9.4 is **COMPLETE 6/6** — all acceptance criteria met; no ticket left
+  behind (mandatory completion requirement satisfied).
