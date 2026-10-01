@@ -10,6 +10,9 @@ import {
   journalEventLabel,
   journalEventsByRevision,
 } from "../state/journal-core";
+import { journalMenuItems } from "../components/context-menu-core";
+import { openContextMenuAt } from "../components/context-menu-core";
+import { useContextMenuStore } from "../state/context-menu";
 
 /**
  * Bottom panel — timeline/undo graph + slicing mode (R0 shell / S9.6-004).
@@ -58,10 +61,30 @@ export function Timeline({
   const cursor = useJournal((s) => s.cursor);
   const seekTo = useJournal((s) => s.seekTo);
   const reset = useJournal((s) => s.reset);
+  const openMenu = useContextMenuStore((s) => s.open);
 
   const journal = scene?.journal ?? [];
   const byRevision = journalEventsByRevision(journal);
-  const head = journalNavState(journal, cursor).head;
+  const nav = journalNavState(journal, cursor);
+  const head = nav.head;
+
+  /** S9.8-001: right-click a revision chip → shared ContextMenu with
+   * seek-to-revision / reset-to-head (both no-op when already at head). */
+  const onChipContextMenu = (rev: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openMenu(
+      openContextMenuAt(
+        e,
+        journalMenuItems({
+          revision: rev,
+          atHead: nav.atHead && head === rev,
+          onSeek: (r) => seekTo(r),
+          onReset: () => reset(),
+        }),
+      ),
+    );
+  };
 
   // Re-attach the authoritative journal and reset the cursor to head when
   // the handle changes (new fetch / hydrate).
@@ -100,6 +123,7 @@ export function Timeline({
                   aria-pressed={cursor === rev}
                   role="listitem"
                   onClick={() => seekTo(rev)}
+                  onContextMenu={(e) => onChipContextMenu(rev, e)}
                 >
                   <span className="commit-dot" aria-hidden="true" />
                   <span className="journal-rev mono">{rev}</span>

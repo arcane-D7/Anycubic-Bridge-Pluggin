@@ -9,6 +9,10 @@ import { classifyFile } from "../bridge/import-core";
 import { useScene } from "../state/scene";
 import { usePlates } from "../state/plates";
 import { objectsOnPlate } from "../state/plates-core";
+import { useUi } from "../state/ui";
+import { openContextMenuAt } from "../components/context-menu-core";
+import { useContextMenuStore } from "../state/context-menu";
+import type { ContextMenuItem } from "../components/context-menu-core";
 import { BuildPlate } from "./BuildPlate";
 import { FrameSelectedCamera } from "./FrameSelectedCamera";
 import { LayerPreview, previewFit } from "./LayerPreview";
@@ -209,8 +213,68 @@ function ViewportFrame({
   readonly children: React.ReactNode;
 }) {
   const { commitFile } = useImportCommit(bridge);
+  const openMenu = useContextMenuStore((s) => s.open);
+  const pushToast = useUi((s) => s.pushToast);
   const [dragActive, setDragActive] = useState(false);
   const depth = useRef(0);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // S9.8-001 — right-click on the viewport BACKGROUND opens the shared
+  // context menu. Object meshes call `nativeEvent.stopPropagation()` on their
+  // own context menu (SceneObjectModel), so this only fires for the empty
+  // canvas area; toolbar/tabs/preview controls stop propagation themselves.
+  const onFrameContextMenu = (e: React.MouseEvent) => {
+    const t = e.target as HTMLElement;
+    if (
+      t.closest(
+        "button, input, select, [data-testid='viewport-toolbar'], [data-testid='plate-tabs'], .viewport-preview-controls",
+      )
+    ) {
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    const items: ContextMenuItem[] = [
+      {
+        id: "arrange",
+        label: "Arrange objects",
+        icon: "arrange",
+        onSelect: () => {
+          pushToast({
+            kind: "info",
+            title: "Arrange",
+            message: "Use the toolbar Arrange for shelf packing.",
+          });
+        },
+      },
+      {
+        id: "measure",
+        label: "Measure",
+        icon: "measure",
+        onSelect: () => {
+          pushToast({
+            kind: "info",
+            title: "Measure",
+            message: "Measure tool lands in a later sprint.",
+          });
+        },
+      },
+      {
+        id: "import",
+        label: "Import…",
+        icon: "plus",
+        separatorBefore: true,
+        onSelect: () => fileInputRef.current?.click(),
+      },
+    ];
+    openMenu(openContextMenuAt(e, items));
+  };
+
+  const onImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.currentTarget.files?.[0];
+    e.currentTarget.value = "";
+    if (file) void commitFile(file, { center: true, orientFlat: true });
+  };
 
   const onDragEnter = (e: React.DragEvent) => {
     const file = e.dataTransfer?.files?.[0];
@@ -248,10 +312,19 @@ function ViewportFrame({
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
+      onContextMenu={onFrameContextMenu}
       data-testid="viewport-frame"
     >
       {children}
       <ModalInteraction bridge={bridge} />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".stl,.3mf"
+        data-testid="viewport-import-input"
+        className="visually-hidden"
+        onChange={onImportFile}
+      />
       {dragActive ? (
         <div className="viewport-drop-hint" data-testid="viewport-drop-hint" role="status">
           Drop to import

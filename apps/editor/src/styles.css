@@ -2889,3 +2889,94 @@ input {
 .approval-approve:hover:not(:disabled) {
   filter: brightness(1.08);
 }
+
+/* ============================================================
+ * S9.8-001 — shared context menu (G35)
+ * One glass menu for every surface: object tree rows, viewport
+ * background, plate tabs, timeline journal chips. Rendered in a
+ * fixed-position backdrop (ContextMenu.tsx) that closes on
+ * outside-click / Escape / Tab; the panel keeps the same
+ * fill-2/blur-2 glass family as the toolbar, with an accent
+ * focus state and a destructive variant.
+ * ============================================================ */
+.context-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: transparent;
+}
+
+.context-menu {
+  position: fixed;
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px;
+  background: var(--glass-fill-2);
+  -webkit-backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  border: 1px solid var(--glass-stroke);
+  box-shadow:
+    var(--shadow-inset-hi),
+    inset 0 0 0 1px var(--border-strong),
+    var(--shadow-2);
+  border-radius: var(--r-lg);
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  border-radius: var(--r-md);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 90ms ease,
+    color 90ms ease;
+}
+
+.context-menu-item:hover:not(:disabled),
+.context-menu-item:focus-visible {
+  background: var(--sel-hover);
+  color: var(--accent-primary);
+  outline: none;
+}
+
+.context-menu-item:disabled {
+  color: var(--text-disabled);
+  cursor: default;
+}
+
+.context-menu-item[data-danger="true"] {
+  color: var(--sema-error, #c23b2e);
+}
+
+.context-menu-item[data-danger="true"]:hover:not(:disabled),
+.context-menu-item[data-danger="true"]:focus-visible {
+  background: var(--sema-error-soft, rgb(194 59 46 / 0.1));
+  color: var(--sema-error, #c23b2e);
+}
+
+.context-menu-separator {
+  height: 1px;
+  margin: 3px 6px;
+  background: var(--border-strong);
+}
+
+.context-menu-icon-spacer {
+  width: 14px;
+  flex: 0 0 auto;
+}
+
+.context-menu-item svg {
+  flex: 0 0 auto;
+}

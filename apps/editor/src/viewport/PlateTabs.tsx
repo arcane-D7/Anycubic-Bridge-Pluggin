@@ -1,16 +1,12 @@
 import { useRef, useState } from "react";
 import type { BridgeHandle } from "../bridge/mock";
 import type { SceneObjectSnapshot } from "../bridge/types";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu";
 import { usePlates, type PlateDescriptor } from "../state/plates";
 import { objectsOnPlate } from "../state/plates-core";
 import { useQueryClient } from "@tanstack/react-query";
+import { openContextMenuAt } from "../components/context-menu-core";
+import { buildPlateMenuItems } from "../components/context-menu-items";
+import { useContextMenuStore } from "../state/context-menu";
 
 /**
  * S9.4-003 plate tabs (G12) — floating chips above the bottom edge of the
@@ -45,6 +41,8 @@ export function PlateTabs({ scene, objects }: PlateTabsProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement | null>(null);
+  // S9.8-001 — shared context menu (single store; one menu for all surfaces).
+  const openMenu = useContextMenuStore((s) => s.open);
 
   const persistMutation = async (mutation: Parameters<BridgeHandle["mutateObject"]>[0]) => {
     if (!scene) return;
@@ -70,6 +68,37 @@ export function PlateTabs({ scene, objects }: PlateTabsProps) {
     }
   };
 
+  /** S9.8-001: right-click (or the header menu trigger) on a tab opens the
+   * shared ContextMenu with duplicate/rename/move-here items. */
+  const openPlateMenu = (
+    plateId: string,
+    e: { readonly clientX: number; readonly clientY: number },
+  ) => {
+    const plate = plates.find((p) => p.id === plateId);
+    if (!plate) return;
+    const moveTargets = plates
+      .filter((other) => other.id !== plate.id)
+      .map((other) => ({
+        id: other.id,
+        name: other.name,
+        disabled: objectsOnPlate(objects, plate.id).length === 0,
+      }));
+    openMenu(
+      openContextMenuAt(
+        e,
+        buildPlateMenuItems(moveTargets, {
+          onDuplicate: () => duplicate(plate.id),
+          onRename: () => {
+            setEditingId(plate.id);
+            setDraft(plate.name);
+          },
+          onMoveTo: (targetId) =>
+            objectsOnPlate(objects, plate.id).forEach((o) => commitMoveTo(o.name, targetId)),
+        }),
+      ),
+    );
+  };
+
   return (
     <div className="plate-tabs" data-testid="plate-tabs" role="tablist" aria-label="Plates">
       {plates.map((plate) =>
@@ -90,67 +119,34 @@ export function PlateTabs({ scene, objects }: PlateTabsProps) {
             }}
           />
         ) : (
-          <DropdownMenu key={plate.id}>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={plate.id === activeId}
-                data-testid={`plate-tab-${plate.id}`}
-                className={`plate-tab${plate.id === activeId ? " is-active" : ""}`}
-                title={chipTitle(plate)}
-                onClick={() => switchTo(plate.id)}
-                onDoubleClick={() => {
-                  setEditingId(plate.id);
-                  setDraft(plate.name);
-                }}
-              >
-                <span>{plate.name}</span>
-                {plate.dirty ? (
-                  <span
-                    className="plate-tab-dot"
-                    data-testid={`plate-dot-${plate.id}`}
-                    aria-label="Unsaved changes"
-                  />
-                ) : null}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" data-testid={`plate-menu-${plate.id}`}>
-              <DropdownMenuItem
-                data-testid={`plate-dup-${plate.id}`}
-                onSelect={() => duplicate(plate.id)}
-              >
-                Duplicate plate
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                data-testid={`plate-rename-menu-${plate.id}`}
-                onSelect={() => {
-                  setEditingId(plate.id);
-                  setDraft(plate.name);
-                }}
-              >
-                Rename…
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <span className="plate-menu-caption">Move objects to…</span>
-              {plates
-                .filter((other) => other.id !== plate.id)
-                .map((other) => (
-                  <DropdownMenuItem
-                    key={other.id}
-                    data-testid={`plate-move-${plate.id}-${other.id}`}
-                    disabled={!objectsOnPlate(objects, plate.id).length}
-                    onSelect={() =>
-                      objectsOnPlate(objects, plate.id).forEach((o) =>
-                        commitMoveTo(o.name, other.id),
-                      )
-                    }
-                  >
-                    {other.name}
-                  </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <button
+            key={plate.id}
+            type="button"
+            role="tab"
+            aria-selected={plate.id === activeId}
+            data-testid={`plate-tab-${plate.id}`}
+            className={`plate-tab${plate.id === activeId ? " is-active" : ""}`}
+            title={chipTitle(plate)}
+            onClick={() => switchTo(plate.id)}
+            onDoubleClick={() => {
+              setEditingId(plate.id);
+              setDraft(plate.name);
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              openPlateMenu(plate.id, e);
+            }}
+          >
+            <span>{plate.name}</span>
+            {plate.dirty ? (
+              <span
+                className="plate-tab-dot"
+                data-testid={`plate-dot-${plate.id}`}
+                aria-label="Unsaved changes"
+              />
+            ) : null}
+          </button>
         ),
       )}
       <button

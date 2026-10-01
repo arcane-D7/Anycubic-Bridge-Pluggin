@@ -22,6 +22,7 @@ import { useOperatorProfile } from "./profile/useOperatorProfile";
 import { ThemeToggle } from "./components/theme-toggle";
 import { StatusBar } from "./components/status-bar";
 import { ToastViewport } from "./components/toast-viewport";
+import { ContextMenu } from "./components/ContextMenu";
 import { ShortcutHelp } from "./components/shortcut-help";
 import { SliceButton } from "./components/SliceButton";
 import { SliceProgress } from "./components/SliceProgress";
@@ -350,6 +351,7 @@ export function App() {
         />
       </footer>
       <ToastViewport />
+      <ContextMenu />
       <OverlayRoot>
         <DockPanel />
       </OverlayRoot>

@@ -103,6 +103,9 @@ export const SceneObjectModel = memo(function SceneObjectModel({ info }: SceneOb
             e.stopPropagation();
             useScene.getState().select(info.name, info.watertight);
           }}
+          onContextMenu={(e) => {
+            e.stopPropagation();
+          }}
           onPointerOver={(e) => {
             e.stopPropagation();
             if (!locked) setHovered(true);
@@ -124,6 +127,9 @@ export const SceneObjectModel = memo(function SceneObjectModel({ info }: SceneOb
           onClick={(e) => {
             e.stopPropagation();
             useScene.getState().select(info.name, info.watertight);
+          }}
+          onContextMenu={(e) => {
+            e.stopPropagation();
           }}
           onPointerOver={(e) => {
             e.stopPropagation();

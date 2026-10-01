@@ -5,13 +5,9 @@ import type { SceneObjectSnapshot } from "../bridge/types";
 import { Icon } from "../components/icons";
 import { centerOnPlateTransform } from "../state/arrange-core";
 import { comparePlacement, placementMetrics, type PlacementSortKey } from "../state/object-metrics";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu";
+import { openContextMenuAt } from "../components/context-menu-core";
+import { buildObjectMenuItems } from "../components/context-menu-items";
+import { useContextMenuStore } from "../state/context-menu";
 import { useScene } from "../state/scene";
 import { useUi } from "../state/ui";
 
@@ -125,9 +121,9 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
 
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
-  /** Object whose context menu is open (right-click row). */
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  // S9.8-001 — shared context menu (single store; one menu for all surfaces).
+  const openMenu = useContextMenuStore((s) => s.open);
 
   useEffect(() => {
     if (editing !== null && inputRef.current) {
@@ -169,8 +165,35 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
   const onRowContextMenu = (o: SceneObjectSnapshot, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    openRowMenu(o, e);
+  };
+
+  /** Shared: object row "more" button and right-click both open the same
+   * shared ContextMenu (S9.8-001) anchored at the pointer. */
+  const openRowMenu = (
+    o: SceneObjectSnapshot,
+    e: { readonly clientX: number; readonly clientY: number },
+  ) => {
     select(o.name, o.watertight);
-    setOpenMenu(o.name);
+    openMenu(
+      openContextMenuAt(
+        e,
+        buildObjectMenuItems(
+          { name: o.name, visible: o.visible, watertight: o.watertight },
+          {
+            onDuplicate: () => onDuplicate(o),
+            onRename: () => {
+              setEditing(o.name);
+              setDraft(o.name);
+            },
+            onToggleVisible: () => onToggleVisible(o),
+            onPlaceOnPlate: () => onPlaceOnPlate(o),
+            onRepair: (mode) => void onRepair(o, mode),
+            onRemove: () => onRemove(o),
+          },
+        ),
+      ),
+    );
   };
 
   const commitRename = (o: SceneObjectSnapshot) => {
@@ -410,90 +433,19 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
                   {fmtVolume(o)}
                 </span>
               </span>
-              <DropdownMenu
-                open={openMenu === o.name}
-                onOpenChange={(open) => setOpenMenu(open ? o.name : null)}
+              <button
+                type="button"
+                className="obj-action obj-more"
+                title="Object menu"
+                aria-label={`Actions for ${o.name}`}
+                data-testid={`obj-more-${o.name}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openRowMenu(o, e);
+                }}
               >
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="obj-action obj-more"
-                    title="Object menu"
-                    aria-label={`Actions for ${o.name}`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Icon name="chevron-down" size={12} />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="bottom">
-                  <DropdownMenuItem
-                    onSelect={(e: Event) => {
-                      e.preventDefault();
-                      onDuplicate(o);
-                    }}
-                  >
-                    <Icon name="duplicate" size={14} /> Duplicate
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={(e: Event) => {
-                      e.preventDefault();
-                      setEditing(o.name);
-                      setDraft(o.name);
-                    }}
-                  >
-                    <Icon name="fit" size={14} /> Rename
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={(e: Event) => {
-                      e.preventDefault();
-                      onToggleVisible(o);
-                    }}
-                  >
-                    <Icon name="eye" size={14} /> {o.visible ? "Hide" : "Show"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={(e: Event) => {
-                      e.preventDefault();
-                      onPlaceOnPlate(o);
-                    }}
-                  >
-                    <Icon name="fit" size={14} /> Place on plate
-                  </DropdownMenuItem>
-                  {/* S9.7-003 (G46) — Auto-repair choices for non-watertight
-                      objects (AC-1: replace / replace-as-copy). */}
-                  {!o.watertight ? (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onSelect={(e: Event) => {
-                          e.preventDefault();
-                          void onRepair(o, "replace");
-                        }}
-                      >
-                        <Icon name="wrench" size={14} /> Auto-repair (replace)
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onSelect={(e: Event) => {
-                          e.preventDefault();
-                          void onRepair(o, "copy");
-                        }}
-                      >
-                        <Icon name="duplicate" size={14} /> Auto-repair (copy)
-                      </DropdownMenuItem>
-                    </>
-                  ) : null}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                    onSelect={(e: Event) => {
-                      e.preventDefault();
-                      onRemove(o);
-                    }}
-                  >
-                    <Icon name="trash" size={14} /> Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                <Icon name="chevron-down" size={12} />
+              </button>
             </li>
           );
         })}
