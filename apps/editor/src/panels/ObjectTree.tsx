@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { BridgeHandle } from "../bridge/mock";
 import type { SceneObjectSnapshot } from "../bridge/types";
 import { Icon } from "../components/icons";
 import { centerOnPlateTransform } from "../state/arrange-core";
+import { comparePlacement, placementMetrics, type PlacementSortKey } from "../state/object-metrics";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +45,38 @@ function metaOf(o: SceneObjectSnapshot): string {
   return `${fmtCount(o.triangles)} tri · ${fmtCount(o.vertices)} vtx`;
 }
 
+/** S9.6-003: compact numeric cell (mono, tabular). Absolute mm values get a
+ * unit-less compact form (trailing zeros trimmed). */
+function fmtMm(v: number): string {
+  if (!Number.isFinite(v)) return "—";
+  const rounded = Math.round(v * 100) / 100;
+  return Object.is(rounded, -0) ? "0" : String(rounded);
+}
+
+/** S9.6-003: footprint cell — `w × d` as compact mm. */
+function fmtFootprint(o: SceneObjectSnapshot): string {
+  const m = placementMetrics(o);
+  if (!m.footprint) return "—";
+  return `${fmtMm(m.footprint.w)} × ${fmtMm(m.footprint.d)}`;
+}
+
+/** S9.6-003: volume cell — compact cm³-ish (mm³ → 1 decimal when ≥1000). */
+function fmtVolume(o: SceneObjectSnapshot): string {
+  const v = placementMetrics(o).volumeMm3;
+  if (!Number.isFinite(v)) return "—";
+  if (v >= 1000) return `${(v / 1000).toFixed(1)} cm³`;
+  return `${fmtMm(v)} mm³`;
+}
+
+/** Visual column set (S9.6-003). Stable order, headers double as sort buttons. */
+const PLACEMENT_COLUMNS: ReadonlyArray<{ key: PlacementSortKey; label: string; title: string }> = [
+  { key: "x", label: "X", title: "Center X (mm)" },
+  { key: "y", label: "Y", title: "Center Y (mm)" },
+  { key: "z", label: "Z", title: "Center Z (mm)" },
+  { key: "footprint", label: "Ftp", title: "Footprint (w × d)" },
+  { key: "volume", label: "Vol", title: "Volume" },
+];
+
 export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
   const queryClient = useQueryClient();
   const objects = useScene((s) => s.objects);
@@ -57,6 +90,36 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
   const toggleVisible = useScene((s) => s.toggleVisible);
   const toggleLock = useScene((s) => s.toggleLock);
   const setTransform = useScene((s) => s.setTransform);
+
+  // S9.6-003 — column sort state (header click toggles asc/desc per key).
+  const [sortKey, setSortKey] = useState<PlacementSortKey>("name");
+  const [sortAsc, setSortAsc] = useState(true);
+
+  /** Header click: same key toggles direction, new key defaults ascending. */
+  const onSortHeader = (key: PlacementSortKey) => {
+    if (key === sortKey) {
+      setSortAsc((prev) => !prev);
+    } else {
+      setSortKey(key);
+      setSortAsc(true);
+    }
+  };
+
+  /** The ordered object list for render — selection ops act on the underlying
+   * names, so sorting the render list is safe. */
+  const sortedObjects = useMemo(() => {
+    if (sortKey === "name") {
+      const list = [...objects];
+      return sortAsc
+        ? list.sort((a, b) => a.name.localeCompare(b.name))
+        : list.sort((a, b) => b.name.localeCompare(a.name));
+    }
+    const list = [...objects];
+    list.sort((a, b) =>
+      sortAsc ? comparePlacement(a, b, sortKey) : -comparePlacement(a, b, sortKey),
+    );
+    return list;
+  }, [objects, sortKey, sortAsc]);
 
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -170,8 +233,41 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
       <header className="panel-title">Objects</header>
       {objects.length === 0 && !scene ? <p className="panel-hint">Loading scene…</p> : null}
       {objects.length === 0 && scene ? <p className="panel-hint">No objects.</p> : null}
+      <header className="object-tree-header" aria-label="Object columns">
+        <button
+          type="button"
+          className={`column-sort${sortKey === "name" ? " active" : ""}`}
+          data-testid="column-sort-name"
+          title="Sort by name"
+          onClick={() => onSortHeader("name")}
+        >
+          Name
+          {sortKey === "name" ? (
+            <svg className="sort-arrow" width="8" height="8" viewBox="0 0 8 8" aria-hidden="true">
+              <path d={sortAsc ? "M4 1 L7 6 H1 Z" : "M4 7 L1 2 H7 Z"} fill="currentColor" />
+            </svg>
+          ) : null}
+        </button>
+        {PLACEMENT_COLUMNS.map((col) => (
+          <button
+            key={col.key}
+            type="button"
+            className={`column-sort${sortKey === col.key ? " active" : ""}`}
+            data-testid={`column-sort-${col.key}`}
+            title={col.title}
+            onClick={() => onSortHeader(col.key)}
+          >
+            {col.label}
+            {sortKey === col.key ? (
+              <svg className="sort-arrow" width="8" height="8" viewBox="0 0 8 8" aria-hidden="true">
+                <path d={sortAsc ? "M4 1 L7 6 H1 Z" : "M4 7 L1 2 H7 Z"} fill="currentColor" />
+              </svg>
+            ) : null}
+          </button>
+        ))}
+      </header>
       <ul className="object-list">
-        {objects.map((o) => {
+        {sortedObjects.map((o) => {
           const isSel = selectedNames.includes(o.name);
           const isAnchor = anchorName === o.name;
           const classes = [
@@ -244,6 +340,26 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
               )}
               <span className="object-meta" aria-label="Mesh stats">
                 {metaOf(o)}
+              </span>
+              <span className="object-placement" aria-label="Placement metrics">
+                <span
+                  className="obj-cell"
+                  title="Center X (mm)"
+                >{`${fmtMm(placementMetrics(o).center[0])}`}</span>
+                <span
+                  className="obj-cell"
+                  title="Center Y (mm)"
+                >{`${fmtMm(placementMetrics(o).center[1])}`}</span>
+                <span
+                  className="obj-cell"
+                  title="Center Z (mm)"
+                >{`${fmtMm(placementMetrics(o).center[2])}`}</span>
+                <span className="obj-cell" title="Footprint (w × d)">
+                  {fmtFootprint(o)}
+                </span>
+                <span className="obj-cell" title="Volume">
+                  {fmtVolume(o)}
+                </span>
               </span>
               <DropdownMenu
                 open={openMenu === o.name}

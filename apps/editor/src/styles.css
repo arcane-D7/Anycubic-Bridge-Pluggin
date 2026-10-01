@@ -148,6 +148,44 @@ body,
 }
 
 /* Object tree (S9.2-004) */
+.object-tree-header {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  /* 10px row padding + 44px (eye+lock) + gap offset so "Name" aligns with rows */
+  padding: 2px 6px 4px 58px;
+  height: 24px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+.column-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  padding: 0 2px;
+  font-family: var(--font-mono, ui-monospace, "Cascadia Mono", monospace);
+}
+
+.column-sort:hover,
+.column-sort.active {
+  color: var(--accent-primary);
+}
+
+.sort-arrow {
+  flex: 0 0 auto;
+}
+
+/* Row layout: eye(22) lock(22) name(flex) meta placement more(20) */
 .object-list {
   list-style: none;
   margin: 0;
@@ -263,8 +301,33 @@ body,
   padding-left: 6px;
 }
 
-.obj-more {
+/* S9.6-003 — placement columns (center x/y/z, footprint, volume) */
+.object-placement {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   order: 4;
+  white-space: nowrap;
+  font-family: var(--font-mono, ui-monospace, "Cascadia Mono", monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+}
+
+.obj-cell {
+  color: var(--text-dim);
+  min-width: 36px;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.object-item:hover .obj-cell,
+.object-item.selected .obj-cell {
+  color: var(--text-secondary);
+}
+
+.obj-more {
+  order: 5;
   width: 20px;
   height: 20px;
   opacity: 0;
