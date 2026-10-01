@@ -221,8 +221,8 @@ flips flag. Deterministic fixtures only — no real geometry values.
 | **Priority**         | P0                                                                          |
 | **Type**             | Quality                                                                     |
 | **Estimated Effort** | S                                                                           |
-| **Status**           | ✅ Delivered (180e502)                                                      |
-| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 546) · docs-only closeout · commit `180e502` |
+| **Status**           | ✅ Delivered (bdb1097)                                                      |
+| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 546) · docs-only closeout · commit `bdb1097` |
 
 #### Context
 
@@ -250,7 +250,7 @@ flips flag. Deterministic fixtures only — no real geometry values.
 | S9.7-002 | Snapping controller (grid/axis/vertex snap, snap step) | ✅ Done | `0934168` feat + `aaf6eaf` docs |
 | S9.7-003 | Watertight repair UX (replace/copy, badges, toasts)    | ✅ Done | `7542979` feat + `5a751b5` docs |
 | S9.7-004 | Bridge boolean + repair lanes + tests (formalization)  | ✅ Done | `2b83889` + `180e502` docs      |
-| S9.7-005 | Gate + sanitizer + closeout                            | ✅ Done | `180e502` docs                  |
+| S9.7-005 | Gate + sanitizer + closeout                            | ✅ Done | `bdb1097` docs                  |
 
 **Sprint 9.7 is COMPLETE 5/5 — mandatory completion requirement satisfied.**
 
