@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (flow) + bridge                                                                                                                                  |
 | **Source**            | Consultor report 2026-09-30 §2 (9.5) + audit G24/G25/G43                                                                                                     |
 | **Depends On**        | Sprints 9.3/9.4 (transforms/plates correct before slicing) + 9.1 (tokens)                                                                                    |
-| **Status**            | 🚧 In progress (2/6 tickets delivered)                                                                                                                       |
+| **Status**            | 🚧 In progress (3/6 tickets delivered)                                                                                                                       |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -169,7 +169,7 @@ Preview controls (layer slider + toggles) with tokens.
 | **Priority**         | P0                                                                 |
 | **Type**             | Feature                                                            |
 | **Estimated Effort** | M                                                                  |
-| **Status**           | ⏳ Planned                                                         |
+| **Status**           | ✅ Delivered (aacadd6)                                             |
 
 #### Context
 
@@ -182,6 +182,48 @@ approval dialog.
 
 - [x] Picker lists env-discovered printers; LED reflects reachability; selection arms send.
 - [x] No send without confirmation; no hardcoded device identifiers.
+
+#### Implementation notes
+
+- `bridge/types.ts`: frozen `PrinterInfo` (id, name, ip, machineType,
+  reachable tri-state, lastSeenAt) + `PrinterListResult` (source `"env"`)
+  — doc comment G43: identifiers come ONLY from `ANYCUBIC_PRINTER_IPS`,
+  never hardcoded.
+- `state/printers-core.ts` (dependency-free, headless-testable): strict
+  `isValidIp` (IPv4 dotted-quad octets ≤255, IPv6 literal with `:`),
+  `parsePrinterIps` (comma-split, trim, dedupe, invalid list),
+  `printerId`/`printerName`, `PrintersState`, `reducePrinters` events
+  (probe-start / probe-done / select) with guards: probe rejected while in
+  flight, probe-done rejected when idle, unknown select rejected, select
+  null clears.
+- `bridge/mock.ts`: `discoverPrinters(rawEnv)` lane on the handle — pure
+  map over parsed IPs, no fetch (probe is the React layer's job);
+  `BridgeContract.discoverPrinters` added.
+- `state/printers.ts` (zustand store): owns `import.meta.env` +
+  `fetch`; `probeReachability` tries ports 990 / 6000 / 8080 with
+  `mode: "no-cors"` + AbortController timeout (990/6000 are browser
+  unsafe ports → degrade to offline; 8080 is the probe fallback).
+- `components/PrinterPicker.tsx` (header popover `details/summary`, G43):
+  LED tri-state `.printer-led` probing/online/offline; auto-probe on
+  mount; refresh re-probes; empty state + hint for missing/invalid env;
+  rows with `title="Arm send target {ip}"`, selection arms send.
+- `vite.config.ts`: `envPrefix: ["VITE_", "ANYCUBIC_PRINTER_IPS"]` —
+  deliberately NOT generic `ANYCUBIC_` (tokens stay server-side).
+- Tests `tests/printers-lane.test.mjs` (9 cases, JS pure): parse
+  dedupe/trim/invalid, empty env hint, invalid-only hint, initial
+  tri-state, probe-done fold, probe-in-flight guard + unknown select,
+  idle probe-done rejection, lane discover (2 printers, sanitized id),
+  lane with invalid-only env. NOTE: `not-an-ip` was once accepted by a
+  loose regex — hardened with `isValidIp`.
+- Browser-verified (dev server with `ANYCUBIC_PRINTER_IPS=127.0.0.1`):
+  empty env → "No printer" + hint; with env → "Pick printer" list
+  "Printer @ 127.0.0.1"; LED offline → online when a probe server
+  answered on 8080 (no-cors); selection arms send (trigger shows IP,
+  row `data-selected` + check, popover closes); footer "refreshed · env".
+- Gate: unit 441 pass (was 432, +9) / fail 0, integration 11, smoke 106
+  tools, e2e:ui + e2e:editor-reload PASS, licenses + architecture OK,
+  sanitize DRY-RUN 0 files, GATE_EXIT=0. Commit `aacadd6` — 10 files,
+  +920.
 
 ### S9.5-004 — Send-to-print dialog
 
