@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (modeling) + bridge                                                                                                                                       |
 | **Source**            | Consultor report 2026-09-30 §2 (9.7) + audit G26/G31/G33/G46                                                                                                          |
 | **Depends On**        | Sprints 9.2/9.3 (graph + transforms) + server `cad_v2_boolean`                                                                                                        |
-| **Status**            | ⏳ Planned                                                                                                                                                            |
+| **Status**            | 🔄 In progress (1/5) — 001 delivered (2026-10-02)                                                                                                                     |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -51,18 +51,44 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Priority**         | P1                                                                                |
 | **Type**             | Feature                                                                           |
 | **Estimated Effort** | L                                                                                 |
-| **Status**           | ⏳ Planned                                                                        |
+| **Status**           | ✅ Delivered (94f1912)                                                            |
+| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 529) · commit `94f1912`                            |
 
 #### Context
 
 G26. Wire to the preserved `cad_v2_boolean`/`cad-bool-tool.mjs` server tool. Op preview
-geometry displayed before commit; non-destructive journal log entry (repairable via 9.6 seek);
+displayed before commit; non-destructive journal log entry (repairable via 9.6 seek);
 result object keeps a provenance note (`+bool op A∩B`). ToolState in `state/toolbar.ts`.
 
 #### Acceptance criteria
 
 - [x] Subtract/union/intersect produce a new object via the server tool; preview shown pre-commit.
 - [x] Op logged non-destructively (undoable via journal); source objects hidden-or-kept per choice.
+
+#### Implementation Notes
+
+- `apps/editor/src/panels/BooleanToolPanel.tsx` (NEW) — arm flag (ToolState in toolbar.ts) →
+  select A → op (union/subtract/intersect) → select B → deterministic op preview (bounds over
+  A∪B, triangle count, watertight) → Execute commits via the bridge boolean lane → success/error
+  toast; optional "hide source objects" checkbox (AC-2 hidden-or-kept).
+- `apps/editor/src/state/toolbar-core.ts` + `toolbar.ts` — ToolbarFlags gains `booleanTool`
+  (pure toggle, headless-tested) + `BooleanOp`/`BOOLEAN_OPS`/`booleanOpLabel`/`booleanProvenance`
+  (`+bool <op> A∩B`).
+- `apps/editor/src/bridge/mock.ts` — `boolean(req)` lane mirroring `cad_v2_boolean` semantics
+  over the authoritative snapshot: validates distinct/watertight sources, builds a deterministic
+  watertight fixture result (vertex/tri union heuristic + typed buffers from A∪B bounds),
+  dedupes result names, stamps provenance, hides sources on demand, advances revision + commit
+  event. `booleanResultStats`/`booleanResultGeometry` are pure.
+- `apps/editor/src/bridge/types.ts` — `BooleanRequest`/`BooleanResult` + `SceneObjectSnapshot`
+  gains `provenance?`.
+- `apps/editor/src/panels/ObjectTree.tsx` — row tooltip shows the provenance note (AC-2 lineage).
+- `tests/boolean-tool.test.mjs` (+7: ops/provenance/flag-toggle, union object stats+bounds+kept
+  sources, subtract/intersect normalize + name dedupe, hide_sources, rejections).
+- `tests/toolbar.test.mjs` updated for the new flag (deep-equal shape now includes
+  `booleanTool: false`).
+- Gate: unit 529 pass / 0 fail, integration 11, check-rust OK, smoke 106, e2e:ui PASS
+  (objects=4 add+boolean+parametric), e2e:editor-reload PASS, licenses 59, architecture OK,
+  sanitize DRY-RUN 0.
 
 ### S9.7-002 — Snapping controller
 
