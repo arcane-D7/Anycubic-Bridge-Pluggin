@@ -1,0 +1,14 @@
+feat(s9.5-005): cover printjob machine guards + deterministic slice lane
+
+Adds tests/printjob-machine.test.mjs (18 cases): cancel from idle,
+out-of-range / out-of-state stage events, preflight clearing a prior
+non-watertight block, start blocked by a dirty plate (actionable names),
+finish/send-* guards outside their states, error guards from ready/sent,
+error from idle, start rejected from error, the full send retry cycle
+(send-error -> ready -> send-start -> sent, slice stats preserved), and
+monotonic send-progress. Lane-side determinism: repeated slices never
+advance the revision and produce identical stats, custom layer height
+flows through (ceil(28/0.3)=94), and stats revision mirrors the snapshot.
+
+Gate green: unit 469 (451+18), integration 11, rust/build/smoke 106 OK,
+e2e x2 PASS, licenses 59, architecture OK, sanitize DRY-RUN 0 files.
