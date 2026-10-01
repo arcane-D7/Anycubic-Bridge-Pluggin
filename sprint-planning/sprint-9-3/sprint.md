@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport)                                                                                                                                     |
 | **Source**            | Consultor report 2026-09-30 §2 (9.3) + audit G2/G3/G8/G32/G30                                                                                              |
 | **Depends On**        | Sprint 9.2 (graph + real meshes)                                                                                                                           |
-| **Status**            | 🚧 In progress (4/5 tickets delivered)                                                                                                                     |
+| **Status**            | ✅ Complete (5/5 tickets delivered, 2026-10-02)                                                                                                            |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -335,14 +335,14 @@ OK, sanitize DRY-RUN 0 files.
 
 ### S9.3-005 — Gate + sanitizer
 
-| Field                | Value                          |
-| -------------------- | ------------------------------ |
-| **Ticket ID**        | S9.3-005                       |
-| **Title**            | Full gate EXIT:0 + sanitizer 0 |
-| **Priority**         | P0                             |
-| **Type**             | Quality                        |
-| **Estimated Effort** | S                              |
-| **Status**           | ⏳ Planned                     |
+| Field                | Value                                        |
+| -------------------- | -------------------------------------------- |
+| **Ticket ID**        | S9.3-005                                     |
+| **Title**            | Full gate EXIT:0 + sanitizer 0               |
+| **Priority**         | P0                                           |
+| **Type**             | Quality                                      |
+| **Estimated Effort** | S                                            |
+| **Status**           | ✅ Delivered (2026-10-02, closes sprint 9.3) |
 
 #### Context
 
@@ -352,3 +352,25 @@ dry-run 0; commit closes the sprint.
 #### Acceptance criteria
 
 - [x] `pnpm run check` EXIT:0; sanitizer 0; commit closes the sprint.
+
+#### Implementation notes
+
+**Closeout evidence:**
+
+- Final gate `pnpm run check` EXIT:0 (log: `$env:TEMP\s9-3-004-check2.log`, `GATE_EXIT=0`)
+  — unit **379** pass, integration **11** pass, lint clean, typecheck clean, Rust (auth +
+  editor shell), build OK, smoke **106** tools, e2e:ui PASS (objects=4), e2e:editor-reload
+  PASS, licenses 59, architecture OK, **sanitize DRY-RUN 0 files** (`usr=mafsc` 0 touch).
+- Clean git working tree (only the 2 docs files staged for this closeout commit).
+- Sprint 9.3 complete: 5/5 tickets delivered — `7b1eb21` (001), `75c102f` (002),
+  `560b0c0` (003), `8f8069b` (004), this commit (005). NO PUSH (main protected, 2 reviews).
+
+## Sprint Complete ✅
+
+Sprint 9.3 delivered 5/5 in full: real drei `<TransformControls>` gizmo with axis colors +
+pointer isolation (001), numeric transform inspector with abs/rel/reset + dirty status (002),
+G/R/S + X/Y/Z + Enter/Esc + F + Delete/Ctrl+D + Q/W/E/R + Ctrl+Z/Y shortcut layer with
+accessible help (003), real bridge begin/update/commit lane with S7-005 journal events and
+rebase-able stale-revision errors (004), and the closing full gate + sanitizer (005). The
+viewport now drives real transform values through the authoritative bridge lane; Ctrl+Z/Y
+soft re-import is journal-backed (full journal UI lands in 9.6).
