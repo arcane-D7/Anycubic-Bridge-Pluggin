@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport + toolbar)                                                                                                                                             |
 | **Source**            | Consultor report 2026-09-30 §2 (9.4) + audit G7/G12/G13/G15/G16/G36                                                                                                          |
 | **Depends On**        | Sprint 9.3 (arrange targets need real transforms)                                                                                                                            |
-| **Status**            | ⏳ Planned                                                                                                                                                                   |
+| **Status**            | 🚧 In progress (1/6 tickets delivered)                                                                                                                                       |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -51,7 +51,7 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Priority**         | P0                                                                                |
 | **Type**             | Feature                                                                           |
 | **Estimated Effort** | M                                                                                 |
-| **Status**           | ⏳ Planned                                                                        |
+| **Status**           | ✅ Delivered (2026-10-02, commit `6c76647`)                                       |
 
 #### Context
 
@@ -63,6 +63,52 @@ consumes the 9.3 shortcut layer for `Q/W/E/R`. Mode describes the current gizmo 
 
 - [x] Toolbar floats above the canvas with glass styling; tools drive gizmo mode + view.
 - [x] Snap + grid toggles (state only in 9.4; snapping behavior lands 9.7).
+
+#### Implementation notes
+
+**What shipped (7 files, commit `6c76647`):**
+
+- `apps/editor/src/state/toolbar-core.ts` (NEW, pure) — `ViewPreset`
+  (iso/top/front/right), `VIEW_PRESETS` (direction + up per preset; front = -Z
+  viewer side → approached from +Z), `VIEW_PRESET_KEYS` (numpad 1-4 + Home→iso),
+  `isViewPreset`, `ToolbarFlags {snap, grid}` + `DEFAULT_TOOLBAR_FLAGS` +
+  `toggleToolbarFlag` (immutable). Tool modes stay in `state/ui.ts` `ToolMode`
+  (S9.3-001) — the toolbar consumes the S9.3-003 shortcut layer ids 1:1.
+- `apps/editor/src/state/toolbar.ts` (NEW, zustand) — `useToolbar` store over
+  the pure core (snap/grid toggleFlag). Re-exports the ViewPreset machinery.
+- `apps/editor/src/viewport/Toolbar.tsx` (NEW) — glass fill-2/blur-2 floating
+  row top-center OVER the canvas (mounted inside `.viewport-frame`, sibling of
+  the R3F canvas so 3D input is untouched outside its bounds). Groups:
+  Select/Move/Rotate/Scale (setTool → gizmo), snap/grid toggles (useToolbar,
+  state-only), Arrange (S9.4-004 placeholder toast), Fit (F equivalent via
+  FRAME_SELECTED_EVENT), view presets (dispatch `VIEW_PRESET_EVENT` custom
+  event for the S9.4-002 camera listener). Tooltips use `shortcutFor`/
+  `shortcutLabel` from the shared registry (110ms CSS transition delay).
+- `apps/editor/src/components/icons.tsx` — added `move`, `rotate`, `scale`
+  toolpath glyphs (matching the hand-rolled 16px mono set).
+- `apps/editor/src/viewport/Viewport.tsx` — mounts `<Toolbar />` as the first
+  child of `ViewportFrame` (z-index above canvas, `!preview`).
+- `apps/editor/src/styles.css` — `.viewport-toolbar` (absolute top-center,
+  fill-2/blur-2 glass, hairline + shadow-2, r-lg), `.toolbar-group` (2px gaps,
+  separators), `.toolbar-btn` (28px min, transparent, hover raised, active =
+  accent text + 2px accent underline below, 110ms transitions).
+- `tests/toolbar.test.mjs` (NEW) — 5 unit tests: default flags, toggle flip +
+  preserve, immutability, VIEW_PRESETS[keys] map, isViewPreset guard.
+
+**Acceptance evidence:**
+
+- AC-1 (floats + drives gizmo/view): mounted in ViewportFrame top-center; tool
+  buttons write `useUi.tool` (the S9.3-001 gizmo switches mode); preset buttons
+  dispatch the VIEW_PRESET_EVENT consumed by S9.4-002's camera tween. e2e:ui +
+  editor-reload PASS.
+- AC-2 (snap/grid state-only): toggles flip `useToolbar` flags with accent
+  underline feedback; real snapping deliberately deferred to 9.7. Unit tests
+  assert the toggle semantics headless.
+
+**Gate:** `pnpm run check` EXIT:0 (log: `$env:TEMP\s9-4-001-check1.log`, `GATE_EXIT=0`) —
+unit 384 pass, integration 11 pass, lint clean, typecheck clean, Rust (auth + editor
+shell), smoke 106 tools, e2e:ui PASS, e2e:editor-reload PASS, licenses 59, architecture
+OK, sanitize DRY-RUN 0 files.
 
 ### S9.4-002 — Camera presets + view cube
 
