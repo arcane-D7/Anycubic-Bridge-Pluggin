@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (polish)                                                                                                 |
 | **Source**            | Consultor report 2026-09-30 §2 (9.8) + audit G34/G35/G37/G38/G42/G44/G45/G46                                         |
 | **Depends On**        | Sprints 9.1–9.7 (everything)                                                                                         |
-| **Status**            | 🔄 In progress (5/7) — 001, 002, 003, 004, 005 delivered (2026-10-02)                                                |
+| **Status**            | 🔄 In progress (6/7) — 001–005 delivered, 006 delivered (2026-10-02)                                                 |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -238,7 +238,7 @@ and floating-panel chrome.**
 | **Priority**         | P1                                                                |
 | **Type**             | Quality                                                           |
 | **Estimated Effort** | M                                                                 |
-| **Status**           | ⏳ Planned                                                        |
+| **Status**           | ✅ Delivered @ `95d0697` (2026-10-02)                             |
 
 #### Context
 
@@ -249,6 +249,25 @@ ratio ≤2 for canvas), `THREE.Clock` audit in R3F (no per-frame alloc), gl cont
 must stay within perf acceptance — idle static cache handled by WebView2, `prefers-reduced-transparency`
 drops the blur, no `will-change` outside drag, dpr cap ≤2. **Chat lazy-load**: panel + AI SDK
 loaded via `React.lazy` chunk (keeps the main scene bundle lean).
+
+#### Implementation notes
+
+- **gl context-loss guard**: `ContextLossGuard.tsx` (inside `<Canvas>` via `useThree`) — on
+  `webglcontextlost` preventDefault keeps the browser's auto-recovery; on `webglcontextrestored`
+  `invalidate()` forces a re-render. Three 0.186 has NO `restoreObjectState()`: the renderer
+  re-initializes internally via `onContextRestore → initGLContext`.
+- **Chat lazy-load**: `ChatPanelLazy.tsx` wraps `React.lazy(() => import("./ChatPanel"))`
+  (named-export normalization + owns its `Suspense` fallback); used by sidebar `chat` view and
+  the floating dock — keeps the `ai`/`@ai-sdk/react` SDK out of the main scene chunk.
+- **Floating-panel overlay budget**: `.floating-panel-host.is-dragging { will-change: transform }`
+  applied via `use-dock.ts` class toggling only DURING the drag gesture (no permanent GPU layer);
+  `prefers-reduced-transparency: reduce` now also drops blur on `.floating-panel-host`;
+  `.panel-chat-loading` reserves min-height so the lazy fallback doesn't jump the layout.
+- **e2e:editor-reload fix**: the test spawned Vite without `--host`, and Vite 8 defaults to
+  binding `localhost` (IPv6 `::1`) while the test + broker CORS use `127.0.0.1` → the browser
+  fetch was refused (`dev server did not come up`). Spawn now passes `--host 127.0.0.1`.
+- Gate 2026-10-02 (check4): unit 586 pass / 0 fail, integration 11, check-rust OK, build OK,
+  smoke 106, e2e:ui PASS + e2e:editor-reload PASS, licenses 59, architecture OK, sanitize 0.
 
 #### Acceptance criteria
 
