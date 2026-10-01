@@ -2,10 +2,11 @@ import { TransformControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import type * as THREE from "three";
 import { useCallback, useEffect, useMemo, useRef, useState, type ElementRef } from "react";
-import type { BridgeContract } from "../bridge/mock";
+import type { BridgeHandle } from "../bridge/mock";
 import type { SceneObjectSnapshot } from "../bridge/types";
 import { useViewport } from "../state/viewport";
 import { useUi, type ToolMode } from "../state/ui";
+import { SnapReadout, useSnap } from "./SnapController";
 import { constrainToAxis } from "./transform-core";
 
 /**
@@ -46,7 +47,7 @@ function collectPanelRects(): { x: number; y: number; width: number; height: num
 }
 
 interface TransformGizmoProps {
-  readonly bridge?: BridgeContract;
+  readonly bridge?: BridgeHandle;
   readonly selectedName: string | null;
 }
 
@@ -54,6 +55,9 @@ export function TransformGizmo({ bridge, selectedName }: TransformGizmoProps) {
   const tool = useUi((s) => s.tool);
   const revision = useViewport((s) => s.revision);
   const sessionStatus = useViewport((s) => s.sessionStatus);
+  // S9.7-002 — effective snap step from the toolbar store; the gizmo snaps
+  // the draft BEFORE persisting and shows the target in the readout.
+  const { snapTransform, readout } = useSnap(bridge?.buildVolume);
   const runFlow = useViewport((s) => s.runFlow);
   const cancel = useViewport((s) => s.cancel);
   const sceneGraph = useThree((s) => s.scene);
@@ -174,12 +178,15 @@ export function TransformGizmo({ bridge, selectedName }: TransformGizmoProps) {
       grab?.axis ?? null,
       constraintKind as "move" | "rotate" | "scale",
     );
+    // S9.7-002 AC-1: grid/vertex snaps apply during gizmo drags — the draft
+    // is snapped here so the persisted value honors the configurable step.
+    const snapped = snapTransform(draft, constraintKind as "move" | "rotate" | "scale");
     void bridge.mutateObject({
       kind: "setTransform",
       name: selectedName,
-      transform: draft,
+      transform: snapped,
     });
-  }, [selectedName, bridge, target, tool]);
+  }, [selectedName, bridge, target, tool, snapTransform]);
 
   const handleMouseUp = useCallback(() => {
     if (!bridge) return;
@@ -211,17 +218,21 @@ export function TransformGizmo({ bridge, selectedName }: TransformGizmoProps) {
   if (!target || !mode) return null;
 
   return (
-    <TransformControls
-      ref={controlsRef}
-      object={target}
-      mode={mode}
-      enabled={!overPanel}
-      onObjectChange={handleObjectChange}
-      onMouseUp={handleMouseUp}
-      translationSnap={null}
-      rotationSnap={null}
-      scaleSnap={null}
-    />
+    <>
+      <TransformControls
+        ref={controlsRef}
+        object={target}
+        mode={mode}
+        enabled={!overPanel}
+        onObjectChange={handleObjectChange}
+        onMouseUp={handleMouseUp}
+        translationSnap={null}
+        rotationSnap={null}
+        scaleSnap={null}
+      />
+      {/* S9.7-002 AC-1 — snap target readout + guide while dragging. */}
+      <SnapReadout readout={readout} volume={bridge?.buildVolume} />
+    </>
   );
 }
 

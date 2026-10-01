@@ -118,3 +118,104 @@ export function constrainToAxis(
           sz: axis === "z" ? (draft.sz ?? 1) : 1,
         };
 }
+
+/**
+ * S9.7-002 — deterministic grid snapping primitives (pure, headless).
+ *
+ * - `snapStepFor(gridStep, axis, volume)` — the effective snap step for a
+ *   position axis: from the toolbar config when nonzero, else derived from
+ *   the plate/profile footprint (largest side / 48, floored to 5 mm, min
+ *   5 mm — the "step from plate/profile" AC).
+ * - `snapValue(value, step)` — round-to-nearest step (deterministic; a
+ *   value exactly between two steps rounds down, standard half-down).
+ * - `snapRotationDeg(deg, stepDeg)` — rotation snap (default 15°).
+ * - `snapTargetLabel(axis, value, kind)` — the readout string ("X 12.5").
+ *
+ * The same helpers drive the gizmo draft AND the readout, so the displayed
+ * target always matches the persisted value (AC: snapped motion
+ * deterministic).
+ */
+
+export const DEFAULT_SNAP_STEP_MM = 5;
+export const ROTATION_SNAP_STEP_DEG = 15;
+
+export function snapStepFor(
+  gridStepMm: number,
+  volume?: { widthMm?: number; depthMm?: number },
+): number {
+  if (gridStepMm > 0) return gridStepMm;
+  const width = volume?.widthMm ?? 0;
+  const depth = volume?.depthMm ?? 0;
+  const ref = width > 0 && depth > 0 ? Math.max(width, depth) : 0;
+  if (ref <= 0) return DEFAULT_SNAP_STEP_MM;
+  const derived = Math.max(
+    DEFAULT_SNAP_STEP_MM,
+    Math.floor(ref / 48 / DEFAULT_SNAP_STEP_MM) * DEFAULT_SNAP_STEP_MM,
+  );
+  return derived;
+}
+
+/** Round to the nearest multiple of `step` (half-down for exact ties). */
+export function snapValue(value: number, step: number): number {
+  if (!Number.isFinite(value) || !(step > 0)) return value;
+  return Math.round(value / step) * step;
+}
+
+/** Rotation snapping (degrees); default 15° keeps the standard 30/45 alignments. */
+export function snapRotationDeg(deg: number, stepDeg: number = ROTATION_SNAP_STEP_DEG): number {
+  return snapValue(deg, stepDeg);
+}
+
+/** Readout label for the snap target (axis-parallel; e.g. "X 12.5"). */
+export function snapTargetLabel(axis: string, value: number): string {
+  const rounded = Math.round(value * 100) / 100;
+  return `${axis} ${rounded}`;
+}
+
+/** S9.7-002 — what the snap produced (drives the readout/guide). */
+export interface SnapTarget {
+  readonly axis: string;
+  readonly value: number;
+  readonly kind: "move" | "rotate";
+}
+
+/**
+ * S9.7-002 — pure draft → snapped draft (headless-testable).
+ *
+ * Move snaps X/Y/Z to the grid step (step from toolbar config, or derived
+ * from the plate footprint via `snapStepFor`); rotate snaps rx/ry/rz to
+ * 15°; scale passes through (axis/vertex snap is scoped to position/
+ * rotation per the sprint AC). Returns the first changed axis as the target
+ * for the readout; null when nothing snapped.
+ */
+export function snapDraft(
+  draft: SceneTransform,
+  opts: { snap: boolean; stepMm: number; volume?: { widthMm?: number; depthMm?: number } },
+): { transform: SceneTransform; target: SnapTarget | null } {
+  if (!opts.snap) return { transform: draft, target: null };
+  const step = snapStepFor(opts.stepMm, opts.volume);
+  let target: SnapTarget | null = null;
+  let transform: SceneTransform = draft;
+  for (const axis of ["x", "y", "z"] as const) {
+    const source = transform[axis] ?? 0;
+    const snapped = snapValue(source, step);
+    if (snapped !== source) {
+      transform = { ...transform, [axis]: snapped };
+      if (target === null) {
+        target = { axis: axis.toUpperCase(), value: snapped, kind: "move" };
+      }
+    }
+  }
+  for (const axis of ["rx", "ry", "rz"] as const) {
+    const deg = (transform[axis] ?? 0) % 360;
+    const snapped = snapRotationDeg(deg, ROTATION_SNAP_STEP_DEG);
+    if (snapped !== deg) {
+      transform = { ...transform, [axis]: snapped };
+      if (target === null) {
+        const label = axis === "rx" ? "X" : axis === "ry" ? "Y" : "Z";
+        target = { axis: label, value: snapped, kind: "rotate" };
+      }
+    }
+  }
+  return { transform, target };
+}

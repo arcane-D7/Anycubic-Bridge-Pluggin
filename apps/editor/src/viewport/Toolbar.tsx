@@ -65,6 +65,8 @@ export function Toolbar({ scene }: ToolbarProps) {
   const setTool = useUi((s) => s.setTool);
   const snap = useToolbar((s) => s.snap);
   const grid = useToolbar((s) => s.grid);
+  const snapStep = useToolbar((s) => s.snapStep);
+  const setSnapStep = useToolbar((s) => s.setSnapStep);
   const toggleFlag = useToolbar((s) => s.toggleFlag);
   const queryClient = useQueryClient();
   const pushToast = useUi((s) => s.pushToast);
@@ -185,6 +187,24 @@ export function Toolbar({ scene }: ToolbarProps) {
         >
           <Icon name="grid" size={18} />
         </button>
+        {/* S9.7-002 AC-2 — snap step configurable from the toolbar: discrete
+            number input, clamped 1..100 mm. Determinism guaranteed by the
+            pure `snapValue` rounding used everywhere. */}
+        <label className="toolbar-snap-step" title="Snap step (mm)">
+          <span className="visually-hidden">Snap step mm</span>
+          <input
+            type="number"
+            min={1}
+            max={100}
+            step={1}
+            data-testid="snap-step-input"
+            value={snapStep}
+            disabled={!snap}
+            aria-label="Snap step (mm)"
+            onChange={(e) => setSnapStep(Number(e.currentTarget.value))}
+          />
+          <span className="snap-step-unit">mm</span>
+        </label>
       </div>
 
       <div className="toolbar-group" role="group" aria-label="Scene actions">
