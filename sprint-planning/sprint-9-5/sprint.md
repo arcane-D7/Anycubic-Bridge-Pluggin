@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (flow) + bridge                                                                                                                                  |
 | **Source**            | Consultor report 2026-09-30 §2 (9.5) + audit G24/G25/G43                                                                                                     |
 | **Depends On**        | Sprints 9.3/9.4 (transforms/plates correct before slicing) + 9.1 (tokens)                                                                                    |
-| **Status**            | 🚧 In progress (1/6 tickets delivered)                                                                                                                       |
+| **Status**            | 🚧 In progress (2/6 tickets delivered)                                                                                                                       |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -103,7 +103,7 @@ and stats panel.
 | **Priority**         | P0                                                                              |
 | **Type**             | Feature                                                                         |
 | **Estimated Effort** | M                                                                               |
-| **Status**           | ⏳ Planned                                                                      |
+| **Status**           | ✅ Delivered (19de4f2)                                                          |
 
 #### Context
 
@@ -115,6 +115,50 @@ Preview controls (layer slider + toggles) with tokens.
 
 - [x] Slice enabled iff ≥1 watertight object on plate; progress stages visible; cancel works.
 - [x] Stats panel renders all five metrics from real pipeline output; Preview restyled.
+
+#### Implementation notes
+
+- `bridge/types.ts`: `SliceStats` (layers, estimatedMinutes, materialGrams,
+  volumeMm3, perObjectMm3), `SliceRequest` (plateId, optional layerHeightMm /
+  infillPercent), `SliceResult` (ok, revision, stats, blockedBy) — the frozen
+  slice contract behind the provider swap.
+- `bridge/mock.ts`: G24 stats estimator `computeSliceStats` (PLA density
+  1.24 g/cm³, 0.2 mm layers, ~40 mm³/s throughput; layers = ceil(maxZ/layer),
+  grams = volume·density, per-object share; AABB fallback when volumeMm3 is 0) + the real `slice()` lane on the handle: filters the authoritative
+  snapshot by plate (`DEFAULT_PLATE_ID` from plates-core), rejects
+  non-watertight objects with actionable `blockedBy` names, never advances
+  the revision (slicing is read-only).
+- `state/printjob-core.ts`: `SliceStats` now type-imported from
+  `bridge/types.ts` (single source of truth — mock and machine share the
+  shape; type-only import keeps the core headless).
+- `components/SliceButton.tsx` (header, next to workspace tabs): primary
+  accent action, enabled iff `sliceEligible(objectsOnPlate(active.id))` (≥1
+  and all watertight on the ACTIVE plate); click preflights, starts the
+  staged sequence (260 ms per stage) then calls the real lane and
+  `finish(stats)` + success toast; disabled while slicing/sending.
+- `components/SliceProgress.tsx` (footer): segmented 5-stage bar (prepare →
+  planar-core → IR → postprocess → preview) with mono `stage/total · pct`
+  meta + Cancel (honoured by the machine only between stages).
+- `panels/SliceStatsPanel.tsx` (footer): 4-metric grid (layers, est. time,
+  material, volume) + per-object breakdown, rendered only when the job
+  reaches ready; hidden on cancel/reset. Preview controls were already
+  restyled with tokens in S9.1-003 (glass-fill-2/blur-2 floating control).
+- App.tsx mounts the button in the header and progress + stats in the
+  footer. styles.css gains `.slice-btn` / `.slice-progress*` /
+  `.slice-stats*` (accent fill, token track, mono numerals).
+- Tests `tests/slice-lane.test.mjs` (7 cases, JS pure): layers from max
+  stack height, volume/material/time derivation, AABB fallback for
+  zero-volume, zero-bounds no-crash, active-plate filter, full lane through
+  `fetchSceneSnapshot().slice()` (happy path), non-watertight block with
+  actionable names. GOTCHA: block test runs BEFORE the happy path — the
+  happy path mutates the module-level mock scene (removes the offender).
+- Browser-verified: Slice disabled while sphere-non-watertight is on the
+  plate → delete → enabled → click → "Slicing · prepare…" + staged progress
+  - Cancel → stats panel (140 layers, 12 min, 35.2 g, 28,384 mm³; cone
+    20,384 / cube 8,000 mm³) → reload restores the blocked state.
+- Gate: unit 432 pass (was 425, +7) / fail 0, integration 11, smoke 106
+  tools, e2e:ui + e2e:editor-reload PASS, licenses + architecture OK,
+  sanitize DRY-RUN 0 files, GATE_EXIT=0. Commit `19de4f2` — 9 files, +686.
 
 ### S9.5-003 — Printer picker + connection state
 
