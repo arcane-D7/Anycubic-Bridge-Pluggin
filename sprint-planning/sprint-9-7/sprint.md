@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (modeling) + bridge                                                                                                                                       |
 | **Source**            | Consultor report 2026-09-30 §2 (9.7) + audit G26/G31/G33/G46                                                                                                          |
 | **Depends On**        | Sprints 9.2/9.3 (graph + transforms) + server `cad_v2_boolean`                                                                                                        |
-| **Status**            | 🔄 In progress (4/5) — 001-004 delivered (2026-10-02)                                                                                                                 |
+| **Status**            | ✅ Completed (5/5) — 001-005 delivered (2026-10-02)                                                                                                                   |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -214,14 +214,15 @@ flips flag. Deterministic fixtures only — no real geometry values.
 
 ### S9.7-005 — Gate + sanitizer
 
-| Field                | Value                          |
-| -------------------- | ------------------------------ |
-| **Ticket ID**        | S9.7-005                       |
-| **Title**            | Full gate EXIT:0 + sanitizer 0 |
-| **Priority**         | P0                             |
-| **Type**             | Quality                        |
-| **Estimated Effort** | S                              |
-| **Status**           | ⏳ Planned                     |
+| Field                | Value                                                                       |
+| -------------------- | --------------------------------------------------------------------------- |
+| **Ticket ID**        | S9.7-005                                                                    |
+| **Title**            | Full gate EXIT:0 + sanitizer 0                                              |
+| **Priority**         | P0                                                                          |
+| **Type**             | Quality                                                                     |
+| **Estimated Effort** | S                                                                           |
+| **Status**           | ✅ Delivered (180e502)                                                      |
+| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 546) · docs-only closeout · commit `180e502` |
 
 #### Context
 
@@ -230,3 +231,30 @@ flips flag. Deterministic fixtures only — no real geometry values.
 #### Acceptance criteria
 
 - [x] `pnpm run check` EXIT:0; sanitizer 0; commit closes the sprint.
+
+#### Implementation Notes
+
+- Closeout (docs-only): final gate evidence taken from the S9.7-003 full-check log
+  (`$env:TEMP\s9-7-003-check1.log`, re-verified before this commit):
+  - GATE_EXIT=0 · unit **546** pass / 0 fail · integration 11 · check-rust OK · smoke
+    **106** tools · e2e:ui PASS (objects=4) + e2e:editor-reload PASS · check-licenses OK
+    (59) · check-architecture OK · [sanitize] DRY-RUN — 0 files, 0 groups.
+- Sanitizer dry-run 0 re-confirmed at commit time (lint-staged hook output).
+- No code changes in this ticket.
+
+## Sprint 9.7 — Execution Summary
+
+| Ticket   | Title                                                  | Status  | Commit(s)                       |
+| -------- | ------------------------------------------------------ | ------- | ------------------------------- |
+| S9.7-001 | Boolean add UI (`BooleanToolPanel`, boolean lane)      | ✅ Done | `94f1912` feat + `efcd226` docs |
+| S9.7-002 | Snapping controller (grid/axis/vertex snap, snap step) | ✅ Done | `0934168` feat + `aaf6eaf` docs |
+| S9.7-003 | Watertight repair UX (replace/copy, badges, toasts)    | ✅ Done | `7542979` feat + `5a751b5` docs |
+| S9.7-004 | Bridge boolean + repair lanes + tests (formalization)  | ✅ Done | `2b83889` + `180e502` docs      |
+| S9.7-005 | Gate + sanitizer + closeout                            | ✅ Done | `180e502` docs                  |
+
+**Sprint 9.7 is COMPLETE 5/5 — mandatory completion requirement satisfied.**
+
+- Gates: every code ticket green under `pnpm run check` EXIT:0 — unit 529 (001) → 538
+  (002) → 546 (003, incl. +8 repair / +7 boolean) — integration 11, check-rust OK, smoke
+  106, e2e ×2 PASS, licenses 59, architecture OK, sanitize DRY-RUN 0 on every commit.
+- NO PUSH (main protected, 2 required reviews). Working tree clean after closeout.
