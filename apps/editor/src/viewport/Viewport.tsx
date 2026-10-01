@@ -15,6 +15,7 @@ import { openContextMenuAt } from "../components/context-menu-core";
 import { useContextMenuStore } from "../state/context-menu";
 import type { ContextMenuItem } from "../components/context-menu-core";
 import { BuildPlate } from "./BuildPlate";
+import { ContextLossGuard } from "./ContextLossGuard";
 import { FrameSelectedCamera } from "./FrameSelectedCamera";
 import { LayerPreview, previewFit } from "./LayerPreview";
 import { ObjectLabels, LabelProjector } from "./Labels";
@@ -115,6 +116,8 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
         {!preview ? <MeasureTool objects={visibleObjects} /> : null}
         {!preview ? <FrameSelectedCamera /> : null}
         {!preview ? <ViewportCamera /> : null}
+        {/* S9.8-006 — GL context-loss recovery (inside Canvas via useThree). */}
+        <ContextLossGuard />
         <OrbitControls makeDefault enableDamping />
       </Canvas>
       {!preview ? <ViewCube /> : null} {!preview ? <NonWatertightBadges bridge={scene} /> : null}{" "}

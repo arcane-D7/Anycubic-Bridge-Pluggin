@@ -3,7 +3,7 @@ import { useDock } from "../../state/dock";
 import { useI18n } from "../../state/i18n";
 import { FloatingPanelHost, CollapsedPill } from "./FloatingPanelHost";
 import { ConversationQuickSwitcher } from "./ConversationQuickSwitcher";
-import { ChatPanel } from "../../panels/ChatPanel";
+import { ChatPanelLazy } from "../../panels/ChatPanelLazy";
 
 /**
  * DockPanel (S9.1a-003) — the chat panel's dock/float orchestrator. Renders:
@@ -47,7 +47,7 @@ export function DockPanel() {
           onCollapse={collapse}
           headerExtra={<ConversationQuickSwitcher />}
         >
-          <ChatPanel />
+          <ChatPanelLazy />
         </FloatingPanelHost>
       </DialogPrimitive.Root>
       {panel.mode === "collapsed" && (

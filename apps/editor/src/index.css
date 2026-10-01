@@ -339,10 +339,14 @@
 }
 
 /* Reduced-motion / reduced-transparency (S9.1-002 AC): drop the blur so
-   frosted glass never fights OS transparency preferences. */
+   frosted glass never fights OS transparency preferences. S9.8-006:
+   floating dock panels included — keeping the glass blur over the animating
+   WebGL canvas when the OS asks for less transparency violates the overlay
+   budget (perf AC). */
 @media (prefers-reduced-transparency: reduce) {
   .glass-surface,
   .glass-fill,
+  .floating-panel-host,
   [class*="backdrop-blur-"] {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -545,6 +549,11 @@
   touch-action: none;
 }
 
+/* S9.8-006 — chat chunk Suspense skeleton (same footprint as .panel-chat). */
+.panel-chat-loading {
+  min-height: 120px;
+}
+
 /* ============================================================
  * Floating dock panels (S9.1a-002/003) — glass fill-2/blur-2,
  * header drag region (data-drag), 8-way resize handles, pill
@@ -563,10 +572,17 @@
     box-shadow: var(--shadow-inset-hi), var(--shadow-3);
     color: var(--text-primary);
     overflow: hidden;
-    will-change: transform;
+    /* S9.8-006 — compositing hint only DURING a drag (see .is-dragging):
+       a permanent will-change holds a GPU layer over the animating WebGL
+       canvas even when the panel is idle. */
     /* Opts back into the input path — the overlay wrapper is pointer-events:
        none so the R3F canvas keeps events wherever the panel rect isn't. */
     pointer-events: auto;
+  }
+
+  /* S9.8-006 — gesture-scoped compositing hint (added by use-dock during drag). */
+  .floating-panel-host.is-dragging {
+    will-change: transform;
   }
 
   .floating-header {

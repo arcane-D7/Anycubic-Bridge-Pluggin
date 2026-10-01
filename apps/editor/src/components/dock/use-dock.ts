@@ -41,6 +41,10 @@ export function useDockDrag(id: PanelId) {
     if (target && target.closest("button, a, input, textarea, select, [data-resize]")) return;
     startRef.current = { x: e.clientX, y: e.clientY };
     el.setPointerCapture?.(e.pointerId);
+    // S9.8-006 — promote the layer ONLY during the gesture (GPU compositing
+    // hint). `will-change` stays off outside drags so idle floating panels
+    // don't hold a layer over the animating WebGL canvas.
+    el.classList.add("is-dragging");
   }
 
   function bindElement(el: HTMLElement | null) {
@@ -77,11 +81,16 @@ export function useDockDrag(id: PanelId) {
         h: rect.h,
       });
       el.style.transform = "";
+      // S9.8-006 — drop the compositing hint when the gesture ends.
+      el.classList.remove("is-dragging");
       startRef.current = null;
     }
     const onCancel = () => {
       const el = elRef.current;
-      if (el) el.style.transform = "";
+      if (el) {
+        el.style.transform = "";
+        el.classList.remove("is-dragging");
+      }
       startRef.current = null;
     };
     window.addEventListener("pointermove", onMove, { passive: true });

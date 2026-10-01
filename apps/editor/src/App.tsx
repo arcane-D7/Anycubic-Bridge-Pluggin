@@ -5,7 +5,7 @@ import type { IrDocument } from "./bridge/ir";
 import { parseIrDocument } from "./bridge/ir";
 import type { SlicingMode } from "./contract";
 import { PanelDivider } from "./layout/PanelDivider";
-import { ChatPanel } from "./panels/ChatPanel";
+import { ChatPanelLazy } from "./panels/ChatPanelLazy";
 import { ImportDialog } from "./panels/ImportDialog";
 import { ObjectTree } from "./panels/ObjectTree";
 import { TransformInspector } from "./panels/TransformInspector";
@@ -269,7 +269,7 @@ export function App() {
               <BooleanToolPanel scene={scene} />
             </>
           ) : null}{" "}
-          {sidebarView === "chat" ? <ChatPanel /> : null}
+          {sidebarView === "chat" ? <ChatPanelLazy /> : null}
           <section className="panel-section" aria-label={t("app.ir.aria")}>
             <header className="panel-title">{t("app.ir.title")}</header>
             <div className="panel-body">

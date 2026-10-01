@@ -86,12 +86,18 @@ async function waitHttp(url, timeoutMs) {
 
 try {
   // REUSE an already-running dev server if present; otherwise spawn one.
+  // The spawn MUST bind 127.0.0.1 explicitly: Vite 8 defaults to `localhost`
+  // (IPv6 ::1), while this test and the broker CORS contract use 127.0.0.1.
   if (!(await devAlreadyUp())) {
     assert.ok(fs.existsSync(viteEntry), `vite entry missing: ${viteEntry}`);
-    child = spawn(process.execPath, [viteEntry, "--port", "1420", "--strictPort"], {
-      cwd: editorDir,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+    child = spawn(
+      process.execPath,
+      [viteEntry, "--host", "127.0.0.1", "--port", "1420", "--strictPort"],
+      {
+        cwd: editorDir,
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
     let viteLog = "";
     child.stdout?.on("data", (d) => (viteLog += d.toString()));
     child.stderr?.on("data", (d) => (viteLog += d.toString()));
