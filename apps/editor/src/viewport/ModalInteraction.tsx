@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { BridgeHandle, CommitSinkPayload } from "../bridge/mock";
 import { useViewport } from "../state/viewport";
 /**
@@ -15,12 +15,27 @@ import { useViewport } from "../state/viewport";
  *
  * AC-1 (commit events): subscribes `onCommitEvent` on the live bridge handle
  * (installed once) so each authoritative snapshot re-renders the viewport.
+ *
+ * The DOM strip (Gizmo button + numeric input) is a S7-004 developer affordance
+ * — it is redundant with the real `TransformGizmo`/`TransformInspector` and is
+ * hidden from end users (UI-check 2026-10-01, P0/B4). The event wiring (commit
+ * subscription, Esc-cancel) stays active; only the raw strip is gated behind
+ * `editor.debug` (localStorage "1" or import.meta.env.DEV).
  */
+
+function useDebugStrip() {
+  const [enabled] = useState(
+    () => typeof localStorage !== "undefined" && localStorage.getItem("editor.debug") === "1",
+  );
+  return enabled;
+}
+
 export function ModalInteraction({ bridge }: { readonly bridge?: BridgeHandle }) {
   const runFlow = useViewport((s) => s.runFlow);
   const cancel = useViewport((s) => s.cancel);
   const revision = useViewport((s) => s.revision);
   const sessionStatus = useViewport((s) => s.sessionStatus);
+  const debugStrip = useDebugStrip();
 
   // AC-1: subscribe to commit events (authoritative snapshot re-render).
   // Installed once per bridge handle; removed when the handle changes.
@@ -66,6 +81,8 @@ export function ModalInteraction({ bridge }: { readonly bridge?: BridgeHandle })
     },
     [sessionStatus, cancel, revision, bridge, runFlow],
   );
+
+  if (!debugStrip) return null;
 
   return (
     <div data-testid="modal-interaction">

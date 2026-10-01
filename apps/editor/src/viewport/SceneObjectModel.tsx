@@ -23,6 +23,7 @@ interface SceneObjectModelProps {
 
 import { resolveModelRenderState } from "./scene-model-render.ts";
 import { applyTransform } from "./transform-core";
+import { selectionGlow, selectionOutline } from "./theme-colors";
 
 /** Re-exported pure helpers (headless-tested in tests/scene-object-model.test.mjs). */
 export { geometryExists } from "./scene-model-render.ts";
@@ -83,7 +84,7 @@ export const SceneObjectModel = memo(function SceneObjectModel({ info }: SceneOb
     isSelected,
     isHovered: hovered,
   });
-  const outlineColor = isSelected ? "var(--sel-outline-3d)" : "transparent";
+  const outlineColor = isSelected ? selectionOutline() : null;
 
   if (!visible) return null;
 
@@ -152,7 +153,7 @@ export const SceneObjectModel = memo(function SceneObjectModel({ info }: SceneOb
       {/* selection outline: bounds wireframe 2px + 6px glow halo (hidden
           while a transient transform is in progress — the gizmo carries the
           affordance then) */}
-      {isSelected && box && (
+      {isSelected && box && outlineColor && (
         <>
           <mesh
             position={box.getCenter(new THREE.Vector3()).toArray()}
@@ -166,12 +167,7 @@ export const SceneObjectModel = memo(function SceneObjectModel({ info }: SceneOb
             scale={box.getSize(new THREE.Vector3()).multiplyScalar(1.06).toArray()}
           >
             <boxGeometry args={[1, 1, 1]} />
-            <meshBasicMaterial
-              color="var(--sel-outline-glow)"
-              wireframe
-              transparent
-              opacity={0.35}
-            />
+            <meshBasicMaterial color={selectionGlow()} wireframe transparent opacity={0.35} />
           </mesh>
         </>
       )}
