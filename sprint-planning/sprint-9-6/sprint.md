@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (panels)                                                                                                                                                                                                                                                                                            |
 | **Source**            | Consultor report 2026-09-30 §2 (9.6) + audit G14/G20/G21/G22/G23/G30/G36 + Consultor ronda 2 §3 (chat)                                                                                                                                                                                                          |
 | **Depends On**        | Sprint 9.5 (slice consumes presets) + Sprint 9.1a (dock host)                                                                                                                                                                                                                                                   |
-| **Status**            | 🔄 In progress (5/9)                                                                                                                                                                                                                                                                                            |
+| **Status**            | 🔄 In progress (6/9)                                                                                                                                                                                                                                                                                            |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -332,7 +332,7 @@ conversationId, messages: initialMessages, transport, onFinish })`. Hydrate come
 | **Priority**         | P1                                                                                                                      |
 | **Type**             | Feature                                                                                                                 |
 | **Estimated Effort** | M                                                                                                                       |
-| **Status**           | ⏳ Planned                                                                                                              |
+| **Status**           | ✅ Delivered (`6881205`)                                                                                                |
 
 #### Context
 
@@ -343,6 +343,28 @@ N sources · M approvals". Wire into the 9.1a dock for both docked and floating 
 #### Acceptance criteria
 
 - [x] List + create/switch/rename/delete in sidebar and floating header; dirty dot; token bar; works docked and floating.
+
+#### Implementation Notes
+
+- **Pure core additions** (`state/chat-conversations-core.ts`): `conversationsSorted`
+  (updatedAt desc, createdAt asc tie — deterministic), `conversationStats`
+  (`usedTokens` = sum of `contextSources[].tokens`, `ratio` clamped 0..1, `sourceCount`,
+  `approvalCount`, `dirty` = `revision > 0`). Shared by both list surfaces — no UI-side
+  math drift.
+- **Docked sidebar slice** (`panels/ConversationList.tsx`): replaced the legacy
+  `<select>` bar in `ChatPanel` with the full list — row = dirty dot (`data-dirty`),
+  title (double-click → inline rename input, Enter/Esc/blur commit), meta row with
+  mono token-budget bar + "N src · M apv", delete (✕, stopPropagation), row click
+  switches active conversation; footer "+ New conversation". `.panel-chat` e2e-reload
+  contract untouched; `<ChatThread key={activeId}/>` remount per active conversation.
+- **Floating header quick-switch** (`components/dock/ConversationQuickSwitcher.tsx`):
+  Radix Popover (non-modal), trigger `.floating-icon-btn` in `.floating-header` via new
+  `headerExtra` slot; rows = title + dirty dot + source counts; create + switch honor the
+  popover close. Header drag (`data-drag` pointerdown ownership) and `dock-chat` /
+  `collapse-chat` buttons untouched.
+- **Tests**: +3 unit (stats ratio/clamp, sorted order incl. tie-break) — 511 unit pass,
+  integration 11, smoke 106, e2e:ui + e2e:editor-reload PASS, licenses 59,
+  architecture OK, sanitize DRY-RUN 0. Gate `pnpm run check` EXIT:0.
 
 ### S9.6-007 — Broker chat-store persistence lane
 
