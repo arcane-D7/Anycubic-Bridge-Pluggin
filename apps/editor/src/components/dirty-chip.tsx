@@ -1,6 +1,7 @@
 import { useDirty } from "../state/dirty";
 import { dirtyChip, lastCommitLabel } from "../state/dirty-core";
 import { useScene } from "../state/scene";
+import { useI18n } from "../state/i18n";
 import { useUi } from "../state/ui";
 import { useViewport } from "../state/viewport";
 
@@ -20,6 +21,7 @@ import { useViewport } from "../state/viewport";
  */
 
 export function DirtyChip() {
+  const t = useI18n((s) => s.t);
   const revision = useViewport((s) => s.revision);
   const savedRevision = useDirty((s) => s.savedRevision);
   const lastCommitTime = useDirty((s) => s.lastCommitTime);
@@ -35,22 +37,35 @@ export function DirtyChip() {
     const objects = useScene.getState().objects;
     const res = save(objects);
     if (!res.ok) {
-      pushToast({ kind: "error", title: "Save scene", message: res.error ?? "save failed" });
+      pushToast({
+        kind: "error",
+        title: t("dirty.toast.saveError.title"),
+        message: res.error ?? t("dirty.toast.saveError.message"),
+      });
       return;
     }
-    pushToast({ kind: "success", title: "Scene saved", message: "Scene persisted locally." });
+    pushToast({
+      kind: "success",
+      title: t("dirty.toast.saved.title"),
+      message: t("dirty.toast.saved.message"),
+    });
   };
 
   const onRestore = () => {
     const res = restore(hydrate);
     if (!res.ok) {
-      pushToast({ kind: "warning", title: "Restore scene", message: res.error ?? "no backup" });
+      pushToast({
+        kind: "warning",
+        title: t("dirty.toast.restoreError.title"),
+        message: res.error ?? t("dirty.toast.restoreError.message"),
+      });
       return;
     }
+    const n = res.restoredObjects.length;
     pushToast({
       kind: "success",
-      title: "Scene restored",
-      message: `${res.restoredObjects.length} object${res.restoredObjects.length === 1 ? "" : "s"} restored from local backup.`,
+      title: t("dirty.toast.restored.title"),
+      message: t("dirty.toast.restored.message", { n: String(n), s: n === 1 ? "" : "s" }),
     });
   };
 
@@ -58,31 +73,31 @@ export function DirtyChip() {
     <span className="dirty-chip" data-testid="dirty-chip">
       <span className={chip.isDirty ? "dirty-dot" : "dirty-dot is-clean"} aria-hidden="true" />
       <span className="dirty-label" data-testid="dirty-label">
-        {chip.isDirty ? `${chip.unsavedOps} unsaved` : "saved"}
+        {chip.isDirty ? t("dirty.unsaved", { n: String(chip.unsavedOps) }) : t("dirty.saved")}
       </span>
-      <span className="dirty-time" data-testid="dirty-time" title="Last local commit">
+      <span className="dirty-time" data-testid="dirty-time" title={t("dirty.tooltip")}>
         {commitLabel}
       </span>
       <button
         type="button"
         className="dirty-save"
         data-testid="dirty-save"
-        aria-label="Save scene locally"
-        title="Save scene locally"
+        aria-label={t("dirty.save.aria")}
+        title={t("dirty.save.title")}
         onClick={onSave}
       >
-        save
+        {t("dirty.save.label")}
       </button>
       <button
         type="button"
         className="dirty-restore"
         data-testid="dirty-restore"
-        aria-label="Restore scene from local backup"
-        title="Restore scene from local backup"
+        aria-label={t("dirty.restore.aria")}
+        title={t("dirty.restore.title")}
         disabled={savedRevision === 0}
         onClick={onRestore}
       >
-        restore
+        {t("dirty.restore.label")}
       </button>
     </span>
   );

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { BridgeHandle, CommitSinkPayload } from "../bridge/mock";
 import { useViewport } from "../state/viewport";
+import { useI18n } from "../state/i18n";
 /**
  * S7-004: UI-owned interaction driving the modal lifecycle
  * (begin → update* → commit | cancel) through the viewport store (zustand →
@@ -31,6 +32,7 @@ function useDebugStrip() {
 }
 
 export function ModalInteraction({ bridge }: { readonly bridge?: BridgeHandle }) {
+  const t = useI18n((s) => s.t);
   const runFlow = useViewport((s) => s.runFlow);
   const cancel = useViewport((s) => s.cancel);
   const revision = useViewport((s) => s.revision);
@@ -94,7 +96,7 @@ export function ModalInteraction({ bridge }: { readonly bridge?: BridgeHandle })
       </button>
       <input
         type="number"
-        aria-label="Transform value"
+        aria-label={t("modal.transformValueAria")}
         data-testid="numeric-entry"
         onBlur={(e) => runNumeric(e.currentTarget.value)}
         onKeyDown={(e) => {

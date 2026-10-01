@@ -10,6 +10,8 @@ import { buildObjectMenuItems } from "../components/context-menu-items";
 import { useContextMenuStore } from "../state/context-menu";
 import { useScene } from "../state/scene";
 import { useUi } from "../state/ui";
+import { useI18n } from "../state/i18n";
+import type { MsgKey } from "../state/i18n-core";
 
 /**
  * Left panel — object tree (S9.2-004 full rework).
@@ -66,15 +68,24 @@ function fmtVolume(o: SceneObjectSnapshot): string {
 }
 
 /** Visual column set (S9.6-003). Stable order, headers double as sort buttons. */
-const PLACEMENT_COLUMNS: ReadonlyArray<{ key: PlacementSortKey; label: string; title: string }> = [
-  { key: "x", label: "X", title: "Center X (mm)" },
-  { key: "y", label: "Y", title: "Center Y (mm)" },
-  { key: "z", label: "Z", title: "Center Z (mm)" },
-  { key: "footprint", label: "Ftp", title: "Footprint (w × d)" },
-  { key: "volume", label: "Vol", title: "Volume" },
+const PLACEMENT_COLUMNS: ReadonlyArray<{
+  key: PlacementSortKey;
+  labelKey: MsgKey;
+  titleKey: MsgKey;
+}> = [
+  { key: "x", labelKey: "objectTree.col.centerX", titleKey: "objectTree.col.centerX" },
+  { key: "y", labelKey: "objectTree.col.centerY", titleKey: "objectTree.col.centerY" },
+  { key: "z", labelKey: "objectTree.col.centerZ", titleKey: "objectTree.col.centerZ" },
+  {
+    key: "footprint",
+    labelKey: "objectTree.col.footprintShort",
+    titleKey: "objectTree.col.footprint",
+  },
+  { key: "volume", labelKey: "objectTree.col.volumeShort", titleKey: "objectTree.col.volume" },
 ];
 
 export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
+  const t = useI18n((s) => s.t);
   const queryClient = useQueryClient();
   const objects = useScene((s) => s.objects);
   const selectedNames = useScene((s) => s.selectedNames);
@@ -234,15 +245,20 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
         pushToast({ kind: "error", title: "Auto-repair", message: res.error });
         return;
       }
-      const target = res.object !== o.name ? ` as "${res.object}"` : "";
+      const target =
+        res.object !== o.name ? t("objectTree.toast.repair.asCopy", { object: res.object }) : "";
       pushToast({
         kind: "success",
-        title: "Auto-repair",
-        message: `${o.name} is watertight${target}.`,
+        title: t("objectTree.toast.repair.title"),
+        message: t("objectTree.toast.repair.watertight", { name: o.name, target }),
       });
     } catch (err) {
       console.warn("[object-tree] repair failed", err);
-      pushToast({ kind: "error", title: "Auto-repair", message: "Bridge error during repair." });
+      pushToast({
+        kind: "error",
+        title: t("objectTree.toast.repair.title"),
+        message: t("objectTree.toast.repair.bridgeError"),
+      });
     }
   };
 
@@ -278,19 +294,21 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
   const anchor = anchorName ? objects.find((x) => x.name === anchorName) : undefined;
 
   return (
-    <section className="panel-object-tree" aria-label="Object tree">
-      <header className="panel-title">Objects</header>
-      {objects.length === 0 && !scene ? <p className="panel-hint">Loading scene…</p> : null}
-      {objects.length === 0 && scene ? <p className="panel-hint">No objects.</p> : null}
-      <header className="object-tree-header" aria-label="Object columns">
+    <section className="panel-object-tree" aria-label={t("objectTree.label")}>
+      <header className="panel-title">{t("objectTree.title")}</header>
+      {objects.length === 0 && !scene ? (
+        <p className="panel-hint">{t("objectTree.loading")}</p>
+      ) : null}
+      {objects.length === 0 && scene ? <p className="panel-hint">{t("objectTree.empty")}</p> : null}
+      <header className="object-tree-header" aria-label={t("objectTree.columns.aria")}>
         <button
           type="button"
           className={`column-sort${sortKey === "name" ? " active" : ""}`}
           data-testid="column-sort-name"
-          title="Sort by name"
+          title={t("objectTree.sortName.title")}
           onClick={() => onSortHeader("name")}
         >
-          Name
+          {t("objectTree.sortName")}
           {sortKey === "name" ? (
             <svg className="sort-arrow" width="8" height="8" viewBox="0 0 8 8" aria-hidden="true">
               <path d={sortAsc ? "M4 1 L7 6 H1 Z" : "M4 7 L1 2 H7 Z"} fill="currentColor" />
@@ -303,10 +321,10 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
             type="button"
             className={`column-sort${sortKey === col.key ? " active" : ""}`}
             data-testid={`column-sort-${col.key}`}
-            title={col.title}
+            title={t(col.titleKey)}
             onClick={() => onSortHeader(col.key)}
           >
-            {col.label}
+            {t(col.labelKey)}
             {sortKey === col.key ? (
               <svg className="sort-arrow" width="8" height="8" viewBox="0 0 8 8" aria-hidden="true">
                 <path d={sortAsc ? "M4 1 L7 6 H1 Z" : "M4 7 L1 2 H7 Z"} fill="currentColor" />
@@ -345,8 +363,8 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
               <button
                 type="button"
                 className="obj-action obj-eye"
-                title={o.visible ? "Hide" : "Show"}
-                aria-label={o.visible ? "Hide object" : "Show object"}
+                title={o.visible ? t("objectTree.hide") : t("objectTree.show")}
+                aria-label={o.visible ? t("objectTree.hideObj") : t("objectTree.showObj")}
                 aria-pressed={o.visible}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -358,8 +376,8 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
               <button
                 type="button"
                 className="obj-action obj-lock"
-                title={o.locked ? "Unlock" : "Lock"}
-                aria-label={o.locked ? "Unlock object" : "Lock object"}
+                title={o.locked ? t("objectTree.unlock") : t("objectTree.lock")}
+                aria-label={o.locked ? t("objectTree.unlockObj") : t("objectTree.lockObj")}
                 aria-pressed={o.locked}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -373,7 +391,7 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
                   ref={inputRef}
                   className="obj-rename"
                   value={draft}
-                  aria-label="Rename object"
+                  aria-label={t("objectTree.rename.aria")}
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") commitRename(o);
@@ -385,7 +403,11 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
               ) : (
                 <span
                   className="object-name"
-                  title={o.provenance ? `${o.name} — ${o.provenance}` : o.name}
+                  title={
+                    o.provenance
+                      ? t("objectTree.provenance", { name: o.name, provenance: o.provenance })
+                      : o.name
+                  }
                 >
                   {o.name}
                   {/* S9.7-003 (G46) — non-watertight badge becomes the repair
@@ -396,8 +418,8 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
                     <button
                       type="button"
                       className="obj-repair-badge"
-                      title="Non-watertight — click to Auto-repair"
-                      aria-label={`Auto-repair ${o.name}`}
+                      title={t("objectTree.repair.title")}
+                      aria-label={t("objectTree.repair.label", { name: o.name })}
                       data-testid={`repair-${CSS.escape(o.name)}`}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -405,39 +427,39 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
                       }}
                     >
                       <Icon name="wrench" size={12} />
-                      repair
+                      {t("objectTree.repair")}
                     </button>
                   ) : null}
                 </span>
               )}
-              <span className="object-meta" aria-label="Mesh stats">
+              <span className="object-meta" aria-label={t("objectTree.mesh.aria")}>
                 {metaOf(o)}
               </span>
-              <span className="object-placement" aria-label="Placement metrics">
+              <span className="object-placement" aria-label={t("objectTree.placement.aria")}>
                 <span
                   className="obj-cell"
-                  title="Center X (mm)"
+                  title={t("objectTree.col.centerX")}
                 >{`${fmtMm(placementMetrics(o).center[0])}`}</span>
                 <span
                   className="obj-cell"
-                  title="Center Y (mm)"
+                  title={t("objectTree.col.centerY")}
                 >{`${fmtMm(placementMetrics(o).center[1])}`}</span>
                 <span
                   className="obj-cell"
-                  title="Center Z (mm)"
+                  title={t("objectTree.col.centerZ")}
                 >{`${fmtMm(placementMetrics(o).center[2])}`}</span>
-                <span className="obj-cell" title="Footprint (w × d)">
+                <span className="obj-cell" title={t("objectTree.col.footprint")}>
                   {fmtFootprint(o)}
                 </span>
-                <span className="obj-cell" title="Volume">
+                <span className="obj-cell" title={t("objectTree.col.volume")}>
                   {fmtVolume(o)}
                 </span>
               </span>
               <button
                 type="button"
                 className="obj-action obj-more"
-                title="Object menu"
-                aria-label={`Actions for ${o.name}`}
+                title={t("objectTree.menu.title")}
+                aria-label={t("objectTree.menu.aria", { name: o.name })}
                 data-testid={`obj-more-${o.name}`}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -454,17 +476,17 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
         <button
           type="button"
           className="obj-footer-btn"
-          title="Add object (import)"
+          title={t("objectTree.add.title")}
           data-testid="object-add"
           disabled={!scene}
           onClick={onOpenImport}
         >
-          <Icon name="plus" size={14} /> Add
+          <Icon name="plus" size={14} /> {t("objectTree.add")}
         </button>
         <button
           type="button"
           className="obj-footer-btn"
-          title="Duplicate selected"
+          title={t("objectTree.duplicate.title")}
           data-testid="object-duplicate"
           disabled={!hasSelection || !scene}
           onClick={() => {
@@ -476,7 +498,7 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
         <button
           type="button"
           className="obj-footer-btn"
-          title="Delete selected"
+          title={t("objectTree.delete.title")}
           data-testid="object-delete"
           disabled={!hasSelection || !scene}
           onClick={() => {
@@ -488,7 +510,7 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
         <button
           type="button"
           className="obj-footer-btn"
-          title="Arrange"
+          title={t("objectTree.arrange.title")}
           data-testid="object-arrange"
           disabled={!scene}
           onClick={() => void onAutoArrange()}

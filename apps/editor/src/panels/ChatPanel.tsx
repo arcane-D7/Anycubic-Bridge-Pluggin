@@ -1,4 +1,5 @@
 import { useChatConversations } from "../state/chat-conversations";
+import { useI18n } from "../state/i18n";
 import { ChatThread } from "./ChatThread";
 import { ConversationList } from "./ConversationList";
 
@@ -17,12 +18,13 @@ import { ConversationList } from "./ConversationList";
  */
 
 export function ChatPanel() {
+  const t = useI18n((s) => s.t);
   const activeId = useChatConversations((s) => s.activeId);
   const conversations = useChatConversations((s) => s.conversations);
 
   return (
-    <section className="panel-chat" aria-label="Chat panel">
-      <header className="panel-title">Chat</header>
+    <section className="panel-chat" aria-label={t("chat.title")}>
+      <header className="panel-title">{t("chat.title")}</header>
       <ConversationList />
       {activeId !== null ? (
         <ChatThread

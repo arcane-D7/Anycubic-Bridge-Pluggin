@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./icons";
 import { useContextMenuStore } from "../state/context-menu";
+import { useI18n } from "../state/i18n";
 import type { ContextMenuItem, ContextMenuState } from "./context-menu-core";
 
 export type { ContextMenuItem, ContextMenuState };
@@ -21,6 +22,7 @@ export type { ContextMenuItem, ContextMenuState };
  */
 
 export function ContextMenu() {
+  const t = useI18n((s) => s.t);
   const state = useContextMenuStore((s) => s.state);
   const close = useContextMenuStore((s) => s.close);
   const [focusIndex, setFocusIndex] = useState(0);
@@ -75,7 +77,7 @@ export function ContextMenu() {
       <div
         ref={listRef}
         role="menu"
-        aria-label="Context menu"
+        aria-label={t("contextMenu.aria")}
         data-testid="context-menu"
         className="context-menu"
         style={{ left: state.x, top: state.y }}

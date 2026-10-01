@@ -18,6 +18,8 @@ import {
   resolveKind,
   sameTransform,
 } from "../state/transform-inspector";
+import { useI18n } from "../state/i18n";
+import type { MsgKey } from "../state/i18n-core";
 
 /**
  * Numeric transform inspector (S9.3-002).
@@ -99,6 +101,7 @@ export function resolveDrafts(
 }
 
 export function TransformInspector({ scene }: TransformInspectorProps) {
+  const t = useI18n((s) => s.t);
   const queryClient = useQueryClient();
   const selected = useScene((s) => s.selected);
   const objects = useScene((s) => s.objects);
@@ -163,12 +166,16 @@ export function TransformInspector({ scene }: TransformInspectorProps) {
     try {
       const res = await scene.mutateObject(mutation);
       if (!res.ok) {
-        pushToast({ kind: "warning", title: "Transform rejected", message: res.error });
+        pushToast({
+          kind: "warning",
+          title: t("transform.toast.rejected.title"),
+          message: res.error,
+        });
       }
     } catch (err) {
       pushToast({
         kind: "error",
-        title: "Transform failed",
+        title: t("transform.toast.failed"),
         message: err instanceof Error ? err.message : String(err),
       });
     } finally {
@@ -180,7 +187,11 @@ export function TransformInspector({ scene }: TransformInspectorProps) {
     if (!committed || !name) return;
     const parsed = parseRow(drafts[kind]);
     if (!parsed) {
-      pushToast({ kind: "warning", title: "Invalid value", message: "Numeric input expected." });
+      pushToast({
+        kind: "warning",
+        title: t("transform.toast.invalid.title"),
+        message: t("transform.toast.invalid.message"),
+      });
       return;
     }
     const transform = resolveKind(committed, kind, parsed, relative[kind] === true);
@@ -258,19 +269,25 @@ export function TransformInspector({ scene }: TransformInspectorProps) {
 
   if (!name || !committed) {
     return (
-      <section className="panel-transform-inspector" aria-label="Transform inspector">
-        <header className="panel-title">Transform</header>
-        <p className="panel-hint">Select an object to edit parts, position and scale.</p>
+      <section className="panel-transform-inspector" aria-label={t("transform.label")}>
+        <header className="panel-title">{t("transform.title")}</header>
+        <p className="panel-hint">{t("transform.emptyHint")}</p>
       </section>
     );
   }
 
   return (
-    <section className="panel-transform-inspector" aria-label="Transform inspector">
-      <header className="panel-title">Transform</header>
+    <section className="panel-transform-inspector" aria-label={t("transform.label")}>
+      <header className="panel-title">{t("transform.title")}</header>
 
       {KINDS.map((kind) => {
         const row = drafts[kind]!;
+        const kindKey: MsgKey =
+          kind === "position"
+            ? "transform.kind.position"
+            : kind === "rotation"
+              ? "transform.kind.rotation"
+              : "transform.kind.scale";
         return (
           <fieldset
             key={kind}
@@ -279,22 +296,24 @@ export function TransformInspector({ scene }: TransformInspectorProps) {
           >
             <legend className="inspector-row-head">
               <span className="inspector-kind">{kind.charAt(0).toUpperCase()}</span>
-              <span className="inspector-kind-name">{kind}</span>
+              <span className="inspector-kind-name">{t(kindKey)}</span>
               <span className="inspector-kind-actions">
                 <button
                   type="button"
                   className={`inspector-rel-toggle${relative[kind] ? " active" : ""}`}
                   aria-pressed={!!relative[kind]}
-                  title={`${relative[kind] ? "Relative mode" : "Absolute mode"} — deltas for position/rotation, factors for scale`}
+                  title={t("transform.mode.title", {
+                    mode: t(relative[kind] ? "transform.mode.relative" : "transform.mode.absolute"),
+                  })}
                   onClick={() => toggleRelative(kind)}
                 >
-                  {relative[kind] ? "rel" : "abs"}
+                  {relative[kind] ? t("transform.rel") : t("transform.abs")}
                 </button>
                 <button
                   type="button"
                   className="inspector-copy"
-                  title="Copy X value into Y and Z"
-                  aria-label={`Copy ${kind} X into Y and Z`}
+                  title={t("transform.copy.title")}
+                  aria-label={t("transform.copy.label", { kind: t(kindKey) })}
                   onClick={() => copyToAll(kind)}
                 >
                   ⇥
@@ -302,8 +321,11 @@ export function TransformInspector({ scene }: TransformInspectorProps) {
                 <button
                   type="button"
                   className="inspector-reset"
-                  title={`Reset ${kind} to ${kind === "scale" ? "1" : "0"}`}
-                  aria-label={`Reset ${kind}`}
+                  title={t("transform.reset.title", {
+                    kind: t(kindKey),
+                    n: kind === "scale" ? "1" : "0",
+                  })}
+                  aria-label={t("transform.reset.label", { kind: t(kindKey) })}
                   onClick={() => resetKind(kind)}
                 >
                   ↺
@@ -320,7 +342,7 @@ export function TransformInspector({ scene }: TransformInspectorProps) {
                       className={`inspector-input mono-num${field.valid ? "" : " invalid"}`}
                       type="text"
                       inputMode="decimal"
-                      aria-label={`${kind} ${axis}`}
+                      aria-label={t("transform.axis.label", { kind: t(kindKey), axis })}
                       value={field.value}
                       onChange={(e) => onFieldChange(kind, axis, e.currentTarget.value)}
                       onBlur={() => commitOnBlur(kind)}
@@ -337,12 +359,12 @@ export function TransformInspector({ scene }: TransformInspectorProps) {
 
       {scaleWarning ? (
         <p className="inspector-warning" role="status">
-          Non-uniform scale — thin walls may print poorly. Consider resetting scale to 1:1:1.
+          {t("transform.warning.nonUniform")}
         </p>
       ) : null}
       {resized && !scaleWarning ? (
         <p className="inspector-note" role="status">
-          Scale changed from identity.
+          {t("transform.note.resized")}
         </p>
       ) : null}
     </section>

@@ -21,6 +21,7 @@
 import { BufferGeometry, Float32BufferAttribute } from "three";
 import { useCallback, useMemo, useState } from "react";
 import type { BuildVolume } from "../bridge/types";
+import { useI18n } from "../state/i18n";
 import { useToolbar } from "../state/toolbar";
 import { snapDraft, snapStepFor, type SceneTransform, type SnapTarget } from "./transform-core";
 
@@ -47,6 +48,7 @@ export function SnapReadout({
   const snap = useToolbar((s) => s.snap);
   const step = useToolbar((s) => s.snapStep);
   const effStep = snapStepFor(step, volume);
+  const t = useI18n((s) => s.t);
 
   return (
     <>
@@ -54,7 +56,7 @@ export function SnapReadout({
         <div className="viewport-snap-readout" data-testid="snap-readout">
           <span className="snap-readout-axis">{readout.axis}</span>
           <span className="snap-readout-value">{readout.value}</span>
-          <span className="snap-readout-step">step {effStep}</span>
+          <span className="snap-readout-step">{t("snap.step", { step: String(effStep) })}</span>
         </div>
       ) : null}
       {snap && readout ? <SnapGuide target={readout} /> : null}

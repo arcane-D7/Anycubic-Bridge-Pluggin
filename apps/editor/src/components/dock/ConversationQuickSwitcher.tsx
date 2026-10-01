@@ -2,6 +2,7 @@ import { useState } from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { conversationsSorted, conversationStats } from "../../state/chat-conversations-core";
 import { useChatConversations } from "../../state/chat-conversations";
+import { useI18n } from "../../state/i18n";
 
 /**
  * ConversationQuickSwitcher (S9.6-006) — compact Popover on the floating
@@ -12,6 +13,7 @@ import { useChatConversations } from "../../state/chat-conversations";
  * (ConversationList in ChatPanel) — this Popover targets floating mode.
  */
 export function ConversationQuickSwitcher() {
+  const t = useI18n((s) => s.t);
   const [open, setOpen] = useState(false);
   const activeId = useChatConversations((s) => s.activeId);
   const conversations = useChatConversations((s) => s.conversations);
@@ -25,7 +27,9 @@ export function ConversationQuickSwitcher() {
           type="button"
           className="floating-icon-btn conversation-quick-switch"
           data-testid="conversation-quick-switch"
-          title={`Switch conversation (active: ${active?.title ?? "none"})`}
+          title={t("chat.switchConversation.title", {
+            title: active?.title ?? t("conversation.none"),
+          })}
         >
           ☰
         </button>
@@ -50,6 +54,7 @@ export function ConversationQuickSwitcher() {
  * rows switch + a New button; Esc/browse closes.
  */
 function ConversationQuickList({ onPick }: { readonly onPick: () => void }) {
+  const t = useI18n((s) => s.t);
   const conversations = useChatConversations((s) => s.conversations);
   const activeId = useChatConversations((s) => s.activeId);
   const switchTo = useChatConversations((s) => s.switchTo);
@@ -60,7 +65,7 @@ function ConversationQuickList({ onPick }: { readonly onPick: () => void }) {
   return (
     <div className="conversation-popover-inner" data-testid="conversation-list">
       {rows.length === 0 ? (
-        <p className="panel-hint">No conversations yet.</p>
+        <p className="panel-hint">{t("conversation.empty")}</p>
       ) : (
         rows.map((convo) => {
           const stats = conversationStats(convo);
@@ -79,7 +84,10 @@ function ConversationQuickList({ onPick }: { readonly onPick: () => void }) {
               <span className="conversation-row-title">{convo.title}</span>
               <span className="conversation-row-meta">
                 {stats.dirty ? <span className="conversation-dirty" data-dirty="true" /> : null}
-                {stats.sourceCount} src · {stats.approvalCount} apv
+                {t("conversation.meta", {
+                  n: String(stats.sourceCount),
+                  m: String(stats.approvalCount),
+                })}
               </span>
             </button>
           );
@@ -94,7 +102,7 @@ function ConversationQuickList({ onPick }: { readonly onPick: () => void }) {
           onPick();
         }}
       >
-        + New conversation
+        {t("conversation.new")}
       </button>
     </div>
   );

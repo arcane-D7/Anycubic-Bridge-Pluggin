@@ -6,6 +6,7 @@ import {
 } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useDock, type PanelId } from "../../state/dock";
+import { useI18n } from "../../state/i18n";
 import { useDockDrag } from "./use-dock";
 
 /**
@@ -48,6 +49,7 @@ export function FloatingPanelHost({
   onCollapse,
   headerExtra,
 }: FloatingPanelHostProps) {
+  const t = useI18n((s) => s.t);
   const panel = useDock((s) => s.panels[id]);
   const focusPanel = useDock((s) => s.focusPanel);
   const setPanelRect = useDock((s) => s.setPanelRect);
@@ -175,7 +177,7 @@ export function FloatingPanelHost({
         <button
           type="button"
           className="floating-icon-btn"
-          title="Dock panel"
+          title={t("dock.dockTitle")}
           data-testid={`dock-${id}`}
           onClick={onDock}
         >
@@ -184,7 +186,7 @@ export function FloatingPanelHost({
         <button
           type="button"
           className="floating-icon-btn"
-          title="Collapse to pill"
+          title={t("dock.collapseTitle")}
           data-testid={`collapse-${id}`}
           onClick={onCollapse}
         >
@@ -194,7 +196,7 @@ export function FloatingPanelHost({
       <div className="floating-body">
         {children}
         <DialogPrimitive.Description className="sr-only">
-          Floating {title} panel
+          {t("dock.floatingDesc", { title })}
         </DialogPrimitive.Description>
       </div>
       {isFloating && (
@@ -202,7 +204,7 @@ export function FloatingPanelHost({
           <button
             type="button"
             className="resize-handle resize-handle-se"
-            aria-label={`Resize ${title}`}
+            aria-label={t("dock.resizeTitle", { title })}
             data-resize="se"
             onPointerDown={(e) => handleResize(e, "se")}
           />
@@ -229,12 +231,13 @@ export function CollapsedPill({
   readonly title: string;
   readonly onExpand: () => void;
 }) {
+  const t = useI18n((s) => s.t);
   return (
     <button
       type="button"
       className="dock-pill"
       data-testid={`pill-${id}`}
-      title={`Expand ${title}`}
+      title={t("dock.expandTitle", { title })}
       onClick={onExpand}
     >
       <span className="dock-pill-dot" aria-hidden="true" />

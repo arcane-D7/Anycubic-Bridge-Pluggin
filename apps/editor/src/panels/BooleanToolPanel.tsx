@@ -24,13 +24,22 @@ import { useCallback, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { BridgeHandle } from "../bridge/mock";
 import type { BooleanOp } from "../state/toolbar";
-import { BOOLEAN_OPS, booleanOpLabel, useToolbar } from "../state/toolbar";
+import { BOOLEAN_OPS, useToolbar } from "../state/toolbar";
 import { useScene } from "../state/scene";
 import { useUi } from "../state/ui";
+import { useI18n } from "../state/i18n";
+import type { MsgKey } from "../state/i18n-core";
 
 interface BooleanToolPanelProps {
   readonly scene: BridgeHandle | undefined;
 }
+
+/** i18n label key per op (toolbar-core labels stay untouched — S9.8-005 rule). */
+const OP_LABEL_KEYS: Record<BooleanOp, MsgKey> = {
+  add: "boolean.op.union",
+  subtract: "boolean.op.subtract",
+  intersect: "boolean.op.intersect",
+};
 
 /** Deterministic preview bounds (A∪B) — mirrors the lane's `booleanResultStats`
  * min/max so the preview agrees with the committed result. */
@@ -62,6 +71,7 @@ function previewBounds(
 }
 
 export function BooleanToolPanel({ scene }: BooleanToolPanelProps) {
+  const t = useI18n((s) => s.t);
   const queryClient = useQueryClient();
   const pushToast = useUi((s) => s.pushToast);
   const objects = useScene((s) => s.objects);
@@ -97,8 +107,8 @@ export function BooleanToolPanel({ scene }: BooleanToolPanelProps) {
     if (!scene || !a || !b || !preview) {
       pushToast({
         kind: "warning",
-        title: "Boolean",
-        message: "Pick two distinct watertight objects first.",
+        title: t("boolean.toast.warning.title"),
+        message: t("boolean.toast.warning.message"),
       });
       return;
     }
@@ -110,45 +120,43 @@ export function BooleanToolPanel({ scene }: BooleanToolPanelProps) {
       hide_sources: hideSources,
     });
     if (!res.ok) {
-      pushToast({ kind: "error", title: "Boolean", message: res.error });
+      pushToast({ kind: "error", title: t("boolean.toast.warning.title"), message: res.error });
       return;
     }
     await queryClient.invalidateQueries({ queryKey: ["bridge", "scene"] });
     setPreviewName(res.object);
-    const verb = booleanOpLabel(op);
+    const verb = t(OP_LABEL_KEYS[op]);
     pushToast({
       kind: "success",
-      title: `Boolean ${verb}`,
-      message: `Created "${res.object}" (${res.triangles} tri). ${
-        hideSources ? "Sources hidden." : "Sources kept."
-      }`,
+      title: t("boolean.toast.done", { verb }),
+      message: `${t("boolean.committed", { name: res.object })} ${hideSources ? t("boolean.toast.sourcesHidden") : t("boolean.toast.sourcesKept")}`,
     });
-  }, [scene, a, b, op, hideSources, preview, pushToast, queryClient]);
+  }, [scene, a, b, op, hideSources, preview, pushToast, queryClient, t]);
 
   // Preview chip disappears once the object exists (committed) or arm clears.
   const committed = previewName ? objects.some((o) => o.name === previewName) : false;
 
   return (
-    <section className="panel-boolean-tool" aria-label="Boolean tool">
+    <section className="panel-boolean-tool" aria-label={t("boolean.label")}>
       <header className="panel-title">
-        Boolean
+        {t("boolean.title")}
         <button
           type="button"
           className={`panel-boolean-toggle${booleanTool ? " is-active" : ""}`}
           aria-pressed={booleanTool}
-          aria-label="Arm boolean tool"
+          aria-label={t("boolean.arm.label")}
           data-testid="boolean-arm"
           onClick={() => toggleFlag("booleanTool")}
         >
-          {booleanTool ? "Armed" : "Arm"}
+          {booleanTool ? t("boolean.armed") : t("boolean.arm")}
         </button>
       </header>
       {!booleanTool ? (
-        <p className="panel-hint">Arm the boolean tool to combine two objects.</p>
+        <p className="panel-hint">{t("boolean.arm.hint")}</p>
       ) : (
         <div className="panel-boolean-body" data-testid="boolean-tool-body">
           <label className="settings-field" htmlFor="boolean-op">
-            Operation
+            {t("boolean.operation")}
             <select
               id="boolean-op"
               className="settings-select"
@@ -158,14 +166,14 @@ export function BooleanToolPanel({ scene }: BooleanToolPanelProps) {
             >
               {BOOLEAN_OPS.map((o) => (
                 <option key={o} value={o}>
-                  {booleanOpLabel(o)}
+                  {t(OP_LABEL_KEYS[o])}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="settings-field" htmlFor="boolean-a">
-            Object A
+            {t("boolean.objectA")}
             <select
               id="boolean-a"
               className="settings-select"
@@ -173,7 +181,7 @@ export function BooleanToolPanel({ scene }: BooleanToolPanelProps) {
               value={nameA}
               onChange={(e) => setNameA(e.target.value)}
             >
-              <option value="">Select A…</option>
+              <option value="">{t("boolean.selectA")}</option>
               {candidates.map((o) => (
                 <option key={o.name} value={o.name} disabled={o.name === nameB}>
                   {o.name}
@@ -183,7 +191,7 @@ export function BooleanToolPanel({ scene }: BooleanToolPanelProps) {
           </label>
 
           <label className="settings-field" htmlFor="boolean-b">
-            Object B
+            {t("boolean.objectB")}
             <select
               id="boolean-b"
               className="settings-select"
@@ -191,7 +199,7 @@ export function BooleanToolPanel({ scene }: BooleanToolPanelProps) {
               value={nameB}
               onChange={(e) => setNameB(e.target.value)}
             >
-              <option value="">Select B…</option>
+              <option value="">{t("boolean.selectB")}</option>
               {candidates.map((o) => (
                 <option key={o.name} value={o.name} disabled={o.name === nameA}>
                   {o.name}
@@ -202,12 +210,16 @@ export function BooleanToolPanel({ scene }: BooleanToolPanelProps) {
 
           {preview ? (
             <p className="panel-boolean-preview" data-testid="boolean-preview">
-              Preview: {preview.name} · {preview.triangles} tri · watertight (bounds{" "}
-              {preview.bounds.min[0]}…{preview.bounds.max[0]} mm)
+              {t("boolean.preview.template", {
+                name: preview.name,
+                tri: String(preview.triangles),
+                min: String(preview.bounds.min[0]),
+                max: String(preview.bounds.max[0]),
+              })}
             </p>
           ) : (
             <p className="panel-boolean-preview" data-testid="boolean-preview">
-              Pick two distinct watertight objects to preview.
+              {t("boolean.preview.pick")}
             </p>
           )}
 
@@ -218,7 +230,7 @@ export function BooleanToolPanel({ scene }: BooleanToolPanelProps) {
               data-testid="boolean-hide-sources"
               onChange={(e) => setHideSources(e.target.checked)}
             />
-            Hide source objects
+            {t("boolean.hideSources")}
           </label>
 
           <button
@@ -228,11 +240,11 @@ export function BooleanToolPanel({ scene }: BooleanToolPanelProps) {
             disabled={!canExecute}
             onClick={() => void execute()}
           >
-            Execute {op ? booleanOpLabel(op) : ""}
+            {t("boolean.execute", { op: op ? t(OP_LABEL_KEYS[op]) : "" })}
           </button>
           {committed ? (
             <p className="panel-boolean-done" data-testid="boolean-committed">
-              Committed — “{previewName}” is added to the scene (provenance noted, journal-safe).
+              {t("boolean.committed", { name: previewName ?? "" })}
             </p>
           ) : null}
         </div>

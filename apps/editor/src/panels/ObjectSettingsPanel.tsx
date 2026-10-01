@@ -15,6 +15,8 @@ import type { BridgeHandle } from "../bridge/mock";
 import type { ObjectPrintSettings } from "../bridge/types";
 import { FILAMENT_PRESETS } from "../presets/catalog";
 import { useScene } from "../state/scene";
+import { useI18n } from "../state/i18n";
+import type { MsgKey } from "../state/i18n-core";
 
 interface ObjectSettingsPanelProps {
   readonly scene: BridgeHandle | undefined;
@@ -36,6 +38,7 @@ const GLOBAL_DEFAULTS: ObjectPrintSettings = {
 };
 
 export function ObjectSettingsPanel({ scene }: ObjectSettingsPanelProps) {
+  const t = useI18n((s) => s.t);
   const queryClient = useQueryClient();
   const selected = useScene((s) => s.selected);
   const objects = useScene((s) => s.objects);
@@ -96,44 +99,40 @@ export function ObjectSettingsPanel({ scene }: ObjectSettingsPanelProps) {
 
   if (!name || !object) {
     return (
-      <section className="panel-object-settings" aria-label="Object print settings">
-        <header className="panel-title">Object settings</header>
-        <p className="panel-hint">
-          Select an object to override its print settings or assign a filament.
-        </p>
+      <section className="panel-object-settings" aria-label={t("objectSettings.label")}>
+        <header className="panel-title">{t("objectSettings.title")}</header>
+        <p className="panel-hint">{t("objectSettings.selectHint")}</p>
       </section>
     );
   }
 
   const fields: ReadonlyArray<{
     readonly key: keyof ObjectPrintSettings;
-    readonly label: string;
+    readonly labelKey: MsgKey;
     readonly unit?: string;
   }> = [
-    { key: "layerHeightMm", label: "Layer height", unit: "mm" },
-    { key: "lineWidthMm", label: "Line width", unit: "mm" },
-    { key: "nozzleDiameterMm", label: "Nozzle", unit: "mm" },
-    { key: "wallLoops", label: "Wall loops" },
-    { key: "topBottomLayers", label: "Top/bottom layers" },
-    { key: "infillDensityPct", label: "Infill density", unit: "%" },
-    { key: "nozzleTempC", label: "Nozzle temp", unit: "°C" },
-    { key: "bedTempC", label: "Bed temp", unit: "°C" },
-    { key: "fanPct", label: "Part fan", unit: "%" },
-    { key: "printSpeedMmS", label: "Print speed", unit: "mm/s" },
+    { key: "layerHeightMm", labelKey: "objectSettings.field.layerHeight", unit: "mm" },
+    { key: "lineWidthMm", labelKey: "objectSettings.field.lineWidth", unit: "mm" },
+    { key: "nozzleDiameterMm", labelKey: "objectSettings.field.nozzle", unit: "mm" },
+    { key: "wallLoops", labelKey: "objectSettings.field.wallLoops" },
+    { key: "topBottomLayers", labelKey: "objectSettings.field.topBottom" },
+    { key: "infillDensityPct", labelKey: "objectSettings.field.infillDensity", unit: "%" },
+    { key: "nozzleTempC", labelKey: "objectSettings.field.nozzleTemp", unit: "°C" },
+    { key: "bedTempC", labelKey: "objectSettings.field.bedTemp", unit: "°C" },
+    { key: "fanPct", labelKey: "objectSettings.field.partFan", unit: "%" },
+    { key: "printSpeedMmS", labelKey: "objectSettings.field.printSpeed", unit: "mm/s" },
   ];
 
   return (
-    <section className="panel-object-settings" aria-label="Object print settings">
-      <header className="panel-title">Object settings</header>
+    <section className="panel-object-settings" aria-label={t("objectSettings.label")}>
+      <header className="panel-title">{t("objectSettings.title")}</header>
 
       <div
         className={`object-settings-mode${forked ? " overridden" : ""}`}
         data-testid="object-settings-mode"
       >
         <span className="object-settings-indicator" aria-hidden="true" />
-        {forked
-          ? "Overridden — this object does not use the global draft."
-          : "Using global — object inherits the global print draft."}
+        {forked ? t("objectSettings.mode.overridden") : t("objectSettings.mode.global")}
       </div>
 
       <div className="object-settings-actions">
@@ -143,7 +142,7 @@ export function ObjectSettingsPanel({ scene }: ObjectSettingsPanelProps) {
             data-testid="object-settings-reset"
             onClick={() => void resetToParent()}
           >
-            Reset to parent
+            {t("objectSettings.resetParent")}
           </button>
         ) : (
           <button
@@ -151,13 +150,13 @@ export function ObjectSettingsPanel({ scene }: ObjectSettingsPanelProps) {
             data-testid="object-settings-toggle"
             onClick={() => void enableFork()}
           >
-            Override settings
+            {t("objectSettings.override")}
           </button>
         )}
       </div>
 
       <label className="settings-stack">
-        Filament
+        {t("objectSettings.filament")}
         <select
           data-testid="object-filament-select"
           value={filamentId ?? "global"}
@@ -166,7 +165,7 @@ export function ObjectSettingsPanel({ scene }: ObjectSettingsPanelProps) {
             void (value === "global" ? resetToParent() : assignFilament(value));
           }}
         >
-          <option value="global">Global</option>
+          <option value="global">{t("objectSettings.filament.global")}</option>
           {FILAMENT_PRESETS.map((filament) => (
             <option key={filament.id} value={filament.id}>
               {filament.material}
@@ -176,10 +175,10 @@ export function ObjectSettingsPanel({ scene }: ObjectSettingsPanelProps) {
       </label>
 
       <fieldset className="object-settings-fields" disabled={!forked}>
-        <legend>Forked values</legend>
+        <legend>{t("objectSettings.forkedValues")}</legend>
         {fields.map((field) => (
           <label className="settings-field" key={field.key}>
-            <span>{field.label}</span>
+            <span>{t(field.labelKey)}</span>
             <span className="settings-value">
               <input
                 type="number"

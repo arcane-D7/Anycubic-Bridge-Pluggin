@@ -13,6 +13,7 @@ import {
 import { journalMenuItems } from "../components/context-menu-core";
 import { openContextMenuAt } from "../components/context-menu-core";
 import { useContextMenuStore } from "../state/context-menu";
+import { useI18n } from "../state/i18n";
 
 /**
  * Bottom panel — timeline/undo graph + slicing mode (R0 shell / S9.6-004).
@@ -56,6 +57,7 @@ export function Timeline({
     );
   const { canAuthor, printQualified, explanation, capability } = resolved;
   const modeLocked = modeLockReason !== undefined;
+  const t = useI18n((s) => s.t);
 
   // S9.6-004 — journal navigation wiring.
   const cursor = useJournal((s) => s.cursor);
@@ -94,18 +96,18 @@ export function Timeline({
   }, [journal, reset]);
 
   return (
-    <section className="panel-timeline" aria-label="Timeline and slicing">
+    <section className="panel-timeline" aria-label={t("timeline.label")}>
       {journal.length > 0 ? (
-        <div className="journal-strip" role="list" aria-label="Transform journal">
+        <div className="journal-strip" role="list" aria-label={t("timeline.journal.aria")}>
           <button
             type="button"
             className="journal-nav"
             data-testid="journal-undo"
             disabled={journalNavState(journal, cursor).atBase}
-            title="Undo (Ctrl+Z)"
+            title={t("timeline.undo.title")}
             onClick={() => useJournal.getState().step("undo")}
           >
-            Undo
+            {t("timeline.undo")}
           </button>
           <div className="journal-chips" role="list">
             {[...byRevision.keys()]
@@ -119,7 +121,7 @@ export function Timeline({
                   }`}
                   data-testid={`journal-rev-${rev}`}
                   data-revision={rev}
-                  title={`Seek to revision ${rev}`}
+                  title={t("timeline.seek.title", { n: String(rev) })}
                   aria-pressed={cursor === rev}
                   role="listitem"
                   onClick={() => seekTo(rev)}
@@ -127,7 +129,10 @@ export function Timeline({
                 >
                   <span className="commit-dot" aria-hidden="true" />
                   <span className="journal-rev mono">{rev}</span>
-                  <span className="journal-deltas" aria-label={`Events at ${rev}`}>
+                  <span
+                    className="journal-deltas"
+                    aria-label={t("timeline.events.aria", { rev: String(rev) })}
+                  >
                     {(byRevision.get(rev) ?? []).map((e) => (
                       <span
                         key={`${e.kind}-${e.name}`}
@@ -146,17 +151,17 @@ export function Timeline({
             className="journal-nav"
             data-testid="journal-redo"
             disabled={journalNavState(journal, cursor).atHead}
-            title="Redo (Ctrl+Shift+Z / Ctrl+Y)"
+            title={t("timeline.redo.title")}
             onClick={() => useJournal.getState().step("redo")}
           >
-            Redo
+            {t("timeline.redo")}
           </button>
         </div>
       ) : null}
-      <header className="panel-title">Slicing mode</header>
+      <header className="panel-title">{t("timeline.slicing.title")}</header>
       <div className="timeline-row">
         <label className="timeline-label" htmlFor="slicing-mode">
-          Slicing mode
+          {t("timeline.slicing.label")}
         </label>
         <select
           id="slicing-mode"
@@ -164,14 +169,14 @@ export function Timeline({
           onChange={(e) => onModeChange(e.target.value as SlicingMode)}
           disabled={modeLocked}
         >
-          <option value="standard">Standard (planar)</option>
+          <option value="standard">{t("slicing.mode.standard")}</option>
           <option value="nonplanar" disabled={!canAuthor}>
-            Non-planar (experimental)
+            {t("slicing.mode.nonplanar")}
           </option>
         </select>
         {!canAuthor ? (
           <span className="panel-hint" data-testid="nonplanar-blocked" title={explanation}>
-            Continuous Z declared unsupported. Imported paths remain viewable.
+            {t("timeline.nonplanar.blocked")}
           </span>
         ) : printQualified ? (
           <span className="panel-hint" data-testid="nonplanar-qualified">
@@ -179,11 +184,13 @@ export function Timeline({
           </span>
         ) : (
           <span className="panel-hint" data-testid="nonplanar-pending" title={explanation}>
-            {capability.status === "supported"
-              ? "Continuous Z supported"
-              : "Continuous Z not yet declared"}
-            {capability.source === "operator-declared" ? " (operator)" : ""}. Non-planar editing
-            enabled; print generation pending validation.
+            {t(
+              capability.status === "supported"
+                ? "timeline.nonplanar.supported"
+                : "timeline.nonplanar.undeclared",
+            )}
+            {capability.source === "operator-declared" ? t("timeline.nonplanar.operator") : ""}.{" "}
+            {t("timeline.nonplanar.enabled")}
           </span>
         )}
       </div>

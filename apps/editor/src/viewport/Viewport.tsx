@@ -10,6 +10,7 @@ import { useScene } from "../state/scene";
 import { usePlates } from "../state/plates";
 import { objectsOnPlate } from "../state/plates-core";
 import { useUi } from "../state/ui";
+import { useI18n } from "../state/i18n";
 import { openContextMenuAt } from "../components/context-menu-core";
 import { useContextMenuStore } from "../state/context-menu";
 import type { ContextMenuItem } from "../components/context-menu-core";
@@ -36,6 +37,7 @@ interface ViewportProps {
 }
 
 export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
+  const t = useI18n((s) => s.t);
   const volume = buildVolume ?? scene?.buildVolume;
   const sceneObjects = scene?.objects ?? [];
   // S9.4-003 per-plate filter: only the ACTIVE plate's objects render. The
@@ -124,10 +126,13 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
         <div className="viewport-preview-controls" data-testid="preview-controls">
           {" "}
           <span className="preview-mode" data-testid="preview-mode-label">
-            mode: {preview.mode}
+            {t("viewport.preview.mode", { mode: preview.mode })}
           </span>
           <label htmlFor="preview-layer-slider">
-            Layer {layerCount > 0 ? clampedLayer + 1 : 0} of {layerCount}
+            {t("viewport.preview.layerOf", {
+              n: String(layerCount > 0 ? clampedLayer + 1 : 0),
+              total: String(layerCount),
+            })}
           </label>
           <input
             id="preview-layer-slider"
@@ -223,6 +228,7 @@ function ViewportFrame({
   readonly bridge: BridgeHandle | undefined;
   readonly children: React.ReactNode;
 }) {
+  const t = useI18n((s) => s.t);
   const { commitFile } = useImportCommit(bridge);
   const openMenu = useContextMenuStore((s) => s.open);
   const pushToast = useUi((s) => s.pushToast);
@@ -235,9 +241,9 @@ function ViewportFrame({
   // own context menu (SceneObjectModel), so this only fires for the empty
   // canvas area; toolbar/tabs/preview controls stop propagation themselves.
   const onFrameContextMenu = (e: React.MouseEvent) => {
-    const t = e.target as HTMLElement;
+    const targetEl = e.target as HTMLElement;
     if (
-      t.closest(
+      targetEl.closest(
         "button, input, select, [data-testid='viewport-toolbar'], [data-testid='plate-tabs'], .viewport-preview-controls",
       )
     ) {
@@ -248,31 +254,31 @@ function ViewportFrame({
     const items: ContextMenuItem[] = [
       {
         id: "arrange",
-        label: "Arrange objects",
+        label: t("viewport.menu.arrange"),
         icon: "arrange",
         onSelect: () => {
           pushToast({
             kind: "info",
-            title: "Arrange",
-            message: "Use the toolbar Arrange for shelf packing.",
+            title: t("viewport.toast.arrange.title"),
+            message: t("viewport.toast.arrange.message"),
           });
         },
       },
       {
         id: "measure",
-        label: "Measure",
+        label: t("viewport.menu.measure"),
         icon: "measure",
         onSelect: () => {
           pushToast({
             kind: "info",
-            title: "Measure",
-            message: "Measure tool lands in a later sprint.",
+            title: t("viewport.toast.measure.title"),
+            message: t("viewport.toast.measure.message"),
           });
         },
       },
       {
         id: "import",
-        label: "Import…",
+        label: t("viewport.menu.import"),
         icon: "plus",
         separatorBefore: true,
         onSelect: () => fileInputRef.current?.click(),
@@ -338,7 +344,7 @@ function ViewportFrame({
       />
       {dragActive ? (
         <div className="viewport-drop-hint" data-testid="viewport-drop-hint" role="status">
-          Drop to import
+          {t("viewport.dropHint")}
         </div>
       ) : null}
     </section>

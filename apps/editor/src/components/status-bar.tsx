@@ -2,6 +2,7 @@ import type { BuildVolume, SceneSnapshot } from "@/bridge/types";
 import { useViewport } from "@/state/viewport";
 import { useUi } from "@/state/ui";
 import { useScene } from "@/state/scene";
+import { useI18n } from "@/state/i18n";
 import { useActivePlate, usePlates } from "@/state/plates";
 import { objectsOnPlate } from "@/state/plates-core";
 import {
@@ -30,6 +31,7 @@ interface StatusBarProps {
 }
 
 export function StatusBar({ scene, buildVolume: volume }: StatusBarProps) {
+  const t = useI18n((s) => s.t);
   const revision = useViewport((s) => s.revision);
   const dirtyTransformName = useUi((s) => s.dirtyTransformName);
   const dirtyKinds = useUi((s) => s.dirtyKinds);
@@ -54,7 +56,10 @@ export function StatusBar({ scene, buildVolume: volume }: StatusBarProps) {
   return (
     <div className="status-bar" data-testid="status-bar">
       <span className="status-item" data-testid="status-objects">
-        {objects.length} object{objects.length === 1 ? "" : "s"}
+        {t("status.objects", {
+          n: String(objects.length),
+          s: objects.length === 1 ? "" : "s",
+        })}
       </span>
       <span className="status-sep" aria-hidden="true">
         ·
@@ -76,7 +81,7 @@ export function StatusBar({ scene, buildVolume: volume }: StatusBarProps) {
           <span
             className="status-item mono-num"
             data-testid="status-coords"
-            title={`${anchor.name} position (mm)`}
+            title={t("status.coords.title", { name: anchor.name })}
           >
             {formatCoords(positionOf(anchor))}
           </span>
@@ -90,7 +95,7 @@ export function StatusBar({ scene, buildVolume: volume }: StatusBarProps) {
           <span
             className="status-item mono-num"
             data-testid="status-plate-dims"
-            title={`${active.name} scene bounds (mm)`}
+            title={t("status.plateDims.title", { plate: active.name })}
           >
             {bounds ? formatPlateDims(bounds) : "—"}
           </span>
@@ -110,9 +115,15 @@ export function StatusBar({ scene, buildVolume: volume }: StatusBarProps) {
           <span
             className="status-item status-dirty"
             data-testid="status-dirty"
-            title={`${dirtyTransformName}: uncommitted ${dirtyKinds.join(", ")} edit`}
+            title={t("status.dirty.title", {
+              name: dirtyTransformName,
+              kinds: dirtyKinds.join(", "),
+            })}
           >
-            {dirtyTransformName}: {dirtyKinds.join(",")}
+            {t("status.dirty.text", {
+              name: dirtyTransformName,
+              kinds: dirtyKinds.join(","),
+            })}
           </span>
         </>
       ) : null}
@@ -124,9 +135,13 @@ export function StatusBar({ scene, buildVolume: volume }: StatusBarProps) {
           <span
             className="status-item status-dirty"
             data-testid="status-dirty-chip"
-            title={`${active.name}: ${unsaved} unsaved object${unsaved === 1 ? "" : "s"}`}
+            title={t("status.dirtyChip.title", {
+              plate: active.name,
+              n: String(unsaved),
+              s: unsaved === 1 ? "" : "s",
+            })}
           >
-            ● {unsaved} unsaved
+            {t("status.dirtyChip.text", { n: String(unsaved) })}
           </span>
         </>
       ) : null}

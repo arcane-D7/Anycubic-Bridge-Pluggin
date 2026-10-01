@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { usePrintJob, tokenHash, sendTokenFor } from "@/state/printjob";
 import { usePrinters } from "@/state/printers";
 import { useUi } from "@/state/ui";
+import { useI18n } from "@/state/i18n";
+import type { MsgKey } from "@/state/i18n-core";
 
 /**
  * Send-to-print dialog (S9.5-004, G25) — reuses the S9-006 approval-card
@@ -18,12 +20,13 @@ import { useUi } from "@/state/ui";
  *  4. Offline / region failures surface as semantic error toasts.
  */
 const SEND_STAGES = [
-  { stage: "negotiate", label: "Negotiating with printer…" },
-  { stage: "upload", label: "Uploading slice…" },
-  { stage: "queue", label: "Queuing job…" },
-] as const;
+  { stage: "negotiate", key: "send.stage.negotiate" },
+  { stage: "upload", key: "send.stage.upload" },
+  { stage: "queue", key: "send.stage.queue" },
+] as const satisfies readonly { readonly stage: string; readonly key: MsgKey }[];
 
 export function PrintJobDialog() {
+  const t = useI18n((s) => s.t);
   const status = usePrintJob((s) => s.status);
   const stats = usePrintJob((s) => s.stats);
   const approval = usePrintJob((s) => s.approval);
@@ -82,11 +85,19 @@ export function PrintJobDialog() {
     if (!selected || !approval) return;
     // Token-hash gate: never send a payload that was not approved.
     if (approval.state !== "approved") {
-      pushToast({ kind: "error", title: "Send blocked", message: "approve the card first" });
+      pushToast({
+        kind: "error",
+        title: t("send.sendBlocked"),
+        message: t("send.approveCardFirst"),
+      });
       return;
     }
     if (currentHash !== approval.tokenHashHex || currentHash !== lastApprovedHash) {
-      pushToast({ kind: "error", title: "Send blocked", message: "payload changed — re-approve" });
+      pushToast({
+        kind: "error",
+        title: t("send.sendBlocked"),
+        message: t("send.payloadChangedMessage"),
+      });
       return;
     }
     setRanSend(true);
@@ -95,12 +106,9 @@ export function PrintJobDialog() {
       const lane = await import("@/bridge/mock");
       const handle = await lane.fetchSceneSnapshot();
       for (let i = 0; i < SEND_STAGES.length; i += 1) {
-        const { stage, label } = SEND_STAGES[i]!;
+        const { stage } = SEND_STAGES[i]!;
         reportSendStage((i + 1) / SEND_STAGES.length, stage);
         await new Promise((r) => setTimeout(r, 320));
-        // `label` is intentionally unused — the progress bar carries the
-        // stage; the label is rendered from the live `sendStage` instead.
-        void label;
       }
       const result = await handle.sendJob({
         printerId: selected.id,
@@ -113,7 +121,7 @@ export function PrintJobDialog() {
         closeSendApproval();
         pushToast({
           kind: result.kind === "offline" ? "warning" : "error",
-          title: result.kind === "offline" ? "Printer offline" : "Send blocked",
+          title: result.kind === "offline" ? t("send.offline.title") : t("send.sendBlocked"),
           message: result.error,
         });
         return;
@@ -122,13 +130,13 @@ export function PrintJobDialog() {
       sendFinished();
       pushToast({
         kind: "success",
-        title: "Print job sent",
-        message: `${selected.name} · ${result.taskId}`,
+        title: t("send.jobSent.title"),
+        message: t("send.jobSent.message", { name: selected.name, taskId: result.taskId }),
       });
     } catch (err) {
       sendError(err instanceof Error ? err.message : String(err));
       closeSendApproval();
-      pushToast({ kind: "error", title: "Send failed", message: String(err) });
+      pushToast({ kind: "error", title: t("send.sendFailed"), message: String(err) });
     }
   }, [
     approval,
@@ -141,6 +149,7 @@ export function PrintJobDialog() {
     sendError,
     sendFinished,
     sendStart,
+    t,
   ]);
 
   // Auto-run the send as soon as the card is approved (the dialog shows
@@ -161,7 +170,7 @@ export function PrintJobDialog() {
             data-testid="print-job-send"
             onClick={openCard}
           >
-            Send to printer
+            {t("send.sendToPrinter")}
           </button>
         ) : null}
       </div>
@@ -169,7 +178,12 @@ export function PrintJobDialog() {
   }
 
   const decided = approval.state !== "pending";
-  const stageLabel = sending ? SEND_STAGES.find((s) => s.stage === sendStage)?.label : null;
+  const stageLabel = sending
+    ? (() => {
+        const s = SEND_STAGES.find((x) => x.stage === sendStage);
+        return s ? t(s.key) : null;
+      })()
+    : null;
 
   return (
     <div
@@ -183,7 +197,7 @@ export function PrintJobDialog() {
         data-state={approval.state}
         data-testid="send-approval-card"
       >
-        <header className="panel-title">Send to print</header>
+        <header className="panel-title">{t("send.sendTitle")}</header>
 
         <div className="approval-effect" data-testid="send-approval-effect">
           {approval.summary}
@@ -194,18 +208,18 @@ export function PrintJobDialog() {
         <div
           className="approval-token"
           data-testid="send-approval-token"
-          title="Token hash — pins the exact approved payload"
+          title={t("send.token.title")}
         >
           token {approval.tokenHashHex}
         </div>
         {currentHash !== null && currentHash !== approval.tokenHashHex ? (
           <div className="approval-mismatch" data-testid="send-approval-mismatch">
-            payload changed since approval
+            {t("send.payloadChanged")}
           </div>
         ) : null}
         {taskId ? (
           <div className="approval-task" data-testid="send-approval-task">
-            task {taskId}
+            {t("send.task", { id: taskId })}
           </div>
         ) : null}
 
@@ -232,7 +246,7 @@ export function PrintJobDialog() {
               data-testid="send-approval-reject"
               onClick={() => decideSendApproval(approval.id, false)}
             >
-              Reject
+              {t("send.reject")}
             </button>
             <button
               type="button"
@@ -240,7 +254,7 @@ export function PrintJobDialog() {
               data-testid="send-approval-approve"
               onClick={() => decideSendApproval(approval.id, true)}
             >
-              Approve &amp; send
+              {t("send.approve")}
             </button>
           </div>
         ) : null}
@@ -252,7 +266,7 @@ export function PrintJobDialog() {
             data-testid="send-approval-close"
             onClick={() => closeSendApproval()}
           >
-            Dismiss
+            {t("send.dismiss")}
           </button>
         ) : null}
       </div>

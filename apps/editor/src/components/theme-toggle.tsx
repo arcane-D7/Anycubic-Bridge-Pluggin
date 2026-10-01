@@ -1,4 +1,6 @@
 import { useTheme, type ThemeChoice } from "@/state/theme";
+import { useI18n } from "@/state/i18n";
+import type { MsgKey } from "@/state/i18n-core";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,23 +17,24 @@ import { Button } from "@/components/ui/button";
  * CSS var-driven so the swap needs no re-render.
  */
 
-const CHOICES: ReadonlyArray<{ value: ThemeChoice; label: string }> = [
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-  { value: "system", label: "System" },
+const CHOICES: ReadonlyArray<{ value: ThemeChoice; labelKey: MsgKey }> = [
+  { value: "light", labelKey: "theme.option.light" },
+  { value: "dark", labelKey: "theme.option.dark" },
+  { value: "system", labelKey: "theme.option.system" },
 ];
 
 export function ThemeToggle() {
   const { choice, setChoice } = useTheme();
+  const t = useI18n((s) => s.t);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
-          aria-label="Theme"
+          aria-label={t("theme.trigger.aria")}
           data-testid="theme-toggle"
-          title="Theme (light / dark / system)"
+          title={t("theme.trigger.title")}
         >
           <svg
             width="16"
@@ -60,7 +63,7 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" data-testid="theme-menu">
-        <DropdownMenuLabel>Theme</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("theme.menu.label")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {CHOICES.map((c) => (
           <DropdownMenuItem
@@ -68,7 +71,7 @@ export function ThemeToggle() {
             data-testid={`theme-${c.value}`}
             onSelect={() => setChoice(c.value)}
           >
-            {c.label}
+            {t(c.labelKey)}
             {choice === c.value ? " ✓" : ""}
           </DropdownMenuItem>
         ))}

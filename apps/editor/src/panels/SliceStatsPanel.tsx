@@ -1,4 +1,5 @@
 import { usePrintJob } from "@/state/printjob";
+import { useI18n } from "@/state/i18n";
 
 /**
  * Slice stats panel (S9.5-002) — renders the five G24 metrics from the real
@@ -9,6 +10,7 @@ import { usePrintJob } from "@/state/printjob";
  */
 
 export function SliceStatsPanel() {
+  const t = useI18n((s) => s.t);
   const status = usePrintJob((s) => s.status);
   const stats = usePrintJob((s) => s.stats);
 
@@ -22,31 +24,31 @@ export function SliceStatsPanel() {
     <section
       className="slice-stats"
       data-testid="slice-stats"
-      aria-label="Slice statistics"
+      aria-label={t("slice.stats.aria")}
       data-status={status}
     >
-      <header className="panel-title">Slice stats</header>
+      <header className="panel-title">{t("slice.stats.title")}</header>
       <div className="slice-stats-grid">
         <div className="slice-stat">
-          <span className="slice-stat-label">Layers</span>
+          <span className="slice-stat-label">{t("slice.stats.layers")}</span>
           <span className="slice-stat-value mono-num" data-testid="stat-layers">
             {stats.layers}
           </span>
         </div>
         <div className="slice-stat">
-          <span className="slice-stat-label">Est. time</span>
+          <span className="slice-stat-label">{t("slice.stats.time")}</span>
           <span className="slice-stat-value mono-num" data-testid="stat-time">
             {stats.estimatedMinutes} min
           </span>
         </div>
         <div className="slice-stat">
-          <span className="slice-stat-label">Material</span>
+          <span className="slice-stat-label">{t("slice.stats.material")}</span>
           <span className="slice-stat-value mono-num" data-testid="stat-material">
             {stats.materialGrams.toFixed(1)} g
           </span>
         </div>
         <div className="slice-stat">
-          <span className="slice-stat-label">Volume</span>
+          <span className="slice-stat-label">{t("slice.stats.volume")}</span>
           <span className="slice-stat-value mono-num" data-testid="stat-volume">
             {Math.round(stats.volumeMm3).toLocaleString()} mm³
           </span>

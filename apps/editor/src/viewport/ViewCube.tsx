@@ -1,5 +1,7 @@
 import { VIEW_CUBE_EVENT } from "./ViewportCamera";
 import type { ViewCubeCell } from "../state/camera-core";
+import { useI18n } from "../state/i18n";
+import type { MsgKey } from "../state/i18n-core";
 
 /**
  * S9.4-002 view cube (AC-1/AC-2) — DOM glass tile, bottom-right of the
@@ -52,14 +54,24 @@ function cellLabel(cell: ViewCubeCell | null): string {
   return FACE_LABEL[cell] ?? "⤢"; // corners show the "rotate iso" glyph
 }
 
-function cellTitle(cell: ViewCubeCell | null): string {
-  if (!cell) return "Isometric (home)";
-  return FACE_LABEL[cell] ? `View ${FACE_LABEL[cell]} face` : "Isometric corner";
+function cellTitleKey(cell: ViewCubeCell | null): MsgKey {
+  if (!cell) return "viewCube.home";
+  return FACE_LABEL[cell] ? "viewCube.face" : "viewCube.corner";
+}
+
+function cellFace(cell: ViewCubeCell | null): string {
+  if (!cell) return "";
+  return FACE_LABEL[cell] ?? "";
 }
 
 export function ViewCube() {
+  const t = useI18n((s) => s.t);
+  const title = (cell: ViewCubeCell | null) =>
+    cell
+      ? t(cellTitleKey(cell), cellFace(cell) ? { face: cellFace(cell) } : undefined)
+      : t("viewCube.home");
   return (
-    <div className="view-cube" data-testid="view-cube" role="group" aria-label="View cube">
+    <div className="view-cube" data-testid="view-cube" role="group" aria-label={t("viewCube.aria")}>
       {ROWS.map((row, r) => (
         <div className="view-cube-row" key={r}>
           {row.map((cell, c) => (
@@ -67,8 +79,8 @@ export function ViewCube() {
               type="button"
               key={`${r}-${c}`}
               className={`view-cube-cell${!cell ? " is-home" : ""}`}
-              aria-label={cellTitle(cell)}
-              title={cellTitle(cell)}
+              aria-label={title(cell)}
+              title={title(cell)}
               data-testid={cell ? `viewcell-${cell}` : "viewcell-home"}
               onClick={() => {
                 window.dispatchEvent(new CustomEvent(VIEW_CUBE_EVENT, { detail: { cell } }));

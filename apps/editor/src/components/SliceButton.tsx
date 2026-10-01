@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useUi } from "@/state/ui";
 import { usePrintJob, sliceEligible } from "@/state/printjob";
+import { useI18n } from "@/state/i18n";
 import { objectsOnPlate } from "@/state/plates-core";
 import type { SceneObjectSnapshot } from "@/bridge/types";
 import { useActivePlate } from "@/state/plates";
@@ -22,6 +23,7 @@ interface SliceButtonProps {
 }
 
 export function SliceButton({ objects, onSliced }: SliceButtonProps) {
+  const t = useI18n((s) => s.t);
   const pushToast = useUi((s) => s.pushToast);
   const start = usePrintJob((s) => s.start);
   const preflight = usePrintJob((s) => s.preflight);
@@ -44,14 +46,18 @@ export function SliceButton({ objects, onSliced }: SliceButtonProps) {
     if (rejected.length > 0) {
       pushToast({
         kind: "warning",
-        title: "Slice blocked",
-        message: `Non-watertight objects on this plate: ${rejected.join(", ")}`,
+        title: t("slice.toast.blockedTitle"),
+        message: t("slice.toast.blockedMessage", { names: rejected.join(", ") }),
       });
       return;
     }
     const startRejected = start();
     if (startRejected.length > 0) {
-      pushToast({ kind: "error", title: "Cannot slice", message: startRejected.join(" ") });
+      pushToast({
+        kind: "error",
+        title: t("slice.toast.cannotTitle"),
+        message: startRejected.join(" "),
+      });
       return;
     }
     // Simulated G24 pipeline: the bridge lane is synchronous/read-only in the
@@ -76,38 +82,58 @@ export function SliceButton({ objects, onSliced }: SliceButtonProps) {
             perObjectMm3: {},
           });
           fail(result.error);
-          pushToast({ kind: "error", title: "Slice failed", message: result.error });
+          pushToast({ kind: "error", title: t("slice.failed.title"), message: result.error });
           return;
         }
         finish(result.stats);
         pushToast({
           kind: "success",
-          title: "Slice ready",
-          message: `${result.stats.layers} layers · ${result.stats.estimatedMinutes} min`,
+          title: t("slice.ready.title"),
+          message: t("slice.ready.message", {
+            layers: String(result.stats.layers),
+            min: String(result.stats.estimatedMinutes),
+          }),
         });
         onSliced?.();
       } catch (err) {
         fail(err instanceof Error ? err.message : String(err));
-        pushToast({ kind: "error", title: "Slice failed", message: String(err) });
+        pushToast({ kind: "error", title: t("slice.failed.title"), message: String(err) });
       }
     };
     void runStages();
-  }, [active.id, advanceStage, fail, finish, onSliced, plateObjects, preflight, pushToast, start]);
+  }, [
+    active.id,
+    advanceStage,
+    fail,
+    finish,
+    onSliced,
+    plateObjects,
+    preflight,
+    pushToast,
+    start,
+    t,
+  ]);
 
   const blockHint =
-    blockedBy.length > 0 ? `Repair before slicing: ${blockedBy.slice(0, 2).join(", ")}` : null;
+    blockedBy.length > 0
+      ? t("slice.blocked.title", { names: blockedBy.slice(0, 2).join(", ") })
+      : null;
 
   return (
     <button
       type="button"
       className="slice-btn"
       data-testid="slice-btn"
-      aria-label={eligible ? "Slice active plate" : "Cannot slice — no watertight objects"}
+      aria-label={eligible ? t("slice.button.aria.eligible") : t("slice.button.aria.blocked")}
       disabled={!eligible || busy}
       onClick={onSliceClick}
       title={blockHint ?? undefined}
     >
-      {busy ? (stageLabel ? `Slicing · ${stageLabel}…` : "Slicing…") : "Slice"}
+      {busy
+        ? stageLabel
+          ? t("slice.stage.active", { stage: stageLabel })
+          : t("slice.stage.busy")
+        : t("slice.button.idle")}
     </button>
   );
 }

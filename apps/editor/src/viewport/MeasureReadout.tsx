@@ -1,4 +1,6 @@
 import { useMeasure } from "../state/measure";
+import { useI18n } from "../state/i18n";
+import type { MsgKey } from "../state/i18n-core";
 import { formatMeasure, type MeasureKind } from "./measure-core";
 
 /**
@@ -11,23 +13,24 @@ import { formatMeasure, type MeasureKind } from "./measure-core";
  * writes — no canvas re-renders for a text change.
  */
 
-const KIND_LABELS: readonly { readonly kind: MeasureKind; readonly label: string }[] = [
-  { kind: "distance", label: "Dist" },
-  { kind: "radius", label: "R" },
-  { kind: "angle", label: "∠" },
+const KIND_LABELS: readonly { readonly kind: MeasureKind; readonly labelKey: MsgKey }[] = [
+  { kind: "distance", labelKey: "measure.kind.distance" },
+  { kind: "radius", labelKey: "measure.kind.radius" },
+  { kind: "angle", labelKey: "measure.kind.angle" },
 ];
 
 const KIND_PROMPTS: readonly {
   readonly kind: MeasureKind;
   readonly need: number;
-  readonly prompt: string;
+  readonly promptKey: MsgKey;
 }[] = [
-  { kind: "distance", need: 2, prompt: "Pick first point" },
-  { kind: "radius", need: 3, prompt: "Pick 3 points on a circular edge" },
-  { kind: "angle", need: 3, prompt: "Pick apex then two edges" },
+  { kind: "distance", need: 2, promptKey: "measure.prompt.distance" },
+  { kind: "radius", need: 3, promptKey: "measure.prompt.radius" },
+  { kind: "angle", need: 3, promptKey: "measure.prompt.angle" },
 ];
 
 export function MeasureReadout() {
+  const t = useI18n((s) => s.t);
   const active = useMeasure((s) => s.active);
   const kind = useMeasure((s) => s.kind);
   const probes = useMeasure((s) => s.probes);
@@ -38,18 +41,23 @@ export function MeasureReadout() {
   if (!active) return null;
 
   const prompt = KIND_PROMPTS.find((p) => p.kind === kind);
-  const pending = prompt ? `${probes.length}/${prompt.need} pts` : "";
+  const pending = prompt
+    ? t("measure.pts", { n: String(probes.length), need: String(prompt.need) })
+    : "";
   const value =
     probes.length === 1 && !result
-      ? ` ${pending} — ${prompt?.prompt ?? ""}`
+      ? t("measure.pending", {
+          pending: ` ${pending}`,
+          prompt: prompt ? ` — ${t(prompt.promptKey)}` : "",
+        })
       : result
         ? formatMeasure(result)
         : ` ${pending || ""}`;
 
   return (
     <div className="measure-readout" data-testid="measure-readout" role="status">
-      <div className="measure-kind" role="group" aria-label="Measure kind">
-        {KIND_LABELS.map(({ kind: k, label }) => (
+      <div className="measure-kind" role="group" aria-label={t("measure.kind.label")}>
+        {KIND_LABELS.map(({ kind: k, labelKey }) => (
           <button
             type="button"
             key={k}
@@ -58,7 +66,7 @@ export function MeasureReadout() {
             aria-pressed={kind === k}
             onClick={() => setKind(k)}
           >
-            {label}
+            {t(labelKey)}
           </button>
         ))}
       </div>
@@ -69,11 +77,11 @@ export function MeasureReadout() {
         type="button"
         className="measure-clear"
         data-testid="measure-clear"
-        aria-label="Clear measurement"
+        aria-label={t("measure.clear.aria")}
         disabled={probes.length === 0 && result === null}
         onClick={() => clear()}
       >
-        clear
+        {t("measure.clear")}
       </button>
     </div>
   );

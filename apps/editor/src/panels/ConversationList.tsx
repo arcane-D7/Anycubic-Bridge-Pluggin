@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { conversationsSorted, conversationStats } from "../state/chat-conversations-core";
 import { useChatConversations } from "../state/chat-conversations";
+import { useI18n } from "../state/i18n";
+import type { MsgKey } from "../state/i18n-core";
 
 /**
  * ConversationList (S9.6-006) — the conversation list UI reused in the docked
@@ -13,16 +15,26 @@ import { useChatConversations } from "../state/chat-conversations";
  * Pure view over `useChatConversations` — no harness logic lives here.
  */
 
-function TokenBar({ ratio }: { readonly ratio: number }) {
+function TokenBar({
+  ratio,
+  t,
+}: {
+  readonly ratio: number;
+  readonly t: (key: MsgKey, params?: Readonly<Record<string, string>>) => string;
+}) {
   const pct = Math.round(ratio * 100);
   return (
-    <span className="conversation-tokenbar" title={`${pct}% of budget used`}>
+    <span
+      className="conversation-tokenbar"
+      title={t("conversation.tokenbar.title", { pct: String(pct) })}
+    >
       <span className="conversation-tokenbar-fill" style={{ width: `${pct}%` }} />
     </span>
   );
 }
 
 export function ConversationList() {
+  const t = useI18n((s) => s.t);
   const conversations = useChatConversations((s) => s.conversations);
   const activeId = useChatConversations((s) => s.activeId);
   const create = useChatConversations((s) => s.create);
@@ -45,7 +57,7 @@ export function ConversationList() {
   return (
     <div className="conversation-list" data-testid="conversation-list">
       {rows.length === 0 ? (
-        <p className="panel-hint">No conversations yet.</p>
+        <p className="panel-hint">{t("conversation.empty")}</p>
       ) : (
         rows.map((convo) => {
           const stats = conversationStats(convo);
@@ -61,7 +73,7 @@ export function ConversationList() {
               <span
                 className="conversation-dirty"
                 data-testid="conversation-dirty"
-                title={stats.dirty ? "Unsaved transcript (persistence lands in S9.6-007)" : "Clean"}
+                title={stats.dirty ? t("conversation.dirty.title") : t("conversation.dirty.clean")}
                 data-dirty={stats.dirty ? "true" : "false"}
               />
               {editingId === convo.id ? (
@@ -69,6 +81,7 @@ export function ConversationList() {
                   autoFocus
                   className="conversation-rename-input"
                   data-testid="conversation-rename-input"
+                  aria-label={t("conversation.rename.aria")}
                   value={editingValue}
                   onChange={(e) => setEditingValue(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
@@ -85,7 +98,7 @@ export function ConversationList() {
                 <button
                   type="button"
                   className="conversation-title"
-                  title="Switch · double-click to rename"
+                  title={t("conversation.switch.title")}
                   onDoubleClick={(e) => {
                     e.stopPropagation();
                     setEditingId(convo.id);
@@ -96,16 +109,19 @@ export function ConversationList() {
                 </button>
               )}
               <span className="conversation-meta">
-                <TokenBar ratio={stats.ratio} />
+                <TokenBar ratio={stats.ratio} t={t} />
                 <span className="conversation-sources" data-testid="conversation-sources">
-                  {stats.sourceCount} src · {stats.approvalCount} apv
+                  {t("conversation.meta", {
+                    n: String(stats.sourceCount),
+                    m: String(stats.approvalCount),
+                  })}
                 </span>
               </span>
               <button
                 type="button"
                 className="conversation-delete"
                 data-testid="conversation-delete"
-                title="Delete conversation"
+                title={t("conversation.delete.aria")}
                 onClick={(e) => {
                   e.stopPropagation();
                   remove(convo.id);
@@ -123,7 +139,7 @@ export function ConversationList() {
         data-testid="conversation-add"
         onClick={() => create()}
       >
-        + New conversation
+        {t("conversation.new")}
       </button>
     </div>
   );

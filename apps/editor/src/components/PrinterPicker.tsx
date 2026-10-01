@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { usePrinters, type PrinterInfo } from "@/state/printers";
+import { useI18n } from "@/state/i18n";
+import type { MsgKey } from "@/state/i18n-core";
 import { Icon } from "./icons";
 
 /**
@@ -19,28 +21,44 @@ function printerEnvRaw(): string {
   return (import.meta.env.ANYCUBIC_PRINTER_IPS as string | undefined) ?? "";
 }
 
-function Led({ printer }: { readonly printer: PrinterInfo }) {
+function Led({
+  printer,
+  t,
+}: {
+  readonly printer: PrinterInfo;
+  readonly t: (key: MsgKey, params?: Readonly<Record<string, string>>) => string;
+}) {
   const state = printer.reachable === null ? "probing" : printer.reachable ? "online" : "offline";
+  const stateLabel =
+    state === "probing"
+      ? t("printer.led.title.probing")
+      : state === "online"
+        ? t("printer.led.title.online")
+        : t("printer.led.title.offline");
   return (
     <span
       className={`printer-led printer-led-${state}`}
       data-state={state}
       role="img"
-      aria-label={`${printer.ip} ${state}`}
-      title={state === "probing" ? "Probing…" : state === "online" ? "Online" : "Offline"}
+      aria-label={t("printer.led.aria", { ip: printer.ip, state: stateLabel })}
+      title={stateLabel}
     />
   );
 }
 
-function timeAgo(at: number | null): string {
-  if (at === null) return "not yet probed";
+function timeAgo(
+  at: number | null,
+  t: (key: MsgKey, params?: Readonly<Record<string, string>>) => string,
+): string {
+  if (at === null) return t("printer.timeAgo.never");
   const s = Math.max(0, Math.round((Date.now() - at) / 1000));
-  if (s < 2) return "just now";
-  if (s < 60) return `${s}s ago`;
-  return `${Math.floor(s / 60)}m ago`;
+  if (s < 2) return t("printer.timeAgo.now");
+  if (s < 60) return t("printer.timeAgo.seconds", { n: String(s) });
+  return t("printer.timeAgo.minutes", { n: String(Math.floor(s / 60)) });
 }
 
 export function PrinterPicker() {
+  const t = useI18n((s) => s.t);
   const printers = usePrinters((s) => s.printers);
   const probing = usePrinters((s) => s.probing);
   const selectedId = usePrinters((s) => s.selectedId);
@@ -79,11 +97,15 @@ export function PrinterPicker() {
 
   return (
     <details className="printer-picker" ref={detailsRef} data-testid="printer-picker">
-      <summary aria-label="Select printer" title="Printer target">
+      <summary aria-label={t("printer.summary.aria")} title={t("printer.summary.title")}>
         <span className="printer-picker-trigger">
           <Icon name="printer" size={14} />
           <span className="printer-picker-trigger-label">
-            {selected ? selected.ip : printers.length > 0 ? "Pick printer" : "No printer"}
+            {selected
+              ? selected.ip
+              : printers.length > 0
+                ? t("printer.trigger.pick")
+                : t("printer.trigger.none")}
           </span>
           {selected ? (
             <span
@@ -97,16 +119,16 @@ export function PrinterPicker() {
           <Icon name="chevron-down" size={12} />
         </span>
       </summary>
-      <section className="printer-picker-panel" aria-label="Discovered printers">
+      <section className="printer-picker-panel" aria-label={t("printer.panel.aria")}>
         <header className="printer-picker-head">
-          <span className="printer-picker-title">Printer target</span>
+          <span className="printer-picker-title">{t("printer.panel.title")}</span>
           <button
             type="button"
             className="printer-picker-refresh"
             onClick={onRefresh}
             disabled={probing}
-            aria-label="Re-probe printers"
-            title="Re-probe reachability"
+            aria-label={t("printer.refresh.aria")}
+            title={t("printer.refresh.title")}
           >
             <Icon
               name="refresh"
@@ -120,10 +142,10 @@ export function PrinterPicker() {
 
         {printers.length === 0 ? (
           <p className="printer-picker-empty" data-testid="printer-picker-empty">
-            No printers discovered. Set <code>ANYCUBIC_PRINTER_IPS</code> (comma-separated IPs).
+            {t("printer.empty", { env: "ANYCUBIC_PRINTER_IPS" })}
           </p>
         ) : (
-          <ul className="printer-picker-list" role="listbox" aria-label="Printers">
+          <ul className="printer-picker-list" role="listbox" aria-label={t("printer.list.aria")}>
             {printers.map((p) => (
               <li key={p.id} role="option" aria-selected={p.id === selectedId}>
                 <button
@@ -131,9 +153,9 @@ export function PrinterPicker() {
                   className="printer-picker-row"
                   data-selected={p.id === selectedId}
                   onClick={() => onPick(p.id)}
-                  title={`Arm send target ${p.ip}`}
+                  title={t("printer.row.title", { ip: p.ip })}
                 >
-                  <Led printer={p} />
+                  <Led printer={p} t={t} />
                   <span className="printer-picker-row-main">
                     <span className="printer-picker-row-name">{p.name}</span>
                     <span className="printer-picker-row-ip">{p.ip}</span>
@@ -149,7 +171,11 @@ export function PrinterPicker() {
 
         <footer className="printer-picker-foot">
           <span className="printer-picker-meta">
-            {probing ? "probing…" : `refreshed ${timeAgo(lastProbedAt)}`}
+            {probing
+              ? t("printer.foot.probing")
+              : t("printer.foot.refreshed", {
+                  timeAgo: timeAgo(lastProbedAt, t),
+                })}
           </span>
           <span className="printer-picker-source">env</span>
         </footer>

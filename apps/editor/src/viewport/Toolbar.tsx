@@ -1,6 +1,8 @@
 import { FRAME_SELECTED_EVENT } from "../state/shortcuts-core";
 import { useToolbar, type ViewPreset } from "../state/toolbar";
 import { useUi, type ToolMode } from "../state/ui";
+import { useI18n } from "../state/i18n";
+import type { MsgKey } from "../state/i18n-core";
 import { Icon, type IconName } from "../components/icons";
 import { shortcutFor, shortcutLabel } from "../state/shortcuts";
 import { usePlates } from "../state/plates";
@@ -37,24 +39,24 @@ export const VIEW_PRESET_EVENT = "anycubic:viewport-preset";
 const TOOLS: readonly {
   readonly mode: ToolMode;
   readonly icon: IconName;
-  readonly label: string;
+  readonly labelKey: MsgKey;
 }[] = [
-  { mode: "select", icon: "snap", label: "Select" },
-  { mode: "move", icon: "move", label: "Move" },
-  { mode: "rotate", icon: "rotate", label: "Rotate" },
-  { mode: "scale", icon: "scale", label: "Scale" },
-  { mode: "measure", icon: "measure", label: "Measure" },
+  { mode: "select", icon: "snap", labelKey: "toolbar.tool.select" },
+  { mode: "move", icon: "move", labelKey: "toolbar.tool.move" },
+  { mode: "rotate", icon: "rotate", labelKey: "toolbar.tool.rotate" },
+  { mode: "scale", icon: "scale", labelKey: "toolbar.tool.scale" },
+  { mode: "measure", icon: "measure", labelKey: "toolbar.tool.measure" },
 ];
 
 const PRESETS: readonly {
   readonly preset: ViewPreset;
-  readonly label: string;
+  readonly labelKey: MsgKey;
   readonly key: string;
 }[] = [
-  { preset: "iso", label: "Isometric", key: "1" },
-  { preset: "top", label: "Top", key: "2" },
-  { preset: "front", label: "Front", key: "3" },
-  { preset: "right", label: "Right", key: "4" },
+  { preset: "iso", labelKey: "toolbar.preset.isometric", key: "1" },
+  { preset: "top", labelKey: "toolbar.preset.top", key: "2" },
+  { preset: "front", labelKey: "toolbar.preset.front", key: "3" },
+  { preset: "right", labelKey: "toolbar.preset.right", key: "4" },
 ];
 
 interface ToolbarProps {
@@ -62,6 +64,7 @@ interface ToolbarProps {
 }
 
 export function Toolbar({ scene }: ToolbarProps) {
+  const t = useI18n((s) => s.t);
   const tool = useUi((s) => s.tool);
   const setTool = useUi((s) => s.setTool);
   const snap = useToolbar((s) => s.snap);
@@ -86,15 +89,19 @@ export function Toolbar({ scene }: ToolbarProps) {
 
   const onArrange = useCallback(async () => {
     if (!scene) {
-      pushToast({ kind: "warning", title: "Arrange", message: "Bridge unavailable." });
+      pushToast({
+        kind: "warning",
+        title: t("toolbar.arrange.title"),
+        message: t("toolbar.arrange.bridgeUnavailable"),
+      });
       return;
     }
     const targets = objectsOnPlate(allObjects, activePlateId);
     if (targets.length === 0) {
       pushToast({
         kind: "info",
-        title: "Arrange",
-        message: "Nothing on the active plate to arrange.",
+        title: t("toolbar.arrange.title"),
+        message: t("toolbar.arrange.noObjects"),
       });
       return;
     }
@@ -109,7 +116,7 @@ export function Toolbar({ scene }: ToolbarProps) {
         center: true,
       });
       if (!res.ok) {
-        pushToast({ kind: "error", title: "Arrange", message: res.error });
+        pushToast({ kind: "error", title: t("toolbar.arrange.title"), message: res.error });
         return;
       }
       await queryClient.invalidateQueries({ queryKey: ["bridge", "scene"] });
@@ -117,21 +124,32 @@ export function Toolbar({ scene }: ToolbarProps) {
       if (overflow.length > 0) {
         pushToast({
           kind: "warning",
-          title: "Arrange — overflow",
-          message: `${overflow.length} object${overflow.length === 1 ? "" : "s"} exceed the plate (${overflow[0]!.split(" — ")[0] ?? ""}).`,
+          title: t("toolbar.arrange.overflowTitle"),
+          message: t("toolbar.arrange.overflowMsg", {
+            n: String(overflow.length),
+            s: overflow.length === 1 ? "" : "s",
+            first: overflow[0]?.split(" — ")[0] ?? "",
+          }),
         });
       } else {
         pushToast({
           kind: "success",
-          title: "Arrange",
-          message: `Re-committed ${res.placed.length} object${res.placed.length === 1 ? "" : "s"} onto the active plate.`,
+          title: t("toolbar.arrange.title"),
+          message: t("toolbar.arrange.successMsg", {
+            n: String(res.placed.length),
+            s: res.placed.length === 1 ? "" : "s",
+          }),
         });
       }
     } catch (err) {
       console.warn("[toolbar] arrange failed", err);
-      pushToast({ kind: "error", title: "Arrange", message: "Arrange failed — see console." });
+      pushToast({
+        kind: "error",
+        title: t("toolbar.arrange.title"),
+        message: t("toolbar.arrange.failed"),
+      });
     }
-  }, [scene, allObjects, activePlateId, pushToast, queryClient]);
+  }, [scene, allObjects, activePlateId, pushToast, queryClient, t]);
 
   const onFit = () => {
     window.dispatchEvent(new CustomEvent(FRAME_SELECTED_EVENT));
@@ -147,37 +165,43 @@ export function Toolbar({ scene }: ToolbarProps) {
       className="viewport-toolbar"
       data-testid="viewport-toolbar"
       role="toolbar"
-      aria-label="Viewport tools"
+      aria-label={t("toolbar.aria")}
     >
-      <div className="toolbar-group" role="group" aria-label="Transform tools">
-        {TOOLS.map(({ mode, icon, label }) => (
-          <button
-            type="button"
-            key={mode}
-            className={`toolbar-btn${tool === mode ? " is-active" : ""}`}
-            aria-pressed={tool === mode}
-            aria-label={label}
-            title={`${label} (${toolTip(mode === "measure" ? "measure.toggle" : `tool.${mode}`) ?? ""})`}
-            data-testid={`tool-${mode}`}
-            onClick={() =>
-              mode === "measure"
-                ? setTool(tool === "measure" ? "select" : "measure")
-                : setTool(mode)
-            }
-          >
-            <Icon name={icon} size={18} />
-            <span className="toolbar-btn-label">{label}</span>
-          </button>
-        ))}
+      <div className="toolbar-group" role="group" aria-label={t("toolbar.group.transform.aria")}>
+        {TOOLS.map(({ mode, icon, labelKey }) => {
+          const label = t(labelKey);
+          return (
+            <button
+              type="button"
+              key={mode}
+              className={`toolbar-btn${tool === mode ? " is-active" : ""}`}
+              aria-pressed={tool === mode}
+              aria-label={label}
+              title={t("toolbar.tool.title", {
+                label,
+                shortcut: toolTip(mode === "measure" ? "measure.toggle" : `tool.${mode}`) ?? "",
+              })}
+              data-testid={`tool-${mode}`}
+              onClick={() =>
+                mode === "measure"
+                  ? setTool(tool === "measure" ? "select" : "measure")
+                  : setTool(mode)
+              }
+            >
+              <Icon name={icon} size={18} />
+              <span className="toolbar-btn-label">{label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="toolbar-group" role="group" aria-label="View toggles">
+      <div className="toolbar-group" role="group" aria-label={t("toolbar.group.view.aria")}>
         <button
           type="button"
           className={`toolbar-btn toolbar-toggle${snap ? " is-active" : ""}`}
           aria-pressed={snap}
-          aria-label="Snap"
-          title={`Snap (${toolTip("snap.toggle") ?? ""})`}
+          aria-label={t("toolbar.toggle.snap.aria")}
+          title={t("toolbar.toggle.snap.title", { shortcut: toolTip("snap.toggle") ?? "" })}
           data-testid="toggle-snap"
           onClick={() => toggleFlag("snap")}
         >
@@ -187,8 +211,8 @@ export function Toolbar({ scene }: ToolbarProps) {
           type="button"
           className={`toolbar-btn toolbar-toggle${grid ? " is-active" : ""}`}
           aria-pressed={grid}
-          aria-label="Grid"
-          title={`Grid (${toolTip("grid.toggle") ?? ""})`}
+          aria-label={t("toolbar.toggle.grid.aria")}
+          title={t("toolbar.toggle.grid.title", { shortcut: toolTip("grid.toggle") ?? "" })}
           data-testid="toggle-grid"
           onClick={() => toggleFlag("grid")}
         >
@@ -200,8 +224,8 @@ export function Toolbar({ scene }: ToolbarProps) {
           type="button"
           className={`toolbar-btn toolbar-toggle${objectLabelsAlwaysOn ? " is-active" : ""}`}
           aria-pressed={objectLabelsAlwaysOn}
-          aria-label="Labels"
-          title="Object labels (hover / always-on)"
+          aria-label={t("toolbar.toggle.labels.aria")}
+          title={t("toolbar.toggle.labels.title")}
           data-testid="toggle-labels"
           onClick={() => toggleObjectLabelsAlwaysOn()}
         >
@@ -210,8 +234,8 @@ export function Toolbar({ scene }: ToolbarProps) {
         {/* S9.7-002 AC-2 — snap step configurable from the toolbar: discrete
             number input, clamped 1..100 mm. Determinism guaranteed by the
             pure `snapValue` rounding used everywhere. */}
-        <label className="toolbar-snap-step" title="Snap step (mm)">
-          <span className="visually-hidden">Snap step mm</span>
+        <label className="toolbar-snap-step" title={t("toolbar.snapStep.title")}>
+          <span className="visually-hidden">{t("toolbar.snapStep.srText")}</span>
           <input
             type="number"
             min={1}
@@ -220,19 +244,19 @@ export function Toolbar({ scene }: ToolbarProps) {
             data-testid="snap-step-input"
             value={snapStep}
             disabled={!snap}
-            aria-label="Snap step (mm)"
+            aria-label={t("toolbar.snapStep.aria")}
             onChange={(e) => setSnapStep(Number(e.currentTarget.value))}
           />
           <span className="snap-step-unit">mm</span>
         </label>
       </div>
 
-      <div className="toolbar-group" role="group" aria-label="Scene actions">
+      <div className="toolbar-group" role="group" aria-label={t("toolbar.group.scene.aria")}>
         <button
           type="button"
           className="toolbar-btn"
-          aria-label="Arrange"
-          title="Auto-arrange"
+          aria-label={t("toolbar.arrange.aria")}
+          title={t("toolbar.arrange.titleAttr")}
           data-testid="toolbar-arrange"
           onClick={onArrange}
         >
@@ -241,8 +265,8 @@ export function Toolbar({ scene }: ToolbarProps) {
         <button
           type="button"
           className="toolbar-btn"
-          aria-label="Fit view"
-          title={`Fit view (${toolTip("view.fit") ?? ""})`}
+          aria-label={t("toolbar.fit.aria")}
+          title={t("toolbar.fit.title", { shortcut: toolTip("view.fit") ?? "" })}
           data-testid="toolbar-fit"
           onClick={onFit}
         >
@@ -250,20 +274,27 @@ export function Toolbar({ scene }: ToolbarProps) {
         </button>
       </div>
 
-      <div className="toolbar-group toolbar-view-presets" role="group" aria-label="View presets">
-        {PRESETS.map(({ preset, label, key }) => (
-          <button
-            type="button"
-            key={preset}
-            className="toolbar-btn"
-            aria-label={`View ${label}`}
-            title={`${label} (${key})`}
-            data-testid={`view-${preset}`}
-            onClick={() => dispatchPreset(preset)}
-          >
-            {label}
-          </button>
-        ))}
+      <div
+        className="toolbar-group toolbar-view-presets"
+        role="group"
+        aria-label={t("toolbar.presets.aria")}
+      >
+        {PRESETS.map(({ preset, labelKey, key }) => {
+          const label = t(labelKey);
+          return (
+            <button
+              type="button"
+              key={preset}
+              className="toolbar-btn"
+              aria-label={t("toolbar.preset.aria", { label })}
+              title={t("toolbar.preset.title", { label, key })}
+              data-testid={`view-${preset}`}
+              onClick={() => dispatchPreset(preset)}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

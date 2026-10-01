@@ -7,6 +7,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { openContextMenuAt } from "../components/context-menu-core";
 import { buildPlateMenuItems } from "../components/context-menu-items";
 import { useContextMenuStore } from "../state/context-menu";
+import { useI18n } from "../state/i18n";
+import type { MsgKey } from "../state/i18n-core";
+
+/** i18n `t` shape used by chipTitle (structural — avoids a hook in a helper). */
+type T = (key: MsgKey, params?: Readonly<Record<string, string>>) => string;
 
 /**
  * S9.4-003 plate tabs (G12) — floating chips above the bottom edge of the
@@ -31,11 +36,12 @@ interface PlateTabsProps {
 }
 
 /** Chip title text with a visible keyboard shortcut affordance. */
-function chipTitle(plate: PlateDescriptor): string {
-  return `${plate.name}${plate.dirty ? " · unsaved" : ""}`;
+function chipTitle(plate: PlateDescriptor, t: T): string {
+  return plate.dirty ? t("plateTabs.unsaved", { name: plate.name }) : plate.name;
 }
 
 export function PlateTabs({ scene, objects }: PlateTabsProps) {
+  const t = useI18n((s) => s.t);
   const queryClient = useQueryClient();
   const { plates, activeId, add, switchTo, duplicate, rename } = usePlates();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -100,7 +106,12 @@ export function PlateTabs({ scene, objects }: PlateTabsProps) {
   };
 
   return (
-    <div className="plate-tabs" data-testid="plate-tabs" role="tablist" aria-label="Plates">
+    <div
+      className="plate-tabs"
+      data-testid="plate-tabs"
+      role="tablist"
+      aria-label={t("plateTabs.aria")}
+    >
       {plates.map((plate) =>
         editingId === plate.id ? (
           <input
@@ -126,7 +137,7 @@ export function PlateTabs({ scene, objects }: PlateTabsProps) {
             aria-selected={plate.id === activeId}
             data-testid={`plate-tab-${plate.id}`}
             className={`plate-tab${plate.id === activeId ? " is-active" : ""}`}
-            title={chipTitle(plate)}
+            title={chipTitle(plate, t)}
             onClick={() => switchTo(plate.id)}
             onDoubleClick={() => {
               setEditingId(plate.id);
@@ -143,7 +154,7 @@ export function PlateTabs({ scene, objects }: PlateTabsProps) {
               <span
                 className="plate-tab-dot"
                 data-testid={`plate-dot-${plate.id}`}
-                aria-label="Unsaved changes"
+                aria-label={t("plateTabs.unsavedDot")}
               />
             ) : null}
           </button>
@@ -153,8 +164,8 @@ export function PlateTabs({ scene, objects }: PlateTabsProps) {
         type="button"
         className="plate-tab plate-tab-add"
         data-testid="plate-add"
-        aria-label="Add plate"
-        title="Add plate"
+        aria-label={t("plateTabs.add.aria")}
+        title={t("plateTabs.add.title")}
         onClick={() => add()}
       >
         +

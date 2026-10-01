@@ -27,6 +27,7 @@ import {
   type ImportOptions,
 } from "../bridge/import-core";
 import { useImportCommit } from "../bridge/import-actions";
+import { useI18n } from "../state/i18n";
 import {
   Dialog,
   DialogContent,
@@ -44,6 +45,7 @@ interface ImportDialogProps {
 
 export function ImportDialog({ open, onOpenChange, scene }: ImportDialogProps) {
   const { commitFile } = useImportCommit(scene);
+  const t = useI18n((s) => s.t);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [flags, setFlags] = useState({ ...DEFAULT_IMPORT_FLAGS });
@@ -68,42 +70,47 @@ export function ImportDialog({ open, onOpenChange, scene }: ImportDialogProps) {
     setParsedBounds(null);
   }, [open]);
 
-  const onFiles = useCallback((files: FileList | null) => {
-    const file = files?.[0];
-    if (!file) return;
-    const kind = classifyFile(file.name);
-    if (!kind) {
-      setError(`Unsupported file type — expected .stl or .3mf (got "${file.name}").`);
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    setFileName(file.name);
-    void (async () => {
-      try {
-        const buffer = await file.arrayBuffer();
-        const parsed: TriangleBuffers =
-          kind === "stl" ? parseStl(buffer, file.name) : parseThreemf(buffer, file.name);
-        setParsedBounds(parsed.bounds);
-        setPreview({
-          triangles: parsed.triangleCount,
-          vertices: parsed.vertexCount,
-          sizeMm: [
-            parsed.bounds.max[0] - parsed.bounds.min[0],
-            parsed.bounds.max[1] - parsed.bounds.min[1],
-            parsed.bounds.max[2] - parsed.bounds.min[2],
-          ],
-        });
-      } catch (err) {
-        setPreview(null);
-        setError(
-          err instanceof Error ? `Import failed: ${err.message}` : `Import failed: ${String(err)}`,
-        );
-      } finally {
-        setBusy(false);
+  const onFiles = useCallback(
+    (files: FileList | null) => {
+      const file = files?.[0];
+      if (!file) return;
+      const kind = classifyFile(file.name);
+      if (!kind) {
+        setError(t("import.unsupported", { name: file.name }));
+        return;
       }
-    })();
-  }, []);
+      setBusy(true);
+      setError(null);
+      setFileName(file.name);
+      void (async () => {
+        try {
+          const buffer = await file.arrayBuffer();
+          const parsed: TriangleBuffers =
+            kind === "stl" ? parseStl(buffer, file.name) : parseThreemf(buffer, file.name);
+          setParsedBounds(parsed.bounds);
+          setPreview({
+            triangles: parsed.triangleCount,
+            vertices: parsed.vertexCount,
+            sizeMm: [
+              parsed.bounds.max[0] - parsed.bounds.min[0],
+              parsed.bounds.max[1] - parsed.bounds.min[1],
+              parsed.bounds.max[2] - parsed.bounds.min[2],
+            ],
+          });
+        } catch (err) {
+          setPreview(null);
+          setError(
+            err instanceof Error
+              ? t("import.failed.message", { err: err.message })
+              : t("import.failed.fallback"),
+          );
+        } finally {
+          setBusy(false);
+        }
+      })();
+    },
+    [t],
+  );
 
   /** Commit the parsed file into the scene graph (shared import-actions path). */
   const onImport = useCallback(async () => {
@@ -124,11 +131,11 @@ export function ImportDialog({ open, onOpenChange, scene }: ImportDialogProps) {
     if (result.ok) {
       onOpenChange(false);
     } else {
-      setError(result.error ?? "Import failed.");
+      setError(result.error ?? t("import.failed.fallback"));
     }
-  }, [commitFile, flags, fileName, onOpenChange, parsedBounds, scene]);
+  }, [commitFile, flags, fileName, onOpenChange, parsedBounds, scene, t]);
 
-  const fileLabel = fileName ?? "No file selected";
+  const fileLabel = fileName ?? t("import.browse.none");
   const dims = preview
     ? `${preview.sizeMm[0].toFixed(1)} × ${preview.sizeMm[1].toFixed(1)} × ${preview.sizeMm[2].toFixed(1)} mm`
     : null;
@@ -142,11 +149,8 @@ export function ImportDialog({ open, onOpenChange, scene }: ImportDialogProps) {
         // contained panel — focus rings stay inside per 9.1a a11y.
       >
         <DialogHeader>
-          <DialogTitle>Import model</DialogTitle>
-          <DialogDescription>
-            STL (binary/ASCII) or 3MF — units mm, placed on the plate (z=0). Watertight status is
-            computed on import.
-          </DialogDescription>
+          <DialogTitle>{t("import.title")}</DialogTitle>
+          <DialogDescription>{t("import.description")}</DialogDescription>
         </DialogHeader>
 
         <input
@@ -171,15 +175,15 @@ export function ImportDialog({ open, onOpenChange, scene }: ImportDialogProps) {
         {preview ? (
           <dl className="import-preview" data-testid="import-preview">
             <div>
-              <dt>Triangles</dt>
+              <dt>{t("import.preview.triangles")}</dt>
               <dd data-testid="import-preview-tris">{preview.triangles.toLocaleString()}</dd>
             </div>
             <div>
-              <dt>Vertices</dt>
+              <dt>{t("import.preview.vertices")}</dt>
               <dd data-testid="import-preview-verts">{preview.vertices.toLocaleString()}</dd>
             </div>
             <div>
-              <dt>Size</dt>
+              <dt>{t("import.preview.size")}</dt>
               <dd className="import-dims" data-testid="import-preview-dims">
                 {dims}
               </dd>
@@ -187,7 +191,7 @@ export function ImportDialog({ open, onOpenChange, scene }: ImportDialogProps) {
           </dl>
         ) : null}
 
-        <div className="import-options" aria-label="Import options">
+        <div className="import-options" aria-label={t("import.options.aria")}>
           <label className="import-option">
             <input
               type="checkbox"
@@ -195,7 +199,7 @@ export function ImportDialog({ open, onOpenChange, scene }: ImportDialogProps) {
               checked={flags.center}
               onChange={(e) => setFlags((f) => ({ ...f, center: e.target.checked }))}
             />
-            Center on plate
+            {t("import.option.center")}
           </label>
           <label className="import-option">
             <input
@@ -204,7 +208,7 @@ export function ImportDialog({ open, onOpenChange, scene }: ImportDialogProps) {
               checked={flags.orientFlat}
               onChange={(e) => setFlags((f) => ({ ...f, orientFlat: e.target.checked }))}
             />
-            Orient flat
+            {t("import.option.orientFlat")}
           </label>
           <label className="import-option">
             <input
@@ -213,7 +217,7 @@ export function ImportDialog({ open, onOpenChange, scene }: ImportDialogProps) {
               checked={flags.scale}
               onChange={(e) => setFlags((f) => ({ ...f, scale: e.target.checked }))}
             />
-            Keep units (mm)
+            {t("import.option.keepUnits")}
           </label>
         </div>
 
@@ -230,7 +234,7 @@ export function ImportDialog({ open, onOpenChange, scene }: ImportDialogProps) {
             data-testid="import-cancel"
             onClick={() => onOpenChange(false)}
           >
-            Cancel
+            {t("import.cancel")}
           </button>
           <button
             type="button"
@@ -239,7 +243,7 @@ export function ImportDialog({ open, onOpenChange, scene }: ImportDialogProps) {
             disabled={!fileName || busy}
             onClick={() => void onImport()}
           >
-            {busy ? "Importing…" : "Import"}
+            {busy ? t("import.commit.busy") : t("import.commit.idle")}
           </button>
         </div>
       </DialogContent>

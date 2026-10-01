@@ -2,6 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { useState } from "react";
 import { createChatTransport } from "../bridge/chat-transport";
 import { useChatConversations, type UIMessageLike } from "../state/chat-conversations";
+import { useI18n } from "../state/i18n";
 import type { UIMessage } from "ai";
 
 /**
@@ -30,6 +31,7 @@ export function ChatThread({
   readonly conversationId: string;
   readonly initialMessages: readonly UIMessageLike[];
 }) {
+  const t = useI18n((s) => s.t);
   const upsertMessages = useChatConversations((s) => s.upsertMessages);
   const [draft, setDraft] = useState("");
 
@@ -66,16 +68,15 @@ export function ChatThread({
       <div className="chat-transcript" data-testid="chat-transcript">
         {messages.length === 0 ? (
           <div className="chat-empty">
-            <p>No messages yet — offline dev transport (S9.6-005/008).</p>
-            <p className="panel-hint">
-              Send a message to get a canned mock reply; set ANYCUBIC_BROKER_URL to pin the chat
-              lane to the Rust broker loopback.
-            </p>
+            <p>{t("chat.thread.empty.title")}</p>
+            <p className="panel-hint">{t("chat.thread.empty.hint")}</p>
           </div>
         ) : (
           messages.map((msg) => (
             <div key={msg.id} className={"chat-message " + msg.role} data-testid="chat-message">
-              <span className="chat-role">{msg.role}</span>
+              <span className="chat-role">
+                {msg.role === "assistant" ? t("chat.role.assistant") : t("chat.role.user")}
+              </span>
               {msg.parts.map((part, i) =>
                 part.type === "text" ? (
                   <p key={i} className="chat-text">
@@ -88,7 +89,7 @@ export function ChatThread({
         )}
         {busy ? (
           <div className="chat-thinking" data-testid="chat-thinking">
-            thinking…
+            {t("chat.thinking")}
           </div>
         ) : null}
       </div>
@@ -98,7 +99,7 @@ export function ChatThread({
           className="chat-input"
           data-testid="chat-input"
           value={draft}
-          placeholder={'Ask the harness… (try "request: geometry.boolean")'}
+          placeholder={t("chat.input.placeholder")}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSend();
@@ -112,7 +113,7 @@ export function ChatThread({
           onClick={handleSend}
           disabled={busy}
         >
-          Send
+          {t("chat.send")}
         </button>
       </div>
     </div>

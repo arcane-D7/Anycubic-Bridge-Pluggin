@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { BridgeHandle } from "../bridge/mock";
 import { useScene } from "../state/scene";
 import { useUi } from "../state/ui";
+import { useI18n } from "../state/i18n";
 import { Icon } from "../components/icons";
 
 /**
@@ -13,6 +14,7 @@ import { Icon } from "../components/icons";
  * is unaffected.
  */
 export function NonWatertightBadges({ bridge }: { readonly bridge: BridgeHandle | undefined }) {
+  const t = useI18n((s) => s.t);
   const queryClient = useQueryClient();
   const objects = useScene((s) => s.objects);
   const pushToast = useUi((s) => s.pushToast);
@@ -25,30 +27,34 @@ export function NonWatertightBadges({ bridge }: { readonly bridge: BridgeHandle 
       const res = await bridge.repair({ name, mode: "replace" });
       await queryClient.invalidateQueries({ queryKey: ["bridge", "scene"] });
       if (!res.ok) {
-        pushToast({ kind: "error", title: "Auto-repair", message: res.error });
+        pushToast({ kind: "error", title: t("objectTree.toast.repair.title"), message: res.error });
         return;
       }
       pushToast({
         kind: "success",
-        title: "Auto-repair",
-        message: `${name} is watertight.`,
+        title: t("objectTree.toast.repair.title"),
+        message: t("objectTree.toast.repair.watertight", { name, target: "" }),
       });
     } catch (err) {
       console.warn("[viewport] repair failed", err);
-      pushToast({ kind: "error", title: "Auto-repair", message: "Bridge error during repair." });
+      pushToast({
+        kind: "error",
+        title: t("objectTree.toast.repair.title"),
+        message: t("objectTree.toast.repair.bridgeError"),
+      });
     }
   };
 
   return (
     <div className="viewport-repair-badges" data-testid="viewport-repair-badges" role="status">
-      <span className="viewport-repair-label">Needs repair:</span>
+      <span className="viewport-repair-label">{t("viewport.repairLabel")}</span>
       {bad.map((o) => (
         <button
           key={o.name}
           type="button"
           className="viewport-repair-badge"
           data-testid={`viewport-repair-${o.name}`}
-          title={`${o.name} is not watertight — click to Auto-repair`}
+          title={t("objectTree.repair.title")}
           onClick={() => void onClick(o.name)}
         >
           <Icon name="wrench" size={12} />

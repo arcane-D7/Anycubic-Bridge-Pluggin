@@ -1,5 +1,6 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useDock } from "../../state/dock";
+import { useI18n } from "../../state/i18n";
 import { FloatingPanelHost, CollapsedPill } from "./FloatingPanelHost";
 import { ConversationQuickSwitcher } from "./ConversationQuickSwitcher";
 import { ChatPanel } from "../../panels/ChatPanel";
@@ -16,6 +17,7 @@ import { ChatPanel } from "../../panels/ChatPanel";
  * management + role="dialog" from Radix without trapping focus.
  */
 export function DockPanel() {
+  const t = useI18n((s) => s.t);
   const panel = useDock((s) => s.panels.chat);
   const setPanelMode = useDock((s) => s.setPanelMode);
   const focusPanel = useDock((s) => s.focusPanel);
@@ -26,6 +28,7 @@ export function DockPanel() {
     focusPanel("chat");
     setPanelMode("chat", "floating");
   };
+  const panelTitle = t("dock.chat.title");
 
   return (
     <>
@@ -38,7 +41,7 @@ export function DockPanel() {
       >
         <FloatingPanelHost
           id="chat"
-          title="AI Chat"
+          title={panelTitle}
           kind="chat"
           onDock={dock}
           onCollapse={collapse}
@@ -47,7 +50,9 @@ export function DockPanel() {
           <ChatPanel />
         </FloatingPanelHost>
       </DialogPrimitive.Root>
-      {panel.mode === "collapsed" && <CollapsedPill id="chat" title="AI Chat" onExpand={expand} />}
+      {panel.mode === "collapsed" && (
+        <CollapsedPill id="chat" title={panelTitle} onExpand={expand} />
+      )}
     </>
   );
 }

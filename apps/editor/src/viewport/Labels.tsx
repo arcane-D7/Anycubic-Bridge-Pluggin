@@ -3,6 +3,7 @@ import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { SceneObjectSnapshot } from "../bridge/types";
 import { useUi } from "../state/ui";
+import { useI18n } from "../state/i18n";
 import { clearNdc, readNdc, useLabelsBus, writeNdc } from "../state/labels";
 import { clampChip, ndcToViewport, statusOf } from "./labels-core";
 
@@ -101,6 +102,7 @@ export const ObjectLabels = memo(function ObjectLabels({
 }: {
   readonly objects: readonly SceneObjectSnapshot[];
 }) {
+  const t = useI18n((s) => s.t);
   const frame = useLabelsBus((s) => s.frame);
   const hoveredName = useLabelsBus((s) => s.hoveredName);
   const alwaysOn = useUi((s) => s.objectLabelsAlwaysOn);
@@ -159,7 +161,9 @@ export const ObjectLabels = memo(function ObjectLabels({
               <span className="object-label-dot" aria-hidden="true" />
               <span className="object-label-name">{o.name}</span>
               {status !== "watertight" ? (
-                <span className="object-label-status">{status}</span>
+                <span className="object-label-status">
+                  {t(status === "non-watertight" ? "labels.note.repair" : "labels.note.locked")}
+                </span>
               ) : null}
             </div>
           );

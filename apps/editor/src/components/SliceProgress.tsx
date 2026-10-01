@@ -1,4 +1,5 @@
 import { usePrintJob, SLICE_STAGES } from "@/state/printjob";
+import { useI18n } from "@/state/i18n";
 
 /**
  * Slice progress (S9.5-002) — staged progress bar mirroring the print job
@@ -8,6 +9,7 @@ import { usePrintJob, SLICE_STAGES } from "@/state/printjob";
  */
 
 export function SliceProgress() {
+  const t = useI18n((s) => s.t);
   const status = usePrintJob((s) => s.status);
   const stage = usePrintJob((s) => s.stage);
   const stageTotal = usePrintJob((s) => s.stageTotal);
@@ -21,9 +23,15 @@ export function SliceProgress() {
   return (
     <div className="slice-progress" data-testid="slice-progress" role="status" aria-live="polite">
       <div className="slice-progress-head">
-        <span className="slice-progress-title">Slicing {stageLabel || "…"}</span>
+        <span className="slice-progress-title">
+          {t("slice.progress.title", { stage: stageLabel || "…" })}
+        </span>
         <span className="slice-progress-meta mono-num">
-          {stage}/{stageTotal} · {pct}%
+          {t("slice.progress.meta", {
+            n: String(stage),
+            total: String(stageTotal),
+            pct: String(pct),
+          })}
         </span>
         <button
           type="button"
@@ -31,7 +39,7 @@ export function SliceProgress() {
           data-testid="slice-cancel"
           onClick={cancel}
         >
-          Cancel
+          {t("slice.progress.cancel")}
         </button>
       </div>
       <div className="slice-progress-track" aria-hidden="true">

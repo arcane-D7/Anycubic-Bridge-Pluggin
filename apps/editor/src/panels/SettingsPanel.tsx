@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { usePresets } from "../state/presets";
+import { useI18n } from "../state/i18n";
 import { Swatch } from "../components/Swatch";
 import { FILAMENT_PRESETS, PRINTER_PRESETS, QUALITY_PRESETS } from "../presets/catalog";
 import type { QualityPresetId } from "../presets/catalog";
@@ -38,6 +39,9 @@ interface SettingsPanelProps {
 }
 
 export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) {
+  const t = useI18n((s) => s.t);
+  const locale = useI18n((s) => s.locale);
+  const setLocale = useI18n((s) => s.setLocale);
   const [tab, setTab] = useState<"Printer" | "Filament" | "Process">("Printer");
   const [draft, setDraft] = useState(DEFAULT_DRAFT);
   const [exportStatus, setExportStatus] = useState("");
@@ -74,7 +78,7 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
       line_width_mm: values.lineWidthMm,
       material: values.material,
     }));
-    setExportStatus("Preset applied to draft");
+    setExportStatus(t("settings.applyPresetToast"));
   }
 
   function numeric(
@@ -127,22 +131,46 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
     link.download = "slicer-settings-draft.json";
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setExportStatus("Draft exported");
+    setExportStatus(t("settings.export") + " ✓");
   }
 
+  const tabKeys = [
+    "settings.tabs.printer",
+    "settings.tabs.filament",
+    "settings.tabs.process",
+  ] as const;
+  const tabNames = ["Printer", "Filament", "Process"] as const;
   return (
-    <section className="settings-panel" aria-label="Slicer settings">
+    <section className="settings-panel" aria-label={t("settings.aria")}>
       <div className="settings-heading">
-        <strong>Print settings</strong>
-        <span className="draft-badge">Draft</span>
+        <strong>{t("settings.heading")}</strong>
+        <span className="draft-badge">{t("settings.draftBadge")}</span>
+      </div>
+      {/* S9.8-005 — UI language toggle (switches live, persisted to localStorage). */}
+      <div className="settings-language">
+        <label className="settings-stack" title={t("settings.language.hint")}>
+          <span>{t("settings.language")}</span>
+          <select
+            data-testid="settings-language"
+            aria-label={t("settings.language")}
+            value={locale}
+            onChange={(event) => {
+              const value = event.currentTarget.value;
+              if (value === "en" || value === "pt-BR") setLocale(value);
+            }}
+          >
+            <option value="en">English</option>
+            <option value="pt-BR">Português (BR)</option>
+          </select>
+        </label>
       </div>
       <div
         className="settings-tabs"
         data-testid="settings-tabs"
         role="tablist"
-        aria-label="Settings category"
+        aria-label={t("settings.tabs.aria")}
       >
-        {(["Printer", "Filament", "Process"] as const).map((name) => (
+        {tabNames.map((name, i) => (
           <button
             key={name}
             id={`settings-tab-${name}`}
@@ -152,7 +180,7 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
             aria-controls="settings-content"
             onClick={() => setTab(name)}
           >
-            {name}
+            {t(tabKeys[i] ?? "settings.tabs.printer")}
           </button>
         ))}
       </div>
@@ -160,9 +188,9 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
         {tab === "Printer" ? (
           <>
             <div className="settings-group">
-              <h3>Presets</h3>
+              <h3>{t("settings.presets")}</h3>
               <label className="settings-stack">
-                Printer profile
+                {t("settings.printerProfile")}
                 <select
                   data-testid="printer-preset-select"
                   value={presetSelection.printerId}
@@ -179,7 +207,7 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
                 </select>
               </label>
               <label className="settings-stack">
-                Quality preset
+                {t("settings.qualityPreset")}
                 <select
                   data-testid="quality-preset-select"
                   value={presetSelection.qualityId}
@@ -197,7 +225,7 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
               </label>
               {presetSelection.qualityId === "custom" ? (
                 <label className="settings-field">
-                  <span>Custom layer height</span>
+                  <span>{t("settings.customLayerHeight")}</span>
                   <span className="settings-value">
                     <input
                       data-testid="preset-custom-layer"
@@ -220,9 +248,9 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
               ) : null}
             </div>
             <div className="settings-group">
-              <h3>Machine</h3>
+              <h3>{t("settings.machine")}</h3>
               <label className="settings-stack">
-                Printer
+                {t("settings.selectPrinter")}
                 <select
                   data-testid="printer-select"
                   value={machine?.id ?? ""}
@@ -234,7 +262,7 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
                     )
                   }
                 >
-                  <option value="">Select printer</option>
+                  <option value="">{t("settings.selectPrinter")}</option>
                   {CATALOG_MACHINES.map((entry) => (
                     <option key={entry.id} value={entry.id}>
                       {entry.displayName}
@@ -244,15 +272,19 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
               </label>
               <div className="settings-summary" data-testid="plate-volume">
                 {profile.buildVolume
-                  ? `${profile.buildVolume.widthMm} x ${profile.buildVolume.depthMm} x ${profile.buildVolume.heightMm} mm`
-                  : "No printer profile selected"}
+                  ? t("settings.plateVolume", {
+                      w: String(profile.buildVolume.widthMm),
+                      d: String(profile.buildVolume.depthMm),
+                      h: String(profile.buildVolume.heightMm),
+                    })
+                  : t("settings.noProfile")}
               </div>
-              {numeric("nozzle_diameter_mm", "Nozzle diameter", "mm", 0.1, 2, 0.05)}
+              {numeric("nozzle_diameter_mm", t("settings.nozzleDiameter"), "mm", 0.1, 2, 0.05)}
             </div>
             <div className="settings-group">
-              <h3>Motion capabilities</h3>
+              <h3>{t("settings.motionCapabilities")}</h3>
               <label className="settings-field">
-                <span>Continuous Z</span>
+                <span>{t("settings.continuousZ")}</span>
                 <select
                   data-testid="continuous-z-select"
                   value={profile.continuousZ}
@@ -266,24 +298,24 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
                       );
                   }}
                 >
-                  <option value="unknown">Unknown</option>
-                  <option value="supported">Supported</option>
-                  <option value="unsupported">Unsupported</option>
+                  <option value="unknown">{t("settings.continuousZ.unknown")}</option>
+                  <option value="supported">{t("settings.continuousZ.supported")}</option>
+                  <option value="unsupported">{t("settings.continuousZ.unsupported")}</option>
                 </select>
               </label>
               <p className="settings-summary" data-testid="capability-source">
                 {profile.provenance === "operator-declared"
-                  ? "Source: operator declaration"
-                  : "Capability not yet declared"}
+                  ? t("settings.source.operator")
+                  : t("settings.source.undeclared")}
               </p>
             </div>
           </>
         ) : tab === "Filament" ? (
           <>
             <div className="settings-group">
-              <h3>Preset</h3>
+              <h3>{t("settings.presets")}</h3>
               <label className="settings-stack">
-                Filament
+                {t("settings.filament")}
                 <select
                   data-testid="filament-preset-select"
                   value={presetSelection.filamentId}
@@ -310,13 +342,13 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
                 ))}
               </div>
               <p className="settings-summary" data-testid="filament-color-summary">
-                Active: {presetSelection.draftValues?.color ?? "—"}
+                {t("settings.activeColor", { color: presetSelection.draftValues?.color ?? "—" })}
               </p>
             </div>
             <div className="settings-group">
-              <h3>Material</h3>
+              <h3>{t("settings.material")}</h3>
               <label className="settings-field">
-                <span>Type</span>
+                <span>{t("settings.materialType")}</span>
                 <select
                   value={draft.material}
                   onChange={(event) =>
@@ -328,32 +360,32 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
                   ))}
                 </select>
               </label>
-              {numeric("filament_diameter_mm", "Diameter", "mm", 1, 3, 0.01)}
+              {numeric("filament_diameter_mm", t("settings.diameter"), "mm", 1, 3, 0.01)}
             </div>
             <div className="settings-group">
-              <h3>Temperature</h3>
-              {numeric("nozzle_temperature_c", "Nozzle", "C", 0, 320, 1)}
-              {numeric("bed_temperature_c", "Bed", "C", 0, 120, 1)}
+              <h3>{t("settings.temperature")}</h3>
+              {numeric("nozzle_temperature_c", t("settings.nozzle"), "C", 0, 320, 1)}
+              {numeric("bed_temperature_c", t("settings.bed"), "C", 0, 120, 1)}
             </div>
             <div className="settings-group">
-              <h3>Cooling</h3>
-              {numeric("fan_pct", "Part fan", "%", 0, 100, 1)}
+              <h3>{t("settings.cooling")}</h3>
+              {numeric("fan_pct", t("settings.partFan"), "%", 0, 100, 1)}
             </div>
           </>
         ) : (
           <>
             <details className="settings-group" open>
-              <summary>Quality</summary>
-              {numeric("layer_height_mm", "Layer height", "mm", 0.05, 1, 0.01)}
-              {numeric("line_width_mm", "Line width", "mm", 0.1, 3, 0.01)}
+              <summary>{t("settings.quality")}</summary>
+              {numeric("layer_height_mm", t("settings.layerHeight"), "mm", 0.05, 1, 0.01)}
+              {numeric("line_width_mm", t("settings.lineWidth"), "mm", 0.1, 3, 0.01)}
             </details>
             <details className="settings-group" open>
-              <summary>Strength</summary>
-              {numeric("wall_loops", "Wall loops", "", 1, 20, 1)}
-              {numeric("top_bottom_layers", "Top / bottom layers", "", 0, 30, 1)}
-              {numeric("infill_density_pct", "Infill density", "%", 0, 100, 1)}
+              <summary>{t("settings.strength")}</summary>
+              {numeric("wall_loops", t("settings.wallLoops"), "", 1, 20, 1)}
+              {numeric("top_bottom_layers", t("settings.topBottom"), "", 0, 30, 1)}
+              {numeric("infill_density_pct", t("settings.infillDensity"), "%", 0, 100, 1)}
               <label className="settings-field">
-                <span>Infill pattern</span>
+                <span>{t("settings.infillPattern")}</span>
                 <select
                   value={draft.infill_pattern}
                   onChange={(event) =>
@@ -363,21 +395,21 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
                     }))
                   }
                 >
-                  <option>Grid</option>
-                  <option value="GyroidSubset">Gyroid subset</option>
+                  <option value="Grid">{t("settings.infill.grid")}</option>
+                  <option value="GyroidSubset">{t("settings.infill.gyroid")}</option>
                 </select>
               </label>
             </details>
             <details className="settings-group">
-              <summary>Speed</summary>
-              {numeric("print_speed_mm_s", "Print", "mm/s", 1, 600, 1)}
-              {numeric("travel_speed_mm_s", "Travel", "mm/s", 1, 600, 1)}
+              <summary>{t("settings.speed")}</summary>
+              {numeric("print_speed_mm_s", t("settings.print"), "mm/s", 1, 600, 1)}
+              {numeric("travel_speed_mm_s", t("settings.travel"), "mm/s", 1, 600, 1)}
             </details>
             <details className="settings-group">
-              <summary>Support &amp; adhesion</summary>
+              <summary>{t("settings.supportAdhesion")}</summary>
               <fieldset disabled={!supportsEligible}>
                 <label className="settings-field">
-                  <span>Generate supports</span>
+                  <span>{t("settings.generateSupports")}</span>
                   <input
                     type="checkbox"
                     data-testid="setting-supports"
@@ -386,7 +418,7 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
                   />
                 </label>
                 <label className="settings-field">
-                  <span>Brim</span>
+                  <span>{t("settings.brim")}</span>
                   <input
                     type="checkbox"
                     data-testid="setting-brim"
@@ -397,17 +429,17 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
               </fieldset>
               <p className="settings-summary" data-testid="supports-summary">
                 {supportsEligible
-                  ? `${supports ? "Supports" : "No supports"}${brim ? " · brim" : ""} — applied at slice time, gated by the watertight preflight.`
-                  : "Not eligible yet — objects on the plate must be watertight."}
+                  ? `${t(supports ? "settings.supports.on" : "settings.supports.off")}${brim ? t("settings.supports.brimSuffix") : ""}${t("settings.supports.summaryTail")}`
+                  : t("settings.notEligible")}
               </p>
             </details>
           </>
         )}
       </div>
       <div className="settings-export">
-        <p className="settings-summary">Draft parameters. Existing toolpaths are unchanged.</p>
+        <p className="settings-summary">{t("settings.draftNote")}</p>
         <button type="button" data-testid="settings-export" onClick={exportDraft}>
-          Export settings
+          {t("settings.export")}
         </button>
         <span role="status">{exportStatus}</span>
       </div>

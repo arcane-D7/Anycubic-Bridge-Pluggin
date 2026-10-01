@@ -36,6 +36,7 @@ import { DockPanel } from "./components/dock/dock-panel";
 import { useDock } from "./state/dock";
 import { useScene } from "./state/scene";
 import { useUi } from "./state/ui";
+import { useI18n } from "./state/i18n";
 import { usePlates } from "./state/plates";
 import { activePlate as activePlateOf } from "./state/plates-core";
 
@@ -57,20 +58,22 @@ const MAX_IR_FILE_BYTES = 20 * 1024 * 1024;
 /** Single demo toast on boot so the bus is visibly alive (S9.1-005 AC). */
 function useDemoToast() {
   const pushToast = useUi((s) => s.pushToast);
+  const t = useI18n((s) => s.t);
   useEffect(() => {
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       pushToast({
         kind: "info",
-        title: "Ready",
-        message: "Liquid-glass shell initialized.",
+        title: t("app.toast.demo.title"),
+        message: t("app.toast.demo.message"),
       });
     }, 600);
-    return () => window.clearTimeout(t);
-  }, [pushToast]);
+    return () => window.clearTimeout(timer);
+  }, [pushToast, t]);
 }
 
 export function App() {
   useDemoToast();
+  const t = useI18n((s) => s.t);
   const sceneQuery = useQuery({
     queryKey: QUERY_KEY,
     queryFn: fetchSceneSnapshot,
@@ -125,7 +128,7 @@ export function App() {
     const seq = ++loadSeq.current;
     if (file.size > MAX_IR_FILE_BYTES) {
       setPreviewIr(null);
-      setIrError(`"${file.name}" is larger than the 20 MB IR limit and was not read.`);
+      setIrError(t("app.ir.sizeError", { name: file.name }));
       return;
     }
     try {
@@ -154,15 +157,17 @@ export function App() {
   const onModeChange = useCallback(
     (m: SlicingMode) => {
       if (previewIr && previewIr.mode !== m) {
-        setIrError(
-          `Mode switch rejected — the loaded preview is "${previewIr.mode}". Clear it before switching the slicing mode.`,
-        );
+        setIrError(t("app.ir.modeSwitchRejected", { mode: previewIr.mode }));
         return;
       }
       setMode(m);
     },
-    [previewIr],
+    [previewIr, t],
   );
+
+  const modeLockReason = previewIr
+    ? t("app.ir.modeLockReason", { mode: previewIr.mode })
+    : undefined;
 
   return (
     <div
@@ -175,14 +180,14 @@ export function App() {
       }
     >
       <header className="app-header">
-        <span className="app-brand">Anycubic Bridge Editor</span>
-        <nav className="workspace-tabs" aria-label="Workspace view">
+        <span className="app-brand">{t("app.brand")}</span>
+        <nav className="workspace-tabs" aria-label={t("app.workspaceView.aria")}>
           <button
             type="button"
             aria-pressed={workspaceView === "prepare"}
             onClick={() => setWorkspaceView("prepare")}
           >
-            Prepare
+            {t("app.tab.prepare")}
           </button>
           <button
             type="button"
@@ -190,7 +195,7 @@ export function App() {
             disabled={!preview}
             onClick={() => setWorkspaceView("preview")}
           >
-            Preview
+            {t("app.tab.preview")}
           </button>
         </nav>
         <SliceButton objects={objects} />
@@ -201,18 +206,18 @@ export function App() {
           aria-expanded={sidebarOpen}
           onClick={() => setSidebarOpen((current) => !current)}
         >
-          Settings
+          {t("app.sidebarToggle")}
         </button>
         <span className="app-sub" data-testid="bridge-state">
           {sceneQuery.isFetching
-            ? "bridge: loading…"
+            ? t("app.bridgeState.fetching")
             : scene
-              ? "Demo geometry"
-              : "bridge: unavailable"}
+              ? t("app.bridgeState.demo")
+              : t("app.bridgeState.unavailable")}
         </span>
         <DirtyChip />
         <details className="shortcut-help-popover" data-testid="shortcut-help-toggle">
-          <summary aria-label="Keyboard shortcuts help" title="Keyboard shortcuts">
+          <summary aria-label={t("app.shortcutHelp.aria")} title={t("app.shortcutHelp.title")}>
             ?
           </summary>
           <ShortcutHelp />
@@ -222,22 +227,28 @@ export function App() {
 
       <main className="app-main">
         <aside className="panel-left">
-          <nav className="sidebar-nav" aria-label="Sidebar view">
-            {(["settings", "objects", "chat"] as const).map((view) => (
+          <nav className="sidebar-nav" aria-label={t("app.sidebarNav.aria")}>
+            {(
+              [
+                ["settings", "app.view.settings"],
+                ["objects", "app.view.objects"],
+                ["chat", "app.view.chat"],
+              ] as const
+            ).map(([view, key]) => (
               <button
                 type="button"
                 key={view}
                 aria-pressed={sidebarView === view}
                 onClick={() => setSidebarView(view)}
               >
-                {view}
+                {t(key)}
               </button>
             ))}
             <button
               type="button"
               className="sidebar-detach"
-              title="Detach chat to floating panel"
-              aria-label="Detach chat"
+              title={t("app.chat.detachTitle")}
+              aria-label={t("app.chat.detachAria")}
               data-testid="chat-detach"
               onClick={() => {
                 useDock.getState().focusPanel("chat");
@@ -259,11 +270,11 @@ export function App() {
             </>
           ) : null}{" "}
           {sidebarView === "chat" ? <ChatPanel /> : null}
-          <section className="panel-section" aria-label="IR preview loader">
-            <header className="panel-title">IR preview</header>
+          <section className="panel-section" aria-label={t("app.ir.aria")}>
+            <header className="panel-title">{t("app.ir.title")}</header>
             <div className="panel-body">
               <label className="ir-file-label" htmlFor="ir-file-input">
-                Load IR document (JSON)
+                {t("app.ir.fileLabel")}
               </label>
               <input
                 id="ir-file-input"
@@ -283,7 +294,7 @@ export function App() {
                 onClick={onIrClear}
                 disabled={!previewIr && !irError}
               >
-                Clear preview
+                {t("app.ir.clear")}
               </button>
               <p
                 data-testid="ir-status"
@@ -294,29 +305,37 @@ export function App() {
                 {irError
                   ? irError
                   : preview
-                    ? `Loaded ${preview.layerCount} layer${preview.layerCount === 1 ? "" : "s"} · mode: ${preview.mode}`
-                    : "No IR document loaded."}
+                    ? t("app.ir.loaded", {
+                        n: String(preview.layerCount),
+                        s: preview.layerCount === 1 ? "" : "s",
+                        mode: preview.mode,
+                      })
+                    : t("app.ir.empty")}
               </p>
             </div>
           </section>
         </aside>
         <PanelDivider
           axis="vertical"
-          ariaLabel="Resize settings panel"
+          ariaLabel={t("app.divider.ariaVertical")}
           size={leftSize}
           minSize={180}
           maxSize={520}
           onSizeChange={setLeftSize}
         />
-        <section className="viewport-host" aria-label="3D viewport">
+        <section className="viewport-host" aria-label={t("app.viewport.aria")}>
           <PlateTabs scene={scene} objects={objects} />
           <div className="plate-heading">
             <strong data-testid="plate-heading-name">{activePlateName}</strong>
-            <span>{operatorProfile.displayName || "Select a printer"}</span>
+            <span>{operatorProfile.displayName || t("app.plate.operatorFallback")}</span>
             <span data-testid="viewport-volume">
               {operatorProfile.buildVolume
-                ? `${operatorProfile.buildVolume.widthMm} x ${operatorProfile.buildVolume.depthMm} x ${operatorProfile.buildVolume.heightMm} mm`
-                : "Demo plate"}
+                ? t("app.plate.volume", {
+                    w: String(operatorProfile.buildVolume.widthMm),
+                    d: String(operatorProfile.buildVolume.depthMm),
+                    h: String(operatorProfile.buildVolume.heightMm),
+                  })
+                : t("app.plate.volumeFallback")}
             </span>
           </div>
           <Viewport
@@ -345,11 +364,7 @@ export function App() {
           onModeChange={onModeChange}
           operatorProfile={operatorProfile}
           eligibility={eligibility}
-          modeLockReason={
-            previewIr
-              ? `Loaded preview pins the slicing mode (${previewIr.mode}) — clear it to change.`
-              : undefined
-          }
+          modeLockReason={modeLockReason}
         />
       </footer>
       <ToastViewport />

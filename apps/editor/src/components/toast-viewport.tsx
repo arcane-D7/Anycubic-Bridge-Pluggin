@@ -1,4 +1,5 @@
 import { useUi, type Toast, type ToastKind } from "@/state/ui";
+import { useI18n } from "@/state/i18n";
 import { cn } from "@/lib/utils";
 
 /**
@@ -21,6 +22,7 @@ function ToastView({
   readonly toast: Toast;
   readonly onDismiss: () => void;
 }) {
+  const t = useI18n((s) => s.t);
   return (
     <div
       className="toast-card"
@@ -36,7 +38,7 @@ function ToastView({
       <button
         type="button"
         className="toast-dismiss"
-        aria-label="Dismiss notification"
+        aria-label={t("app.toast.dismissAria")}
         data-testid="toast-dismiss"
         onClick={onDismiss}
       >
