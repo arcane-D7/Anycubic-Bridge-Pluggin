@@ -43,6 +43,8 @@ export interface SceneObjectSnapshot extends ObjectMeshInfo {
   readonly visible: boolean;
   readonly locked: boolean;
   readonly parentId?: string | null;
+  /** Plate membership (S9.4-003). Absent = default plate. */
+  readonly plateId?: string;
   /**
    * Object placement in scene space (S9.3). Position (x/y/z) existed from
    * S9.2; rotation (rx/ry/rz euler degrees) and scale (sx/sy/sz) are added
@@ -97,6 +99,7 @@ export type ObjectMutation =
         sz?: number;
       };
     }
+  | { readonly kind: "setPlate"; readonly name: string; readonly plateId: string }
   | { readonly kind: "commitObject"; readonly name: string };
 
 /** Build plate footprint (mm) driven by the machine profile, never hardcoded. */

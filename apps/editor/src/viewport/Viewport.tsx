@@ -7,6 +7,8 @@ import type { BuildVolume } from "../bridge/types";
 import { useImportCommit } from "../bridge/import-actions";
 import { classifyFile } from "../bridge/import-core";
 import { useScene } from "../state/scene";
+import { usePlates } from "../state/plates";
+import { objectsOnPlate } from "../state/plates-core";
 import { BuildPlate } from "./BuildPlate";
 import { FrameSelectedCamera } from "./FrameSelectedCamera";
 import { LayerPreview, previewFit } from "./LayerPreview";
@@ -27,7 +29,17 @@ interface ViewportProps {
 
 export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
   const volume = buildVolume ?? scene?.buildVolume;
-  const objects = scene?.objects ?? [];
+  const sceneObjects = scene?.objects ?? [];
+  // S9.4-003 per-plate filter: only the ACTIVE plate's objects render. The
+  // scene store carries authoritative plateId membership (hydrated from the
+  // snapshot); objects rendered use the store objects so plateId is applied.
+  const storeObjects = useScene((s) => s.objects);
+  const activePlateId = usePlates((s) => s.activeId);
+  const objects = useMemo(
+    () => (storeObjects.length > 0 ? storeObjects : sceneObjects),
+    [storeObjects, sceneObjects],
+  );
+  const visibleObjects = objectsOnPlate(objects, activePlateId);
   const selectedName = useScene((s) => s.selected?.name ?? null);
 
   // Live theme-aware canvas backdrop (S9.1-002): read the --viewport-bg CSS
@@ -84,7 +96,7 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
             showInfill={showInfill}
           />
         ) : (
-          objects.map((o) => <SceneObjectModel key={o.name} info={o} />)
+          visibleObjects.map((o) => <SceneObjectModel key={o.name} info={o} />)
         )}
         {!preview && scene ? <TransformGizmo bridge={scene} selectedName={selectedName} /> : null}
         {!preview ? <FrameSelectedCamera /> : null}

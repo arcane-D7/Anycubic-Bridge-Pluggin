@@ -981,6 +981,29 @@ input {
   font-size: 11px;
   color: var(--accent);
 }
+/* S9.4-003 plate tabs — floating chips above the bottom edge (G12). Active =
+ * accent-soft fill + accent text; unsaved = 3px dot. Mirror of the viewport
+ * toolbar glass family. */
+.plate-tabs {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 12px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--glass-fill-2);
+  -webkit-backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  border: 1px solid var(--glass-stroke);
+  box-shadow:
+    var(--shadow-inset-hi),
+    inset 0 0 0 1px var(--border-strong),
+    var(--shadow-2);
+  border-radius: var(--r-lg);
+}
 .plate-heading {
   display: flex;
   align-items: center;
@@ -989,6 +1012,72 @@ input {
   border-bottom: 1px solid #c4cac5;
   font-size: 12px;
   flex-wrap: wrap;
+}
+.plate-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 110ms ease,
+    color 110ms ease,
+    border-color 110ms ease;
+}
+.plate-tab:hover {
+  color: var(--text);
+  background: var(--accent-soft);
+}
+.plate-tab.is-active {
+  background: var(--accent-soft);
+  color: var(--accent-primary);
+  border-color: var(--accent-ring);
+}
+.plate-tab-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.9;
+}
+.plate-tab-add {
+  padding: 4px 9px;
+  font-size: 13px;
+  color: var(--text-dim);
+  border-color: var(--border-strong);
+}
+.plate-tab-add:hover {
+  color: var(--accent-primary);
+  border-color: var(--accent-ring);
+  background: var(--accent-soft);
+}
+.plate-tabs-rename {
+  width: 120px;
+  padding: 3px 8px;
+  border: 1px solid var(--accent-ring);
+  border-radius: 999px;
+  background: var(--bg-panel);
+  color: var(--text);
+  font-size: 11px;
+  outline: none;
+}
+.plate-tabs-rename:focus {
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.plate-menu-caption {
+  display: block;
+  padding: 4px 8px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
 }
 .plate-heading > span:last-child {
   margin-left: auto;

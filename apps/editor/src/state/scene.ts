@@ -54,6 +54,8 @@ export interface SceneStore extends SceneGraphState {
   readonly toggleLock: (name: string) => void;
   /** Set per-object transform (full position/rotation/scale shape). */
   readonly setTransform: (name: string, transform: SceneObjectSnapshot["transform"]) => void;
+  /** Reassign an object to another plate (S9.4-003 cross-plate move). */
+  readonly setPlate: (name: string, plateId: string) => void;
 }
 
 const watertightOf = (objects: readonly SceneObjectSnapshot[], name: string | null): boolean => {
@@ -170,6 +172,13 @@ export const useScene = create<SceneStore>()((set, get) => ({
   setTransform: (name, transform) => {
     set((s) => {
       const out = reduceSceneGraph(s, { kind: "setTransform", name, transform });
+      return out.state;
+    });
+  },
+
+  setPlate: (name, plateId) => {
+    set((s) => {
+      const out = reduceSceneGraph(s, { kind: "setPlate", name, plateId });
       return out.state;
     });
   },

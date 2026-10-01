@@ -14,6 +14,7 @@ import { SettingsPanel } from "./panels/SettingsPanel";
 import { buildPreviewModel } from "./viewport/preview-model";
 import type { PreviewModel } from "./viewport/preview-model";
 import { Viewport } from "./viewport/Viewport";
+import { PlateTabs } from "./viewport/PlateTabs";
 import { resolveNonPlanarEligibility } from "./profile/capabilities";
 import { useOperatorProfile } from "./profile/useOperatorProfile";
 import { ThemeToggle } from "./components/theme-toggle";
@@ -26,6 +27,8 @@ import { DockPanel } from "./components/dock/dock-panel";
 import { useDock } from "./state/dock";
 import { useScene } from "./state/scene";
 import { useUi } from "./state/ui";
+import { usePlates } from "./state/plates";
+import { activePlate as activePlateOf } from "./state/plates-core";
 
 /**
  * Editor shell — single-window, resizable panels per §7.2:
@@ -93,6 +96,11 @@ export function App() {
   const [sidebarView, setSidebarView] = useState<"settings" | "objects" | "chat">("settings");
   const [workspaceView, setWorkspaceView] = useState<"prepare" | "preview">("prepare");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // S9.4-003 — plate membership from the scene store (authoritative snapshot)
+  // + active plate name from the plate store (drives per-plate filter label).
+  const objects = useScene((s) => s.objects);
+  const activePlateName = usePlates((s) => activePlateOf(s).name);
   // S9.2-005: import dialog (footer Add entry point).
   const [importOpen, setImportOpen] = useState(false);
   const [previewIr, setPreviewIr] = useState<IrDocument | null>(null);
@@ -287,8 +295,9 @@ export function App() {
           onSizeChange={setLeftSize}
         />
         <section className="viewport-host" aria-label="3D viewport">
+          <PlateTabs scene={scene} objects={objects} />
           <div className="plate-heading">
-            <strong>Plate 01</strong>
+            <strong data-testid="plate-heading-name">{activePlateName}</strong>
             <span>{operatorProfile.displayName || "Select a printer"}</span>
             <span data-testid="viewport-volume">
               {operatorProfile.buildVolume

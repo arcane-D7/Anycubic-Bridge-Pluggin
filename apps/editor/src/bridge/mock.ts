@@ -510,6 +510,15 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
             );
             return sceneObjects.find((o) => o.name === mutation.name) ?? null;
           }
+          case "setPlate": {
+            // S9.4-003 — cross-plate membership move (AC-2 route).
+            const target = sceneObjects.find((o) => o.name === mutation.name);
+            if (!target) return null;
+            sceneObjects = sceneObjects.map((o) =>
+              o.name === mutation.name ? { ...o, plateId: mutation.plateId } : o,
+            );
+            return sceneObjects.find((o) => o.name === mutation.name) ?? null;
+          }
           case "commitObject": {
             const target = sceneObjects.find((o) => o.name === mutation.name);
             return target ?? null;

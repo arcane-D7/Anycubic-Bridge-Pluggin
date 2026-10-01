@@ -44,12 +44,14 @@ export interface SceneGraphEvent {
     | "duplicate"
     | "toggleVisible"
     | "toggleLock"
-    | "setTransform";
+    | "setTransform"
+    | "setPlate";
   readonly object?: SceneObjectSnapshot;
   readonly name?: string;
   readonly from?: string;
   readonly to?: string;
   readonly transform?: SceneObjectSnapshot["transform"];
+  readonly plateId?: string;
 }
 
 /** The S7-002 framed modal steps a destructive op must route through. */
@@ -209,6 +211,15 @@ export function reduceSceneGraph(
       const objects = state.objects.map((o) =>
         o.name === name ? { ...o, transform: event.transform } : o,
       );
+      return { state: { ...state, objects }, pipeline: null };
+    }
+
+    case "setPlate": {
+      // S9.4-003 — per-plate membership move (AC-2 route: PlateTabs context menu).
+      const name = event.name;
+      const plateId = event.plateId;
+      if (!name || !plateId) return { state, pipeline: null };
+      const objects = state.objects.map((o) => (o.name === name ? { ...o, plateId } : o));
       return { state: { ...state, objects }, pipeline: null };
     }
   }
