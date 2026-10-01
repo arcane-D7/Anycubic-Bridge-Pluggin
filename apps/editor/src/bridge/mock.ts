@@ -4,13 +4,17 @@ import type {
   ObjectGeometry,
   ObjectMutation,
   SceneObjectSnapshot,
+  SliceRequest,
+  SliceResult,
+  SliceStats,
   TransformJournalEvent,
 } from "./types.ts";
 import { StaleCommitError } from "../state/viewport-core.ts";
 import { arrangeTransforms } from "../state/arrange-core.ts";
+import { DEFAULT_PLATE_ID } from "../state/plates-core.ts";
 
 export { StaleCommitError };
-export type { ArrangeResult, ArrangePlacement } from "./types.ts";
+export type { ArrangeResult, ArrangePlacement, SliceResult, SliceStats } from "./types.ts";
 
 /**
  * Mock bridge provider (R0 → S9.2). Serves a read-only scene snapshot sourced
@@ -296,6 +300,49 @@ function profile(): Promise<BridgeProfile> {
   return new Promise((resolve) => setTimeout(() => resolve(STUB_PROFILE), LATENCY_MS));
 }
 
+// S9.5-002 G24 stats estimator. Real slicer assumptions (PLA density
+// 1.24 g/cm³, 0.2 mm layers, ~40 mm³/s volumetric throughput estimate).
+// Layer count derives from the object stack height; volume/material from the
+// authoritative snapshot's per-object volumeMm3; time from volume throughput.
+const PLA_DENSITY_G_PER_MM3 = 1.24e-3;
+const DEFAULT_LAYER_HEIGHT_MM = 0.2;
+const ESTIMATED_FLOW_MM3_PER_MIN = 2400; // ~40 mm³/s
+
+/**
+ * Pure G24 stats estimation over the authoritative objects (S9.5-005). Not a
+ * real slicer — a deterministic estimator the UI can show behind the frozen
+ * contract, computed from the snapshot's volume/height fields so the numbers
+ * move when the scene changes.
+ */
+export function computeSliceStats(
+  objects: readonly SceneObjectSnapshot[],
+  opts?: { readonly layerHeightMm?: number },
+): SliceStats {
+  const layerHeight = opts?.layerHeightMm ?? DEFAULT_LAYER_HEIGHT_MM;
+  const perObjectMm3: Record<string, number> = {};
+  let volumeMm3 = 0;
+  let maxZ = 0;
+  for (const o of objects) {
+    const v = o.volumeMm3 > 0 ? o.volumeMm3 : estimateVolume(o);
+    perObjectMm3[o.name] = v;
+    volumeMm3 += v;
+    const h = o.sizeMm[2] ?? 0;
+    if (h > maxZ) maxZ = h;
+  }
+  const layers = Math.max(1, Math.ceil(maxZ / layerHeight));
+  const materialGrams = volumeMm3 * PLA_DENSITY_G_PER_MM3;
+  const estimatedMinutes = Math.max(1, Math.round(volumeMm3 / ESTIMATED_FLOW_MM3_PER_MIN));
+  return { layers, estimatedMinutes, materialGrams, volumeMm3, perObjectMm3 };
+}
+
+/** Volume fallback: axis-aligned box of the bounds (only when volumeMm3 is 0). */
+function estimateVolume(o: SceneObjectSnapshot): number {
+  const dx = o.sizeMm[0] ?? 0;
+  const dy = o.sizeMm[1] ?? 0;
+  const dz = o.sizeMm[2] ?? 0;
+  return dx * dy * dz;
+}
+
 /**
  * Pure transform-diff → S7-005 journal events (S9.3-004). Compares the
  * authoritative snapshot's transform BEFORE/AFTER a committed gesture and
@@ -579,6 +626,28 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
         warnings,
       } satisfies ArrangeResult;
     },
+    // --- S9.5-002 slice lane ---------------------------------------------
+    // Read-only over the authoritative snapshot: computes G24 stats for the
+    // requested plate (layers/time/grams/volume/per-object), rejects when any
+    // object on the plate is non-watertight. No revision advance — slicing
+    // never mutates the scene.
+    async slice(req) {
+      const onPlate = sceneObjects.filter((o) => (o.plateId ?? DEFAULT_PLATE_ID) === req.plateId);
+      const blocked = onPlate.filter((o) => !o.watertight).map((o) => o.name);
+      if (blocked.length > 0) {
+        return {
+          ok: false as const,
+          error: `slicing blocked by non-watertight object(s): ${blocked.join(", ")}`,
+          blockedBy: blocked,
+        };
+      }
+      return {
+        ok: true as const,
+        revision: currentRevision,
+        stats: computeSliceStats(onPlate, { layerHeightMm: req.layerHeightMm }),
+        blockedBy: [],
+      } satisfies SliceResult;
+    },
   };
   return handle;
 }
@@ -635,6 +704,14 @@ export interface BridgeContract {
     readonly gap?: number;
     readonly center?: boolean;
   }): Promise<ArrangeResult | { ok: false; error: string }>;
+  /**
+   * S9.5-002: slice lane. Computes G24 stats (layers, estimated time,
+   * material grams, volume, per-object volume) from the authoritative
+   * snapshot for the given plate; rejects with `blockedBy` when any object
+   * on the plate is non-watertight. No revision advance — slicing is
+   * read-only over the snapshot.
+   */
+  slice(req: SliceRequest): Promise<SliceResult | { ok: false; error: string }>;
 }
 
 /** Live bridge handle: the fetched profile+scene snapshot PLUS the commit sink

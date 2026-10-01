@@ -18,8 +18,13 @@
  * - Stale revisions are dropped (re-base), never forced.
  *
  * Deliberately dependency-free (no React/zustand) so transitions, cancel and
- * error paths are testable headless under the plain Node test runner.
+ * error paths are testable headless under the plain Node test runner. Only
+ * `type` imports from the bridge contract (no runtime coupling).
  */
+
+import type { SliceStats } from "../bridge/types";
+
+export type { SliceStats };
 
 /** S8 pipeline stages, ordered — labels shown in the staged progress bar. */
 export const SLICE_STAGES = ["prepare", "planar-core", "IR", "postprocess", "preview"] as const;
@@ -29,20 +34,6 @@ export type PrintJobStatus =
   "idle" | "slicing" | "ready" | "sending" | "sent" | "cancelled" | "error";
 
 export type SendStage = "negotiate" | "upload" | "queue";
-
-/**
- * Result stats surfaced after a finished slice (G24): layers, estimated time
- * (min), material grams, volume (mm³), per-object contribution. The bridge
- * lane is the source of truth — the machine model only carries them.
- */
-export interface SliceStats {
-  readonly layers: number;
-  readonly estimatedMinutes: number;
-  readonly materialGrams: number;
-  readonly volumeMm3: number;
-  /** Per-object share of the total volume (mm³), keyed by object name. */
-  readonly perObjectMm3: Readonly<Record<string, number>>;
-}
 
 export interface PrintJobState {
   readonly status: PrintJobStatus;

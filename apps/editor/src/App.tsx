@@ -21,6 +21,9 @@ import { ThemeToggle } from "./components/theme-toggle";
 import { StatusBar } from "./components/status-bar";
 import { ToastViewport } from "./components/toast-viewport";
 import { ShortcutHelp } from "./components/shortcut-help";
+import { SliceButton } from "./components/SliceButton";
+import { SliceProgress } from "./components/SliceProgress";
+import { SliceStatsPanel } from "./panels/SliceStatsPanel";
 import { useShortcuts } from "./hooks/useShortcuts";
 import { OverlayRoot } from "./components/dock/overlay-root";
 import { DockPanel } from "./components/dock/dock-panel";
@@ -184,6 +187,7 @@ export function App() {
             Preview
           </button>
         </nav>
+        <SliceButton objects={objects} />
         <button
           type="button"
           className="sidebar-toggle"
@@ -322,6 +326,8 @@ export function App() {
       />
       <footer className="app-footer">
         <StatusBar scene={scene} buildVolume={operatorProfile.buildVolume ?? undefined} />
+        <SliceProgress />
+        <SliceStatsPanel />
         <Timeline
           scene={scene}
           mode={mode}

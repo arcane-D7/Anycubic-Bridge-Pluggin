@@ -110,6 +110,40 @@ export interface BuildVolume {
 }
 
 /**
+ * S9.5 slice result (G24). The bridge slice lane computes these from the
+ * authoritative snapshot: layers come from the object stack height over the
+ * layer height; volume/material/estimated time are derived by the lane's
+ * estimator (PLA density, flow/velocity assumptions) — mirroring what the
+ * real slicer pipeline would return. `perObjectMm3` is the per-object share.
+ */
+export interface SliceStats {
+  readonly layers: number;
+  readonly estimatedMinutes: number;
+  readonly materialGrams: number;
+  readonly volumeMm3: number;
+  readonly perObjectMm3: Readonly<Record<string, number>>;
+}
+
+/**
+ * Slice lane request/result (S9.5-005 contract). `objects` anchor which
+ * objects were sliced (the active plate's); the lane re-reads the snapshot for
+ * authoritative stats.
+ */
+export interface SliceRequest {
+  readonly plateId: string;
+  readonly layerHeightMm?: number;
+  readonly infillPercent?: number;
+}
+
+/** Result of a bridge slice lane call (S9.5-002). */
+export interface SliceResult {
+  readonly ok: true;
+  readonly revision: number;
+  readonly stats: SliceStats;
+  readonly blockedBy: readonly string[];
+}
+
+/**
  * S9.3-004 transform journal event (S7-005 soft). Emitted by the bridge lane
  * on commit for every object whose transform changed during the gesture —
  * one event per altered axis-kind (`+move` for x/y/z, `+rotate` for
