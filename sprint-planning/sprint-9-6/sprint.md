@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (panels)                                                                                                                                                                                                                                                                                            |
 | **Source**            | Consultor report 2026-09-30 §2 (9.6) + audit G14/G20/G21/G22/G23/G30/G36 + Consultor ronda 2 §3 (chat)                                                                                                                                                                                                          |
 | **Depends On**        | Sprint 9.5 (slice consumes presets) + Sprint 9.1a (dock host)                                                                                                                                                                                                                                                   |
-| **Status**            | 🔄 In progress (2/9)                                                                                                                                                                                                                                                                                            |
+| **Status**            | 🔄 In progress (3/9)                                                                                                                                                                                                                                                                                            |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -164,7 +164,8 @@ panel) with a clear "using global / overridden" indicator.
 | **Priority**         | P1                                                                         |
 | **Type**             | Feature                                                                    |
 | **Estimated Effort** | M                                                                          |
-| **Status**           | ⏳ Planned                                                                 |
+| **Status**           | ✅ Delivered (fc59eb0)                                                     |
+| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 488) · commit `fc59eb0`                     |
 
 #### Context
 
@@ -174,6 +175,28 @@ from the graph store + mesh bounds computed at import/transform time.
 #### Acceptance criteria
 
 - [x] Columns render real values, update on transform, sortable where sensible.
+
+#### Implementation Notes
+
+- `apps/editor/src/state/object-metrics.ts` — NEW pure/headless core: `placementMetrics`
+  (world center = transform + bounds-center × scale, footprint = scaled X/Y AABB,
+  volume mm³ with AABB fallback) + `comparePlacement` (deterministic comparator per
+  `PlacementSortKey`: name/x/y/z/footprint/volume). Zero React/three.js — Node 24 runs it
+  headless (arrange-core contract).
+- `apps/editor/src/panels/ObjectTree.tsx` — header `object-tree-header` with sort buttons
+  (Name + X/Y/Z/Ftp/Vol, `column-sort-<key>` testids, active arrow); click toggles
+  asc/desc per key; rows render `object-placement` mono tabular cells (`obj-cell`) that
+  re-derive from the store objects each render — so they update on transform/scale/import;
+  sort state resets on unmount (local state, no store pollution).
+- `apps/editor/src/styles.css` — `.object-tree-header`, `.column-sort` (+ `.active`),
+  `.sort-arrow`, `.object-placement`, `.obj-cell`; header padding accounts for eye/lock
+  buttons so "Name" aligns with row names.
+- `tests/object-metrics.test.mjs` — 5 cases: world center math (transform + bounds-center ×
+  scale), footprint scaled AABB, degenerate footprint → null, volume AABB fallback, sort
+  determinism across name/x/y/volume.
+- **Gate** `$env:TEMP\s9-6-003-check1.log` — unit **488** pass / fail 0, integration 11, rust OK,
+  build ok, smoke 106 tools, e2e:ui + e2e:editor-reload PASS, licenses 59, architecture OK,
+  [sanitize] DRY-RUN 0 files.
 
 ### S9.6-004 — Journal undo/redo UI
 
