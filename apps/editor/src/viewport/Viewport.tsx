@@ -6,11 +6,13 @@ import type { BridgeHandle } from "../bridge/mock";
 import type { BuildVolume } from "../bridge/types";
 import { useImportCommit } from "../bridge/import-actions";
 import { classifyFile } from "../bridge/import-core";
+import { useScene } from "../state/scene";
 import { BuildPlate } from "./BuildPlate";
 import { LayerPreview, previewFit } from "./LayerPreview";
 import { ModalInteraction } from "./ModalInteraction";
 import { RendererGuard } from "./RendererGuard";
 import { SceneObjectModel } from "./SceneObjectModel";
+import { TransformGizmo } from "./TransformGizmo";
 import type { PreviewModel } from "./preview-model";
 
 interface ViewportProps {
@@ -22,6 +24,7 @@ interface ViewportProps {
 export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
   const volume = buildVolume ?? scene?.buildVolume;
   const objects = scene?.objects ?? [];
+  const selectedName = useScene((s) => s.selected?.name ?? null);
 
   // Live theme-aware canvas backdrop (S9.1-002): read the --viewport-bg CSS
   // token imperatively and re-resolve when data-theme changes — no re-render
@@ -78,6 +81,7 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
         ) : (
           objects.map((o) => <SceneObjectModel key={o.name} info={o} />)
         )}
+        {!preview && scene ? <TransformGizmo bridge={scene} selectedName={selectedName} /> : null}
         <OrbitControls makeDefault enableDamping />
       </Canvas>
       {preview ? (

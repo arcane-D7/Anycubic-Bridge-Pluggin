@@ -8,6 +8,9 @@ import { create } from "zustand";
 
 export type ToastKind = "info" | "success" | "warning" | "error";
 
+/** Toolbar interaction mode (S9.3-001): which transform the gizmo drives. */
+export type ToolMode = "select" | "move" | "rotate" | "scale";
+
 export interface Toast {
   readonly id: number;
   readonly kind: ToastKind;
@@ -29,6 +32,9 @@ interface UiState {
   /** Global scene view flags (S9.2-003): wireframe edges overlay toggle. */
   readonly sceneViewEdges: boolean;
   readonly toggleSceneViewEdges: () => void;
+  /** Active toolbar tool (S9.3-001): select|move|rotate|scale. */
+  readonly tool: ToolMode;
+  readonly setTool: (mode: ToolMode) => void;
   /** Toast bus (S9.1-005). Top-right stacked, auto-dismiss. */
   readonly toasts: readonly Toast[];
   readonly pushToast: (t: Omit<Toast, "id" | "createdAt">) => void;
@@ -46,6 +52,8 @@ export const useUi = create<UiState>()((set, get) => ({
   toggleRight: () => set((s) => ({ rightOpen: !s.rightOpen })),
   sceneViewEdges: true,
   toggleSceneViewEdges: () => set((s) => ({ sceneViewEdges: !s.sceneViewEdges })),
+  tool: "select",
+  setTool: (mode) => set({ tool: mode }),
   toasts: [],
   pushToast: ({ kind, title, message }) => {
     const id = toastSeq++;

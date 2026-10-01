@@ -1,6 +1,6 @@
 import { memo, useMemo, useState } from "react";
 import * as THREE from "three";
-import type { ObjectMeshInfo } from "../bridge/types";
+import type { ObjectMeshInfo, SceneObjectSnapshot } from "../bridge/types";
 import { useScene } from "../state/scene";
 import { useViewport } from "../state/viewport";
 import { useUi } from "../state/ui";
@@ -18,10 +18,11 @@ import { useUi } from "../state/ui";
  */
 
 interface SceneObjectModelProps {
-  readonly info: ObjectMeshInfo;
+  readonly info: SceneObjectSnapshot;
 }
 
 import { resolveModelRenderState } from "./scene-model-render.ts";
+import { applyTransform } from "./transform-core";
 
 /** Re-exported pure helpers (headless-tested in tests/scene-object-model.test.mjs). */
 export { geometryExists } from "./scene-model-render.ts";
@@ -71,6 +72,11 @@ export const SceneObjectModel = memo(function SceneObjectModel({ info }: SceneOb
   const geometry = useMemo(() => geometryFromBuffers(info), [info]);
   const box = useMemo(() => boundsBox(info), [info]);
 
+  // S9.3-001: the object's placement in scene space. The real transform
+  // (position + euler rotation deg + scale) is applied to the root group so
+  // gizmo drags move/rotate/scale the OBJECT — geometry buffers untouched.
+  const transform = useMemo(() => applyTransform(info.transform), [info.transform]);
+
   // ---- render-state -----------------------------------------------------
   const isSelected = !!(selected || authoritativeSelected);
   const { visible, locked, baseColor } = resolveModelRenderState(info, {
@@ -82,7 +88,13 @@ export const SceneObjectModel = memo(function SceneObjectModel({ info }: SceneOb
   if (!visible) return null;
 
   return (
-    <group>
+    // name = the R3F scene-graph lookup key for the S9.3 gizmo target.
+    <group
+      name={info.name}
+      position={transform.position}
+      rotation={transform.rotation}
+      scale={transform.scale}
+    >
       {geometry ? (
         <mesh
           geometry={geometry}

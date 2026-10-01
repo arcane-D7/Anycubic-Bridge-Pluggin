@@ -43,7 +43,23 @@ export interface SceneObjectSnapshot extends ObjectMeshInfo {
   readonly visible: boolean;
   readonly locked: boolean;
   readonly parentId?: string | null;
-  readonly transform?: { readonly x: number; readonly y: number; readonly z: number };
+  /**
+   * Object placement in scene space (S9.3). Position (x/y/z) existed from
+   * S9.2; rotation (rx/ry/rz euler degrees) and scale (sx/sy/sz) are added
+   * behind the same shape so the S9.3 gizmo/inspector drive them. Absent
+   * rotation = identity, absent scale = unit.
+   */
+  readonly transform?: {
+    readonly x: number;
+    readonly y: number;
+    readonly z: number;
+    readonly rx?: number;
+    readonly ry?: number;
+    readonly rz?: number;
+    readonly sx?: number;
+    readonly sy?: number;
+    readonly sz?: number;
+  };
 }
 
 /** Scene snapshot as served by the read-only bridge (S6-005). */
@@ -69,7 +85,17 @@ export type ObjectMutation =
   | {
       readonly kind: "setTransform";
       readonly name: string;
-      readonly transform: { x: number; y: number; z: number };
+      readonly transform: {
+        x: number;
+        y: number;
+        z: number;
+        rx?: number;
+        ry?: number;
+        rz?: number;
+        sx?: number;
+        sy?: number;
+        sz?: number;
+      };
     }
   | { readonly kind: "commitObject"; readonly name: string };
 
