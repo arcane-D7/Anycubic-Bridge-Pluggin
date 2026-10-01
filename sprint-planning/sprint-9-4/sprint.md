@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport + toolbar)                                                                                                                                             |
 | **Source**            | Consultor report 2026-09-30 §2 (9.4) + audit G7/G12/G13/G15/G16/G36                                                                                                          |
 | **Depends On**        | Sprint 9.3 (arrange targets need real transforms)                                                                                                                            |
-| **Status**            | 🚧 In progress (3/6 tickets delivered)                                                                                                                                       |
+| **Status**            | 🚧 In progress (4/6 tickets delivered)                                                                                                                                       |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -202,7 +202,7 @@ filter (objects belong to a plate; only current plate's objects render). Plate s
 | **Priority**         | P0                                                                                        |
 | **Type**             | Feature                                                                                   |
 | **Estimated Effort** | M                                                                                         |
-| **Status**           | ⏳ Planned                                                                                |
+| **Status**           | ✅ Delivered (2026-10-02, commit `3e6e06c`)                                               |
 
 #### Context
 
@@ -211,10 +211,25 @@ authoritative layout (objects re-committed through the S7-004 reducer). Per-obje
 plate" centers + drops to z=0. Collision alert toast on overflow. Snap fields appear in the
 transform inspector (behavior 9.7).
 
-#### Acceptance criteria
+#### Implementation notes
 
-- [x] Arrange produces a deterministic layout via the server tool; objects re-committed.
-- [x] Overflow triggers a collision/overflow toast; per-object place-on-plate centers + z=0.
+- `state/arrange-core.ts` (pure, headless): `centerOnPlateTransform(obj)` centers X/Y on the
+  plate origin + drops minZ to 0 (bounds × scale, `-0` normalized via `|| 0`); `arrangeTransforms`
+  is a snapshot-level port of `scripts/cad-arrange.mjs` shelf packing (footprint = bounds size
+  × scale, largest-first rows, block centered, overflow warnings). No runtime transform-core
+  import so Node 24 runs it directly.
+- Bridge lane `arrange(opts)` (mock): runs the layout, re-commits transforms (revision + 1,
+  journal diff events emitted, commit event fired), returns `{ placed, warnings }`. New
+  `ArrangePlacement` / `ArrangeResult` types in `bridge/types.ts`; `BridgeContract.arrange`.
+- `Toolbar.tsx` now receives `scene`; the Arrange button gathers the ACTIVE plate's objects
+  (`objectsOnPlate`), calls the lane with the machine-profile dimensions (never a hardcoded
+  220×220), invalidates the scene query and pushes a success / overflow-warning / error toast.
+- `ObjectTree.tsx`: context menu gains "Place on plate" → `setTransform(centerOnPlateTransform)`
+  persisted via the bridge; the footer Arrange button wires the same lane.
+- Tests `tests/arrange-core.test.mjs` (8 cases): place-on-plate (incl. scale), deterministic
+  layout inside the plate, mesh-offset semantics (X = grid − center), oversized overflow
+  warning, degenerate footprint skip, block centering, empty list. Gate: unit 408 pass / fail 0,
+  e2e:ui + e2e:editor-reload PASS, sanitize DRY-RUN 0 files, GATE_EXIT=0.
 
 ### S9.4-005 — Status bar extension
 
