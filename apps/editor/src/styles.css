@@ -58,6 +58,65 @@ body,
   font-size: 12px;
 }
 
+/* S9.8-004 — header dirty chip (unsaved ops + last-commit time + save/restore) */
+.dirty-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-fill-2);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  line-height: 1;
+  color: var(--text-primary);
+  user-select: none;
+}
+
+.dirty-chip .dirty-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-primary, #2f6bd8);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary, #2f6bd8) 20%, transparent);
+}
+
+.dirty-chip .dirty-dot.is-clean {
+  background: var(--ok-primary, #2ea44f);
+  box-shadow: none;
+}
+
+.dirty-chip .dirty-label {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.dirty-chip .dirty-time {
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
+.dirty-chip button {
+  border: 1px solid var(--border, #cfd4d8);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-dim);
+  font: 500 10px/1 var(--font-mono, ui-monospace, monospace);
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.dirty-chip button:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--text-dim);
+}
+
+.dirty-chip button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .app-main {
   display: flex;
   min-height: 0;

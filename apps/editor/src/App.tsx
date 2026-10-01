@@ -23,6 +23,7 @@ import { ThemeToggle } from "./components/theme-toggle";
 import { StatusBar } from "./components/status-bar";
 import { ToastViewport } from "./components/toast-viewport";
 import { ContextMenu } from "./components/ContextMenu";
+import { DirtyChip } from "./components/dirty-chip";
 import { ShortcutHelp } from "./components/shortcut-help";
 import { SliceButton } from "./components/SliceButton";
 import { SliceProgress } from "./components/SliceProgress";
@@ -209,6 +210,7 @@ export function App() {
               ? "Demo geometry"
               : "bridge: unavailable"}
         </span>
+        <DirtyChip />
         <details className="shortcut-help-popover" data-testid="shortcut-help-toggle">
           <summary aria-label="Keyboard shortcuts help" title="Keyboard shortcuts">
             ?
