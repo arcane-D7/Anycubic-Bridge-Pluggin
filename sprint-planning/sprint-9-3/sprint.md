@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport)                                                                                                                                     |
 | **Source**            | Consultor report 2026-09-30 §2 (9.3) + audit G2/G3/G8/G32/G30                                                                                              |
 | **Depends On**        | Sprint 9.2 (graph + real meshes)                                                                                                                           |
-| **Status**            | ⏳ Planned                                                                                                                                                 |
+| **Status**            | 🚧 In progress (3/5 tickets delivered)                                                                                                                     |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -191,7 +191,7 @@ PASS, licenses 59, architecture OK, sanitize DRY-RUN 0 files.
 | **Priority**         | P0                                                                                                                |
 | **Type**             | Feature                                                                                                           |
 | **Estimated Effort** | M                                                                                                                 |
-| **Status**           | ⏳ Planned                                                                                                        |
+| **Status**           | ✅ Delivered (2026-10-01, commit `560b0c0`)                                                                       |
 
 #### Context
 
@@ -205,6 +205,63 @@ tool switch `Q/W/E/R`, `Ctrl+Z/Y` undo/redo (soft journal re-import in 9.3; full
 
 - [x] All listed shortcuts fire and update the scene; no-op in text inputs.
 - [x] Shortcut help tooltip/summary accessible (toolbar tooltips).
+
+#### Implementation notes
+
+**What shipped (12 files, commit `560b0c0`):**
+
+- `apps/editor/src/state/shortcuts-core.ts` (NEW) — dependency-free pure core. Types:
+  `ToolCommandId`, `GestureKind` (move|rotate|scale), `AxisName`, `ShortcutAction` union,
+  `ShortcutEventLike`, `ShortcutContext`. `FRAME_SELECTED_EVENT` custom event name.
+  `parseShortcutEvent(e, ctx)` precedence: editable target (INPUT/TEXTAREA/SELECT/
+  isContentEditable → null) → altKey → Ctrl (z→undo, shift+z→redo, y→redo, d→duplicate)
+  → selection-gated grabs (g/s/r — r without selection → tool.scale) → q/w/e tool switch
+  → grab-modal (x/y/z constrain, Enter confirm, Esc cancel only when gesture active)
+  → f→frame → Delete/Backspace→delete (only with selection). `GrabState
+{kind, axis: AxisName|null, prevTool}` + `grabStart/grabToggleAxis/grabConfirm/
+grabCancel/grabToTool/grabLabel` (same-axis X toggles the lock off).
+- `apps/editor/src/state/ui.ts` — grab slice in the UI store: `grab: GrabState | null`,
+  `startGrab(kind)` (no-op if a grab is already active; stores the pre-grab tool),
+  `toggleGrabAxis`, `confirmGrab`, `cancelGrab` (restores `prevTool`). Helpers
+  `grabToolFor(mode)` / `grabToolToMode(id)` map grab kind ↔ toolbar tool.
+- `apps/editor/src/hooks/useShortcuts.ts` (NEW) — the ONE global keydown listener.
+  Owns `isEditable(el)` target check, parse, and dispatch of every action; reads fresh
+  state via `useUi.getState()`/`useScene.getState()` so the listener stays stable.
+  Delete/duplicate/undo/redo go through the ObjectTree `persist` mutation lane
+  (`{kind:"remove"|"duplicate"}` + soft re-import for undo/redo with a toast); grab
+  actions call the store; frame dispatches `window.dispatchEvent(FRAME_SELECTED_EVENT)`.
+- `apps/editor/src/viewport/FrameSelectedCamera.tsx` (NEW) — inside-Canvas component that
+  frames the selected object (fallback: first object) on the custom event, using a padded
+  Box3 + FOV math (repeat of the FitCamera path); zero state on no objects/preview.
+- `apps/editor/src/components/shortcut-help.tsx` (NEW) — accessible help list grouped by
+  Transform/Tools/Scene/Edit, `role="list"`, `kbd` chips, `aria-label`, testid.
+- `apps/editor/src/viewport/TransformGizmo.tsx` — Q/W/E/R keydown moved out of the gizmo
+  into the central layer; Esc-lock behaviour now routes through the grab slice; a grab
+  with an active axis feeds `constrainToAxis` into the persisted draft on drag, so
+  X/Y/Z lock the GIZMO VALUE (draft) even though three-stdlib lacks native mode
+  constraining in the widget visuals.
+- `apps/editor/src/viewport/transform-core.ts` — added `AXES` + `AxisName` +
+  `constrainToAxis(draft, axis, kind)`: move zeroes the two free axes, rotate zeroes
+  rotation around non-locked axes, scale forces units on free axes. Dependency-free
+  (9+ unit tests).
+- `apps/editor/src/viewport/Viewport.tsx` — mounts `FrameSelectedCamera` when `!preview`.
+- `apps/editor/src/App.tsx` + `styles.css` — header "?" trigger toggling the shortcut-help
+  popover (details/summary → keyboard operable); `useShortcuts(scene)` after scene load.
+- `apps/editor/src/state/shortcuts.ts` — registry entries for grab/constrain/confirm/
+  cancel/redoShift + exported `SHORTCUT_HELP` (12 items) feeding the help popover.
+
+**Acceptance evidence:**
+
+- AC-1 (all shortcuts fire + no-op in inputs): 11 unit tests in `tests/shortcuts.test.mjs`
+  (parse precedence, editable-target no-op, grab state machine incl. same-axis toggle,
+  grab→tool mapping) + the full gate. e2e:editor-reload mounts the app with the shortcut
+  layer, zero page errors.
+- AC-2 (help accessible): `<details>/<summary>` popover keeps it keyboard-operable;
+  `summary` carries `aria-label` + `title`; list uses `role="list"`; kbd chips visible.
+
+**Gate:** `pnpm run check` EXIT:0 (log: `GATE_EXIT=0`) — unit 382 pass, lint clean,
+typecheck clean, Rust (auth + editor shell), smoke 106 tools, e2e:ui PASS, e2e:editor-reload
+PASS, licenses 59, architecture OK, sanitize DRY-RUN 0 files.
 
 ### S9.3-004 — Bridge transform lane
 
