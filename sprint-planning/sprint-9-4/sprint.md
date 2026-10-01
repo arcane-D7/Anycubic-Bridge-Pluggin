@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport + toolbar)                                                                                                                                             |
 | **Source**            | Consultor report 2026-09-30 §2 (9.4) + audit G7/G12/G13/G15/G16/G36                                                                                                          |
 | **Depends On**        | Sprint 9.3 (arrange targets need real transforms)                                                                                                                            |
-| **Status**            | 🚧 In progress (2/6 tickets delivered)                                                                                                                                       |
+| **Status**            | 🚧 In progress (3/6 tickets delivered)                                                                                                                                       |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -160,7 +160,7 @@ OrbitControls. Presets (iso/top/front/right + numpad keys) in `state/viewport.ts
 | **Priority**         | P0                                                                             |
 | **Type**             | Feature                                                                        |
 | **Estimated Effort** | M                                                                              |
-| **Status**           | ⏳ Planned                                                                     |
+| **Status**           | ✅ Delivered (2026-10-02, commit `2e50c75`)                                    |
 
 #### Context
 
@@ -169,10 +169,29 @@ accent text; + Add; rename via context menu; unsaved indicator = 3px dot. Per-pl
 filter (objects belong to a plate; only current plate's objects render). Plate state in
 `state/plates.ts`. Out of scope: plate split/cut (P2) and multi-plate slicing semantics.
 
-#### Acceptance criteria
+#### Implementation notes
 
-- [x] Multiple plates create/switch/duplicate/rename; per-plate object visibility correct.
-- [x] Cross-plate object move (drag between tabs) works via context menu or drag-drop.
+- `state/plates-core.ts` pure model: add / switch / duplicate / rename / dirty + membership
+  filter + orphan guard; `state/plates.ts` zustand store (`usePlates`, `useActivePlate()`) +
+  const re-exports (TS requires explicit import before re-export).
+- `viewport/PlateTabs.tsx` floating glass chips (mirror toolbar: fill-2 / blur-2 /
+  `--shadow-inset-hi`); tab active = accent-soft + accent-primary + accent-ring; 3px dot on
+  dirty; `+` adds next non-colliding label ("Plate N"); double-click or context menu opens
+  inline rename (Enter/blur commit, Esc cancel).
+- Context menu per tab: Duplicate plate / Rename... / "Move objects to..." (other plates,
+  disabled when source has no objects) → persisted via `scene.mutateObject({kind:
+"setPlate", name, plateId})` + `invalidateQueries(["bridge","scene"])`.
+- Bridge/scene: `SceneObjectSnapshot.plateId?` (absent = default plate), `setPlate` event +
+  reducer case, `mock.mutateObject` lane, store action.
+- `Viewport.tsx` filters `visibleObjects = objectsOnPlate(objects, activePlateId)` — only
+  the active plate's objects render; deleted dead `count` variable.
+- `App.tsx` replaces static "Plate 01" heading with live plate name
+  (`data-testid="plate-heading-name"`) and mounts the tab strip in `.viewport-host`.
+- Styles in `styles.css`: `.plate-tabs/.plate-tab/.is-active/.plate-tab-dot/`
+  `.plate-tab-add/.plate-tabs-rename/.plate-menu-caption` — note `--bg-inset` does not exist
+  in index.css, rename input uses `--bg-panel`.
+- Tests: `tests/plates.test.mjs` (13 cases, headless). Gate: unit 400 pass / fail 0, lint
+  clean, tsc EXIT:0, e2e:ui + e2e:editor-reload PASS, sanitize DRY-RUN 0 files, GATE_EXIT=0.
 
 ### S9.4-004 — Auto-arrange + place on plate
 
