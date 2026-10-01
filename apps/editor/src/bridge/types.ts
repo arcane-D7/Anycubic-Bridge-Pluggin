@@ -105,3 +105,20 @@ export interface BuildVolume {
   readonly depthMm: number;
   readonly heightMm: number;
 }
+
+/**
+ * S9.3-004 transform journal event (S7-005 soft). Emitted by the bridge lane
+ * on commit for every object whose transform changed during the gesture —
+ * one event per altered axis-kind (`+move` for x/y/z, `+rotate` for
+ * rx/ry/rz, `+scale` for sx/sy/sz). `from`/`to` carry only the fields of
+ * that kind so Ctrl+Z/Y "soft re-import" can replay the authoritative
+ * snapshot without geometry knowledge.
+ */
+export interface TransformJournalEvent {
+  readonly kind: "+move" | "+rotate" | "+scale";
+  readonly name: string;
+  /** Revision the event belongs to (the commit's new revision). */
+  readonly revision: number;
+  readonly from: Readonly<Record<string, number>>;
+  readonly to: Readonly<Record<string, number>>;
+}

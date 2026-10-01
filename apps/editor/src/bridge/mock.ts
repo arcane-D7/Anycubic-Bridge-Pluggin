@@ -1,4 +1,10 @@
-import type { BuildVolume, ObjectGeometry, ObjectMutation, SceneObjectSnapshot } from "./types.ts";
+import type {
+  BuildVolume,
+  ObjectGeometry,
+  ObjectMutation,
+  SceneObjectSnapshot,
+  TransformJournalEvent,
+} from "./types.ts";
 import { StaleCommitError } from "../state/viewport-core.ts";
 
 export { StaleCommitError };
@@ -287,39 +293,160 @@ function profile(): Promise<BridgeProfile> {
   return new Promise((resolve) => setTimeout(() => resolve(STUB_PROFILE), LATENCY_MS));
 }
 
+/**
+ * Pure transform-diff → S7-005 journal events (S9.3-004). Compares the
+ * authoritative snapshot's transform BEFORE/AFTER a committed gesture and
+ * emits one event per altered axis-kind: `+move` when x/y/z changed,
+ * `+rotate` when rx/ry/rz changed, `+scale` when sx/sy/sz changed.
+ * Absent transform = position identity (0,0,0) + rotation identity + unit
+ * scale — same defaults as `normalizeTransform`. Events carry only the fields
+ * of their own kind so the journal stays compact.
+ */
+export function journalEventsFor(
+  before: SceneObjectSnapshot["transform"],
+  after: SceneObjectSnapshot["transform"],
+  name: string,
+  revision: number,
+): TransformJournalEvent[] {
+  const norm = (
+    t: SceneObjectSnapshot["transform"],
+  ): {
+    x: number;
+    y: number;
+    z: number;
+    rx: number;
+    ry: number;
+    rz: number;
+    sx: number;
+    sy: number;
+    sz: number;
+  } => ({
+    x: t?.x ?? 0,
+    y: t?.y ?? 0,
+    z: t?.z ?? 0,
+    rx: t?.rx ?? 0,
+    ry: t?.ry ?? 0,
+    rz: t?.rz ?? 0,
+    sx: t?.sx ?? 1,
+    sy: t?.sy ?? 1,
+    sz: t?.sz ?? 1,
+  });
+  const b = norm(before);
+  const a = norm(after);
+  const events: TransformJournalEvent[] = [];
+  const move = { x: b.x === a.x, y: b.y === a.y, z: b.z === a.z };
+  if (!(move.x && move.y && move.z)) {
+    events.push({
+      kind: "+move",
+      name,
+      revision,
+      from: { x: b.x, y: b.y, z: b.z },
+      to: { x: a.x, y: a.y, z: a.z },
+    });
+  }
+  const rot = { rx: b.rx === a.rx, ry: b.ry === a.ry, rz: b.rz === a.rz };
+  if (!(rot.rx && rot.ry && rot.rz)) {
+    events.push({
+      kind: "+rotate",
+      name,
+      revision,
+      from: { rx: b.rx, ry: b.ry, rz: b.rz },
+      to: { rx: a.rx, ry: a.ry, rz: a.rz },
+    });
+  }
+  const sc = { sx: b.sx === a.sx, sy: b.sy === a.sy, sz: b.sz === a.sz };
+  if (!(sc.sx && sc.sy && sc.sz)) {
+    events.push({
+      kind: "+scale",
+      name,
+      revision,
+      from: { sx: b.sx, sy: b.sy, sz: b.sz },
+      to: { sx: a.sx, sy: a.sy, sz: a.sz },
+    });
+  }
+  return events;
+}
+
 export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
   const [scene, p] = await Promise.all([snapshot(), profile()]);
   const base: BridgeProfile & Awaited<ReturnType<typeof snapshot>> = { ...p, ...scene };
   // In-process modal contract simulation. The real bridge implements the same
   // surface over the IPC frame (S7-002 SessionManager). revisions advance only
-  // on commit; update() is provisional and does not advance.
+  // on commit; update() is provisional and does not advance. From S9.3-004 the
+  // lane is REAL: begin captures the session's start transforms, commit diffs
+  // against the last committed point and emits S7-005 journal events
+  // (+move/+rotate/+scale) for Ctrl+Z/Y soft re-import, cancel rolls back to
+  // the session start.
   let currentRevision = scene.revision;
+  // S9.3-004: authoritative transform base for journal diffs — the transforms
+  // as of the last committed point (fetch snapshot or a previous commit).
+  let lastCommitted: Map<string, SceneObjectSnapshot["transform"]> = new Map(
+    scene.objects.map((o) => [o.name, o.transform]),
+  );
+  // Open modal session (S7-002): start transforms + the revision it began on.
+  let session:
+    | { token: string; beginRevision: number; start: Map<string, SceneObjectSnapshot["transform"]> }
+    | undefined;
+  // S9.3-004: journal of committed transform events, replayable for soft undo.
+  const journal: TransformJournalEvent[] = [];
   const handle: BridgeHandle = {
     ...base,
+    /** S9.3-004: committed transform journal (S7-005 soft events). */
+    journal: journal as readonly TransformJournalEvent[],
     async begin(revision) {
-      void revision;
-      return { ok: true, token: `tok-${currentRevision}` };
+      // Capture the authoritative start state of every object so cancel can
+      // roll back exactly to pre-gesture transforms.
+      session = {
+        token: `tok-${currentRevision}-${Math.random().toString(36).slice(2, 8)}`,
+        beginRevision: revision,
+        start: new Map(sceneObjects.map((o) => [o.name, o.transform])),
+      };
+      return { ok: true as const, token: session.token };
     },
     async update(revision) {
+      // Provisional — revisions advance only on commit. The UI already
+      // persisted provisional values through the mutation lane; this step
+      // exists to keep the modal protocol trace identical to the real bridge.
       void revision;
-      return { ok: true };
+      return { ok: true as const };
     },
     async commit(expectedRevision) {
       if (expectedRevision !== currentRevision) {
         throw new StaleCommitError(expectedRevision, currentRevision);
       }
       currentRevision += 1;
+      // S9.3-004: diff the authoritative transforms vs the last committed
+      // point → journal events; then adopt the new base.
+      const events: TransformJournalEvent[] = [];
+      for (const o of sceneObjects) {
+        const before = lastCommitted.get(o.name);
+        events.push(...journalEventsFor(before, o.transform, o.name, currentRevision));
+      }
+      if (events.length > 0) journal.push(...events);
+      lastCommitted = new Map(sceneObjects.map((o) => [o.name, o.transform]));
+      session = undefined;
       const selection: CommitSinkPayload["selection"] = {
         ...EMPTY_COMMIT_SELECTION,
         objectModeNames: sceneObjects.map((o) => o.name),
       };
       const payload: CommitSinkPayload = { revision: currentRevision, selection };
       handle.onCommitEvent?.(payload);
-      return { ok: true, newRevision: currentRevision, selection };
+      return {
+        ok: true as const,
+        newRevision: currentRevision,
+        selection,
+        journalEvents: events,
+      };
     },
     async cancel(beginRevision) {
-      void beginRevision;
-      return { ok: true };
+      // Roll back the session's affected objects to their start transforms.
+      if (session && session.beginRevision === beginRevision) {
+        sceneObjects = sceneObjects.map((o) =>
+          session?.start.has(o.name) ? { ...o, transform: session.start.get(o.name) } : o,
+        );
+        session = undefined;
+      }
+      return { ok: true as const };
     },
     // --- S9.2-001 object CRUD mutation lane --------------------------------
     async mutateObject(mutation) {
@@ -428,14 +555,18 @@ export interface CommitSinkPayload {
  * SessionManager). The real bridge implements this over the IPC frame; the
  * mock simulates it in-process: begin/update are no-ops that return the
  * session's write token, commit validates expected==current and returns the
- * next revision + authoritative selection, cancel closes the session.
+ * next revision + authoritative selection + the S9.3-004 journal events
+ * emitted for this commit, cancel closes the session.
  */
 export interface BridgeContract {
   begin(revision: number): Promise<{ ok: true; token: string }>;
   update(revision: number): Promise<{ ok: true }>;
-  commit(
-    expectedRevision: number,
-  ): Promise<{ ok: true; newRevision: number; selection: CommitSinkPayload["selection"] }>;
+  commit(expectedRevision: number): Promise<{
+    ok: true;
+    newRevision: number;
+    selection: CommitSinkPayload["selection"];
+    journalEvents: TransformJournalEvent[];
+  }>;
   cancel(beginRevision: number): Promise<{ ok: true }>;
   /** S9.2-001: object CRUD mutations behind the frozen snapshot shape. */
   mutateObject(
@@ -446,8 +577,10 @@ export interface BridgeContract {
 /** Live bridge handle: the fetched profile+scene snapshot PLUS the commit sink
  * and the modal contract. The viewport subscribes to commit events here
  * (AC-1) and drives gizmo/numeric flows (AC-2) against the same handle.
+ * S9.3-004 adds the committed transform journal for soft undo/redo replay.
  */
 export type BridgeHandle = (BridgeProfile & Awaited<ReturnType<typeof snapshot>>) &
   BridgeContract & {
     onCommitEvent?: (payload: CommitSinkPayload) => void;
+    journal: readonly TransformJournalEvent[];
   };
