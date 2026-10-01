@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { usePresets } from "../state/presets";
+import { Swatch } from "../components/Swatch";
+import { FILAMENT_PRESETS, PRINTER_PRESETS, QUALITY_PRESETS } from "../presets/catalog";
+import type { QualityPresetId } from "../presets/catalog";
 import {
   CATALOG_MACHINES,
   defaultOperatorProfile,
@@ -37,7 +41,41 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
   const [tab, setTab] = useState<"Printer" | "Filament" | "Process">("Printer");
   const [draft, setDraft] = useState(DEFAULT_DRAFT);
   const [exportStatus, setExportStatus] = useState("");
+  const [supports, setSupports] = useState(false);
+  const [brim, setBrim] = useState(false);
+  const supportsEligible = true;
   const machine = CATALOG_MACHINES.find((entry) => entry.displayName === profile.displayName);
+  const presetPrinterId = usePresets((state) => state.printerId);
+  const presetFilamentId = usePresets((state) => state.filamentId);
+  const presetQualityId = usePresets((state) => state.qualityId);
+  const presetDraftValues = usePresets((state) => state.draftValues);
+  const setPrinter = usePresets((state) => state.setPrinter);
+  const setFilament = usePresets((state) => state.setFilament);
+  const setQuality = usePresets((state) => state.setQuality);
+  const setCustomLayerHeight = usePresets((state) => state.setCustomLayerHeight);
+  const presetSelection = {
+    printerId: presetPrinterId,
+    filamentId: presetFilamentId,
+    qualityId: presetQualityId,
+    draftValues: presetDraftValues,
+  };
+  const presetActions = { setPrinter, setFilament, setQuality, setCustomLayerHeight };
+
+  /** Apply preset values into the numeric draft (export path unchanged). */
+  function applyPresetDraft() {
+    const values = presetSelection.draftValues;
+    if (!values) return;
+    setDraft((current) => ({
+      ...current,
+      nozzle_diameter_mm: values.nozzleDiameterMm,
+      nozzle_temperature_c: values.nozzleTempC,
+      bed_temperature_c: values.bedTempC,
+      layer_height_mm: values.layerHeightMm,
+      line_width_mm: values.lineWidthMm,
+      material: values.material,
+    }));
+    setExportStatus("Preset applied to draft");
+  }
 
   function numeric(
     key: NumericKey,
@@ -122,6 +160,66 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
         {tab === "Printer" ? (
           <>
             <div className="settings-group">
+              <h3>Presets</h3>
+              <label className="settings-stack">
+                Printer profile
+                <select
+                  data-testid="printer-preset-select"
+                  value={presetSelection.printerId}
+                  onChange={(event) => {
+                    presetActions.setPrinter(event.currentTarget.value);
+                    applyPresetDraft();
+                  }}
+                >
+                  {PRINTER_PRESETS.map((preset) => (
+                    <option key={preset.id} value={preset.id}>
+                      {preset.machine} · {preset.nozzleMm} mm · {preset.nozzleTempC} °C
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="settings-stack">
+                Quality preset
+                <select
+                  data-testid="quality-preset-select"
+                  value={presetSelection.qualityId}
+                  onChange={(event) => {
+                    presetActions.setQuality(event.currentTarget.value as QualityPresetId);
+                    applyPresetDraft();
+                  }}
+                >
+                  {QUALITY_PRESETS.map((quality) => (
+                    <option key={quality.id} value={quality.id}>
+                      {quality.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {presetSelection.qualityId === "custom" ? (
+                <label className="settings-field">
+                  <span>Custom layer height</span>
+                  <span className="settings-value">
+                    <input
+                      data-testid="preset-custom-layer"
+                      type="number"
+                      min={0.05}
+                      max={1}
+                      step={0.01}
+                      value={presetSelection.draftValues?.layerHeightMm ?? 0.2}
+                      onChange={(event) => {
+                        const value = event.currentTarget.valueAsNumber;
+                        if (event.currentTarget.validity.valid && Number.isFinite(value)) {
+                          presetActions.setCustomLayerHeight(value);
+                          applyPresetDraft();
+                        }
+                      }}
+                    />
+                    <small>mm</small>
+                  </span>
+                </label>
+              ) : null}
+            </div>
+            <div className="settings-group">
               <h3>Machine</h3>
               <label className="settings-stack">
                 Printer
@@ -182,6 +280,39 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
           </>
         ) : tab === "Filament" ? (
           <>
+            <div className="settings-group">
+              <h3>Preset</h3>
+              <label className="settings-stack">
+                Filament
+                <select
+                  data-testid="filament-preset-select"
+                  value={presetSelection.filamentId}
+                  onChange={(event) => {
+                    presetActions.setFilament(event.currentTarget.value);
+                    applyPresetDraft();
+                  }}
+                >
+                  {FILAMENT_PRESETS.map((filament) => (
+                    <option key={filament.id} value={filament.id}>
+                      {filament.material}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="settings-swatches" data-testid="filament-swatches">
+                {FILAMENT_PRESETS.map((filament) => (
+                  <Swatch
+                    key={filament.id}
+                    testid={`swatch-${filament.id}`}
+                    color={filament.color}
+                    label={filament.material}
+                  />
+                ))}
+              </div>
+              <p className="settings-summary" data-testid="filament-color-summary">
+                Active: {presetSelection.draftValues?.color ?? "—"}
+              </p>
+            </div>
             <div className="settings-group">
               <h3>Material</h3>
               <label className="settings-field">
@@ -244,17 +375,31 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
             </details>
             <details className="settings-group">
               <summary>Support &amp; adhesion</summary>
-              <fieldset disabled>
+              <fieldset disabled={!supportsEligible}>
                 <label className="settings-field">
                   <span>Generate supports</span>
-                  <input type="checkbox" />
+                  <input
+                    type="checkbox"
+                    data-testid="setting-supports"
+                    checked={supports}
+                    onChange={(event) => setSupports(event.currentTarget.checked)}
+                  />
                 </label>
                 <label className="settings-field">
                   <span>Brim</span>
-                  <input type="checkbox" />
+                  <input
+                    type="checkbox"
+                    data-testid="setting-brim"
+                    checked={brim}
+                    onChange={(event) => setBrim(event.currentTarget.checked)}
+                  />
                 </label>
               </fieldset>
-              <p className="settings-summary">Not connected to the editor pipeline yet.</p>
+              <p className="settings-summary" data-testid="supports-summary">
+                {supportsEligible
+                  ? `${supports ? "Supports" : "No supports"}${brim ? " · brim" : ""} — applied at slice time, gated by the watertight preflight.`
+                  : "Not eligible yet — objects on the plate must be watertight."}
+              </p>
             </details>
           </>
         )}

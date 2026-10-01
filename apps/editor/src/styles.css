@@ -972,6 +972,24 @@ input {
   border: 0;
   opacity: 0.6;
 }
+.settings-group fieldset:not([disabled]) {
+  opacity: 1;
+}
+.settings-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 0 0;
+}
+.filament-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-inset-hi);
+  flex: 0 0 auto;
+}
 .settings-export {
   padding: 12px;
   display: grid;
