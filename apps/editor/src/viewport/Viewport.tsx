@@ -16,6 +16,7 @@ import type { ContextMenuItem } from "../components/context-menu-core";
 import { BuildPlate } from "./BuildPlate";
 import { FrameSelectedCamera } from "./FrameSelectedCamera";
 import { LayerPreview, previewFit } from "./LayerPreview";
+import { ObjectLabels, LabelProjector } from "./Labels";
 import { ModalInteraction } from "./ModalInteraction";
 import { NonWatertightBadges } from "./NonWatertightBadges";
 import { RendererGuard } from "./RendererGuard";
@@ -103,12 +104,16 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
         ) : (
           visibleObjects.map((o) => <SceneObjectModel key={o.name} info={o} />)
         )}
+        {/* S9.8-002 — in-canvas label projector (writes NDC to the bus). */}
+        {!preview ? <LabelProjector objects={visibleObjects} /> : null}
         {!preview && scene ? <TransformGizmo bridge={scene} selectedName={selectedName} /> : null}
         {!preview ? <FrameSelectedCamera /> : null}
         {!preview ? <ViewportCamera /> : null}
         <OrbitControls makeDefault enableDamping />
       </Canvas>
       {!preview ? <ViewCube /> : null} {!preview ? <NonWatertightBadges bridge={scene} /> : null}{" "}
+      {/* S9.8-002 — chip overlay outside the Canvas (no three re-renders). */}
+      {!preview ? <ObjectLabels objects={visibleObjects} /> : null}{" "}
       {preview ? (
         <div className="viewport-preview-controls" data-testid="preview-controls">
           {" "}

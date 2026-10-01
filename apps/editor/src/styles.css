@@ -414,6 +414,79 @@ body,
   background: color-mix(in srgb, var(--accent-warm, #b36a5e) 24%, transparent);
 }
 
+/* S9.8-002 (G45) — viewport object label chips (hover + always-on).
+   Overlay OUTSIDE the R3F canvas (sibling), so no three re-renders. */
+.viewport-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* never blocks canvas input */
+  z-index: 30; /* below viewcube (80) + repair badges (40) */
+  overflow: hidden;
+}
+
+.object-label-chip {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 20px;
+  padding: 0 8px;
+  transform: translate(-50%, -100%); /* anchor = bottom-center above the dot */
+  transform-origin: 50% 100%;
+  border: 1px solid var(--glass-stroke);
+  border-radius: 999px;
+  background: var(--glass-fill-2);
+  backdrop-filter: blur(var(--blur-2, 24px)) saturate(1.15);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+  color: var(--text-primary);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 90ms ease;
+}
+
+.object-label-chip.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* status dot — success / warning / locked */
+.object-label-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--text-tertiary);
+}
+
+.object-label-chip[data-status="watertight"] .object-label-dot {
+  background: var(--sema-success, #2a7a50);
+}
+
+.object-label-chip[data-status="non-watertight"] .object-label-dot {
+  background: var(--sema-warning, #9a6b16);
+}
+
+.object-label-chip[data-status="locked"] .object-label-dot {
+  background: var(--text-tertiary);
+}
+
+.object-label-name {
+  color: var(--text-primary);
+}
+
+.object-label-status {
+  color: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 /* Footer actions */
 .object-footer {
   display: flex;

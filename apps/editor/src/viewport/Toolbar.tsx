@@ -68,6 +68,8 @@ export function Toolbar({ scene }: ToolbarProps) {
   const snapStep = useToolbar((s) => s.snapStep);
   const setSnapStep = useToolbar((s) => s.setSnapStep);
   const toggleFlag = useToolbar((s) => s.toggleFlag);
+  const objectLabelsAlwaysOn = useUi((s) => s.objectLabelsAlwaysOn);
+  const toggleObjectLabelsAlwaysOn = useUi((s) => s.toggleObjectLabelsAlwaysOn);
   const queryClient = useQueryClient();
   const pushToast = useUi((s) => s.pushToast);
 
@@ -186,6 +188,19 @@ export function Toolbar({ scene }: ToolbarProps) {
           onClick={() => toggleFlag("grid")}
         >
           <Icon name="grid" size={18} />
+        </button>
+        {/* S9.8-002 — object label chips always-on toggle (hover shows a
+            chip per object; this forces them all visible). */}
+        <button
+          type="button"
+          className={`toolbar-btn toolbar-toggle${objectLabelsAlwaysOn ? " is-active" : ""}`}
+          aria-pressed={objectLabelsAlwaysOn}
+          aria-label="Labels"
+          title="Object labels (hover / always-on)"
+          data-testid="toggle-labels"
+          onClick={() => toggleObjectLabelsAlwaysOn()}
+        >
+          <Icon name="eye" size={18} />
         </button>
         {/* S9.7-002 AC-2 — snap step configurable from the toolbar: discrete
             number input, clamped 1..100 mm. Determinism guaranteed by the

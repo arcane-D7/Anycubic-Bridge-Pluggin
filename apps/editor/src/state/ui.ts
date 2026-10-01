@@ -33,6 +33,12 @@ interface UiState {
   /** Global scene view flags (S9.2-003): wireframe edges overlay toggle. */
   readonly sceneViewEdges: boolean;
   readonly toggleSceneViewEdges: () => void;
+  /**
+   * Viewport object label chips (S9.8-002): always-on forces every chip
+   * visible (also shown on hover when false).
+   */
+  readonly objectLabelsAlwaysOn: boolean;
+  readonly toggleObjectLabelsAlwaysOn: () => void;
   /** Active toolbar tool (S9.3-001): select|move|rotate|scale. */
   readonly tool: ToolMode;
   readonly setTool: (mode: ToolMode) => void;
@@ -77,6 +83,8 @@ export const useUi = create<UiState>()((set, get) => ({
   toggleRight: () => set((s) => ({ rightOpen: !s.rightOpen })),
   sceneViewEdges: true,
   toggleSceneViewEdges: () => set((s) => ({ sceneViewEdges: !s.sceneViewEdges })),
+  objectLabelsAlwaysOn: false,
+  toggleObjectLabelsAlwaysOn: () => set((s) => ({ objectLabelsAlwaysOn: !s.objectLabelsAlwaysOn })),
   tool: "select",
   setTool: (mode) => set({ tool: mode }),
   dirtyTransformName: null,
