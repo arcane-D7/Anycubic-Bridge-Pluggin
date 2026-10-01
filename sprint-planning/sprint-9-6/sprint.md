@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (panels)                                                                                                                                                                                                                                                                                            |
 | **Source**            | Consultor report 2026-09-30 §2 (9.6) + audit G14/G20/G21/G22/G23/G30/G36 + Consultor ronda 2 §3 (chat)                                                                                                                                                                                                          |
 | **Depends On**        | Sprint 9.5 (slice consumes presets) + Sprint 9.1a (dock host)                                                                                                                                                                                                                                                   |
-| **Status**            | ⏳ Planned                                                                                                                                                                                                                                                                                                      |
+| **Status**            | 🔄 In progress (1/9)                                                                                                                                                                                                                                                                                            |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -51,7 +51,8 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Priority**         | P1                                                                                                 |
 | **Type**             | Feature                                                                                            |
 | **Estimated Effort** | L                                                                                                  |
-| **Status**           | ⏳ Planned                                                                                         |
+| **Status**           | ✅ Delivered (01b1653)                                                                             |
+| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 476) · commit `01b1653`                                             |
 
 #### Context
 
@@ -65,6 +66,35 @@ watertight preflight).
 
 - [x] All three dropdowns populate from catalog; filament shows color swatches; custom quality editable.
 - [x] Selecting a preset writes the SettingsPanel draft state (export path unchanged).
+
+#### Implementation Notes
+
+- `apps/editor/src/presets/catalog.ts` — pure/headless; imports `presets/catalog.json` with
+  `with { type: "json" }` (Node 24 native TS/ESM import attribute; Vite bundles fine). Tables
+  `PRINTER_PRESETS` (machine from catalog, 0.4 mm / 210 °C / 60 °C / 100%), `FILAMENT_PRESETS`
+  (catalog-derived deduped ids `catalog-<slug>` + standard PLA/PETG/ABS/ASA/TPU with swatch
+  hex), `QUALITY_PRESETS` (0.08/0.20/0.28 mm + custom, custom default 0.2 mm). Helpers
+  `*PresetById`, `layerHeightFor`, `slugify`. Machine ids NEVER hardcoded — resolve from catalog.
+- `apps/editor/src/state/presets.ts` — zustand store: selection ids + `draftValues` (null until
+  first change) + `setPrinter/setFilament/setQuality/setCustomLayerHeight`; setters reject
+  unknown ids (return state unchanged); `setCustomLayerHeight` forces `qualityId: "custom"`.
+  `presetDraftValuesFor` resolves full draft (nozzle/temps/flow/layer/line-width/material/color).
+- `apps/editor/src/components/Swatch.tsx` — presentational color swatch (`role="img"` +
+  aria-label; optional testid).
+- `apps/editor/src/panels/SettingsPanel.tsx` — Printer tab: `printer-preset-select` +
+  `quality-preset-select` + `preset-custom-layer` (custom-only); Filament tab:
+  `filament-preset-select` + `filament-swatches` (Swatch row) + `filament-color-summary`;
+  Supports/Brim now functional (fieldset enabled; summary text mentions the watertight gate).
+  Selecting a preset → `applyPresetDraft()` writes the numeric draft (export path unchanged).
+- **Reload guard**: store selectors are split per-field (primitives) — zustand/useSyncExternalStore
+  must not return fresh object snapshots or React loops ("Maximum update depth exceeded" broke
+  `e2e:editor-reload`).
+- `tests/presets.test.mjs` — 7 cases: printer derives catalog machine; filament dedup + hex
+  swatches; quality set ids; `layerHeightFor`; `slugify`; `presetDraftValuesFor` full resolution;
+  custom layer height.
+- **Gate** `$env:TEMP\s9-6-001-check2.log` — unit **476** pass / fail 0, integration ok, rust ok,
+  build ok, smoke 106 tools, e2e:ui + e2e:editor-reload PASS (reload fixed), licenses 59,
+  architecture OK, [sanitize] DRY-RUN 0 files.
 
 ### S9.6-002 — Per-object print settings + filament assignment
 
