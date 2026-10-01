@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { useScene } from "../state/scene";
+import { useUi } from "../state/ui";
 
 /**
  * Left panel — object tree (S9.2-004 full rework).
@@ -86,6 +87,7 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
   const select = useScene((s) => s.select);
   const remove = useScene((s) => s.remove);
   const rename = useScene((s) => s.rename);
+  const pushToast = useUi((s) => s.pushToast);
   const duplicate = useScene((s) => s.duplicate);
   const toggleVisible = useScene((s) => s.toggleVisible);
   const toggleLock = useScene((s) => s.toggleLock);
@@ -195,6 +197,30 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
   const onToggleVisible = (o: SceneObjectSnapshot) => {
     toggleVisible(o.name);
     void persist({ kind: "toggleVisible", name: o.name });
+  };
+
+  /** S9.7-003 (G46): "Auto-repair" — watertight closure via the bridge repair
+   * lane. `mode` = "replace" (in place) | "copy" (replace-as-copy). Toast on
+   * success/failure; snapshot rehydrates the store after the lane commit. */
+  const onRepair = async (o: SceneObjectSnapshot, mode: "replace" | "copy") => {
+    if (!scene) return;
+    try {
+      const res = await scene.repair({ name: o.name, mode });
+      await queryClient.invalidateQueries({ queryKey: ["bridge", "scene"] });
+      if (!res.ok) {
+        pushToast({ kind: "error", title: "Auto-repair", message: res.error });
+        return;
+      }
+      const target = res.object !== o.name ? ` as "${res.object}"` : "";
+      pushToast({
+        kind: "success",
+        title: "Auto-repair",
+        message: `${o.name} is watertight${target}.`,
+      });
+    } catch (err) {
+      console.warn("[object-tree] repair failed", err);
+      pushToast({ kind: "error", title: "Auto-repair", message: "Bridge error during repair." });
+    }
   };
 
   const onToggleLock = (o: SceneObjectSnapshot) => {
@@ -339,6 +365,26 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
                   title={o.provenance ? `${o.name} — ${o.provenance}` : o.name}
                 >
                   {o.name}
+                  {/* S9.7-003 (G46) — non-watertight badge becomes the repair
+                      entry point (AC-1: repair action available from the tree
+                      row). One click = Auto-repair (replace in place); the
+                      context menu offers replace-as-copy. */}
+                  {!o.watertight ? (
+                    <button
+                      type="button"
+                      className="obj-repair-badge"
+                      title="Non-watertight — click to Auto-repair"
+                      aria-label={`Auto-repair ${o.name}`}
+                      data-testid={`repair-${CSS.escape(o.name)}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void onRepair(o, "replace");
+                      }}
+                    >
+                      <Icon name="wrench" size={12} />
+                      repair
+                    </button>
+                  ) : null}
                 </span>
               )}
               <span className="object-meta" aria-label="Mesh stats">
@@ -413,6 +459,29 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
                   >
                     <Icon name="fit" size={14} /> Place on plate
                   </DropdownMenuItem>
+                  {/* S9.7-003 (G46) — Auto-repair choices for non-watertight
+                      objects (AC-1: replace / replace-as-copy). */}
+                  {!o.watertight ? (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onSelect={(e: Event) => {
+                          e.preventDefault();
+                          void onRepair(o, "replace");
+                        }}
+                      >
+                        <Icon name="wrench" size={14} /> Auto-repair (replace)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={(e: Event) => {
+                          e.preventDefault();
+                          void onRepair(o, "copy");
+                        }}
+                      >
+                        <Icon name="duplicate" size={14} /> Auto-repair (copy)
+                      </DropdownMenuItem>
+                    </>
+                  ) : null}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive focus:bg-destructive/10 focus:text-destructive"

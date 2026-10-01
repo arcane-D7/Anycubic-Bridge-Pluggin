@@ -307,3 +307,32 @@ export interface BooleanResult {
   /** The new result snapshot (authoritative post-commit). */
   readonly objectSnapshot: SceneObjectSnapshot;
 }
+
+/**
+ * S9.7-003/004 repair lane request (G46). The UI triggers "Auto-repair" on a
+ * non-watertight object (existing `#b36a5e` tint + dashed edge becomes
+ * actionable). `mode` selects the AC choice: "replace" (watertight closure
+ * replaces the mesh in place, keeps identity + placement) or "copy"
+ * (replace-as-copy — a NEW object is created, the source stays untouched).
+ * `name` targets the object in the authoritative snapshot.
+ */
+export interface RepairRequest {
+  readonly name: string;
+  readonly mode: "replace" | "copy";
+}
+
+/**
+ * S9.7-003/004 repair lane result. The repaired object is re-flagged
+ * `watertight: true` and its mesh stats reflect the closure (deterministic
+ * fixture for now — the manifold-3d backend swap keeps the same contract).
+ * `object` is the object that was repaired (replace: same name; copy: the
+ * new `-repair` name). `revision` is the commit revision after the lane.
+ */
+export interface RepairResult {
+  readonly ok: true;
+  readonly object: string;
+  readonly revision: number;
+  readonly mode: "replace" | "copy";
+  /** The repaired (or copied) snapshot (authoritative post-commit). */
+  readonly objectSnapshot: SceneObjectSnapshot;
+}

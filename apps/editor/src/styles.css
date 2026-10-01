@@ -338,6 +338,82 @@ body,
   opacity: 1;
 }
 
+/* S9.7-003 (G46) — repair badge inline in the tree row (non-watertight) */
+.obj-repair-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border: 1px solid var(--accent-warm, #b36a5e);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent-warm, #b36a5e) 14%, transparent);
+  color: var(--accent-warm, #b36a5e);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.obj-repair-badge:hover {
+  background: color-mix(in srgb, var(--accent-warm, #b36a5e) 26%, transparent);
+  border-color: var(--accent-warm, #b36a5e);
+}
+
+/* S9.7-003 (G46) — viewport corner chip listing non-watertight objects */
+.viewport-repair-badges {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 70%;
+  padding: 5px 8px;
+  background: color-mix(in srgb, var(--glass-fill-2, #ffffff) 88%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(6px);
+  overflow-x: auto;
+}
+
+.viewport-repair-label {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.viewport-repair-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--accent-warm, #b36a5e);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--accent-warm, #b36a5e) 12%, transparent);
+  color: var(--text-primary);
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.viewport-repair-badge svg {
+  color: var(--accent-warm, #b36a5e);
+}
+
+.viewport-repair-badge:hover {
+  background: color-mix(in srgb, var(--accent-warm, #b36a5e) 24%, transparent);
+}
+
 /* Footer actions */
 .object-footer {
   display: flex;

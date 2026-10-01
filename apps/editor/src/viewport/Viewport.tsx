@@ -13,6 +13,7 @@ import { BuildPlate } from "./BuildPlate";
 import { FrameSelectedCamera } from "./FrameSelectedCamera";
 import { LayerPreview, previewFit } from "./LayerPreview";
 import { ModalInteraction } from "./ModalInteraction";
+import { NonWatertightBadges } from "./NonWatertightBadges";
 import { RendererGuard } from "./RendererGuard";
 import { SceneObjectModel } from "./SceneObjectModel";
 import { Toolbar } from "./Toolbar";
@@ -103,7 +104,7 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
         {!preview ? <ViewportCamera /> : null}
         <OrbitControls makeDefault enableDamping />
       </Canvas>
-      {!preview ? <ViewCube /> : null}
+      {!preview ? <ViewCube /> : null} {!preview ? <NonWatertightBadges bridge={scene} /> : null}{" "}
       {preview ? (
         <div className="viewport-preview-controls" data-testid="preview-controls">
           {" "}
