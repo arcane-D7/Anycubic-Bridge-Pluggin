@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { SceneObjectSnapshot } from "../bridge/types";
+import type { ObjectPrintSettings } from "../bridge/types";
 import { type SceneGraphState, EMPTY_GRAPH, reduceSceneGraph } from "./scene-core";
 
 export type { SceneGraphState } from "./scene-core";
@@ -56,6 +57,16 @@ export interface SceneStore extends SceneGraphState {
   readonly setTransform: (name: string, transform: SceneObjectSnapshot["transform"]) => void;
   /** Reassign an object to another plate (S9.4-003 cross-plate move). */
   readonly setPlate: (name: string, plateId: string) => void;
+  /**
+   * S9.6-002 — per-object settings fork / reset-to-parent. `settings`
+   * undefined clears the fork (object uses global again); `filamentId`
+   * assigns a per-object filament (ignored when clearing).
+   */
+  readonly setObjectSettings: (
+    name: string,
+    settings?: Partial<ObjectPrintSettings>,
+    filamentId?: string,
+  ) => void;
 }
 
 const watertightOf = (objects: readonly SceneObjectSnapshot[], name: string | null): boolean => {
@@ -179,6 +190,18 @@ export const useScene = create<SceneStore>()((set, get) => ({
   setPlate: (name, plateId) => {
     set((s) => {
       const out = reduceSceneGraph(s, { kind: "setPlate", name, plateId });
+      return out.state;
+    });
+  },
+
+  setObjectSettings: (name, settings, filamentId) => {
+    set((s) => {
+      const out = reduceSceneGraph(s, {
+        kind: "setObjectSettings",
+        name,
+        ...(settings !== undefined ? { settings } : {}),
+        ...(filamentId !== undefined ? { filamentId } : {}),
+      });
       return out.state;
     });
   },

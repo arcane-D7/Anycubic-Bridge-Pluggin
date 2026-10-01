@@ -318,23 +318,35 @@ const ESTIMATED_FLOW_MM3_PER_MIN = 2400; // ~40 mm³/s
  * real slicer — a deterministic estimator the UI can show behind the frozen
  * contract, computed from the snapshot's volume/height fields so the numbers
  * move when the scene changes.
+ *
+ * S9.6-002: per-object overrides are honoured — when an object carries
+ * `printSettings.layerHeightMm`, ITS layer count derives from that value
+ * (ceil(objectZ / perObjectLayerHeight)) instead of the global layer height,
+ * so a finer object visibly increases the total. The global `opts.layerHeightMm`
+ * applies to objects without a fork.
  */
 export function computeSliceStats(
   objects: readonly SceneObjectSnapshot[],
   opts?: { readonly layerHeightMm?: number },
 ): SliceStats {
-  const layerHeight = opts?.layerHeightMm ?? DEFAULT_LAYER_HEIGHT_MM;
+  const globalLayerHeight = opts?.layerHeightMm ?? DEFAULT_LAYER_HEIGHT_MM;
   const perObjectMm3: Record<string, number> = {};
   let volumeMm3 = 0;
-  let maxZ = 0;
   for (const o of objects) {
     const v = o.volumeMm3 > 0 ? o.volumeMm3 : estimateVolume(o);
     perObjectMm3[o.name] = v;
     volumeMm3 += v;
-    const h = o.sizeMm[2] ?? 0;
-    if (h > maxZ) maxZ = h;
   }
-  const layers = Math.max(1, Math.ceil(maxZ / layerHeight));
+  // ceil per object: global for non-forked, per-object layer height for forked.
+  const layers = Math.max(
+    1,
+    ...objects.map((o) => {
+      const h = o.sizeMm[2] ?? 0;
+      if (h <= 0) return 1;
+      const lh = o.printSettings?.layerHeightMm ?? globalLayerHeight;
+      return Math.ceil(h / (lh > 0 ? lh : globalLayerHeight));
+    }),
+  );
   const materialGrams = volumeMm3 * PLA_DENSITY_G_PER_MM3;
   const estimatedMinutes = Math.max(1, Math.round(volumeMm3 / ESTIMATED_FLOW_MM3_PER_MIN));
   return { layers, estimatedMinutes, materialGrams, volumeMm3, perObjectMm3 };
@@ -571,6 +583,28 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
             if (!target) return null;
             sceneObjects = sceneObjects.map((o) =>
               o.name === mutation.name ? { ...o, plateId: mutation.plateId } : o,
+            );
+            return sceneObjects.find((o) => o.name === mutation.name) ?? null;
+          }
+          case "setObjectSettings": {
+            // S9.6-002 — per-object settings fork / reset-to-parent.
+            const target = sceneObjects.find((o) => o.name === mutation.name);
+            if (!target) return null;
+            sceneObjects = sceneObjects.map((o) =>
+              o.name === mutation.name
+                ? {
+                    ...o,
+                    // `settings: undefined` clears the fork → object uses global.
+                    ...(mutation.settings !== undefined
+                      ? { printSettings: { ...mutation.settings } }
+                      : { printSettings: undefined }),
+                    ...(mutation.settings !== undefined && mutation.filamentId !== undefined
+                      ? { filamentId: mutation.filamentId }
+                      : mutation.settings === undefined
+                        ? { filamentId: undefined }
+                        : {}),
+                  }
+                : o,
             );
             return sceneObjects.find((o) => o.name === mutation.name) ?? null;
           }

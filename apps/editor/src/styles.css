@@ -466,6 +466,142 @@ body,
   font-size: var(--t-md, 12px);
 }
 
+/* Per-object print settings (S9.6-002) — fork mode + filament assignment. */
+.panel-object-settings {
+  border-top: 1px solid var(--border);
+  background: var(--glass-fill-1);
+  padding-bottom: 10px;
+}
+
+.object-settings-mode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 10px 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--ctrl-well);
+  border: 1px solid var(--ctrl-border);
+}
+
+.object-settings-mode.overridden {
+  color: var(--accent-primary);
+  border-color: color-mix(in srgb, var(--accent-primary) 45%, transparent);
+}
+
+.object-settings-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--text-tertiary);
+  flex: 0 0 auto;
+}
+
+.object-settings-mode.overridden .object-settings-indicator {
+  background: var(--accent-primary);
+}
+
+.object-settings-actions {
+  display: flex;
+  gap: 6px;
+  padding: 0 10px 8px;
+}
+
+.object-settings-actions button {
+  flex: 1 1 auto;
+  height: 30px;
+  border: 1px solid var(--ctrl-border);
+  border-radius: 4px;
+  background: var(--ctrl-well);
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.object-settings-actions button:hover {
+  border-color: var(--border-strong);
+}
+
+.object-settings-actions button:active {
+  transform: translateY(1px);
+}
+
+.panel-object-settings .settings-stack {
+  display: block;
+  margin: 0 10px 8px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.panel-object-settings .settings-stack select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--ctrl-border);
+  border-radius: 4px;
+  background: var(--ctrl-well);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.object-settings-fields {
+  margin: 0;
+  padding: 0 10px;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.object-settings-fields[disabled] {
+  opacity: 0.55;
+}
+
+.object-settings-fields legend {
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  margin-bottom: 2px;
+}
+
+.panel-object-settings .settings-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.panel-object-settings .settings-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.panel-object-settings .settings-value input {
+  width: 72px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--ctrl-border);
+  border-radius: 4px;
+  background: var(--ctrl-well);
+  color: var(--text-primary);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+.panel-object-settings .settings-value small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
 /* Chat harness v1 (S9-006) */
 .chat-empty {
   padding: 12px;

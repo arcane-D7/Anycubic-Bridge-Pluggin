@@ -15,6 +15,7 @@
  */
 
 import type { SceneObjectSnapshot } from "../bridge/types";
+import type { ObjectPrintSettings } from "../bridge/types";
 
 export interface SceneGraphState {
   /** All scene objects in display order (authoritative). */
@@ -45,13 +46,17 @@ export interface SceneGraphEvent {
     | "toggleVisible"
     | "toggleLock"
     | "setTransform"
-    | "setPlate";
+    | "setPlate"
+    | "setObjectSettings";
   readonly object?: SceneObjectSnapshot;
   readonly name?: string;
   readonly from?: string;
   readonly to?: string;
   readonly transform?: SceneObjectSnapshot["transform"];
   readonly plateId?: string;
+  /** Per-object fork payload (S9.6-002); `undefined` clears (reset-to-parent). */
+  readonly settings?: Partial<ObjectPrintSettings>;
+  readonly filamentId?: string;
 }
 
 /** The S7-002 framed modal steps a destructive op must route through. */
@@ -220,6 +225,29 @@ export function reduceSceneGraph(
       const plateId = event.plateId;
       if (!name || !plateId) return { state, pipeline: null };
       const objects = state.objects.map((o) => (o.name === name ? { ...o, plateId } : o));
+      return { state: { ...state, objects }, pipeline: null };
+    }
+
+    case "setObjectSettings": {
+      // S9.6-002 — per-object fork / reset-to-parent (AC: override toggle works).
+      const name = event.name;
+      if (!name) return { state, pipeline: null };
+      const objects = state.objects.map((o) =>
+        o.name === name
+          ? {
+              ...o,
+              // `settings: undefined` clears the fork → object uses global again.
+              ...(event.settings !== undefined
+                ? { printSettings: { ...event.settings } }
+                : { printSettings: undefined }),
+              ...(event.settings !== undefined && event.filamentId !== undefined
+                ? { filamentId: event.filamentId }
+                : event.settings === undefined
+                  ? { filamentId: undefined }
+                  : {}),
+            }
+          : o,
+      );
       return { state: { ...state, objects }, pipeline: null };
     }
   }

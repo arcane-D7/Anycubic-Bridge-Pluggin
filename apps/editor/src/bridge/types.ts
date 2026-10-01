@@ -62,6 +62,33 @@ export interface SceneObjectSnapshot extends ObjectMeshInfo {
     readonly sy?: number;
     readonly sz?: number;
   };
+  /**
+   * Per-object print settings fork (S9.6-002). Absent = "using global".
+   * Present = overridden values for THIS object only; slice merges them over
+   * the global settings. Kept as a Partial so a fork can override a subset
+   * and inherit the rest from the global draft.
+   */
+  readonly printSettings?: Partial<ObjectPrintSettings>;
+  /** Per-object filament assignment (S9.6-002). Absent = global filament. */
+  readonly filamentId?: string;
+}
+
+/**
+ * The overridable per-object print settings surface (S9.6-002). Mirrors the
+ * global draft fields the slicer consumes; a fork may override any subset.
+ */
+export interface ObjectPrintSettings {
+  readonly layerHeightMm: number;
+  readonly lineWidthMm: number;
+  readonly nozzleDiameterMm: number;
+  readonly wallLoops: number;
+  readonly topBottomLayers: number;
+  readonly infillDensityPct: number;
+  readonly infillPattern: string;
+  readonly nozzleTempC: number;
+  readonly bedTempC: number;
+  readonly fanPct: number;
+  readonly printSpeedMmS: number;
 }
 
 /** Scene snapshot as served by the read-only bridge (S6-005). */
@@ -100,7 +127,14 @@ export type ObjectMutation =
       };
     }
   | { readonly kind: "setPlate"; readonly name: string; readonly plateId: string }
-  | { readonly kind: "commitObject"; readonly name: string };
+  | { readonly kind: "commitObject"; readonly name: string }
+  | {
+      readonly kind: "setObjectSettings";
+      readonly name: string;
+      /** Per-object fork; `undefined` clears it (reset-to-parent → global). */
+      readonly settings?: Partial<ObjectPrintSettings>;
+      readonly filamentId?: string;
+    };
 
 /** Build plate footprint (mm) driven by the machine profile, never hardcoded. */
 export interface BuildVolume {
