@@ -185,8 +185,8 @@ mode, objectSnapshot}` behind the frozen snapshot shape.
 | **Priority**         | P1                                                                               |
 | **Type**             | Feature                                                                          |
 | **Estimated Effort** | M                                                                                |
-| **Status**           | ✅ Delivered (b0cd3b8)                                                           |
-| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 546) · docs-only formalization · commit `b0cd3b8` |
+| **Status**           | ✅ Delivered (2b83889)                                                           |
+| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 546) · docs-only formalization · commit `2b83889` |
 
 #### Context
 
