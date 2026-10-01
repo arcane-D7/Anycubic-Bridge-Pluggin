@@ -1,6 +1,7 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useDock } from "../../state/dock";
 import { FloatingPanelHost, CollapsedPill } from "./FloatingPanelHost";
+import { ConversationQuickSwitcher } from "./ConversationQuickSwitcher";
 import { ChatPanel } from "../../panels/ChatPanel";
 
 /**
@@ -41,6 +42,7 @@ export function DockPanel() {
           kind="chat"
           onDock={dock}
           onCollapse={collapse}
+          headerExtra={<ConversationQuickSwitcher />}
         >
           <ChatPanel />
         </FloatingPanelHost>

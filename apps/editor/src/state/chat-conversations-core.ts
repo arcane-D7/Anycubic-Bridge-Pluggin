@@ -270,3 +270,42 @@ export function setConversationPayload(
 export function activeConversationOf(state: ChatConversationsState): Conversation | null {
   return state.activeId !== null ? (state.conversations[state.activeId] ?? null) : null;
 }
+
+/** Per-conversation list stats (S9.6-006 list row: token bar + counts). */
+export interface ConversationListStats {
+  readonly usedTokens: number;
+  readonly budget: number;
+  readonly sourceCount: number;
+  readonly approvalCount: number;
+  readonly dirty: boolean;
+  /** Ratio 0..1 for the token bar (clamped). */
+  readonly ratio: number;
+}
+
+/** Stats for the conversation list rows (deterministic, pure). */
+export function conversationStats(convo: Conversation): ConversationListStats {
+  const usedTokens = convo.payload.contextSources.reduce((acc, s) => acc + s.tokens, 0);
+  const budget = convo.payload.tokenBudget;
+  const ratio = budget > 0 ? Math.min(1, usedTokens / budget) : 0;
+  return {
+    usedTokens,
+    budget,
+    sourceCount: convo.payload.contextSources.length,
+    approvalCount: convo.payload.approvals.length,
+    dirty: convo.revision > 0,
+    ratio,
+  };
+}
+
+/**
+ * Deterministic list order for the conversation UI (S9.6-006): most recently
+ * updated first; ties broken by creation time (older first).
+ */
+export function conversationsSorted(
+  conversations: Readonly<Record<string, Conversation>>,
+): Conversation[] {
+  return Object.values(conversations).sort((a, b) => {
+    if (b.updatedAt !== a.updatedAt) return b.updatedAt - a.updatedAt;
+    return a.createdAt - b.createdAt;
+  });
+}

@@ -30,6 +30,8 @@ const {
   upsertConversationMessages,
   setConversationPayload,
   activeConversationOf,
+  conversationsSorted,
+  conversationStats,
   EMPTY_CONVERSATION_PAYLOAD,
 } = core;
 
@@ -176,4 +178,65 @@ test("setConversationPayload updates payload fields independently", () => {
   // unknown → no-op
   const unknown = setConversationPayload(s, "nope", { tokenBudget: 1 });
   assert.equal(unknown, s);
+});
+
+test("conversationStats reports token bar ratio, counts and dirty flag", () => {
+  let s = defaultChatConversations();
+  s = setConversationPayload(s, "conversation-1", {
+    contextSources: SOURCES, // 1 source, tokens 240
+    tokenBudget: 2000,
+    approvals: APPROVALS, // 1 approval
+  });
+  const stats = conversationStats(s.conversations["conversation-1"]);
+  assert.equal(stats.usedTokens, 240);
+  assert.equal(stats.budget, 2000);
+  assert.equal(stats.ratio, 240 / 2000);
+  assert.equal(stats.sourceCount, 1);
+  assert.equal(stats.approvalCount, 1);
+  assert.equal(stats.dirty, false);
+  // dirty flips with revision > 0
+  s = upsertConversationMessages(s, "conversation-1", [msg("m-1", "user", "hi")]);
+  assert.equal(conversationStats(s.conversations["conversation-1"]).dirty, true);
+});
+
+test("conversationStats clamps ratio and survives zero budget", () => {
+  let s = defaultChatConversations();
+  s = setConversationPayload(s, "conversation-1", {
+    contextSources: [{ id: "big", kind: "mesh", label: "Big", tokens: 999_999 }],
+    tokenBudget: 100,
+  });
+  const stats = conversationStats(s.conversations["conversation-1"]);
+  assert.equal(stats.ratio, 1); // clamped
+  s = setConversationPayload(s, "conversation-1", { tokenBudget: 0 });
+  assert.equal(conversationStats(s.conversations["conversation-1"]).ratio, 0);
+});
+
+test("conversationsSorted orders by updatedAt desc, ties by createdAt asc", () => {
+  // Deterministic timestamps (Date.now() has ms granularity — explicit values).
+  const cv = (id, title, createdAt, updatedAt) => ({
+    id,
+    title,
+    createdAt,
+    updatedAt,
+    messages: [],
+    payload: { ...EMPTY_CONVERSATION_PAYLOAD },
+    revision: 0,
+  });
+  const record = {
+    "conversation-2": cv("conversation-2", "Mid", 1000, 1000),
+    "conversation-1": cv("conversation-1", "New", 3000, 3000),
+    "conversation-3": cv("conversation-3", "Old", 2000, 5000), // most recent update
+  };
+  const rows = conversationsSorted(record).map((c) => c.title);
+  assert.deepEqual(rows, ["Old", "New", "Mid"]);
+
+  // Tie on updatedAt → createdAt asc
+  const tie = {
+    a: cv("a", "A", 1000, 2000),
+    b: cv("b", "B", 1500, 2000),
+    c: cv("c", "C", 500, 2000),
+  };
+  // equal updatedAt (2000) → createdAt asc: C(500) → A(1000) → B(1500)
+  const tieRows = conversationsSorted(tie).map((c) => c.title);
+  assert.deepEqual(tieRows, ["C", "A", "B"]);
 });

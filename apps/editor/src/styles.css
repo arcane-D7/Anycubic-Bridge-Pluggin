@@ -716,6 +716,201 @@ body,
   font-size: 12px;
 }
 
+/* Conversation list (S9.6-006) — docked sidebar slice + floating Popover */
+.conversation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.conversation-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.conversation-row:hover {
+  background: var(--bg-raised);
+}
+
+.conversation-row.active {
+  background: var(--ctrl-well);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.conversation-dirty {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: transparent;
+}
+
+.conversation-dirty[data-dirty="true"] {
+  background: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.conversation-title {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: none;
+  background: none;
+  color: var(--text);
+  text-align: left;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.conversation-rename-input {
+  flex: 1 1 0;
+  min-width: 0;
+  background: var(--bg-raised);
+  color: var(--text);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+}
+
+.conversation-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.conversation-tokenbar {
+  width: 48px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+  display: inline-block;
+}
+
+.conversation-tokenbar-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+
+.conversation-sources {
+  color: var(--text-dim);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.conversation-delete {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.conversation-delete:hover {
+  color: #d64545;
+  background: var(--bg-raised);
+}
+
+.conversation-add {
+  margin-top: 4px;
+  border: 1px dashed var(--border);
+  background: none;
+  color: var(--text-dim);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.conversation-add:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Floating header quick-switch Popover (S9.6-006) */
+.conversation-popover {
+  z-index: var(--z-panel, 40);
+  min-width: 220px;
+  max-width: 280px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+  padding: 6px;
+  outline: none;
+}
+
+.conversation-popover-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.conversation-popover-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 8px;
+  border: none;
+  background: none;
+  color: var(--text);
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.conversation-popover-row:hover {
+  background: var(--bg-raised);
+}
+
+.conversation-popover-row.active {
+  background: var(--ctrl-well);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.conversation-row-title {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversation-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.conversation-quick-switch {
+  font-size: 13px;
+}
+
 .chat-transcript {
   flex: 1 1 0;
   overflow-y: auto;

@@ -34,6 +34,8 @@ interface FloatingPanelHostProps {
   readonly children: ReactNode;
   readonly onDock: () => void;
   readonly onCollapse: () => void;
+  /** Optional right-side header node (S9.6-006: conversation quick-switch Popover). */
+  readonly headerExtra?: ReactNode;
 }
 
 const MOVE_STEP = 0.05; // viewport fraction per Alt+Shift+arrow press
@@ -44,6 +46,7 @@ export function FloatingPanelHost({
   children,
   onDock,
   onCollapse,
+  headerExtra,
 }: FloatingPanelHostProps) {
   const panel = useDock((s) => s.panels[id]);
   const focusPanel = useDock((s) => s.focusPanel);
@@ -168,6 +171,7 @@ export function FloatingPanelHost({
         <DialogPrimitive.Title className="floating-title" title={title}>
           {title}
         </DialogPrimitive.Title>
+        {headerExtra}
         <button
           type="button"
           className="floating-icon-btn"
