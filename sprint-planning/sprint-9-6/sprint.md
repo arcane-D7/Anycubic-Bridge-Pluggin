@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (panels)                                                                                                                                                                                                                                                                                            |
 | **Source**            | Consultor report 2026-09-30 §2 (9.6) + audit G14/G20/G21/G22/G23/G30/G36 + Consultor ronda 2 §3 (chat)                                                                                                                                                                                                          |
 | **Depends On**        | Sprint 9.5 (slice consumes presets) + Sprint 9.1a (dock host)                                                                                                                                                                                                                                                   |
-| **Status**            | 🔄 In progress (6/9)                                                                                                                                                                                                                                                                                            |
+| **Status**            | 🔄 In progress (7/9)                                                                                                                                                                                                                                                                                            |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -375,7 +375,7 @@ N sources · M approvals". Wire into the 9.1a dock for both docked and floating 
 | **Priority**         | P1                                                                                                                                    |
 | **Type**             | Feature                                                                                                                               |
 | **Estimated Effort** | L                                                                                                                                     |
-| **Status**           | ⏳ Planned                                                                                                                            |
+| **Status**           | ✅ Delivered (`92b92b3`)                                                                                                              |
 
 #### Context
 
@@ -389,6 +389,30 @@ read with fallback to last good NDJSON replay). Append-only `<id>.ndjson` deltas
 
 - [x] Conversations persist across restarts; writes atomic + corruption-safe; deltas replayed to recover;
 - [x] Env-resolved path honored; no repo literals; unit-tested round-trip.
+
+#### Implementation Notes
+
+- **Rust lane** (`crates/broker/src/chat_store.rs`, new): `ChatStore` — per-conversation
+  `<id>.json` snapshot + append-only `<id>.ndjson` journal. `put` atomic (same-dir `.tmp` +
+  `fs::rename`), `get` prefers snapshot and replays journal on corruption (last-line-wins) then
+  rewrites a clean snapshot, `delete` idempotent, `list` scans `*.json`. `chat_store_dir()` reads
+  `ANYCUBIC_CHAT_DIR` else `%APPDATA%/anycubic-bridge/chat` (never a user-path literal).
+  Insecure ids (`..`, separators, empty, >128) rejected before touching the fs. 7 unit tests.
+- **Tauri shell** (`apps/editor/src-tauri`): depends on `broker` via path; managed
+  `ChatStoreState(Mutex<ChatStore>)` + `chat_store_dir/put/get/delete/list/info` commands — the
+  webview's ONLY fs access (Rust owns path + atomicity). `check-rust` now compiles the shell with
+  the broker dep (Cargo.lock updated).
+- **Webview** (`apps/editor/src`, S9.6-008 prep): `state/chat-conversations-core.ts` adds
+  `coerceConversation` (defensive round-trip) + `hydrateFromPersisted` (boot restore; `nextSeq`
+  past restored ids). `state/chat-persistence.ts` (new) — `ChatPersistence` contract with Tauri
+  invoke-backed impl + localStorage fallback (same surface, no machine paths) +
+  `createDebouncedChatWriter` (500ms debounce, batched per-id flush, `flushNow`).
+  `state/chat-persistence-pod.ts` (new) singleton pod: `initChatPersistence().hydrate()` on boot,
+  `touch(id)` on store mutation (subscribe in `main.tsx`), `flushChatPersistenceNow()` on
+  `beforeunload`.
+- **Tests**: `tests/chat-persistence.test.mjs` (new, 6 unit cases). Gate `pnpm run check`
+  EXIT:0 — unit 517 (511+6), integration 11, check-rust OK (incl. Tauri shell), smoke 106,
+  e2e:ui + e2e:editor-reload PASS, licenses 59, architecture OK, sanitize DRY-RUN 0.
 
 ### S9.6-008 — Broker AI-egress loopback (`POST /chat`, AI SDK stream)
 
