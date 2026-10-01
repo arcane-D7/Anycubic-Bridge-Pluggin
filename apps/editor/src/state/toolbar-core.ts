@@ -45,17 +45,40 @@ export function isViewPreset(value: unknown): value is ViewPreset {
   return value === "iso" || value === "top" || value === "front" || value === "right";
 }
 
-/** Boolean toggle flags on the toolbar (state-only in 9.4). */
+/** Boolean toggle flags on the toolbar (state-only in 9.4; snapping behavior
+ * lands in 9.7). 9.7-001 adds the boolean-tool armed flag consumed by
+ * `panels/BooleanToolPanel.tsx` (A select → op → B select → execute → result). */
 export interface ToolbarFlags {
   readonly snap: boolean;
   readonly grid: boolean;
+  /** S9.7-001 — boolean tool armed (panel visible in the objects sidebar). */
+  readonly booleanTool: boolean;
 }
 
-export const DEFAULT_TOOLBAR_FLAGS: ToolbarFlags = { snap: true, grid: true };
+export const DEFAULT_TOOLBAR_FLAGS: ToolbarFlags = { snap: true, grid: true, booleanTool: false };
 
 export type ToolbarFlagKey = keyof ToolbarFlags;
 
 /** Toggle one flag, returning a fresh object (identity changes only when set). */
 export function toggleToolbarFlag(flags: ToolbarFlags, key: ToolbarFlagKey): ToolbarFlags {
   return { ...flags, [key]: !flags[key] };
+}
+
+/** S9.7-001 — boolean op codes mirror the preserved server tool
+ * `cad_v2_boolean` (`scripts/cad-bool-tool.mjs`): `add` (union),
+ * `subtract`, `intersect` (the DELETE-difference alias is normalized
+ * server-side — the UI only offers the three canonical ops). */
+export type BooleanOp = "add" | "subtract" | "intersect";
+
+export const BOOLEAN_OPS: readonly BooleanOp[] = ["add", "subtract", "intersect"];
+
+/** Op → human label for the panel rows. */
+export function booleanOpLabel(op: BooleanOp): string {
+  return op === "add" ? "Union" : op === "subtract" ? "Subtract" : "Intersect";
+}
+
+/** Op → compact provenance note stored on the result object (`+bool union A∩B`). */
+export function booleanProvenance(op: BooleanOp, a: string, b: string): string {
+  const opWord = op === "add" ? "union" : op;
+  return `+bool ${opWord} ${a}∩${b}`;
 }

@@ -24,27 +24,37 @@ async function loadCore() {
 
 const corePromise = loadCore();
 
-test("toolbar-core: default flags are snap+grid on (state-only 9.4)", async () => {
+test("toolbar-core: default flags are snap+grid on, boolean tool off (9.4 state / 9.7 arm)", async () => {
   const core = await corePromise;
-  assert.deepEqual(core.DEFAULT_TOOLBAR_FLAGS, { snap: true, grid: true });
+  assert.deepEqual(core.DEFAULT_TOOLBAR_FLAGS, {
+    snap: true,
+    grid: true,
+    booleanTool: false,
+  });
 });
 
-test("toolbar-core: toggleFlag flips one flag and preserves the other", async () => {
+test("toolbar-core: toggleFlag flips one flag and preserves the others", async () => {
   const core = await corePromise;
-  const off = core.toggleToolbarFlag({ snap: true, grid: true }, "snap");
-  assert.deepEqual(off, { snap: false, grid: true });
+  const off = core.toggleToolbarFlag({ snap: true, grid: true, booleanTool: false }, "snap");
+  assert.deepEqual(off, { snap: false, grid: true, booleanTool: false });
   const back = core.toggleToolbarFlag(off, "snap");
-  assert.deepEqual(back, { snap: true, grid: true });
-  const gridOff = core.toggleToolbarFlag({ snap: true, grid: true }, "grid");
-  assert.deepEqual(gridOff, { snap: true, grid: false });
+  assert.deepEqual(back, { snap: true, grid: true, booleanTool: false });
+  const gridOff = core.toggleToolbarFlag({ snap: true, grid: true, booleanTool: false }, "grid");
+  assert.deepEqual(gridOff, { snap: true, grid: false, booleanTool: false });
+  const armed = core.toggleToolbarFlag(
+    { snap: true, grid: true, booleanTool: false },
+    "booleanTool",
+  );
+  assert.deepEqual(armed, { snap: true, grid: true, booleanTool: true });
 });
 
 test("toolbar-core: toggle is immutable (identity changes only when set)", async () => {
   const core = await corePromise;
-  const flags = { snap: true, grid: true };
+  const flags = { snap: true, grid: true, booleanTool: false };
   const next = core.toggleToolbarFlag(flags, "snap");
   assert.notEqual(next, flags); // fresh object
   assert.equal(flags.snap, true); // original untouched
+  assert.equal(flags.booleanTool, false); // untouched too
 });
 
 test("toolbar-core: view preset map + keys (iso/top/front/right + numpad)", async () => {

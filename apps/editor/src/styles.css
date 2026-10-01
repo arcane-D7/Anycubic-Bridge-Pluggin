@@ -665,6 +665,100 @@ body,
   font-size: 10px;
 }
 
+/* Boolean tool panel (S9.7-001) — A→op→B→execute, preview + provenance. */
+.panel-boolean-tool {
+  border-top: 1px solid var(--border);
+  background: var(--glass-fill-1);
+  padding-bottom: 10px;
+}
+
+.panel-boolean-toggle {
+  margin-left: auto;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--ctrl-border);
+  border-radius: 4px;
+  background: var(--ctrl-well);
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.panel-boolean-toggle.is-active {
+  color: var(--accent-primary);
+  border-color: color-mix(in srgb, var(--accent-primary) 45%, transparent);
+}
+
+.panel-boolean-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 10px;
+}
+
+.panel-boolean-body .settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.panel-boolean-body select {
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--ctrl-border);
+  border-radius: 4px;
+  background: var(--ctrl-well);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.panel-boolean-preview {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-tertiary);
+  border: 1px dashed var(--border-strong);
+  border-radius: 4px;
+  padding: 6px 8px;
+  background: var(--ctrl-well);
+}
+
+.settings-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.panel-boolean-execute {
+  height: 30px;
+  border: 1px solid var(--ctrl-border);
+  border-radius: 4px;
+  background: var(--ctrl-well);
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.panel-boolean-execute:hover {
+  border-color: var(--border-strong);
+}
+
+.panel-boolean-execute:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.panel-boolean-done {
+  margin: 0;
+  font-size: 11px;
+  color: var(--accent-primary);
+}
+
 /* Chat harness v1 (S9-006) */
 .chat-empty {
   padding: 12px;

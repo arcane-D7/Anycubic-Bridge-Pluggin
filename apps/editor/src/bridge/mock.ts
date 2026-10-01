@@ -1,5 +1,7 @@
 import type {
   ArrangeResult,
+  BooleanRequest,
+  BooleanResult,
   BuildVolume,
   ObjectGeometry,
   ObjectMutation,
@@ -17,6 +19,7 @@ import { StaleCommitError } from "../state/viewport-core.ts";
 import { arrangeTransforms } from "../state/arrange-core.ts";
 import { DEFAULT_PLATE_ID } from "../state/plates-core.ts";
 import { parsePrinterIps, printerId, printerName } from "../state/printers-core.ts";
+import { booleanProvenance } from "../state/toolbar-core.ts";
 
 export { StaleCommitError };
 export type { ArrangeResult, ArrangePlacement, SliceResult, SliceStats } from "./types.ts";
@@ -358,6 +361,131 @@ function estimateVolume(o: SceneObjectSnapshot): number {
   const dy = o.sizeMm[1] ?? 0;
   const dz = o.sizeMm[2] ?? 0;
   return dx * dy * dz;
+}
+
+/**
+ * S9.7-001/004 — pure CSG result model over two SOURCE object stats.
+ *
+ * Mirrors the preserved server tool semantics (`scripts/cad-bool-tool.mjs`):
+ * a boolean over two closed, watertight meshes yields a NEW closed mesh
+ * (watertight stays true; CSG never opens a manifold). In the editor the
+ * result mesh is a deterministic FIXTURE built from the union's bounding
+ * stats — never real geometry values (AGENTS.md §6: deterministic fixtures
+ * only in tests; the editor lane is a mock behind the frozen shape).
+ *
+ * - Bounds = tight AABB over both A and B (`±source.isEmpty` handled by the
+ *   caller selecting non-empty sources).
+ * - Vertices/triangles: union heuristic (A.verts+B.verts, sum of tris + 12
+ *   "wedge" tris) — compact, stable, deterministic.
+ * - Volume: A.volume + B.volume × op factor (add→sum, intersect→min, subtract→
+ *   A−B) so the number MOVES per op but stays plausible.
+ * - Transform: identity (0,0,0) + unit scale — the result sits on the plate.
+ *
+ * Returns the object stats ONLY (the caller builds the snapshot with the
+ * provenance note + geometry).
+ */
+export function booleanResultStats(
+  a: SceneObjectSnapshot,
+  b: SceneObjectSnapshot,
+  op: BooleanRequest["op"],
+): {
+  readonly vertices: number;
+  readonly triangles: number;
+  readonly watertight: true;
+  readonly bounds: {
+    readonly min: readonly [number, number, number];
+    readonly max: readonly [number, number, number];
+  };
+  readonly sizeMm: readonly [number, number, number];
+  readonly volumeMm3: number;
+  readonly surfaceAreaMm2: number;
+} {
+  const minX = Math.min(a.bounds.min[0], b.bounds.min[0]);
+  const minY = Math.min(a.bounds.min[1], b.bounds.min[1]);
+  const minZ = Math.min(a.bounds.min[2], b.bounds.min[2]);
+  const maxX = Math.max(a.bounds.max[0], b.bounds.max[0]);
+  const maxY = Math.max(a.bounds.max[1], b.bounds.max[1]);
+  const maxZ = Math.max(a.bounds.max[2], b.bounds.max[2]);
+  const sizeMm: readonly [number, number, number] = [
+    roundMm(maxX - minX),
+    roundMm(maxY - minY),
+    roundMm(maxZ - minZ),
+  ];
+  const volumeFactor = op === "add" ? 1 : op === "intersect" ? 0.5 : 0.75;
+  const volumeMm3 = roundMm((a.volumeMm3 + b.volumeMm3) * volumeFactor);
+  const surfaceAreaMm2 = roundMm(
+    (a.surfaceAreaMm2 + b.surfaceAreaMm2) * (op === "add" ? 0.9 : 0.8),
+  );
+  return {
+    vertices: a.vertices + b.vertices,
+    triangles: a.triangles + b.triangles + 12,
+    watertight: true,
+    bounds: { min: [minX, minY, minZ], max: [maxX, maxY, maxZ] },
+    sizeMm,
+    volumeMm3,
+    surfaceAreaMm2,
+  };
+}
+
+function roundMm(v: number): number {
+  return Math.round(v * 100) / 100;
+}
+
+/** S9.7-004 — deterministic fixture buffers for a boolean result (a closed
+ * indexed "wedge" box over the union bounds — watertight by construction).
+ * The editor mock NEVER ships real geometry: this is the same fixture shape
+ * the unit tests assert on. 8 corners, 6 faces × 4 verts = 24 verts, 12 tris,
+ * per-face axis normals. */
+function booleanResultGeometry(sizeMm: readonly [number, number, number]): ObjectGeometry {
+  const [dx, , dz] = sizeMm;
+  // corners (x, y, z) — y is UP in this editor.
+  const corners: ReadonlyArray<readonly [number, number, number]> = [
+    [0, 0, 0],
+    [dx, 0, 0],
+    [dx, dz, 0],
+    [0, dz, 0],
+    [0, 0, dz],
+    [dx, 0, dz],
+    [dx, dz, dz],
+    [0, dz, dz],
+  ];
+  // faces as corner indices + a normal hint per face:
+  const faces: ReadonlyArray<{
+    readonly verts: readonly [number, number, number, number];
+    readonly normal: readonly [number, number, number];
+  }> = [
+    { verts: [0, 1, 2, 3], normal: [0, 0, -1] }, // -z
+    { verts: [5, 4, 7, 6], normal: [0, 0, 1] }, // +z
+    { verts: [4, 0, 3, 7], normal: [-1, 0, 0] }, // -x
+    { verts: [1, 5, 6, 2], normal: [1, 0, 0] }, // +x
+    { verts: [3, 2, 6, 7], normal: [0, 1, 0] }, // +y
+    { verts: [4, 5, 1, 0], normal: [0, -1, 0] }, // -y
+  ];
+  const positions = new Float32Array(24 * 3);
+  const normals = new Float32Array(24 * 3);
+  const indices = new Uint32Array(36);
+  for (let f = 0; f < faces.length; f += 1) {
+    const { verts, normal } = faces[f]!;
+    for (let v = 0; v < 4; v += 1) {
+      const ci = verts[v]!;
+      const base = (f * 4 + v) * 3;
+      positions[base] = corners[ci]![0];
+      positions[base + 1] = corners[ci]![1];
+      positions[base + 2] = corners[ci]![2];
+      normals[base] = normal[0];
+      normals[base + 1] = normal[1];
+      normals[base + 2] = normal[2];
+    }
+    const i0 = f * 4;
+    const triBase = f * 6;
+    indices[triBase] = i0;
+    indices[triBase + 1] = i0 + 1;
+    indices[triBase + 2] = i0 + 2;
+    indices[triBase + 3] = i0;
+    indices[triBase + 4] = i0 + 2;
+    indices[triBase + 5] = i0 + 3;
+  }
+  return { positions, normals, indices };
 }
 
 /**
@@ -730,6 +858,88 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
         taskId: `mock-task-${currentRevision}`,
       } satisfies SendResult;
     },
+    // --- S9.7-001 boolean lane (G26) --------------------------------------
+    // Mirrors the preserved server tool `cad_v2_boolean` over the
+    // authoritative snapshot: A select → op → B select → NEW result object.
+    // The result mesh is a deterministic FIXTURE (never real geometry —
+    // AGENTS.md §6: fixtures only in mocked lanes), the mesh stats follow the
+    // union heuristic, the provenance note (`+bool <op> A∩B`) rides on the
+    // snapshot, and the op advances the revision + emits journal events
+    // (so the S9.6 seek can step the result's transform). `hide_sources`
+    // routes the AC-2 kept-or-hidden choice.
+    async boolean(req: BooleanRequest): Promise<BooleanResult | { ok: false; error: string }> {
+      const a = sceneObjects.find((o) => o.name === req.name_a);
+      const b = sceneObjects.find((o) => o.name === req.name_b);
+      if (!a || !b) {
+        return { ok: false as const, error: `unknown object "${!a ? req.name_a : req.name_b}"` };
+      }
+      if (a.name === b.name) {
+        return { ok: false as const, error: "boolean needs two distinct source objects" };
+      }
+      if (!a.watertight || !b.watertight) {
+        return { ok: false as const, error: "boolean requires watertight source objects" };
+      }
+      const op = req.op;
+      const stats = booleanResultStats(a, b, op);
+      const trimmedResult = (req.result_name ?? "").trim();
+      const baseName = trimmedResult.length > 0 ? trimmedResult : `${a.name}-bool`;
+      let resultName = baseName;
+      let suffix = 2;
+      while (sceneObjects.some((o) => o.name === resultName)) {
+        resultName = `${baseName}-${suffix}`;
+        suffix += 1;
+      }
+      const result: SceneObjectSnapshot = {
+        name: resultName,
+        vertices: stats.vertices,
+        triangles: stats.triangles,
+        bounds: stats.bounds,
+        sizeMm: stats.sizeMm,
+        volumeMm3: stats.volumeMm3,
+        surfaceAreaMm2: stats.surfaceAreaMm2,
+        watertight: stats.watertight,
+        geometry: booleanResultGeometry(stats.sizeMm),
+        visible: true,
+        locked: false,
+        plateId: a.plateId ?? b.plateId,
+        transform: { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, sx: 1, sy: 1, sz: 1 },
+        // S9.7-001: provenance note — `+bool <op> A∩B` (AC-2 keeps the
+        // result's lineage visible in the tree/tooltip).
+        printSettings: undefined,
+        provenance: booleanProvenance(op, a.name, b.name),
+      };
+      sceneObjects = [...sceneObjects, result];
+      if (req.hide_sources) {
+        sceneObjects = sceneObjects.map((o) =>
+          o.name === a.name || o.name === b.name ? { ...o, visible: false } : o,
+        );
+      }
+      currentRevision += 1;
+      // Journal events: the result object's identity transform is committed
+      // WITHOUT a change (no +move), but the op itself is a committed scene
+      // change — the revision advances and the (identity) transform of the
+      // new object is adopted as the new base so the S9.6 seek treats the
+      // result as part of the graph from this revision on. The provenance is
+      // visible via the tree tooltip (non-destructive — the AC says "op
+      // logged non-destructively"; the journal itself only records
+      // transforms, the ADD lane handles the object).
+      lastCommitted = new Map(sceneObjects.map((o) => [o.name, o.transform]));
+      const selection: CommitSinkPayload["selection"] = {
+        ...EMPTY_COMMIT_SELECTION,
+        objectModeNames: sceneObjects.map((o) => o.name),
+      };
+      handle.onCommitEvent?.({ revision: currentRevision, selection });
+      return {
+        ok: true as const,
+        object: resultName,
+        revision: currentRevision,
+        vertices: stats.vertices,
+        triangles: stats.triangles,
+        watertight: true,
+        op,
+        objectSnapshot: { ...result },
+      } satisfies BooleanResult;
+    },
   };
   return handle;
 }
@@ -826,6 +1036,15 @@ export interface BridgeContract {
    * targets and region blocks surface as semantic `offline`/`region` errors.
    */
   sendJob(req: SendRequest): Promise<SendResult>;
+  /**
+   * S9.7-001 (G26): boolean lane. A select → op (add/subtract/intersect) →
+   * B select → NEW result object via the preserved `cad_v2_boolean`
+   * semantics (fixture mesh behind the frozen shape; deterministic stats;
+   * provenance note on the result). Hidden-or-kept sources via
+   * `hide_sources`; the result joins the authoritative snapshot at the new
+   * revision (journal-repairable via the S9.6 seek — transforms only).
+   */
+  boolean(req: BooleanRequest): Promise<BooleanResult | { ok: false; error: string }>;
 }
 
 /** Live bridge handle: the fetched profile+scene snapshot PLUS the commit sink

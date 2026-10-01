@@ -71,6 +71,13 @@ export interface SceneObjectSnapshot extends ObjectMeshInfo {
   readonly printSettings?: Partial<ObjectPrintSettings>;
   /** Per-object filament assignment (S9.6-002). Absent = global filament. */
   readonly filamentId?: string;
+  /**
+   * Non-destructive lineage note (S9.7-001). The boolean lane stamps the
+   * result object with `+bool <op> A∩B` so the object tree/tooltip can show
+   * where it came from (AC-2 provenance). Journal-repairable: the op itself
+   * is never destructive — sources stay until the user hides/deletes them.
+   */
+  readonly provenance?: string;
 }
 
 /**
@@ -264,3 +271,39 @@ export interface SendRequest {
 export type SendResult =
   | { readonly ok: true; readonly taskId: string }
   | { readonly ok: false; readonly error: string; readonly kind: "offline" | "region" | "unknown" };
+
+/**
+ * S9.7-001 boolean lane request (G26). Mirrors the preserved server tool
+ * `cad_v2_boolean` (`scripts/cad-bool-tool.mjs`): the UI picks object A →
+ * op (add/subtract/intersect) → object B → the bridge lane executes the CSG
+ * op over the authoritative snapshot and returns the NEW result object.
+ * `result_name` lets the caller pre-prefix (the lane dedupes to a free
+ * name); `hide_sources` routes the AC-2 "hidden-or-kept" choice.
+ */
+export interface BooleanRequest {
+  readonly name_a: string;
+  readonly name_b: string;
+  readonly op: "add" | "subtract" | "intersect";
+  /** Optional desired result name (deduped when already taken). */
+  readonly result_name?: string;
+  /** When true the source objects are hidden post-commit (AC-2 kept-or-hidden). */
+  readonly hide_sources?: boolean;
+}
+
+/**
+ * S9.7-001 boolean lane result. Mirrors the server's structured content:
+ * `object` = the NEW result object name, `revision` = the commit revision,
+ * mesh stats + `watertight: true` (CSG over closed meshes stays closed),
+ * plus `op` normalized and the resulting snapshot for the UI.
+ */
+export interface BooleanResult {
+  readonly ok: true;
+  readonly object: string;
+  readonly revision: number;
+  readonly vertices: number;
+  readonly triangles: number;
+  readonly watertight: true;
+  readonly op: "add" | "subtract" | "intersect";
+  /** The new result snapshot (authoritative post-commit). */
+  readonly objectSnapshot: SceneObjectSnapshot;
+}

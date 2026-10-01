@@ -334,7 +334,10 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
                   onClick={(e) => e.stopPropagation()}
                 />
               ) : (
-                <span className="object-name" title={o.name}>
+                <span
+                  className="object-name"
+                  title={o.provenance ? `${o.name} — ${o.provenance}` : o.name}
+                >
                   {o.name}
                 </span>
               )}

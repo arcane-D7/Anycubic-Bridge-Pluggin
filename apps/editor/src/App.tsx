@@ -10,6 +10,7 @@ import { ImportDialog } from "./panels/ImportDialog";
 import { ObjectTree } from "./panels/ObjectTree";
 import { TransformInspector } from "./panels/TransformInspector";
 import { ObjectSettingsPanel } from "./panels/ObjectSettingsPanel";
+import { BooleanToolPanel } from "./panels/BooleanToolPanel";
 import { Timeline } from "./panels/Timeline";
 import { SettingsPanel } from "./panels/SettingsPanel";
 import { buildPreviewModel } from "./viewport/preview-model";
@@ -251,6 +252,7 @@ export function App() {
               <ObjectTree scene={scene} onOpenImport={() => setImportOpen(true)} />
               <TransformInspector scene={scene} />
               <ObjectSettingsPanel scene={scene} />
+              <BooleanToolPanel scene={scene} />
             </>
           ) : null}{" "}
           {sidebarView === "chat" ? <ChatPanel /> : null}
