@@ -1,0 +1,172 @@
+import { FRAME_SELECTED_EVENT } from "../state/shortcuts-core";
+import { useToolbar, type ViewPreset } from "../state/toolbar";
+import { useUi, type ToolMode } from "../state/ui";
+import { Icon, type IconName } from "../components/icons";
+import { shortcutFor, shortcutLabel } from "../state/shortcuts";
+
+/**
+ * S9.4-001 floating viewport toolbar (AC-1/AC-2).
+ *
+ * Glass fill-2 / blur-2 row floating top-center OVER the canvas (mounted inside
+ * `.viewport-frame`, sibling of the R3F canvas so it never blocks 3D input
+ * except where it visually sits). Hosts:
+ * - tool modes Select/Move/Rotate/Scale → `useUi.setTool` (the S9.3-001 gizmo
+ *   reacts; the S9.3-003 shortcut layer Q/W/E/R also drives this store).
+ * - snap + grid toggles → `useToolbar` STATE ONLY in 9.4 (real snapping
+ *   behavior lands 9.7); the `grid` flag also toggles BuildPlate grid lines.
+ * - Arrange → placeholder (S9.4-004 wires the server cad-arrange lane).
+ * - Fit view → F shortcut equivalent (FRAME_SELECTED_EVENT).
+ * - View presets iso/top/front/right + numpad (S9.4-002 camera tween listener).
+ *
+ * Tooltips carry the matching shortcut labels (110ms via CSS transition delay;
+ * `shorcutFor`/`shortcutLabel` from the shared registry so menus/toolbar/help
+ * stay in sync).
+ */
+
+/** Custom DOM event the camera listener (S9.4-002 ViewCube/Viewport) watches. */
+export const VIEW_PRESET_EVENT = "anycubic:viewport-preset";
+
+const TOOLS: readonly {
+  readonly mode: ToolMode;
+  readonly icon: IconName;
+  readonly label: string;
+}[] = [
+  { mode: "select", icon: "snap", label: "Select" },
+  { mode: "move", icon: "move", label: "Move" },
+  { mode: "rotate", icon: "rotate", label: "Rotate" },
+  { mode: "scale", icon: "scale", label: "Scale" },
+];
+
+const PRESETS: readonly {
+  readonly preset: ViewPreset;
+  readonly label: string;
+  readonly key: string;
+}[] = [
+  { preset: "iso", label: "Isometric", key: "1" },
+  { preset: "top", label: "Top", key: "2" },
+  { preset: "front", label: "Front", key: "3" },
+  { preset: "right", label: "Right", key: "4" },
+];
+
+export function Toolbar() {
+  const tool = useUi((s) => s.tool);
+  const setTool = useUi((s) => s.setTool);
+  const snap = useToolbar((s) => s.snap);
+  const grid = useToolbar((s) => s.grid);
+  const toggleFlag = useToolbar((s) => s.toggleFlag);
+
+  const dispatchPreset = (preset: ViewPreset) => {
+    window.dispatchEvent(
+      new CustomEvent<{ preset: ViewPreset }>(VIEW_PRESET_EVENT, { detail: { preset } }),
+    );
+  };
+
+  const onArrange = () => {
+    // S9.4-004 wires the server cad-arrange lane; for now the toolbar is live.
+    useUi.getState().pushToast({
+      kind: "info",
+      title: "Arrange",
+      message: "Auto-arrange wires in S9.4-004.",
+    });
+  };
+
+  const onFit = () => {
+    window.dispatchEvent(new CustomEvent(FRAME_SELECTED_EVENT));
+  };
+
+  const toolTip = (id: string) => {
+    const entry = shortcutFor(id);
+    return entry ? shortcutLabel(entry) : undefined;
+  };
+
+  return (
+    <div
+      className="viewport-toolbar"
+      data-testid="viewport-toolbar"
+      role="toolbar"
+      aria-label="Viewport tools"
+    >
+      <div className="toolbar-group" role="group" aria-label="Transform tools">
+        {TOOLS.map(({ mode, icon, label }) => (
+          <button
+            type="button"
+            key={mode}
+            className={`toolbar-btn${tool === mode ? " is-active" : ""}`}
+            aria-pressed={tool === mode}
+            aria-label={label}
+            title={`${label} (${toolTip(`tool.${mode}`) ?? ""})`}
+            data-testid={`tool-${mode}`}
+            onClick={() => setTool(mode)}
+          >
+            <Icon name={icon} size={18} />
+            <span className="toolbar-btn-label">{label}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="toolbar-group" role="group" aria-label="View toggles">
+        <button
+          type="button"
+          className={`toolbar-btn toolbar-toggle${snap ? " is-active" : ""}`}
+          aria-pressed={snap}
+          aria-label="Snap"
+          title={`Snap (${toolTip("snap.toggle") ?? ""})`}
+          data-testid="toggle-snap"
+          onClick={() => toggleFlag("snap")}
+        >
+          <Icon name="snap" size={18} />
+        </button>
+        <button
+          type="button"
+          className={`toolbar-btn toolbar-toggle${grid ? " is-active" : ""}`}
+          aria-pressed={grid}
+          aria-label="Grid"
+          title={`Grid (${toolTip("grid.toggle") ?? ""})`}
+          data-testid="toggle-grid"
+          onClick={() => toggleFlag("grid")}
+        >
+          <Icon name="grid" size={18} />
+        </button>
+      </div>
+
+      <div className="toolbar-group" role="group" aria-label="Scene actions">
+        <button
+          type="button"
+          className="toolbar-btn"
+          aria-label="Arrange"
+          title="Auto-arrange"
+          data-testid="toolbar-arrange"
+          onClick={onArrange}
+        >
+          <Icon name="arrange" size={18} />
+        </button>
+        <button
+          type="button"
+          className="toolbar-btn"
+          aria-label="Fit view"
+          title={`Fit view (${toolTip("view.fit") ?? ""})`}
+          data-testid="toolbar-fit"
+          onClick={onFit}
+        >
+          <Icon name="fit" size={18} />
+        </button>
+      </div>
+
+      <div className="toolbar-group toolbar-view-presets" role="group" aria-label="View presets">
+        {PRESETS.map(({ preset, label, key }) => (
+          <button
+            type="button"
+            key={preset}
+            className="toolbar-btn"
+            aria-label={`View ${label}`}
+            title={`${label} (${key})`}
+            data-testid={`view-${preset}`}
+            onClick={() => dispatchPreset(preset)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}

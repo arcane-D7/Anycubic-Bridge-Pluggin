@@ -994,6 +994,89 @@ input {
   margin-left: auto;
   color: var(--text-dim);
 }
+/* S9.4-001 floating viewport toolbar — glass fill-2/blur-2 row, top-center. */
+.viewport-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  background: var(--glass-fill-2);
+  -webkit-backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  border: 1px solid var(--glass-stroke);
+  box-shadow:
+    var(--shadow-inset-hi),
+    inset 0 0 0 1px var(--border-strong),
+    var(--shadow-2);
+  border-radius: var(--r-lg);
+}
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.toolbar-group + .toolbar-group {
+  margin-left: 4px;
+  padding-left: 4px;
+  border-left: 1px solid var(--border-strong);
+}
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 8px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition:
+    background 110ms ease,
+    color 110ms ease;
+  position: relative;
+}
+.toolbar-btn:hover:not(:disabled) {
+  background: var(--bg-raised);
+  color: var(--text);
+}
+.toolbar-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.toolbar-btn.is-active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.toolbar-btn.is-active::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+.toolbar-btn-label {
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+.toolbar-view-presets .toolbar-btn {
+  min-width: 40px;
+  text-transform: uppercase;
+  font-size: 10px;
+}
 .sidebar-collapsed .panel-left,
 .sidebar-collapsed .app-main > .panel-divider {
   display: none;

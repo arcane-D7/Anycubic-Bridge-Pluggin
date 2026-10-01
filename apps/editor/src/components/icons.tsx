@@ -29,6 +29,9 @@ export type IconName =
   | "folder"
   | "snap"
   | "grid"
+  | "move"
+  | "rotate"
+  | "scale"
   | "redo"
   | "undo";
 
@@ -161,6 +164,27 @@ const PATHS: Record<IconName, ReactNode> = {
         d="M1.8 8h12.4M8 1.8v12.4M5 1.8v12.4M11 1.8v12.4M1.8 5h12.4M1.8 11h12.4"
         strokeLinecap="round"
       />
+    </>
+  ),
+  move: (
+    <>
+      <path
+        d="M8 1.5v13M1.5 8h13M8 4l-2.5 2.5M8 4l2.5 2.5M8 12l-2.5-2.5M8 12l2.5-2.5M4 8l2.5-2.5M4 8l2.5 2.5M12 8l-2.5-2.5M12 8l-2.5 2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </>
+  ),
+  rotate: (
+    <>
+      <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13.5 1.8v3.2h-3.2" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  scale: (
+    <>
+      <path d="M1.8 1.8v12.4h12.4V1.8z" />
+      <path d="M6.3 1.8v12.4M1.8 6.3h12.4M4.6 4.6h3.4v3.4M1.8 1.8l3 3M14.2 1.8l-3 3" />
     </>
   ),
   undo: (

@@ -13,6 +13,7 @@ import { LayerPreview, previewFit } from "./LayerPreview";
 import { ModalInteraction } from "./ModalInteraction";
 import { RendererGuard } from "./RendererGuard";
 import { SceneObjectModel } from "./SceneObjectModel";
+import { Toolbar } from "./Toolbar";
 import { TransformGizmo } from "./TransformGizmo";
 import type { PreviewModel } from "./preview-model";
 
@@ -55,6 +56,7 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
 
   return (
     <ViewportFrame bridge={scene}>
+      <Toolbar />
       <RendererGuard scene={scene} />
       <Canvas
         camera={{ position: [180, 260, 320], fov: 40, near: 0.1, far: 10000 }}
@@ -88,6 +90,7 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
       </Canvas>
       {preview ? (
         <div className="viewport-preview-controls" data-testid="preview-controls">
+          {" "}
           <span className="preview-mode" data-testid="preview-mode-label">
             mode: {preview.mode}
           </span>
