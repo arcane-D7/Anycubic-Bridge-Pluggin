@@ -497,8 +497,8 @@ WebKitGTK support streaming fetch POST. **No provider URLs / egress in webview c
 | **Priority**         | P0                                                                 |
 | **Type**             | Quality                                                            |
 | **Estimated Effort** | S                                                                  |
-| **Status**           | ✅ Delivered (`3d9b5a2`)                                           |
-| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 522) · commit `3d9b5a2`             |
+| **Status**           | ✅ Delivered (`fd74016`)                                           |
+| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 522) · commit `fd74016`             |
 
 #### Context
 
