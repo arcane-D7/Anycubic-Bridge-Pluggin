@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (polish)                                                                                                 |
 | **Source**            | Consultor report 2026-09-30 §2 (9.8) + audit G34/G35/G37/G38/G42/G44/G45/G46                                         |
 | **Depends On**        | Sprints 9.1–9.7 (everything)                                                                                         |
-| **Status**            | 🔄 In progress (2/7) — 001, 002 delivered (2026-10-02)                                                               |
+| **Status**            | 🔄 In progress (3/7) — 001, 002, 003 delivered (2026-10-02)                                                          |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -118,7 +118,7 @@ drei `Html` or manual projection to keep canvas clean.
 | **Priority**         | P1                                                                    |
 | **Type**             | Feature                                                               |
 | **Estimated Effort** | M                                                                     |
-| **Status**           | ⏳ Planned                                                            |
+| **Status**           | ✅ Delivered @ `f7d2aad` (2026-10-02)                                 |
 
 #### Context
 
@@ -130,6 +130,18 @@ geometry).
 #### Acceptance criteria
 
 - [x] Distance/radius/angle measurements correct on real geometry; readout mono; cleared on exit.
+
+#### Implementation notes
+
+- `measure-core.ts` pure headless (distance3 / circumRadius degenerate-safe / angleDeg / pushProbe
+  residual reducer / formatMeasure); `state/measure.ts` zustand bus; `MeasureTool.tsx` in-canvas
+  (THREE.Raycaster against real S9.2 meshes via `scene.getObjectByName(name).traverse`);
+  `MeasureReadout.tsx` out-of-canvas mono bottom-left + Dist/R/∠ switcher + clear.
+- Toolbar toggle (icon `measure`), M key via `shortcuts-core`, ToolMode `measure` (ui.ts),
+  gizmo hidden for measure (TransformGizmo), Viewport wiring in-canvas + overlay.
+- Tests: `tests/measure.test.mjs` 9 headless + M shortcut asserted in `tests/shortcuts.test.mjs`.
+- Gate 2026-10-02: unit 571 pass / 0 fail (561 base + 9 + 1), integration 11, smoke 106,
+  e2e:ui PASS, e2e:editor-reload PASS, licenses 59, architecture OK, sanitize DRY-RUN 0.
 
 ### S9.8-004 — Dirty state + local persistence
 
