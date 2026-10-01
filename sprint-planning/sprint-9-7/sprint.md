@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (modeling) + bridge                                                                                                                                       |
 | **Source**            | Consultor report 2026-09-30 §2 (9.7) + audit G26/G31/G33/G46                                                                                                          |
 | **Depends On**        | Sprints 9.2/9.3 (graph + transforms) + server `cad_v2_boolean`                                                                                                        |
-| **Status**            | 🔄 In progress (3/5) — 001-003 delivered (2026-10-02)                                                                                                                 |
+| **Status**            | 🔄 In progress (4/5) — 001-004 delivered (2026-10-02)                                                                                                                 |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -178,14 +178,15 @@ mode, objectSnapshot}` behind the frozen snapshot shape.
 
 ### S9.7-004 — Bridge boolean + repair lanes + tests
 
-| Field                | Value                                               |
-| -------------------- | --------------------------------------------------- |
-| **Ticket ID**        | S9.7-004                                            |
-| **Title**            | `bridge/mock.ts` boolean + repair lanes; unit tests |
-| **Priority**         | P1                                                  |
-| **Type**             | Feature                                             |
-| **Estimated Effort** | M                                                   |
-| **Status**           | ⏳ Planned                                          |
+| Field                | Value                                                                            |
+| -------------------- | -------------------------------------------------------------------------------- |
+| **Ticket ID**        | S9.7-004                                                                         |
+| **Title**            | `bridge/mock.ts` boolean + repair lanes; unit tests                              |
+| **Priority**         | P1                                                                               |
+| **Type**             | Feature                                                                          |
+| **Estimated Effort** | M                                                                                |
+| **Status**           | ✅ Delivered (b0cd3b8)                                                           |
+| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 546) · docs-only formalization · commit `b0cd3b8` |
 
 #### Context
 
@@ -196,6 +197,20 @@ flips flag. Deterministic fixtures only — no real geometry values.
 #### Acceptance criteria
 
 - [x] Lanes + tests green; gate passes with the new tests counted.
+
+#### Implementation Notes
+
+- Formalization (docs-only) — the lanes and their unit tests were already delivered inside
+  their owning tickets and counted in the gate:
+  - boolean lane `boolean(req)` in `bridge/mock.ts` + `BooleanRequest`/`BooleanResult` in
+    `bridge/types.ts` + `tests/boolean-tool.test.mjs` (+7) → delivered in S9.7-001 (commit
+    `94f1912`).
+  - repair lane `repair(req)` in `bridge/mock.ts` + `RepairRequest`/`RepairResult` in
+    `bridge/types.ts` + `tests/repair.test.mjs` (+8) → delivered in S9.7-003 (commit `7542979`).
+- AC proof: the S9.7-003 gate (`$env:TEMP\s9-7-003-check1.log`, GATE_EXIT=0) ran the full
+  `pnpm run check` with BOTH test files counted — unit **546** pass / 0 fail. Progression:
+  522 (sprint 9.6 baseline) → 529 (+7 boolean, 001) → 538 (+9 snap, 002) → 546 (+8 repair, 003) — the boolean AND repair lanes + tests are green together under the full health check.
+- No code changes in this ticket; commit is docs-only with format:check + sanitizer dry-run 0.
 
 ### S9.7-005 — Gate + sanitizer
 
