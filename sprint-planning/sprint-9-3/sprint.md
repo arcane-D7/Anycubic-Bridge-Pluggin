@@ -51,7 +51,7 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Priority**         | P0                                                             |
 | **Type**             | Feature                                                        |
 | **Estimated Effort** | L                                                              |
-| **Status**           | ⏳ Planned                                                     |
+| **Status**           | ✅ Delivered (2026-10-01, commit `7b1eb21`)                    |
 
 #### Context
 
@@ -67,6 +67,52 @@ design system (X `#e0523f`/`#f2725f`, Y `#2f9e63`/`#4cb57c`, Z `#3f7fd4`/`#6aaef
 - [x] Pointer-up commits real values through the S7-004 contract; Esc cancels + rolls back.
 - [x] Gizmo axis colors follow theme; selection outline hidden during transient drags.
 - [x] Gizmo + OrbitControls fully operable while the chat panel floats over the viewport (pointer-event isolation verified).
+
+#### Implementation notes
+
+**What shipped (7 files, commit `7b1eb21`):**
+
+- `apps/editor/src/viewport/TransformGizmo.tsx` — real drei `<TransformControls>` on the
+  selected object. Gesture lifecycle: `onObjectChange` persists a provisional
+  `mutateObject({kind:"setTransform"})` (real drag values, deg↔rad), pointer-up runs
+  `runFlow(bridge,"gizmo")` (S7-004 begin→update→commit), Esc restores the pre-drag
+  transform via the mutation lane + `cancel(revision)`. Mode maps from the toolbar tool
+  (Q select / W move / E rotate / R scale) — Q/W/E/R handled here (full shortcut layer is
+  S9.3-003). Target = the `SceneObjectModel` root `<group name={name}>` resolved from the
+  R3F scene graph, so gizmo drags move the OBJECT, never the geometry buffers.
+- `apps/editor/src/viewport/transform-core.ts` — dependency-free pure helpers: identity /
+  `normalizeTransform` (fills rx/ry/rz=0, sx/sy/sz=1), `applyTransform` (position +
+  euler DEG→RAD rotation + scale), `isOverlayPanel` (AC-4 pointer isolation core).
+- `apps/editor/src/viewport/SceneObjectModel.tsx` — root `<group name={info.name}>` now
+  applies `applyTransform(info.transform)` (position/rotation/scale), so gizmo moves are
+  visible; prop type widened to `SceneObjectSnapshot`.
+- `apps/editor/src/viewport/Viewport.tsx` — mounts `<TransformGizmo bridge={scene}
+selectedName={...}/>` inside Canvas when `!preview`, selection from the scene store.
+- `apps/editor/src/state/ui.ts` — `ToolMode = "select" | "move" | "rotate" | "scale"` +
+  `tool`/`setTool` in the UI store.
+- `apps/editor/src/bridge/types.ts` — `SceneObjectSnapshot.transform` + `ObjectMutation
+setTransform` extended with optional `rx/ry/rz` (euler DEGREES) + `sx/sy/sz`.
+
+**Acceptance evidence:**
+
+- AC-1 (gizmo + real drag updates): unit `transform-core` (9 tests, 7 helpers + 2 AC-2
+  bridge lane) + browser probe — selection → W → gizmo mounts without page errors.
+- AC-2 (commit via contract): `runFlow(bridge,"gizmo")` drives begin→update→commit with
+  revision advance; `mutateObject setTransform` persists real values into the
+  authoritative snapshot (2 new tests in `tests/transform-core.test.mjs`).
+- AC-3 (axis colors): three-stdlib 2.36.1 ships NO public `setColors()`, so colors are
+  applied post-mount by traversing the gizmo children and setting `material.color` per
+  axis (X `#e0523f`, Y `#2f9e63`, Z `#3f7fd4`) — shared per-axis materials make this
+  exactly the desired semantics. Honest note: per-axis theme var injection (hover/
+  active tints `#f2725f`/`#4cb57c`/`#6aaef7`) is not reachable without forking the lib.
+- AC-4 (pointer isolation): `isOverlayPanel` (pure, tested) + live `pointermove` listener
+  recomputes `overPanel` → gizmo `enabled={false}` over floating panels; verified in the
+  browser with the chat panel detached over the viewport (0 page/console errors, panel
+  and gizmo both operable).
+
+**Gate:** `pnpm run check` EXIT:0 — unit 350 pass, lint, typecheck, Rust (auth + editor
+shell), smoke 106 tools, e2e:ui PASS, e2e:editor-reload PASS, licenses 59, architecture
+OK, sanitize DRY-RUN 0 files.
 
 ### S9.3-002 — Numeric transform inspector
 
