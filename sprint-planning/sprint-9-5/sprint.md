@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (flow) + bridge                                                                                                                                  |
 | **Source**            | Consultor report 2026-09-30 §2 (9.5) + audit G24/G25/G43                                                                                                     |
 | **Depends On**        | Sprints 9.3/9.4 (transforms/plates correct before slicing) + 9.1 (tokens)                                                                                    |
-| **Status**            | 🚧 In progress (4/6 tickets delivered)                                                                                                                       |
+| **Status**            | 🚧 In progress (5/6 tickets delivered)                                                                                                                       |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -293,7 +293,7 @@ states, token hashing); send progress + completion toast; error states (offline/
 | **Priority**         | P1                                                    |
 | **Type**             | Feature                                               |
 | **Estimated Effort** | M                                                     |
-| **Status**           | ⏳ Planned                                            |
+| **Status**           | ✅ Delivered (f2fa490)                                |
 
 #### Context
 
@@ -304,6 +304,23 @@ revision re-base), mirroring the integration contract used by the real pipeline.
 #### Acceptance criteria
 
 - [x] Mock lanes + unit tests cover every state transition and error path; gate green.
+
+#### Implementation notes
+
+- Slice/printers/send lanes were already shipped behind the frozen shape (S9.5-002/003/004);
+  this ticket closed the machine-coverage gap with `tests/printjob-machine.test.mjs` (18 cases):
+  - Guards: cancel from idle → cancelled; stage index > total out-of-range rejected; stage /
+    send-* events outside their state rejected; preflight with all-watertight clears a prior
+    `blockedBy` (repair unblocks start); start blocked while `blockedBy` non-empty (rejected
+    with the offending names); finish requires slicing; error rejected from ready/sent;
+    error allowed from idle; start rejected from error (recovery via preflight).
+  - Full send retry cycle: send-error → ready (stats preserved) → send-start → send-stage →
+    send-finished → sent with `sendProgress: 1`; monotonic send-stage progression.
+  - Lane determinism: repeated slices never advance the revision and produce identical stats;
+    custom `layerHeightMm` flows through (`ceil(28/0.3)=94` — cone base circle spans Z ± 14);
+    slice stats `revision` mirrors the snapshot revision.
+- Gate green: unit **469** (451+18), integration 11, check:rust OK, build OK, smoke **106 tools**,
+  e2e:ui PASS + e2e:editor-reload PASS, licenses 59, architecture OK, sanitize DRY-RUN 0 files.
 
 ### S9.5-006 — Gate + sanitizer
 

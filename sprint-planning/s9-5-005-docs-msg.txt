@@ -1,0 +1,6 @@
+docs(s9.5-005): mark slice lane + machine tests delivered (5/6)
+
+sprint.md: S9.5-005 moved to ✅ Delivered (f2fa490) with implementation
+notes (guards covered, retry cycle, lane determinism, gate counts).
+Header status updated to 🔄 In progress (5/6 tickets delivered).
+sprint-overview.md: row 9.5 → 🔄 In progress (5/6) @ f2fa490.
