@@ -83,7 +83,7 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
 |  9.1 |    P0    | Design System (Tailwind v4 + shadcn, liquid glass, light/dark)     |       6 | M      | ✅ Done              | [sprint](sprint-9-1/sprint.md)  | `85b72e3`   |
 | 9.1a |    P1    | Dock / Panel-Layout Foundation (floating detachable panels, chat)  |       5 | M      | ✅ Done              | [sprint](sprint-9-1a/sprint.md) | `3dc8ad7`   |
 |  9.2 |    P0    | Real Geometry, Import & Scene Graph (kill unit boxes)              |       6 | L      | ✅ Done              | [sprint](sprint-9-2/sprint.md)  | `c691c3f`   |
-|  9.3 |    P0    | Transform Controls, Numeric Inspector & Shortcuts (object control) |       5 | L      | 🔄 In progress (1/5) | [sprint](sprint-9-3/sprint.md)  | `7b1eb21`   |
+|  9.3 |    P0    | Transform Controls, Numeric Inspector & Shortcuts (object control) |       5 | L      | 🔄 In progress (2/5) | [sprint](sprint-9-3/sprint.md)  | `75c102f`   |
 |  9.4 |    P0    | Plate, Auto-Arrange, Toolbar & View Presets                        |       6 | M      | ⏳ Planned           | [sprint](sprint-9-4/sprint.md)  | —           |
 |  9.5 |    P0    | Slice / Preview / Print Flow (G25 close)                           |       6 | L      | ⏳ Planned           | [sprint](sprint-9-5/sprint.md)  | —           |
 |  9.6 |    P1    | Presets, Object Properties, Undo Surface & Isolated Chat History   |       9 | M      | ⏳ Planned           | [sprint](sprint-9-6/sprint.md)  | —           |

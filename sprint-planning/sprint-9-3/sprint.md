@@ -123,7 +123,7 @@ OK, sanitize DRY-RUN 0 files.
 | **Priority**         | P0                                                                                       |
 | **Type**             | Feature                                                                                  |
 | **Estimated Effort** | M                                                                                        |
-| **Status**           | ⏳ Planned                                                                               |
+| **Status**           | ✅ Delivered (2026-10-01, commit `75c102f`)                                              |
 
 #### Context
 
@@ -136,6 +136,51 @@ warning when non-uniform (thin-walls risk). Layout density per design spec (36px
 - [x] Inspector reads/writes real transform values from/to the bridge snapshot.
 - [x] Enter/blur commits; relative mode works; reset returns to origin/identity.
 - [x] Diffs between draft and committed transform surface in the status bar (dirty state).
+
+#### Implementation notes
+
+**What shipped (10 files, commit `75c102f`):**
+
+- `apps/editor/src/panels/TransformInspector.tsx` — numeric X/Y/Z inspector mounted in the
+  **objects** sidebar under the ObjectTree. Groups for position / rotation / scale with
+  36px mono tabular-nums rows (design density). Per-kind `abs/rel` toggle (relative seeds
+  delta baseline: 0 for position/rotation, 1 for scale), per-axis copy X→Y/Z (⇥), per-kind
+  reset (↺ to 0, or 1 on scale). Edits commit on **Enter or blur** through the
+  authoritative bridge lane — `scene.mutateObject({kind:"setTransform", name, transform})`
+  - `invalidateQueries(["bridge","scene"])` (the ObjectTree persist pattern). Esc restores
+    the committed snapshot field values.
+- `apps/editor/src/state/transform-inspector.ts` — dependency-free pure core:
+  `InspectorTransform` (x/y/z/rx/ry/rz in DEG /sx/sy/sz), `parseAxisValue` ("", invalid
+  handling), `axisValue`/`withAxisValue`, `resolveKind` (absolute replaces; relative adds
+  position/rotation, multiplies scale; other kinds untouched), `dirtyKinds` (AC-3), reset
+  defaults, `isNonUniformScale`/`isResized` warnings, `prettyRotation`/`prettyScale`
+  display rounding, `sameTransform`.
+- `apps/editor/src/state/scene-core.ts` + `state/scene.ts` — `setTransform` event/reducer
+  widened to the full transform shape (was position-only) so the inspector commits real
+  rotation/scale values into the graph store.
+- `apps/editor/src/state/ui.ts` — dirty-state slice: `dirtyTransformName` /
+  `dirtyKinds` / `setDirtyTransform` / `clearDirtyTransform`.
+- `apps/editor/src/components/status-bar.tsx` — AC-3 chip: shows
+  `name: position|rotation|scale` while a draft differs from the committed snapshot;
+  clears on commit/deselection (never stale).
+- CSS: `inspector-*` block in `styles.css`, `.status-dirty` in `index.css`.
+
+**Acceptance evidence:**
+
+- AC-1 (real values in/out): inspector reads the selected object's transform from the
+  store snapshot (cube −16/0/−10, cone 14/0/14 observed) and writes via the bridge
+  `setTransform` lane; mock round-trip test asserts the full shape
+  (`x/y/z/rx/ry/rz/sx/sy/sz`) persists into the snapshot and unknown objects reject.
+- AC-2 (commit + relative + reset): unit tests cover absolute commit, relative add
+  (position/rotation) and multiply (scale), and reset to origin/identity; browser probe
+  verified Enter commits (bridge re-fetch → re-hydrate) and field re-fill.
+- AC-3 (dirty state): `dirtyKinds` diff + `useUi` slice drive the status-bar chip; browser
+  verified the chip appears on edit (`cube: position`) and disappears after commit and on
+  deselection (global clear when no selection, per-kind clear when draft matches).
+
+**Gate:** `pnpm run check` EXIT:0 — unit **361** pass (350 prior + 11 inspector), lint,
+typecheck, Rust (auth + editor shell), smoke 106 tools, e2e:ui PASS, e2e:editor-reload
+PASS, licenses 59, architecture OK, sanitize DRY-RUN 0 files.
 
 ### S9.3-003 — Shortcut layer
 
