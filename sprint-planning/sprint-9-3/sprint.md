@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport)                                                                                                                                     |
 | **Source**            | Consultor report 2026-09-30 §2 (9.3) + audit G2/G3/G8/G32/G30                                                                                              |
 | **Depends On**        | Sprint 9.2 (graph + real meshes)                                                                                                                           |
-| **Status**            | 🚧 In progress (3/5 tickets delivered)                                                                                                                     |
+| **Status**            | 🚧 In progress (4/5 tickets delivered)                                                                                                                     |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -272,7 +272,7 @@ PASS, licenses 59, architecture OK, sanitize DRY-RUN 0 files.
 | **Priority**         | P0                                                                                    |
 | **Type**             | Feature                                                                               |
 | **Estimated Effort** | M                                                                                     |
-| **Status**           | ⏳ Planned                                                                            |
+| **Status**           | ✅ Delivered (2026-10-02, commit `8f8069b`)                                           |
 
 #### Context
 
@@ -284,6 +284,54 @@ S7-005 journal events (`+move`, `+rotate`, `+scale`) for Ctrl+Z/Y soft re-import
 
 - [x] begin/update/commit carry real transform values; commit returns new authoritative revision.
 - [x] Stale-revision path exercised by a unit test; journal events emitted per op.
+
+#### Implementation notes
+
+**What shipped (3 files, commit `8f8069b`):**
+
+- `apps/editor/src/bridge/mock.ts` — real modal lane replacing the `ok:true` no-ops:
+  - `journalEventsFor(before, after, name, revision)` (NEW, pure) — normalizes absent
+    defaults (x/y/z=0, rx/ry/rz=0, sx/sy/sz=1) and emits `+move` if ANY of x/y/z changed,
+    `+rotate` if ANY rx/ry/rz changed, `+scale` if ANY sx/sy/sz changed. `from`/`to` carry
+    only their own-kind fields (S7-005 shape).
+  - `fetchSceneSnapshot()` now owns `lastCommitted: Map<name, transform>` (seeded from
+    scene objects), `session: {token, beginRevision, start: Map<name, transform>}` and a
+    module-scoped `journal: TransformJournalEvent[]`; the handle exposes
+    `journal: readonly TransformJournalEvent[]`.
+  - `begin(revision)` snapshots every object transform into `session.start` and returns
+    `{ok:true, token}`; `update(revision)` stays provisional (NO-OP, does not advance);
+    `commit(expectedRevision)` throws `StaleCommitError` when the caller's revision is
+    stale, else advances `currentRevision`, diffs each object vs `lastCommitted`, appends
+    events to the journal, fires `onCommitEvent`, and returns
+    `{ok, newRevision, selection, journalEvents}`; `cancel(beginRevision)` restores all
+    transforms from `session.start` when the token matches.
+  - Revision is FROZEN on the handle at fetch time; the authoritative revision lives in the
+    closure and advances only on commit — callers must re-read `result.newRevision`.
+- `apps/editor/src/bridge/types.ts` — `TransformJournalEvent` interface
+  (`{kind: "+move"|"+rotate"|"+scale", name, revision, from, to}` with
+  `Readonly<Record<string, number>>` payloads); `BridgeContract.commit` gains
+  `journalEvents: TransformJournalEvent[]`; `BridgeHandle` gains `journal`.
+- `tests/bridge-transform-lane.test.mjs` (NEW) — 7 unit tests: 3 pure
+  `journalEventsFor` (move-only exact fields, rotation+scale, equal→nothing) + 2 AC-1
+  (commit returns new authoritative revision with real transform values; journal
+  accumulates across commits using `c1.newRevision`) + 2 AC-2 (stale commit refused with
+  `StaleCommitError{expected, actual}` and advances nothing; cancel rolls back all
+  objects to the session start transforms).
+
+**Acceptance evidence:**
+
+- AC-1 (real values + authoritative revision): commit diffs real transforms — unit asserts
+  `moveEv.from {x:-16,y:0,z:-10}` → `to {x:0,y:0,z:0}` with kinds
+  `["+move","+rotate","+scale"]` and `journal[0].revision === c1.newRevision`; the
+  second commit uses the fresh revision (never the frozen handles) and accumulates.
+- AC-2 (stale rebase + journal): stale `commit(starterRev)` rejects with expected/actual
+  mismatch and advances nothing; a follow-up legit commit at the advanced revision
+  succeeds; `cancel` restores the pre-gesture transforms with an empty journal.
+
+**Gate:** `pnpm run check` EXIT:0 (log: `$env:TEMP\s9-3-004-check2.log`, `GATE_EXIT=0`) —
+unit 379 pass, integration 11 pass, lint clean, typecheck clean, Rust (auth + editor
+shell), smoke 106 tools, e2e:ui PASS, e2e:editor-reload PASS, licenses 59, architecture
+OK, sanitize DRY-RUN 0 files.
 
 ### S9.3-005 — Gate + sanitizer
 
