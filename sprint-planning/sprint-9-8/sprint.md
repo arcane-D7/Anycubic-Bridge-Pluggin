@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (polish)                                                                                                 |
 | **Source**            | Consultor report 2026-09-30 §2 (9.8) + audit G34/G35/G37/G38/G42/G44/G45/G46                                         |
 | **Depends On**        | Sprints 9.1–9.7 (everything)                                                                                         |
-| **Status**            | 🔄 In progress (4/7) — 001, 002, 003, 004 delivered (2026-10-02)                                                     |
+| **Status**            | 🔄 In progress (5/7) — 001, 002, 003, 004, 005 delivered (2026-10-02)                                                |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -191,7 +191,7 @@ never a committed path). Revision deltas from viewport-core drive the chip.
 | **Priority**         | P2                                                                  |
 | **Type**             | Feature                                                             |
 | **Estimated Effort** | L                                                                   |
-| **Status**           | ⏳ Planned                                                          |
+| **Status**           | ✅ Delivered @ `741e748` (2026-10-02)                               |
 
 #### Context
 
@@ -204,6 +204,30 @@ and floating-panel chrome.**
 #### Acceptance criteria
 
 - [x] Full PT/EN coverage; toggle switches live; no hardcoded UI strings in source.
+
+#### Implementation notes
+
+- New pure core `state/i18n-core.ts` (`Locale = "en" | "pt-BR"`, `SUPPORTED_LOCALES`,
+  `LOCALE_KEY = "anycubic:locale"`, `defaultLocale()` with navigator/system guard, `isLocale`,
+  `type MsgKey` union ~500 keys, full EN/PT tables with parity enforced by `localeKeysMatch`.
+  New zustand store `state/i18n.ts` (`useI18n` → `{locale, t, setLocale}`; stable `t` ref;
+  `setLocale` persists to localStorage and swaps `{locale, t}`).
+- Migrated every UI surface to `t()`: App shell, status bar, Toolbar, PrinterPicker,
+  theme-toggle, SliceButton/SliceProgress/SliceStatsPanel, ImportDialog, ChatPanel/ChatThread/
+  ConversationList/ConversationQuickSwitcher, dock-panel/FloatingPanelHost, ObjectTree,
+  SettingsPanel (`settings-language` toggle), ObjectSettingsPanel, Timeline, TransformInspector,
+  BooleanToolPanel, ContextMenu (aria), ViewCube, MeasureReadout, Viewport, Labels, PlateTabs,
+  NonWatertightBadges, PrintJobDialog, shortcut-help, toast-viewport, dirty-chip, SnapController,
+  ModalInteraction.
+- New key namespaces: `send.dismiss`, `app.toast.dismissAria`, `modal.transformValueAria`,
+  `snap.step`, `dirty.*` (chip + save/restore + toasts), plus earlier `measure.kind.*`,
+  `viewport.repairLabel`, `shortcut.group.*`. Product names/units/glyphs deliberately untranslated.
+- Contracts preserved: `context-menu-items.ts`/`context-menu-core.ts`/`toolbar.ts`/`toolbar-core.ts`
+  untouched (labels + `booleanOpLabel` contracts); test ids/e2e unchanged.
+- Notes file: `sprint-planning/sprint-9-8/notes-s9-8-005.md`.
+- Gate 2026-10-02: prettier/lint/typecheck OK, unit 586 pass / fail 0 (577 + 9 i18n tests),
+  integration 11, check-rust OK, build OK, smoke 106, e2e:ui PASS + e2e:editor-reload PASS,
+  licenses 59, architecture OK, sanitize DRY-RUN 0 files.
 
 ### S9.8-006 — Perf + stability pass
 
