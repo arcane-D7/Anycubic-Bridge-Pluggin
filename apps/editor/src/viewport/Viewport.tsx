@@ -15,6 +15,8 @@ import { RendererGuard } from "./RendererGuard";
 import { SceneObjectModel } from "./SceneObjectModel";
 import { Toolbar } from "./Toolbar";
 import { TransformGizmo } from "./TransformGizmo";
+import { ViewCube } from "./ViewCube";
+import { ViewportCamera } from "./ViewportCamera";
 import type { PreviewModel } from "./preview-model";
 
 interface ViewportProps {
@@ -86,8 +88,10 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
         )}
         {!preview && scene ? <TransformGizmo bridge={scene} selectedName={selectedName} /> : null}
         {!preview ? <FrameSelectedCamera /> : null}
+        {!preview ? <ViewportCamera /> : null}
         <OrbitControls makeDefault enableDamping />
       </Canvas>
+      {!preview ? <ViewCube /> : null}
       {preview ? (
         <div className="viewport-preview-controls" data-testid="preview-controls">
           {" "}

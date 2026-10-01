@@ -1077,6 +1077,57 @@ input {
   text-transform: uppercase;
   font-size: 10px;
 }
+/* S9.4-002 view cube — DOM glass tile bottom-right, 3×3 faces/corners/home. */
+.view-cube {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 6;
+  display: grid;
+  gap: 2px;
+  padding: 4px;
+  background: var(--glass-fill-2);
+  -webkit-backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  border: 1px solid var(--glass-stroke);
+  box-shadow:
+    var(--shadow-inset-hi),
+    inset 0 0 0 1px var(--border-strong),
+    var(--shadow-2);
+  border-radius: var(--r-lg);
+  user-select: none;
+}
+.view-cube-row {
+  display: flex;
+  gap: 2px;
+}
+.view-cube-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 5px;
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  transition:
+    background 110ms ease,
+    color 110ms ease;
+}
+.view-cube-cell:hover:not(:disabled) {
+  background: var(--sel-bg, var(--bg-raised-2));
+  color: var(--text);
+}
+.view-cube-cell.is-home {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  font-size: 14px;
+}
 .sidebar-collapsed .panel-left,
 .sidebar-collapsed .app-main > .panel-divider {
   display: none;
