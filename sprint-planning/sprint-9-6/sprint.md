@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (panels)                                                                                                                                                                                                                                                                                            |
 | **Source**            | Consultor report 2026-09-30 §2 (9.6) + audit G14/G20/G21/G22/G23/G30/G36 + Consultor ronda 2 §3 (chat)                                                                                                                                                                                                          |
 | **Depends On**        | Sprint 9.5 (slice consumes presets) + Sprint 9.1a (dock host)                                                                                                                                                                                                                                                   |
-| **Status**            | 🔄 In progress (3/9)                                                                                                                                                                                                                                                                                            |
+| **Status**            | 🔄 In progress (4/9)                                                                                                                                                                                                                                                                                            |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -207,13 +207,40 @@ from the graph store + mesh bounds computed at import/transform time.
 | **Priority**         | P1                                                                                        |
 | **Type**             | Feature                                                                                   |
 | **Estimated Effort** | L                                                                                         |
-| **Status**           | ⏳ Planned                                                                                |
+| **Status**           | ✅ Delivered (02ac1e2)                                                                    |
+| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 496) · commit `0f04062`                                    |
 
 #### Context
 
 G30. Journal events render as a filmstrip in the bottom panel: commit glyphs + delta chips
 (`+move`, `+bool`), mono timestamps, click-to-seek (restore authoritative snapshot at revision).
 Ctrl+Z/Y now drive the journal instead of soft reflow (upgrading the 9.3 soft hooks).
+
+#### Implementation Notes
+
+- `apps/editor/src/state/journal-core.ts` — pure/headless: `journalRevisions`, `journalHeadRevision`,
+  `journalSeekTarget` (undo/redo), `seekTransformsAt` (per-revision authoritative transform map:
+  backward walk undoes events with `revision > target` by applying `from` over the kind fields),
+  `journalEventsByRevision`, `isAtHead`/`isAtBase`, `journalDeltaLabel`/`journalEventLabel` chips.
+  Fixed TS trap: `Required<Pick<SceneObjectSnapshot["transform"], …>>` → unknown when the field is
+  optional → explicit `SceneTransformFull` interface instead.
+- `apps/editor/src/state/journal.ts` — `useJournal` cursor store: `seekTo(rev)` applies the soft
+  re-import per name via `scene.setTransform` (S7-005 bridge is authority; store only remembers the
+  cursor), `step(undo|redo)` no-ops at head/base, `reset()` on hydrate.
+- `apps/editor/src/panels/Timeline.tsx` — journal strip above the timeline: Undo/Redo buttons
+  (testids `journal-undo`/`journal-redo`, disabled via `journalNavState`), per-revision chips
+  (testid `journal-rev-<rev>`, `aria-pressed`, active/head classes, `commit-dot`), delta chips
+  (`delta-chip move|rotate|scale`) via `journalEventsByRevision`; `attachJournal` wires the handle
+  journal on load.
+- `apps/editor/src/hooks/useShortcuts.ts` — Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y now step the REAL
+  journal (`useJournal.getState().step`) with toasts "Journal undo/redo to revision N." instead of
+  the old soft snapshot re-import.
+- `apps/editor/src/styles.css` — journal strip/commit/delta chip styles + nav disabled state, placed
+  before `.timeline-row`.
+- `tests/journal-core.test.mjs` — 8 cases: revision list ascending, delta labels, undo/redo seek
+  targets respecting the cursor, head/base seek semantics (base restores pre-journal transforms),
+  partial seek, events grouped per revision ordered, at-head/at-base flags. Fixtures: cube
+  `{x:40,y:0,z:10,sx:2}` + cone `{rz:45}` with two revisions.
 
 #### Acceptance criteria
 
