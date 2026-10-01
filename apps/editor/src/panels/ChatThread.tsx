@@ -1,6 +1,6 @@
 import { useChat } from "@ai-sdk/react";
 import { useState } from "react";
-import { createMockChatTransport, type ChatTransportLike } from "../bridge/mock";
+import { createChatTransport } from "../bridge/chat-transport";
 import { useChatConversations, type UIMessageLike } from "../state/chat-conversations";
 import type { UIMessage } from "ai";
 
@@ -12,14 +12,16 @@ import type { UIMessage } from "ai";
  * The store is the source of truth: the transcript returns to
  * `upsertMessages` on `onFinish` ONLY (single reliable snapshot point); the
  * AI SDK's own id-keyed localStorage persistence is never used. The offline
- * mock transport is the dev default; the real broker lane lands in S9.6-008.
+ * mock transport is the dev default; setting `ANYCUBIC_BROKER_URL` (S9.6-008)
+ * pins the lane to the Rust broker loopback (`POST /chat` SSE) — stored
+ * history + persistence stay identical either way.
  *
  * The model output proposes capabilities only — it has NO direct printer
  * capability (harness posture); the broker gates every proposal.
  */
 
-/** Offline mock transport singleton (stable ref across remounts). */
-const MOCK_TRANSPORT: ChatTransportLike = createMockChatTransport();
+/** Stable transport singleton (module-level, per broker-lane selection). */
+export const CHAT_TRANSPORT = createChatTransport();
 
 export function ChatThread({
   conversationId,
@@ -31,16 +33,16 @@ export function ChatThread({
   const upsertMessages = useChatConversations((s) => s.upsertMessages);
   const [draft, setDraft] = useState("");
 
-  // Stable module-level mock transport; the SDK memoizes the Chat on id +
-  // transport identity. The real broker transport (S9.6-008) replaces this —
-  // the store stays the source of truth either way.
+  // Stable module-level transport (mock dev default OR broker lane when
+  // ANYCUBIC_BROKER_URL is set); the SDK memoizes the Chat on id + transport
+  // identity. The store stays the source of truth either way.
   const chat = useChat({
     id: conversationId,
     // Hydrate from the store on remount — NOT setMessages in an effect (the
     // Chat state is created in the constructor; a post-mount setMessages
     // would race the useSyncExternalStore snapshot).
     messages: initialMessages as UIMessage[],
-    transport: MOCK_TRANSPORT as never,
+    transport: CHAT_TRANSPORT as never,
     onFinish: ({ messages: final, isAbort, isError }) => {
       if (isAbort || isError) return;
       upsertMessages(conversationId, final);
@@ -64,9 +66,10 @@ export function ChatThread({
       <div className="chat-transcript" data-testid="chat-transcript">
         {messages.length === 0 ? (
           <div className="chat-empty">
-            <p>No messages yet — offline dev transport (S9.6-005).</p>
+            <p>No messages yet — offline dev transport (S9.6-005/008).</p>
             <p className="panel-hint">
-              Send a message to get a canned mock reply; the real broker lane lands in S9.6-008.
+              Send a message to get a canned mock reply; set ANYCUBIC_BROKER_URL to pin the chat
+              lane to the Rust broker loopback.
             </p>
           </div>
         ) : (

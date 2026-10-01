@@ -21,10 +21,13 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; connect-src 'self' http://127.0.0.1:* http://localhost:* http://localhost:1420 ws://localhost:1420"
     }
   },
   "bundle": {
-    "active": false
+    "active": false,
+    "macOS": {
+      "infoPlist": "Info.plist"
+    }
   }
 }
