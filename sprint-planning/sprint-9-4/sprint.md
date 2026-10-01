@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport + toolbar)                                                                                                                                             |
 | **Source**            | Consultor report 2026-09-30 §2 (9.4) + audit G7/G12/G13/G15/G16/G36                                                                                                          |
 | **Depends On**        | Sprint 9.3 (arrange targets need real transforms)                                                                                                                            |
-| **Status**            | 🚧 In progress (4/6 tickets delivered)                                                                                                                                       |
+| **Status**            | 🚧 In progress (5/6 tickets delivered)                                                                                                                                       |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -240,7 +240,7 @@ transform inspector (behavior 9.7).
 | **Priority**         | P1                                                   |
 | **Type**             | Feature                                              |
 | **Estimated Effort** | S                                                    |
-| **Status**           | ⏳ Planned                                           |
+| **Status**           | ✅ Delivered (afa5dec)                               |
 
 #### Context
 
@@ -250,6 +250,34 @@ plate dims; right revision + dirty chip (`● 3 unsaved`). Pairs with G36/G44 sc
 #### Acceptance criteria
 
 - [x] Status bar shows selected coords (mono), current plate dims, revision + dirty chip.
+
+#### Implementation notes
+
+- New dependency-free core `apps/editor/src/state/statusbar-core.ts` (S9.4-005):
+  - `formatCoords(transform)` → mono string `x 12.3  y -4.1  z 0.6` (1 decimal, d1 helper);
+  - `positionOf(o)` → identity 0 when transform absent;
+  - `plateBounds(objects)` → scene-space AABB (bounds min/max offset by transform
+    position, rotation read as identity, scale as 1 — same convention as arrange
+    core); null on empty set;
+  - `formatPlateDims(b)` → `40 × 10 × 40 mm` label;
+  - `unsavedCount(plateDirty, objectsOnPlate, dirtyTransformName, objects)` →
+    draft wins (1 if the draft belongs to any object), else plate-dirty = count.
+- `components/status-bar.tsx` subscribes to scene selection + plate membership:
+  after the build-volume segment, a selected anchor shows `status-coords` (mono,
+  tooltip `cone position (mm)`, e.g. `x 0 y -13 z 14`); when the ACTIVE plate has
+  objects, `status-plate-dims` renders the scene AABB label (tooltip
+  `Plate 1 scene bounds (mm)`). Keeps the S9.3-002 draft kinds chip
+  (`cone: position` on uncommitted inspector edit) and adds `● N unsaved`
+  (`status-dirty-chip`, draft closed + plate dirty) counting active-plate objects.
+- Verified in browser (snapshot): `3 objects · mm · 250×250×250 · x 0 y -13 z 14 ·
+53 × 26 × 28 mm · rev 8`; typing x=10 into the inspector surfaced the draft chip
+  `cone: position` without mutating the committed coords.
+- Tests `tests/statusbar-core.test.mjs` (7 cases — JS only, prettier-safe): mono
+  rounding, identity transform, AABB aggregation over two placed objects, null on
+  empty set, dims label, draft vs plate-dirty counting. Gate: unit 415 pass / fail
+  0, integration 11 pass, smoke 106 tools, e2e:ui + e2e:editor-reload PASS,
+  licenses + architecture OK, sanitize DRY-RUN 0 files, GATE_EXIT=0.
+- Commit `afa5dec` — 3 files, +255 (prettier + sanitize hook clean).
 
 ### S9.4-006 — Gate + sanitizer
 
