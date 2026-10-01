@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (panels)                                                                                                                                                                                                                                                                                            |
 | **Source**            | Consultor report 2026-09-30 §2 (9.6) + audit G14/G20/G21/G22/G23/G30/G36 + Consultor ronda 2 §3 (chat)                                                                                                                                                                                                          |
 | **Depends On**        | Sprint 9.5 (slice consumes presets) + Sprint 9.1a (dock host)                                                                                                                                                                                                                                                   |
-| **Status**            | 🔄 In progress (1/9)                                                                                                                                                                                                                                                                                            |
+| **Status**            | 🔄 In progress (2/9)                                                                                                                                                                                                                                                                                            |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -98,14 +98,15 @@ watertight preflight).
 
 ### S9.6-002 — Per-object print settings + filament assignment
 
-| Field                | Value                                          |
-| -------------------- | ---------------------------------------------- |
-| **Ticket ID**        | S9.6-002                                       |
-| **Title**            | Per-object settings fork + filament assignment |
-| **Priority**         | P1                                             |
-| **Type**             | Feature                                        |
-| **Estimated Effort** | M                                              |
-| **Status**           | ⏳ Planned                                     |
+| Field                | Value                                                  |
+| -------------------- | ------------------------------------------------------ |
+| **Ticket ID**        | S9.6-002                                               |
+| **Title**            | Per-object settings fork + filament assignment         |
+| **Priority**         | P1                                                     |
+| **Type**             | Feature                                                |
+| **Estimated Effort** | M                                                      |
+| **Status**           | ✅ Delivered (fd123c6)                                 |
+| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 483) · commit `fd123c6` |
 
 #### Context
 
@@ -116,6 +117,43 @@ panel) with a clear "using global / overridden" indicator.
 #### Acceptance criteria
 
 - [x] Object override toggle works; reset-to-parent restores; slice honors per-object values.
+
+#### Implementation Notes
+
+- `apps/editor/src/bridge/types.ts` — `SceneObjectSnapshot` gains `printSettings?: Partial<ObjectPrintSettings>`
+  - `filamentId?: string`; new `ObjectPrintSettings` (12 fields: layerHeightMm, lineWidthMm,
+    nozzleDiameterMm, wallLoops, topBottomLayers, infillDensityPct, infillPattern, nozzleTempC,
+    bedTempC, fanPct, printSpeedMmS); new `ObjectMutation` kind `setObjectSettings` (`name` +
+    optional `settings` Partial + optional `filamentId`).
+- `apps/editor/src/state/scene-core.ts` — `setObjectSettings` case in `reduceSceneGraph`:
+  `settings !== undefined` → fork `printSettings: {...event.settings}` else clear fork
+  (`printSettings: undefined`); `filamentId` set only when settings present + filamentId
+  present, cleared on reset, preserved otherwise.
+- `apps/editor/src/state/scene.ts` — `SceneStore.setObjectSettings` (bridge-lane persist via
+  `reduceSceneGraph` with conditional spread).
+- `apps/editor/src/bridge/mock.ts` — `setObjectSettings` case in `mutateObject` (same
+  fork/clear/filament logic, returns updated objects); `computeSliceStats` now honours
+  per-object `printSettings.layerHeightMm` — layer count per object is `ceil(z / perObjectLH)`
+  (global for non-forked), so a finer forked object increases total layers. Removed dead
+  `maxZ` accumulator.
+- `apps/editor/src/panels/ObjectSettingsPanel.tsx` — object detail section: "using global /
+  overridden" indicator (testid `object-settings-mode`), `Override settings` toggle (forks
+  `GLOBAL_DEFAULTS` mirroring SettingsPanel draft), `Reset to parent` (clears fork), filament
+  select (`object-filament-select`, option `global` + FILAMENT_PRESETS; `global` →
+  reset-to-parent), 10 editable fields (testid `object-setting-<key>`, disabled until fork).
+  Persists via bridge lane + query invalidation (ObjectTree/TransformInspector pattern).
+- `apps/editor/src/App.tsx` — mounts `<ObjectSettingsPanel scene={scene} />` in `sidebarView ===
+"objects"` after `<TransformInspector />`.
+- `apps/editor/src/styles.css` — `.panel-object-settings`, `.object-settings-mode`
+  (+ `.overridden`), `.object-settings-indicator`, `.object-settings-actions button`,
+  `.object-settings-fields` (`[disabled]`), `.settings-field`/`.settings-value` tweaks.
+- `tests/object-settings.test.mjs` — 7 cases: reducer fork subset Partial; filament assignment;
+  no-settings clears fork (reset); unknown name no-op (deep-equal); mock mutate persists
+  fork+filament + reset clears; mock unknown object rejects; slice per-object layer height
+  (0.08 fork on 20mm → 250 vs global 100).
+- **Gate** `$env:TEMP\s9-6-002-check1.log` — unit **483** pass / fail 0, integration 11, rust 34,
+  build ok, smoke 106 tools, e2e:ui + e2e:editor-reload PASS, licenses 59, architecture OK,
+  [sanitize] DRY-RUN 0 files.
 
 ### S9.6-003 — Object placement columns
 
