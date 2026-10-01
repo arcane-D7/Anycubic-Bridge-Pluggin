@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (flow) + bridge                                                                                                                                  |
 | **Source**            | Consultor report 2026-09-30 §2 (9.5) + audit G24/G25/G43                                                                                                     |
 | **Depends On**        | Sprints 9.3/9.4 (transforms/plates correct before slicing) + 9.1 (tokens)                                                                                    |
-| **Status**            | 🚧 In progress (5/6 tickets delivered)                                                                                                                       |
+| **Status**            | ✅ Done (6/6 tickets delivered, 2026-10-02)                                                                                                                  |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -324,14 +324,14 @@ revision re-base), mirroring the integration contract used by the real pipeline.
 
 ### S9.5-006 — Gate + sanitizer
 
-| Field                | Value                          |
-| -------------------- | ------------------------------ |
-| **Ticket ID**        | S9.5-006                       |
-| **Title**            | Full gate EXIT:0 + sanitizer 0 |
-| **Priority**         | P0                             |
-| **Type**             | Quality                        |
-| **Estimated Effort** | S                              |
-| **Status**           | ⏳ Planned                     |
+| Field                | Value                                        |
+| -------------------- | -------------------------------------------- |
+| **Ticket ID**        | S9.5-006                                     |
+| **Title**            | Full gate EXIT:0 + sanitizer 0               |
+| **Priority**         | P0                                           |
+| **Type**             | Quality                                      |
+| **Estimated Effort** | S                                            |
+| **Status**           | ✅ Delivered (2026-10-02, closes sprint 9.5) |
 
 #### Context
 
@@ -340,3 +340,17 @@ revision re-base), mirroring the integration contract used by the real pipeline.
 #### Acceptance criteria
 
 - [x] `pnpm run check` EXIT:0; sanitizer 0; commit closes the sprint.
+
+#### Implementation notes
+
+- Full gate run (S9.5-005 check): `pnpm run check` EXIT:0 — format:check, lint,
+  typecheck, unit **469 pass / 0 fail** (printjob-machine +18 new), integration 11,
+  check:rust, build, smoke (106 tools), e2e:ui PASS, e2e:editor-reload PASS,
+  check:licenses OK (59 direct), check:architecture OK,
+  **sanitize DRY-RUN 0 files / 0 substitution groups (usr=mafsc)**.
+- Every sprint commit passed the pre-commit hook (prettier + sanitize dry-run):
+  `9624d20` (001), `19de4f2` (002), `aacadd6` (003 feat) + `1d7cb45` (docs),
+  `5556d00` (004 feat) + `9032f80` (docs), `f2fa490` (005 feat) +
+  `014ea28` (docs) + `eef2684` (chore), docs `81796ae` (001).
+- Sprint 9.5 is **COMPLETE 6/6** — all acceptance criteria met; no ticket left
+  behind (mandatory completion requirement satisfied).

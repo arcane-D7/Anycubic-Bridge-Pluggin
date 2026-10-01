@@ -1,0 +1,8 @@
+docs(s9.5-006): close sprint 9.5 — full gate + sanitizer 0, 6/6 delivered
+
+Sprint 9.5 (Slice / Preview / Print Flow, G25 close) is COMPLETE 6/6.
+sprint.md: header Status ✅ Done (6/6, 2026-10-02); S9.5-006 marked
+✅ Delivered with implementation notes (gate counts from the S9.5-005
+check run: unit 469, integration 11, smoke 106, e2e x2 PASS, licenses 59,
+architecture OK, sanitize DRY-RUN 0; commit trail 9624d20 → eef2684).
+sprint-overview.md: row 9.5 → ✅ Done (6/6) @ 014ea28.
