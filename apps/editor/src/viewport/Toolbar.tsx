@@ -43,6 +43,7 @@ const TOOLS: readonly {
   { mode: "move", icon: "move", label: "Move" },
   { mode: "rotate", icon: "rotate", label: "Rotate" },
   { mode: "scale", icon: "scale", label: "Scale" },
+  { mode: "measure", icon: "measure", label: "Measure" },
 ];
 
 const PRESETS: readonly {
@@ -156,9 +157,13 @@ export function Toolbar({ scene }: ToolbarProps) {
             className={`toolbar-btn${tool === mode ? " is-active" : ""}`}
             aria-pressed={tool === mode}
             aria-label={label}
-            title={`${label} (${toolTip(`tool.${mode}`) ?? ""})`}
+            title={`${label} (${toolTip(mode === "measure" ? "measure.toggle" : `tool.${mode}`) ?? ""})`}
             data-testid={`tool-${mode}`}
-            onClick={() => setTool(mode)}
+            onClick={() =>
+              mode === "measure"
+                ? setTool(tool === "measure" ? "select" : "measure")
+                : setTool(mode)
+            }
           >
             <Icon name={icon} size={18} />
             <span className="toolbar-btn-label">{label}</span>

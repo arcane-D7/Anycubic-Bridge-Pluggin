@@ -34,6 +34,7 @@ import { constrainToAxis } from "./transform-core";
 
 function modeToGizmoMode(tool: ToolMode): "translate" | "rotate" | "scale" | null {
   if (tool === "select") return null;
+  if (tool === "measure") return null; // gizmo-less measure probe (G42)
   if (tool === "move") return "translate";
   return tool;
 }

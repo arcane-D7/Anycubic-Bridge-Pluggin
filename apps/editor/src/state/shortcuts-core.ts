@@ -24,7 +24,8 @@
  */
 
 /** Tool ids exposed to the registry (Q/W/E/R + grab restores). */
-export type ToolCommandId = "tool.select" | "tool.move" | "tool.rotate" | "tool.scale";
+export type ToolCommandId =
+  "tool.select" | "tool.move" | "tool.rotate" | "tool.scale" | "tool.measure";
 
 /** Modal transform grabbed from the keyboard (Blender G/R/S). */
 export type GestureKind = "move" | "rotate" | "scale";
@@ -101,6 +102,8 @@ export function parseShortcutEvent(
   if (key === "q") return { kind: "tool", tool: "tool.select" };
   if (key === "w") return { kind: "tool", tool: "tool.move" };
   if (key === "e") return { kind: "tool", tool: "tool.rotate" };
+  // G42 measure toggle — `M` maps to the measure tool mode.
+  if (key === "m") return { kind: "tool", tool: "tool.measure" };
 
   // Grab-modal modifiers are only meaningful inside an active grab.
   if (ctx.gestureActive) {

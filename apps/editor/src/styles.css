@@ -948,6 +948,76 @@ body,
   padding: 0 4px;
 }
 
+/* S9.8-003 — measure readout overlay (mono, bottom-left) + kind switcher */
+.measure-readout {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--panel-bg, #ffffff);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  font-family: var(--font-mono, ui-monospace, "Cascadia Mono", monospace);
+  font-size: 12px;
+  color: var(--text-primary, #2b2f33);
+  user-select: none;
+}
+
+.measure-readout .measure-kind {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.measure-readout .measure-kind-btn {
+  border: 1px solid var(--border, #cfd4d8);
+  border-radius: 4px;
+  background: var(--panel-bg, #ffffff);
+  color: var(--text-dim, #687078);
+  font: 600 11px/1 var(--font-mono, ui-monospace, monospace);
+  padding: 3px 6px;
+  cursor: pointer;
+}
+
+.measure-readout .measure-kind-btn:hover {
+  color: var(--text-primary, #2b2f33);
+}
+
+.measure-readout .measure-kind-btn.is-active {
+  background: var(--accent-primary, #2f6bd8);
+  border-color: var(--accent-primary, #2f6bd8);
+  color: #ffffff;
+}
+
+.measure-readout .measure-value {
+  font-variant-numeric: tabular-nums;
+  min-width: 64px;
+}
+
+.measure-readout .measure-clear {
+  border: 1px solid var(--border, #cfd4d8);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-dim, #687078);
+  font: 500 10px/1 var(--font-mono, ui-monospace, monospace);
+  padding: 3px 6px;
+  cursor: pointer;
+  text-transform: lowercase;
+}
+
+.measure-readout .measure-clear:hover:not(:disabled) {
+  color: var(--danger-primary, #d33a3a);
+  border-color: var(--danger-primary, #d33a3a);
+}
+
+.measure-readout .measure-clear:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .toolbar-snap-step input {
   width: 44px;
   height: 26px;

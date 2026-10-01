@@ -10,7 +10,7 @@ import { grabStart, grabToggleAxis, type GestureKind, type GrabState } from "./s
 export type ToastKind = "info" | "success" | "warning" | "error";
 
 /** Toolbar interaction mode (S9.3-001): which transform the gizmo drives. */
-export type ToolMode = "select" | "move" | "rotate" | "scale";
+export type ToolMode = "select" | "move" | "rotate" | "scale" | "measure";
 
 export interface Toast {
   readonly id: number;
@@ -124,13 +124,17 @@ export const useUi = create<UiState>()((set, get) => ({
 }));
 
 /** ToolMode → ToolCommandId (registry ids share names 1:1). */
-export function grabToolFor(mode: ToolMode): "tool.move" | "tool.rotate" | "tool.scale" {
+export function grabToolFor(
+  mode: ToolMode,
+): "tool.select" | "tool.move" | "tool.rotate" | "tool.scale" {
+  // measure has no gizmo/grabs — treat as select for a safety fallback.
+  if (mode === "select" || mode === "measure") return "tool.select";
   return mode === "move" ? "tool.move" : mode === "rotate" ? "tool.rotate" : "tool.scale";
 }
 
 /** ToolCommandId → ToolMode (Esc restores the pre-grab tool). */
 export function grabToolToMode(
-  id: "tool.select" | "tool.move" | "tool.rotate" | "tool.scale",
+  id: "tool.select" | "tool.move" | "tool.rotate" | "tool.scale" | "tool.measure",
 ): ToolMode {
   return id === "tool.select"
     ? "select"
@@ -138,5 +142,7 @@ export function grabToolToMode(
       ? "move"
       : id === "tool.rotate"
         ? "rotate"
-        : "scale";
+        : id === "tool.scale"
+          ? "scale"
+          : "measure";
 }

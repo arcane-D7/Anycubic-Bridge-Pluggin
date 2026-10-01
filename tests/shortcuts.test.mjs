@@ -141,6 +141,23 @@ test("parse: Q/W/E tool switch (no grab active)", async () => {
   });
 });
 
+test("parse: M toggles measure tool (G42)", async () => {
+  const { parseShortcutEvent } = await corePromise;
+  const ctx = { gestureActive: false, hasSelection: true };
+  const active = { gestureActive: true, hasSelection: true };
+  assert.deepEqual(parseShortcutEvent(editable.plain("m"), ctx), {
+    kind: "tool",
+    tool: "tool.measure",
+  });
+  // Fires even during a grab — like F, unfazed by the modal.
+  assert.deepEqual(parseShortcutEvent(editable.plain("m"), active), {
+    kind: "tool",
+    tool: "tool.measure",
+  });
+  // But never inside text inputs (AC: no-op while typing).
+  assert.equal(parseShortcutEvent(editable.input("m"), ctx), null);
+});
+
 test("parse: X/Y/Z/Enter/Esc only inside an active grab", async () => {
   const { parseShortcutEvent } = await corePromise;
   const idle = { gestureActive: false, hasSelection: true };
