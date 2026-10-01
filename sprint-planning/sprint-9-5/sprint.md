@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (flow) + bridge                                                                                                                                  |
 | **Source**            | Consultor report 2026-09-30 §2 (9.5) + audit G24/G25/G43                                                                                                     |
 | **Depends On**        | Sprints 9.3/9.4 (transforms/plates correct before slicing) + 9.1 (tokens)                                                                                    |
-| **Status**            | ⏳ Planned                                                                                                                                                   |
+| **Status**            | 🚧 In progress (1/6 tickets delivered)                                                                                                                       |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -53,7 +53,7 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Priority**         | P0                                                                     |
 | **Type**             | Feature                                                                |
 | **Estimated Effort** | L                                                                      |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ✅ Delivered (9624d20)                                                 |
 
 #### Context
 
@@ -66,6 +66,33 @@ and stats panel.
 
 - [x] Machine transitions idle→slicing→preview…sent with stage progress + cancel.
 - [x] Non-watertight objects block slice with actionable repair hint (toast + dialog link).
+
+#### Implementation notes
+
+- New dependency-free core `apps/editor/src/state/printjob-core.ts` (S9.5-001):
+  - `SLICE_STAGES` ordered pipeline stages (prepare → planar-core → IR →
+    postprocess → preview), `SliceStats` (layers, estimatedMinutes,
+    materialGrams, volumeMm3, perObjectMm3), `PrintJobState`, guarded reducer
+    `reducePrintJob` + `sliceEligible` / `blockingObjects` helpers.
+  - Invariants: non-watertight objects block `start` with actionable
+    `blockedBy` names; `cancel` only honoured while slicing (a ready slice is
+    immutable); stale/out-of-order stage index dropped (re-base, never
+    forced); `send-start` requires ready; `send-error` returns to ready
+    (retryable, stats preserved); `error` not allowed from ready/sent.
+- `apps/editor/src/state/printjob.ts` (zustand thin wrapper): preflight /
+  start / advanceStage / finish / cancel / fail / reportSendStage /
+  sendFinished / sendError / reset + type re-exports.
+  GOTCHA TS: field/method collisions in the store interface — state fields
+  `stage`/`error`/`sendStage` forced renames to advanceStage/fail/
+  reportSendStage (zustand `create<Store>()` extends the state shape).
+- Tests `tests/printjob-core.test.mjs` (10 cases, JS pure): eligibility,
+  preflight block with actionable names, full happy path with staged progress
+  and stats, cancel while slicing vs reject-after-finish, stale stage drop,
+  slice failure → error, full send flow (negotiate→upload→sent), send failure
+  retryable with stats preserved, send-start without ready rejected.
+- Gate: unit 425 / fail 0, integration 11, smoke 106 tools, e2e:ui +
+  e2e:editor-reload PASS, licenses + architecture OK, sanitize DRY-RUN 0
+  files, GATE_EXIT=0. Commit `9624d20` — 3 files, +578.
 
 ### S9.5-002 — Slice button + progress + stats panel
 
