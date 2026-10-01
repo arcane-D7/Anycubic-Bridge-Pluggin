@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (panels)                                                                                                                                                                                                                                                                                            |
 | **Source**            | Consultor report 2026-09-30 §2 (9.6) + audit G14/G20/G21/G22/G23/G30/G36 + Consultor ronda 2 §3 (chat)                                                                                                                                                                                                          |
 | **Depends On**        | Sprint 9.5 (slice consumes presets) + Sprint 9.1a (dock host)                                                                                                                                                                                                                                                   |
-| **Status**            | 🔄 In progress (8/9)                                                                                                                                                                                                                                                                                            |
+| **Status**            | ✅ Completed — 9/9 delivered (2026-10-02)                                                                                                                                                                                                                                                                       |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -497,7 +497,8 @@ WebKitGTK support streaming fetch POST. **No provider URLs / egress in webview c
 | **Priority**         | P0                                                                 |
 | **Type**             | Quality                                                            |
 | **Estimated Effort** | S                                                                  |
-| **Status**           | ⏳ Planned                                                         |
+| **Status**           | ✅ Delivered (`3d9b5a2`)                                           |
+| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 522) · commit `3d9b5a2`             |
 
 #### Context
 
@@ -507,3 +508,15 @@ sanitizer 0; commit closes sprint.
 #### Acceptance criteria
 
 - [x] `pnpm run check` EXIT:0; sanitizer 0; commit closes the sprint.
+
+#### Implementation Notes
+
+- **Full gate re-run on clean tree** (`pnpm run check` → EXIT:0, log
+  `$env:TEMP\s9-6-009-check1.log`): unit **522 pass / 0 fail**, integration **11 pass**,
+  `check-rust` OK (broker chat_store 13 + broker-server 7 + editor Tauri shell),
+  smoke **106 tools**, e2e:ui PASS (`objects=4`) + e2e:editor-reload PASS
+  (ChatPanel + overlay mounted, 0 page errors, 0 HTTP 5xx), licenses **59 OK**,
+  `check-architecture` OK, `[sanitize] DRY-RUN — 0 files` → **GATE_EXIT=0**.
+- Tree 100% clean before and after the gate (`git status --short` empty).
+- **Sprint 9.6 closed** — 9/9 tickets delivered (see header). Roadmap next:
+  Sprint 9.7 (5 tickets) then 9.8 (7 tickets).
