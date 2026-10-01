@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (polish)                                                                                                 |
 | **Source**            | Consultor report 2026-09-30 §2 (9.8) + audit G34/G35/G37/G38/G42/G44/G45/G46                                         |
 | **Depends On**        | Sprints 9.1–9.7 (everything)                                                                                         |
-| **Status**            | 🔄 In progress (1/7) — 001 delivered (2026-10-02)                                                                    |
+| **Status**            | 🔄 In progress (2/7) — 001, 002 delivered (2026-10-02)                                                               |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -84,7 +84,7 @@ duplicate/delete), timeline (seek/journal actions).
 | **Priority**         | P1                                                                   |
 | **Type**             | Feature                                                              |
 | **Estimated Effort** | M                                                                    |
-| **Status**           | ⏳ Planned                                                           |
+| **Status**           | ✅ Delivered @ `c6f7e3e` (2026-10-02)                                |
 
 #### Context
 
@@ -95,6 +95,19 @@ drei `Html` or manual projection to keep canvas clean.
 #### Acceptance criteria
 
 - [x] Chips on hover (or always-on per toggle); follow objects during transform; theme-correct.
+
+#### Implementation notes
+
+- Two thin pieces, zero canvas re-renders for labels: `LabelProjector` (in-canvas) projects
+  each object's bounds top-center to NDC each frame from the LIVE group `matrixWorld`
+  (anchor probe registered by SceneObjectModel) into a mutable bus (`state/labels.ts`);
+  `ObjectLabels` (out-of-canvas sibling, like ViewCube) subscribes to the frame counter,
+  converts NDC→CSS (`ndcToViewport`, y-flip), clamps (`clampChip`) and renders glass chips.
+- Pure core `viewport/labels-core.ts` (`statusOf`/`chipLabel`/`ndcToViewport`/`clampChip`);
+  6 headless tests `tests/labels.test.mjs`. Toolbar toggle `toggle-labels` (eye icon) sets
+  `ui.objectLabelsAlwaysOn`. Chips follow gizmo drags (read live matrices).
+- Gate 2026-10-02: unit 561 pass, integration 11, smoke 106, e2e:ui PASS, e2e:editor-reload
+  PASS, licenses 59, architecture OK, sanitize DRY-RUN 0.
 
 ### S9.8-003 — Measure tool
 
