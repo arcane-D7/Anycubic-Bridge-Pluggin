@@ -125,3 +125,23 @@ export interface TransformJournalEvent {
   readonly from: Readonly<Record<string, number>>;
   readonly to: Readonly<Record<string, number>>;
 }
+
+/** Single object placement produced by the arrange lane (mirrors the server's
+ * `placed` array from `scripts/cad-arrange.mjs`). */
+export interface ArrangePlacement {
+  readonly name: string;
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
+}
+
+/** Result of the bridge auto-arrange lane (S9.4-004). */
+export interface ArrangeResult {
+  readonly ok: true;
+  /** Revision after the arrange re-commit. */
+  readonly revision: number;
+  readonly objects: readonly SceneObjectSnapshot[];
+  readonly placed: readonly ArrangePlacement[];
+  readonly warnings: readonly string[];
+}

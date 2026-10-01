@@ -3,6 +3,12 @@ import { useToolbar, type ViewPreset } from "../state/toolbar";
 import { useUi, type ToolMode } from "../state/ui";
 import { Icon, type IconName } from "../components/icons";
 import { shortcutFor, shortcutLabel } from "../state/shortcuts";
+import { usePlates } from "../state/plates";
+import { objectsOnPlate } from "../state/plates-core";
+import { useScene } from "../state/scene";
+import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import type { BridgeHandle } from "../bridge/mock";
 
 /**
  * S9.4-001 floating viewport toolbar (AC-1/AC-2).
@@ -14,7 +20,9 @@ import { shortcutFor, shortcutLabel } from "../state/shortcuts";
  *   reacts; the S9.3-003 shortcut layer Q/W/E/R also drives this store).
  * - snap + grid toggles → `useToolbar` STATE ONLY in 9.4 (real snapping
  *   behavior lands 9.7); the `grid` flag also toggles BuildPlate grid lines.
- * - Arrange → placeholder (S9.4-004 wires the server cad-arrange lane).
+ * - Arrange → S9.4-004: runs the bridge auto-arrange lane (cad-arrange shelf
+ *   packing) over the ACTIVE plate's objects; re-commits their transforms and
+ *   surfaces placements / overflow warnings as a toast.
  * - Fit view → F shortcut equivalent (FRAME_SELECTED_EVENT).
  * - View presets iso/top/front/right + numpad (S9.4-002 camera tween listener).
  *
@@ -48,27 +56,77 @@ const PRESETS: readonly {
   { preset: "right", label: "Right", key: "4" },
 ];
 
-export function Toolbar() {
+interface ToolbarProps {
+  readonly scene: BridgeHandle | undefined;
+}
+
+export function Toolbar({ scene }: ToolbarProps) {
   const tool = useUi((s) => s.tool);
   const setTool = useUi((s) => s.setTool);
   const snap = useToolbar((s) => s.snap);
   const grid = useToolbar((s) => s.grid);
   const toggleFlag = useToolbar((s) => s.toggleFlag);
+  const queryClient = useQueryClient();
+  const pushToast = useUi((s) => s.pushToast);
 
+  // S9.4-004 arrange target = the ACTIVE plate's objects (same filter as the
+  // viewport render so the layout you see is the layout that arranges).
+  const allObjects = useScene((s) => s.objects);
+  const activePlateId = usePlates((s) => s.activeId);
   const dispatchPreset = (preset: ViewPreset) => {
     window.dispatchEvent(
       new CustomEvent<{ preset: ViewPreset }>(VIEW_PRESET_EVENT, { detail: { preset } }),
     );
   };
 
-  const onArrange = () => {
-    // S9.4-004 wires the server cad-arrange lane; for now the toolbar is live.
-    useUi.getState().pushToast({
-      kind: "info",
-      title: "Arrange",
-      message: "Auto-arrange wires in S9.4-004.",
-    });
-  };
+  const onArrange = useCallback(async () => {
+    if (!scene) {
+      pushToast({ kind: "warning", title: "Arrange", message: "Bridge unavailable." });
+      return;
+    }
+    const targets = objectsOnPlate(allObjects, activePlateId);
+    if (targets.length === 0) {
+      pushToast({
+        kind: "info",
+        title: "Arrange",
+        message: "Nothing on the active plate to arrange.",
+      });
+      return;
+    }
+    try {
+      // Layout over the plate footprint from the machine profile contract —
+      // never a hardcoded 220×220 (same rule as BuildPlate).
+      const volume = scene.buildVolume;
+      const res = await scene.arrange({
+        plateW: volume?.widthMm,
+        plateD: volume?.depthMm,
+        gap: 2,
+        center: true,
+      });
+      if (!res.ok) {
+        pushToast({ kind: "error", title: "Arrange", message: res.error });
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["bridge", "scene"] });
+      const overflow = res.warnings.filter((w) => /does not fit|exceeds plate/.test(w));
+      if (overflow.length > 0) {
+        pushToast({
+          kind: "warning",
+          title: "Arrange — overflow",
+          message: `${overflow.length} object${overflow.length === 1 ? "" : "s"} exceed the plate (${overflow[0]!.split(" — ")[0] ?? ""}).`,
+        });
+      } else {
+        pushToast({
+          kind: "success",
+          title: "Arrange",
+          message: `Re-committed ${res.placed.length} object${res.placed.length === 1 ? "" : "s"} onto the active plate.`,
+        });
+      }
+    } catch (err) {
+      console.warn("[toolbar] arrange failed", err);
+      pushToast({ kind: "error", title: "Arrange", message: "Arrange failed — see console." });
+    }
+  }, [scene, allObjects, activePlateId, pushToast, queryClient]);
 
   const onFit = () => {
     window.dispatchEvent(new CustomEvent(FRAME_SELECTED_EVENT));

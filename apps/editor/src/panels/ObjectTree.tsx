@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { BridgeHandle } from "../bridge/mock";
 import type { SceneObjectSnapshot } from "../bridge/types";
 import { Icon } from "../components/icons";
+import { centerOnPlateTransform } from "../state/arrange-core";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +56,7 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
   const duplicate = useScene((s) => s.duplicate);
   const toggleVisible = useScene((s) => s.toggleVisible);
   const toggleLock = useScene((s) => s.toggleLock);
+  const setTransform = useScene((s) => s.setTransform);
 
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -135,6 +137,29 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
   const onToggleLock = (o: SceneObjectSnapshot) => {
     toggleLock(o.name);
     void persist({ kind: "toggleLock", name: o.name });
+  };
+
+  /** S9.4-004 per-object "place on plate": centers X/Y + drops minZ to 0. */
+  const onPlaceOnPlate = (o: SceneObjectSnapshot) => {
+    const t = centerOnPlateTransform(o);
+    setTransform(o.name, t);
+    void persist({ kind: "setTransform", name: o.name, transform: t });
+  };
+
+  /** S9.4-004 auto-arrange (same lane as the toolbar Arrange). */
+  const onAutoArrange = async () => {
+    if (!scene) return;
+    const res = await scene.arrange({
+      plateW: scene.buildVolume?.widthMm,
+      plateD: scene.buildVolume?.depthMm,
+      gap: 2,
+      center: true,
+    });
+    if (!res.ok) {
+      console.warn("[object-tree] arrange rejected:", res.error);
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ["bridge", "scene"] });
   };
 
   const hasSelection = selectedNames.length > 0;
@@ -261,6 +286,14 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
                   >
                     <Icon name="eye" size={14} /> {o.visible ? "Hide" : "Show"}
                   </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={(e: Event) => {
+                      e.preventDefault();
+                      onPlaceOnPlate(o);
+                    }}
+                  >
+                    <Icon name="fit" size={14} /> Place on plate
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive focus:bg-destructive/10 focus:text-destructive"
@@ -318,6 +351,7 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
           title="Arrange"
           data-testid="object-arrange"
           disabled={!scene}
+          onClick={() => void onAutoArrange()}
         >
           <Icon name="arrange" size={14} />
         </button>

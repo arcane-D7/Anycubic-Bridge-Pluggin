@@ -70,7 +70,7 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
 
   return (
     <ViewportFrame bridge={scene}>
-      <Toolbar />
+      <Toolbar scene={scene} />
       <RendererGuard scene={scene} />
       <Canvas
         camera={{ position: [180, 260, 320], fov: 40, near: 0.1, far: 10000 }}

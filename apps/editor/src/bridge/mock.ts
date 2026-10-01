@@ -1,4 +1,5 @@
 import type {
+  ArrangeResult,
   BuildVolume,
   ObjectGeometry,
   ObjectMutation,
@@ -6,8 +7,10 @@ import type {
   TransformJournalEvent,
 } from "./types.ts";
 import { StaleCommitError } from "../state/viewport-core.ts";
+import { arrangeTransforms } from "../state/arrange-core.ts";
 
 export { StaleCommitError };
+export type { ArrangeResult, ArrangePlacement } from "./types.ts";
 
 /**
  * Mock bridge provider (R0 → S9.2). Serves a read-only scene snapshot sourced
@@ -537,6 +540,45 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
       }
       return { ok: true as const, objects: sceneObjects.map((o) => ({ ...o })) };
     },
+    // --- S9.4-004 auto-arrange lane --------------------------------------
+    // Mirrors the server `/api/arrange` (scripts/cad-arrange.mjs): runs the
+    // deterministic shelf-packing layout over the authoritative snapshot,
+    // re-commits the new transforms (revision + 1, journal diff emitted),
+    // and returns placements + overflow warnings for the UI toast.
+    async arrange(opts) {
+      const { transforms, placed, warnings } = arrangeTransforms(sceneObjects, opts);
+      if (transforms.size === 0) {
+        return { ok: false as const, error: "no objects to arrange" };
+      }
+      const before = sceneObjects.map((o) => ({ name: o.name, transform: o.transform }));
+      sceneObjects = sceneObjects.map((o) =>
+        transforms.has(o.name) ? { ...o, transform: transforms.get(o.name) } : o,
+      );
+      currentRevision += 1;
+      const events: TransformJournalEvent[] = [];
+      const beforeBy = new Map(before.map((x) => [x.name, x.transform]));
+      for (const o of sceneObjects) {
+        if (transforms.has(o.name)) {
+          events.push(
+            ...journalEventsFor(beforeBy.get(o.name), o.transform, o.name, currentRevision),
+          );
+        }
+      }
+      if (events.length > 0) journal.push(...events);
+      lastCommitted = new Map(sceneObjects.map((o) => [o.name, o.transform]));
+      const selection: CommitSinkPayload["selection"] = {
+        ...EMPTY_COMMIT_SELECTION,
+        objectModeNames: sceneObjects.map((o) => o.name),
+      };
+      handle.onCommitEvent?.({ revision: currentRevision, selection });
+      return {
+        ok: true as const,
+        revision: currentRevision,
+        objects: sceneObjects.map((o) => ({ ...o })),
+        placed,
+        warnings,
+      } satisfies ArrangeResult;
+    },
   };
   return handle;
 }
@@ -581,6 +623,18 @@ export interface BridgeContract {
   mutateObject(
     mutation: ObjectMutation,
   ): Promise<{ ok: true; objects: SceneObjectSnapshot[] } | { ok: false; error: string }>;
+  /**
+   * S9.4-004: auto-arrange lane. Deterministic shelf-packing layout over the
+   * authoritative objects (port of `scripts/cad-arrange.mjs`); re-commits the
+   * new transforms and returns placements + overflow warnings. Rejects when
+   * the layout is empty.
+   */
+  arrange(opts?: {
+    readonly plateW?: number;
+    readonly plateD?: number;
+    readonly gap?: number;
+    readonly center?: boolean;
+  }): Promise<ArrangeResult | { ok: false; error: string }>;
 }
 
 /** Live bridge handle: the fetched profile+scene snapshot PLUS the commit sink
