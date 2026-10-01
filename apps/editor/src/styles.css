@@ -1972,3 +1972,102 @@ input {
   letter-spacing: 0.08em;
   color: var(--text-tertiary);
 }
+
+/* ------------------------------------------------------------------ */
+/* S9.5-004 — Send-to-print dialog (G25). Reuses the S9-006 approval- */
+/* card mask (pending/approved/rejected + token hash) to gate the only */
+/* path that sends a control order to a printer.                       */
+/* ------------------------------------------------------------------ */
+
+.print-job-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.print-job-send {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--text-on-accent, #fff);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.print-job-send:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.print-job-card {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: min(320px, 80vw);
+}
+
+.send-progress {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.send-progress-bar {
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--bg-raised);
+}
+
+.send-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.35s ease;
+}
+
+.send-stage-label {
+  display: block;
+  margin-top: 2px;
+  font: 10px/1.2 var(--font-mono, ui-monospace, monospace);
+  color: var(--text-tertiary);
+}
+
+.approval-target {
+  font: 11px/1.3 var(--font-mono, ui-monospace, monospace);
+  color: var(--text-dim);
+}
+
+.approval-token {
+  font: 10px/1.2 var(--font-mono, ui-monospace, monospace);
+  color: var(--text-tertiary);
+  user-select: all;
+}
+
+.approval-mismatch {
+  font-size: 11px;
+  color: var(--sema-error, #d64545);
+}
+
+.approval-task {
+  font: 10px/1.2 var(--font-mono, ui-monospace, monospace);
+  color: var(--accent);
+}
+
+.approval-close {
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 11px;
+  cursor: pointer;
+  margin-top: 2px;
+}
+
+.approval-approve {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--text-on-accent, #fff);
+}
+
+.approval-approve:hover:not(:disabled) {
+  filter: brightness(1.08);
+}

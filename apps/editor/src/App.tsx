@@ -25,6 +25,7 @@ import { SliceButton } from "./components/SliceButton";
 import { SliceProgress } from "./components/SliceProgress";
 import { SliceStatsPanel } from "./panels/SliceStatsPanel";
 import { PrinterPicker } from "./components/PrinterPicker";
+import { PrintJobDialog } from "./dialogs/PrintJobDialog";
 import { useShortcuts } from "./hooks/useShortcuts";
 import { OverlayRoot } from "./components/dock/overlay-root";
 import { DockPanel } from "./components/dock/dock-panel";
@@ -330,6 +331,7 @@ export function App() {
         <StatusBar scene={scene} buildVolume={operatorProfile.buildVolume ?? undefined} />
         <SliceProgress />
         <SliceStatsPanel />
+        <PrintJobDialog />
         <Timeline
           scene={scene}
           mode={mode}

@@ -256,3 +256,118 @@ export function reducePrintJob(state: PrintJobState, event: PrintJobEvent): Prin
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// S9.5-004 — send-to-print approval card (approval-card semantics + token
+// hashing, port of the S9-006 chat approval pattern): a concrete effect is
+// shown, a token hash pins the exact payload, and the send lane is ONLY ever
+// triggered by an approved card — never auto-executed.
+// ---------------------------------------------------------------------------
+
+/** Hash of the send token (FNV-1a 64-bit → hex). Pins the exact payload the
+ * user approved — a differing hash at send time means the payload changed and
+ * the card must be re-confirmed, never sent blindly. Pure + deterministic. */
+export function tokenHash(token: string): string {
+  // FNV-1a 32-bit — deterministic, integer-exact (no 64-bit literals that
+  // would exceed Number.MAX_SAFE_INTEGER). The hash only gates equality of
+  // an already-approved payload, not a collision-resistant digest.
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < token.length; i += 1) {
+    hash ^= token.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16);
+}
+
+/** A send-to-print approval card (S9.5-004) — pending until the user acts. */
+export interface SendApprovalCard {
+  readonly id: string;
+  /** What will be sent — NOT executed until approved. */
+  readonly summary: string;
+  readonly printerIp: string;
+  readonly printerName: string;
+  readonly stats: SliceStats;
+  /** FNV-1a hash of the token that pins this exact payload (S9-006 pattern). */
+  readonly tokenHashHex: string;
+  readonly state: "pending" | "approved" | "rejected";
+}
+
+export interface SendJobState {
+  /** Active approval card (null when none/closed). */
+  readonly approval: SendApprovalCard | null;
+  /** Last approved send token hash — used to verify payload at send time. */
+  readonly lastApprovedHash?: string;
+}
+
+export const initialSendJobState: SendJobState = {
+  approval: null,
+  lastApprovedHash: undefined,
+};
+
+export type SendJobEvent =
+  | {
+      readonly kind: "open";
+      readonly summary: string;
+      readonly printerIp: string;
+      readonly printerName: string;
+      readonly stats: SliceStats;
+    }
+  | { readonly kind: "decide"; readonly id: string; readonly approved: boolean }
+  | { readonly kind: "close" };
+
+export interface SendJobOutcome {
+  readonly state: SendJobState;
+  /** Set when the transition was rejected (e.g. unknown card id). */
+  readonly rejected?: readonly string[];
+}
+
+/** Serialise the exact payload the user is approving (for the token hash). */
+export function sendTokenFor(printerIp: string, stats: SliceStats): string {
+  return `${printerIp}|${stats.layers}|${stats.estimatedMinutes}|${stats.volumeMm3}`;
+}
+
+/** Pure reducer for the send-to-print approval card (S9.5-004). */
+export function reduceSendJob(state: SendJobState, event: SendJobEvent): SendJobOutcome {
+  switch (event.kind) {
+    case "open": {
+      const token = sendTokenFor(event.printerIp, event.stats);
+      return {
+        state: {
+          ...state,
+          approval: {
+            id: `send-${token.slice(0, 8)}`,
+            summary: event.summary,
+            printerIp: event.printerIp,
+            printerName: event.printerName,
+            stats: event.stats,
+            tokenHashHex: tokenHash(token),
+            state: "pending",
+          },
+          lastApprovedHash: undefined,
+        },
+      };
+    }
+    case "decide": {
+      const card = state.approval;
+      if (!card || card.id !== event.id) {
+        return { state, rejected: [`unknown approval card "${event.id}"`] };
+      }
+      if (card.state !== "pending") {
+        return { state, rejected: [`card "${event.id}" already decided`] };
+      }
+      return {
+        state: {
+          ...state,
+          approval: {
+            ...card,
+            state: event.approved ? "approved" : "rejected",
+          },
+          lastApprovedHash: event.approved ? card.tokenHashHex : undefined,
+        },
+      };
+    }
+    case "close": {
+      return { state: { ...state, approval: null, lastApprovedHash: undefined } };
+    }
+  }
+}

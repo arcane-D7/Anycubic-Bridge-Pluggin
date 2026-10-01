@@ -10,11 +10,16 @@ import {
   blockingObjects,
   initialPrintJobState,
   reducePrintJob,
+  reduceSendJob,
+  sendTokenFor,
   sliceEligible,
   SLICE_STAGES,
+  tokenHash,
   type ObjectWatertight,
   type PrintJobEvent,
   type PrintJobState,
+  type SendApprovalCard,
+  type SendJobEvent,
   type SendStage,
   type SliceStats,
 } from "./printjob-core";
@@ -22,13 +27,20 @@ import {
 export type {
   PrintJobEvent,
   PrintJobState,
+  SendApprovalCard,
+  SendJobEvent,
   SendStage,
   SliceStage,
   SliceStats,
 } from "./printjob-core";
-export { SLICE_STAGES, sliceEligible, blockingObjects };
+export { SLICE_STAGES, sliceEligible, blockingObjects, tokenHash, sendTokenFor };
 
 interface PrintJobStore extends PrintJobState {
+  // --- S9.5-004 send approval card (approval-card mask) -------------------
+  /** Active send-to-print approval card (null when none/closed). */
+  readonly approval: SendApprovalCard | null;
+  /** Last approved send token hash — send time must match it exactly. */
+  readonly lastApprovedHash?: string;
   /** Preflight against the current plate objects; returns blocked names. */
   readonly preflight: (objects: readonly ObjectWatertight[]) => string[];
   /** Start slicing (guarded by preflight); returns rejected reasons. */
@@ -48,14 +60,29 @@ interface PrintJobStore extends PrintJobState {
   readonly sendError: (reason: string) => void;
   /** Reset to fresh idle (used by the closeout of a sent/cancelled job). */
   readonly reset: () => void;
+  // --- S9.5-004 send approval card (approval-card mask) -------------------
+  /** Open the confirmation card for a ready slice — NOT executed yet. */
+  readonly openSendApproval: (req: {
+    readonly summary: string;
+    readonly printerIp: string;
+    readonly printerName: string;
+    readonly stats: SliceStats;
+  }) => void;
+  /** Approve (true) or reject (false) the pending card. */
+  readonly decideSendApproval: (id: string, approved: boolean) => void;
+  /** Close/dismiss the card (no-op after sent). */
+  readonly closeSendApproval: () => void;
 }
 
-/** Live print job store (zustand, S9.5-001). */
+/** Live print job store (zustand, S9.5-001 + S9.5-004). */
 export const usePrintJob = create<PrintJobStore>()((set, get) => {
   const apply = (event: PrintJobEvent) => set((s) => reducePrintJob(s, event).state);
+  const applySend = (event: SendJobEvent) => set((s) => reduceSendJob(s, event).state);
 
   return {
     ...initialPrintJobState(),
+    approval: null,
+    lastApprovedHash: undefined,
 
     preflight(objects) {
       const blocked = blockingObjects(objects);
@@ -102,8 +129,21 @@ export const usePrintJob = create<PrintJobStore>()((set, get) => {
       apply({ kind: "send-error", reason });
     },
 
+    // --- S9.5-004 send approval card --------------------------------------
+    openSendApproval(req) {
+      applySend({ kind: "open", ...req });
+    },
+
+    decideSendApproval(id, approved) {
+      applySend({ kind: "decide", id, approved });
+    },
+
+    closeSendApproval() {
+      applySend({ kind: "close" });
+    },
+
     reset() {
-      set(initialPrintJobState());
+      set({ ...initialPrintJobState(), approval: null, lastApprovedHash: undefined });
     },
   };
 });

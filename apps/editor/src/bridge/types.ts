@@ -205,3 +205,28 @@ export interface PrinterListResult {
   readonly source: "env";
   readonly printers: readonly PrinterInfo[];
 }
+
+/**
+ * S9.5-004 send-to-print job (G25). The confirmation dialog shows this
+ * summary BEFORE any control order goes out — the send lane is only ever
+ * called after the user approves the card. `printerId` identifies the armed
+ * target from the picker (never a raw IP in the contract surface).
+ */
+export interface SendRequest {
+  readonly printerId: string;
+  /** Printer IP (read-only display/transport hint — the lane validates it). */
+  readonly ip: string;
+  /** The slice result being sent. */
+  readonly stats: SliceStats;
+  /** Human summary shown in the confirmation dialog. */
+  readonly summary: string;
+}
+
+/**
+ * Result of the send-to-print lane (S9.5-004). `ok: false` carries a
+ * semantic error code so the UI can surface offline/region/unknown reasons
+ * as distinct toasts instead of a generic failure.
+ */
+export type SendResult =
+  | { readonly ok: true; readonly taskId: string }
+  | { readonly ok: false; readonly error: string; readonly kind: "offline" | "region" | "unknown" };

@@ -6,6 +6,8 @@ import type {
   PrinterInfo,
   PrinterListResult,
   SceneObjectSnapshot,
+  SendRequest,
+  SendResult,
   SliceRequest,
   SliceResult,
   SliceStats,
@@ -670,8 +672,50 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
       }));
       return { ok: true as const, source: "env", printers } satisfies PrinterListResult;
     },
+    // --- S9.5-004 send-to-print lane (G25) --------------------------------
+    // Deterministic mock of the cloud/LAN print submission. Consumed ONLY
+    // after the approval card is confirmed (the UI never calls it without).
+    // The lane is headless-testable: reachability/region are module-level
+    // seeds (setMockOfflinePrinters / setMockRegionBlocked) so unit tests
+    // cover the error paths without any network. On success it mints a
+    // deterministic mock task id from the current revision.
+    async sendJob(req) {
+      const offline = mockOfflinePrinterIds.has(req.printerId);
+      const region = mockRegionBlocked;
+      if (offline || region) {
+        return {
+          ok: false as const,
+          error: offline
+            ? `printer ${req.ip} is offline`
+            : "print blocked: cloud region not available",
+          kind: offline ? "offline" : "region",
+        } satisfies SendResult;
+      }
+      return {
+        ok: true as const,
+        taskId: `mock-task-${currentRevision}`,
+      } satisfies SendResult;
+    },
   };
   return handle;
+}
+
+/**
+ * S9.5-004 test seams — module-level seeds that make the send lane
+ * deterministic headless. The React layer never sets these (reachability
+ * comes from the LAN probe there); only unit tests do.
+ */
+let mockOfflinePrinterIds: ReadonlySet<string> = new Set();
+let mockRegionBlocked = false;
+
+/** Test seam: mark printer ids the mock treats as offline (S9.5-004). */
+export function setMockOfflinePrinters(ids: readonly string[]): void {
+  mockOfflinePrinterIds = new Set(ids);
+}
+
+/** Test seam: force every send to fail with a region error (S9.5-004). */
+export function setMockRegionBlocked(blocked: boolean): void {
+  mockRegionBlocked = blocked;
 }
 
 const EMPTY_COMMIT_SELECTION: CommitSinkPayload["selection"] = {
@@ -741,6 +785,13 @@ export interface BridgeContract {
    * hardcoded device identifiers, ever.
    */
   discoverPrinters(rawEnv?: string): Promise<PrinterListResult>;
+  /**
+   * S9.5-004 (G25): send-to-print lane. Called ONLY after the user approves
+   * the confirmation card. Validates the target printer, simulates the
+   * cloud/LAN hand-off and returns a deterministic mock task id; offline
+   * targets and region blocks surface as semantic `offline`/`region` errors.
+   */
+  sendJob(req: SendRequest): Promise<SendResult>;
 }
 
 /** Live bridge handle: the fetched profile+scene snapshot PLUS the commit sink
