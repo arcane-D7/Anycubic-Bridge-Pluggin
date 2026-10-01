@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (flow) + bridge                                                                                                                                  |
 | **Source**            | Consultor report 2026-09-30 §2 (9.5) + audit G24/G25/G43                                                                                                     |
 | **Depends On**        | Sprints 9.3/9.4 (transforms/plates correct before slicing) + 9.1 (tokens)                                                                                    |
-| **Status**            | 🚧 In progress (3/6 tickets delivered)                                                                                                                       |
+| **Status**            | 🚧 In progress (4/6 tickets delivered)                                                                                                                       |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -234,7 +234,7 @@ approval dialog.
 | **Priority**         | P0                                                                         |
 | **Type**             | Feature                                                                    |
 | **Estimated Effort** | M                                                                          |
-| **Status**           | ⏳ Planned                                                                 |
+| **Status**           | ✅ Delivered (5556d00)                                                     |
 
 #### Context
 
@@ -246,6 +246,43 @@ states, token hashing); send progress + completion toast; error states (offline/
 
 - [x] Confirmation dialog shows job summary; confirm sends (mock), progress + completion toast.
 - [x] Offline/region errors surface as semantic toasts; approval card semantics preserved.
+
+#### Implementation notes
+
+- Bridge contract (G25): `SendRequest` (printerId, ip, stats, summary — the
+  card shows a human summary, never a raw control order) + `SendResult`
+  (`ok:true` taskId | `ok:false` with semantic `offline`/`region`/`unknown`).
+- Mock lane `sendJob` (headless-deterministic): offline printers / region
+  block via module-level test seams (`setMockOfflinePrinters`,
+  `setMockRegionBlocked`) — the React layer never sets them (reachability
+  lives in the LAN probe); success mints `mock-task-{revision}`.
+- `printjob-core.ts`: `tokenHash` (FNV-1a **32-bit**, integer-exact —
+  the 64-bit literal exceeded `Number.MAX_SAFE_INTEGER` and failed the
+  `no-loss-of-precision` lint, so it was swapped for the 32-bit variant
+  that still pins the exact approved payload), `sendTokenFor` (serialises
+  `ip|layers|minutes|volume`), `reduceSendJob` (open → pending card with
+  `tokenHashHex`; decide → approved/rejected + `lastApprovedHash` recorded
+  only on approval; close → clear). Never auto-executes.
+- `printjob.ts` store: `openSendApproval` / `decideSendApproval` /
+  `closeSendApproval`; store initializer carries `approval: null` +
+  `lastApprovedHash: undefined` (typed on `PrintJobStore`); `reset` clears
+  the card.
+- `dialogs/PrintJobDialog.tsx`: pending card shows summary + target + token
+  hash; a payload mismatch after approval is surfaced as a re-approve
+  requirement (hash gate in `runSend`); approve drives `send-job` lane with
+  staged progress (negotiate → upload → queue); offline → warning toast,
+  region → error toast, success → taskId toast. Mounted in the App footer
+  next to `SliceStatsPanel`.
+- `styles.css`: `.print-job-*`, `.send-progress*`,
+  `.approval-target/-token/-mismatch/-task` reusing existing tokens
+  (no `:root` redefinition).
+- Tests (`tests/send-job.test.mjs`, 10 cases): tokenHash deterministic +
+  payload-sensitive, `sendTokenFor` stable, `reduceSendJob`
+  open/approve/reject/re-decide(unknown id)/close, lane happy/offline/region
+  via test seams — all headless, no network.
+- Gate: format + lint + typecheck + unit 451 + integration 11 + rust +
+  build + smoke 106 + e2e ×2 + licenses + architecture + sanitize
+  DRY-RUN 0 files — EXIT:0.
 
 ### S9.5-005 — Bridge slice lane + unit tests
 

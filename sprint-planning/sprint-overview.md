@@ -85,7 +85,7 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
 |  9.2 |    P0    | Real Geometry, Import & Scene Graph (kill unit boxes)              |       6 | L      | ✅ Done              | [sprint](sprint-9-2/sprint.md)  | `c691c3f`   |
 |  9.3 |    P0    | Transform Controls, Numeric Inspector & Shortcuts (object control) |       5 | L      | ✅ Done              | [sprint](sprint-9-3/sprint.md)  | `8f8069b`   |
 |  9.4 |    P0    | Plate, Auto-Arrange, Toolbar & View Presets                        |       6 | M      | ✅ Done (6/6)        | [sprint](sprint-9-4/sprint.md)  | `b1abbe5`   |
-|  9.5 |    P0    | Slice / Preview / Print Flow (G25 close)                           |       6 | L      | 🔄 In progress (3/6) | [sprint](sprint-9-5/sprint.md)  | `aacadd6`   |
+|  9.5 |    P0    | Slice / Preview / Print Flow (G25 close)                           |       6 | L      | 🔄 In progress (4/6) | [sprint](sprint-9-5/sprint.md)  | `5556d00`   |
 |  9.6 |    P1    | Presets, Object Properties, Undo Surface & Isolated Chat History   |       9 | M      | ⏳ Planned           | [sprint](sprint-9-6/sprint.md)  | —           |
 |  9.7 |    P1    | Boolean Modeling, Snapping & Repair                                |       5 | M      | ⏳ Planned           | [sprint](sprint-9-7/sprint.md)  | —           |
 |  9.8 |    P1    | Interaction Polish, Labels, Measure, i18n                          |       7 | M      | ⏳ Planned           | [sprint](sprint-9-8/sprint.md)  | —           |
