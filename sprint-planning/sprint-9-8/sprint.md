@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (polish)                                                                                                 |
 | **Source**            | Consultor report 2026-09-30 §2 (9.8) + audit G34/G35/G37/G38/G42/G44/G45/G46                                         |
 | **Depends On**        | Sprints 9.1–9.7 (everything)                                                                                         |
-| **Status**            | 🔄 In progress (3/7) — 001, 002, 003 delivered (2026-10-02)                                                          |
+| **Status**            | 🔄 In progress (4/7) — 001, 002, 003, 004 delivered (2026-10-02)                                                     |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -152,7 +152,7 @@ geometry).
 | **Priority**         | P1                                                                                |
 | **Type**             | Feature                                                                           |
 | **Estimated Effort** | M                                                                                 |
-| **Status**           | ⏳ Planned                                                                        |
+| **Status**           | ✅ Delivered @ `21be623` (2026-10-02)                                             |
 
 #### Context
 
@@ -163,6 +163,24 @@ never a committed path). Revision deltas from viewport-core drive the chip.
 #### Acceptance criteria
 
 - [x] Chip reflects unsaved revision delta; save/restore round-trip works; file never committed.
+
+#### Implementation notes
+
+- `dirty-core.ts` pure headless: `unsavedOpsDelta` (max(0, revision − saved)), `dirtyChip`
+  (live derivation for the header), `serializeScene`/`parseSceneBackup` (versioned envelope,
+  corrupted/foreign/wrong-version payloads → null), `lastCommitLabel` (mono HH:MM or “never”).
+- `state/dirty.ts` zustand store holds ONLY the persisted baseline (`savedRevision` +
+  `lastCommitTime`); `save`/`peek`/`restore` over `localStorage` (`anycubic:scene-backup:v1`)
+  — never a filesystem path, so nothing machine-specific can ever be committed (AGENTS.md).
+- `components/dirty-chip.tsx` in the app header (next to `bridge-state`): live delta via
+  `dirtyChip(useViewport.revision, savedRevision, lastCommitTime)` — same revision source as
+  the status bar, reacts to every commit event; dot accent/clean, `N unsaved`/`saved`, mono
+  time, `save` + `restore` buttons (restore re-hydrates the scene store and rebases the saved
+  point, flipping the chip clean; no/invalid backup → readable toast).
+- Tests: `tests/dirty.test.mjs` 6 headless (delta clamp, chip derivation, round-trip,
+  payload rejection, malformed fields, time label).
+- Gate 2026-10-02: unit 577 pass / 0 fail (571 + 6), integration 11, smoke 106,
+  e2e:ui PASS, e2e:editor-reload PASS, licenses 59, architecture OK, sanitize DRY-RUN 0.
 
 ### S9.8-005 — i18n PT/EN
 
