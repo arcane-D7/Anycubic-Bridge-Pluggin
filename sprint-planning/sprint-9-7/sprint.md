@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (modeling) + bridge                                                                                                                                       |
 | **Source**            | Consultor report 2026-09-30 §2 (9.7) + audit G26/G31/G33/G46                                                                                                          |
 | **Depends On**        | Sprints 9.2/9.3 (graph + transforms) + server `cad_v2_boolean`                                                                                                        |
-| **Status**            | 🔄 In progress (1/5) — 001 delivered (2026-10-02)                                                                                                                     |
+| **Status**            | 🔄 In progress (2/5) — 001-002 delivered (2026-10-02)                                                                                                                 |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -99,7 +99,8 @@ result object keeps a provenance note (`+bool op A∩B`). ToolState in `state/to
 | **Priority**         | P1                                                       |
 | **Type**             | Feature                                                  |
 | **Estimated Effort** | M                                                        |
-| **Status**           | ⏳ Planned                                               |
+| **Status**           | ✅ Delivered (0934168)                                   |
+| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 538) · commit `0934168`   |
 
 #### Context
 
@@ -111,6 +112,23 @@ G31. Grid snap (toggleable, step from plate/profile), axis snap during gizmo dra
 
 - [x] Grid/vertex snaps apply during gizmo drags; snap target shown in a tooltip/readout.
 - [x] Snap toggle + step configurable from toolbar/inspector; snapped motion deterministic.
+
+#### Implementation Notes
+
+- `viewport/SnapController.tsx` (NEW) — `useSnap(volume)` hook wiring the pure `snapDraft` into
+  the gizmo; `SnapReadout` overlay (chip with axis + value + effective step) and `SnapGuide`
+  (axis-colored world-space line at the snapped coordinate) — the shown target always equals
+  the persisted value (determinism).
+- `viewport/transform-core.ts` — pure headless snap primitives: `snapValue` (JS half-up),
+  `snapStepFor` (config step, else plate largest side /48 → floor to 5 mm, min 5), `snapRotationDeg`
+  (15°), `snapTargetLabel`, and `snapDraft` (move X/Y/Z snaps; rotate to 15°; first changed axis
+  becomes the readout target; toggle-off passthrough; scale untouched).
+- `state/toolbar.ts` — `snapStep` (default 5, clamp 1..100 via `clampSnapStep`) + `setSnapStep`.
+- `viewport/Toolbar.tsx` — snap-step number input next to snap/grid toggles (disabled while snap off).
+- `viewport/TransformGizmo.tsx` — draft snapped through `useSnap` before the setTransform persist;
+  readout rendered while dragging.
+- Tests: `tests/snap.test.mjs` (+9). Gate: unit 538 pass / 0 fail, integration 11, rust OK,
+  smoke 106, e2e ×2 PASS, licenses 59, architecture OK, sanitize 0.
 
 ### S9.7-003 — Watertight repair UX
 
