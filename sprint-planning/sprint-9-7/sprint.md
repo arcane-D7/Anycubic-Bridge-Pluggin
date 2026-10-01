@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (modeling) + bridge                                                                                                                                       |
 | **Source**            | Consultor report 2026-09-30 §2 (9.7) + audit G26/G31/G33/G46                                                                                                          |
 | **Depends On**        | Sprints 9.2/9.3 (graph + transforms) + server `cad_v2_boolean`                                                                                                        |
-| **Status**            | 🔄 In progress (2/5) — 001-002 delivered (2026-10-02)                                                                                                                 |
+| **Status**            | 🔄 In progress (3/5) — 001-003 delivered (2026-10-02)                                                                                                                 |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -139,7 +139,8 @@ G31. Grid snap (toggleable, step from plate/profile), axis snap during gizmo dra
 | **Priority**         | P1                                                                                          |
 | **Type**             | Feature                                                                                     |
 | **Estimated Effort** | M                                                                                           |
-| **Status**           | ⏳ Planned                                                                                  |
+| **Status**           | ✅ Delivered (7542979)                                                                      |
+| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 546) · commit `7542979`                                      |
 
 #### Context
 
@@ -152,6 +153,28 @@ repair badge; slice preflight (9.5) hints bridge to this action.
 
 - [x] Repair action available from tree row + viewport badge; replace/copy choice works.
 - [x] Success/failure toasts; repaired objects pass the watertight preflight.
+
+#### Implementation Notes
+
+- `state/repair.ts` (NEW, pure headless) — `RepairMode`/`REPAIR_MODES`/`repairModeLabel`,
+  `repairResultNote` (`+repair <mode>` lineage, same family as `+bool`), `isRepairable`
+  (exists + not watertight), `copyNameFor` (deterministic `-repair`/`-repair-2` dedupe).
+- `bridge/types.ts` — `RepairRequest {name, mode}` + `RepairResult {ok, object, revision,
+mode, objectSnapshot}` behind the frozen snapshot shape.
+- `bridge/mock.ts` — `repair` lane: rejects unknown / already-watertight (no-op), deterministic
+  closure fixture (weld vertex estimate, triangles kept, `watertight: true` re-flag), replace
+  mutates in place (identity + placement kept), copy adds a deduped new object (source
+  untouched), stamps provenance, advances revision + commit event. Declared on BridgeContract.
+- `panels/ObjectTree.tsx` — inline `repair` badge on non-watertight rows (click = replace) +
+  context menu "Auto-repair (replace)" / "Auto-repair (copy)"; success/error toasts; snapshot
+  invalidation after the lane commit (AC-2).
+- `viewport/NonWatertightBadges.tsx` (NEW) — passive corner chip listing non-watertight objects,
+  click-to-repair (AC-1 viewport badge; purely additive — e2e object count unchanged).
+- `components/icons.tsx` — `wrench` glyph; `styles.css` — row badge + viewport chip (—accent-warm).
+- `tests/repair.test.mjs` (+8): core helpers; lane replace (in place, placement kept),
+  copy (deduped, source untouched), rejects, revision + commit-event wiring.
+- Gate: unit 546 pass / 0 fail, integration 11, check-rust OK, smoke 106, e2e:ui PASS
+  (objects=4), e2e:editor-reload PASS, licenses 59, architecture OK, sanitize DRY-RUN 0.
 
 ### S9.7-004 — Bridge boolean + repair lanes + tests
 
