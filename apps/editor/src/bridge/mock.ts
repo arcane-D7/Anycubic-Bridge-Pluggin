@@ -838,3 +838,54 @@ export type BridgeHandle = (BridgeProfile & Awaited<ReturnType<typeof snapshot>>
     onCommitEvent?: (payload: CommitSinkPayload) => void;
     journal: readonly TransformJournalEvent[];
   };
+
+/**
+ * S9.6-005 (Mandate C): offline `ChatTransport` dev default — a canned,
+ * deterministic assistant reply stream. The AI SDK `ai` package is imported
+ * lazily (dynamic) so Node 24 can still run the plain `.mjs` tests (which
+ * import this module) WITHOUT resolving the browser-only `ReadableStream`
+ * TS types; the `type` import is erased at runtime.
+ *
+ * The real broker lane (S9.6-008) swaps this transport for a
+ * `DefaultChatTransport` pinned to `ANYCUBIC_BROKER_URL` — the store is the
+ * source of truth either way (conversations live in `state/chat-conversations`).
+ */
+export function createMockChatTransport(): ChatTransportLike {
+  return {
+    async sendMessages() {
+      const { createUIMessageStream } = await import("ai");
+      const messageId = "mock-assistant-1";
+      const reply =
+        "Mock reply for offline dev (S9.6-005). Context sources and token budget " +
+        "are carried per conversation by the store — no live model is contacted.";
+      return createUIMessageStream({
+        generateId: () => messageId,
+        execute: ({ writer }) => {
+          writer.write({ type: "start", messageId });
+          writer.write({ type: "text-start", id: "text-1" });
+          writer.write({ type: "text-delta", id: "text-1", delta: reply });
+          writer.write({ type: "text-end", id: "text-1" });
+          writer.write({ type: "finish", finishReason: "stop" });
+        },
+      });
+    },
+    async reconnectToStream() {
+      return null; // offline mock — no active stream to resume
+    },
+  };
+}
+
+/** Structural transport shape (the `ai` `ChatTransport` satisfies it). */
+export interface ChatTransportLike {
+  sendMessages(options: {
+    readonly trigger: "submit-message" | "regenerate-message";
+    readonly chatId: string;
+    readonly messageId: string | undefined;
+    readonly messages: readonly unknown[];
+    readonly abortSignal: AbortSignal | undefined;
+  }): Promise<ReadableStream<unknown>>;
+  reconnectToStream(options: {
+    readonly chatId: string;
+    readonly abortSignal?: AbortSignal;
+  }): Promise<ReadableStream<unknown> | null>;
+}
