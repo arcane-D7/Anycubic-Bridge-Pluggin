@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport + toolbar)                                                                                                                                             |
 | **Source**            | Consultor report 2026-09-30 §2 (9.4) + audit G7/G12/G13/G15/G16/G36                                                                                                          |
 | **Depends On**        | Sprint 9.3 (arrange targets need real transforms)                                                                                                                            |
-| **Status**            | 🚧 In progress (1/6 tickets delivered)                                                                                                                                       |
+| **Status**            | 🚧 In progress (2/6 tickets delivered)                                                                                                                                       |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -119,7 +119,7 @@ OK, sanitize DRY-RUN 0 files.
 | **Priority**         | P1                                                                      |
 | **Type**             | Feature                                                                 |
 | **Estimated Effort** | M                                                                       |
-| **Status**           | ⏳ Planned                                                              |
+| **Status**           | ✅ Delivered (2026-10-02, commit `a6e61e9`)                             |
 
 #### Context
 
@@ -128,10 +128,28 @@ View cube bottom-right, 3×3 grid of faces/corners/edges from DOM (isometric "ho
 OrbitControls. Presets (iso/top/front/right + numpad keys) in `state/viewport.ts`
 (+camera/preset state). Fit = F frames selection or whole plate.
 
+#### Implementation notes
+
+- `state/camera-core.ts` (pure): `ViewCubeCell` 26-cell union + `cellDirection()` — plate
+  axes: front = -Z (viewer side) → approached from +Z; `homeDirection()` = top-front-right
+  corner (isometric). Headless-testable, same pattern as toolbar-core.
+- `viewport/ViewportCamera.tsx` (in-Canvas): listens `VIEW_PRESET_EVENT` (toolbar presets,
+  from `viewport/Toolbar.tsx`) + `VIEW_CUBE_EVENT` (view cube); damped tween
+  `TWEEN_MS=520`, ease-out cubic, rAF loop, orbit distance + Controls target preserved.
+- `viewport/ViewCube.tsx` (DOM glass tile, bottom-right): 3×3 grid — 6 faces (F/R/B/L/T/D),
+  4 top corners + home center; click dispatches `VIEW_CUBE_EVENT {cell|null}` (null = iso).
+  Edges intentionally omitted (cell map extensible).
+- Mounted in `Viewport.tsx`: `<ViewportCamera />` inside `<Canvas>` (when `!preview`),
+  `<ViewCube />` as frame sibling (bottom-right). Styles `.view-cube` in `styles.css`
+  (glass-fill-2/blur-2, r-lg, 22px cells).
+- Unit tests `tests/camera-presets.test.mjs` (4): face axis convention, home = iso corner,
+  all 26 cells resolve, unknown cell throws.
+
 #### Acceptance criteria
 
 - [x] View cube + numpad presets animate the camera; home = isometric.
 - [x] Lighting/view orientations respect plate axes (front = front-left origin convention).
+- [x] Verified: unit 388 pass (387 + 4 new), lint clean, typecheck clean, sanitize DRY-RUN 0.
 
 ### S9.4-003 — Plate tabs + per-plate filtering
 
