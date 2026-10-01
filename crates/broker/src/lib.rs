@@ -4,9 +4,11 @@
 //! single-writer), exposes a typed command façade, and never touches auth or
 //! BYOK keys (keystore boundary, see [`keystore`]).
 
+pub mod chat_store;
 pub mod db;
 pub mod keystore;
 
+pub use chat_store::{chat_store_dir, ChatStore, ChatStoreError};
 pub use db::{DbHandle, MigrationError};
 pub use keystore::{Keystore, KeystoreError, MemoryKeystore};
 

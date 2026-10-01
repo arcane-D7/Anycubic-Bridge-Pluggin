@@ -309,3 +309,59 @@ export function conversationsSorted(
     return a.createdAt - b.createdAt;
   });
 }
+
+/** Round-trip a persisted conversation, defensively filling any missing field. */
+export function coerceConversation(raw: Conversation): Conversation {
+  const payload: ConversationPayload = {
+    contextSources: raw.payload?.contextSources ?? EMPTY_CONVERSATION_PAYLOAD.contextSources,
+    tokenBudget: raw.payload?.tokenBudget ?? EMPTY_CONVERSATION_PAYLOAD.tokenBudget,
+    approvals: raw.payload?.approvals ?? EMPTY_CONVERSATION_PAYLOAD.approvals,
+  };
+  return {
+    id: raw.id,
+    title: raw.title?.trim() ? raw.title.slice(0, CONVERSATION_TITLE_MAX) : "Conversation",
+    messages: Array.isArray(raw.messages) ? raw.messages : [],
+    payload,
+    createdAt: raw.createdAt ?? Date.now(),
+    updatedAt: raw.updatedAt ?? Date.now(),
+    revision: raw.revision ?? 0,
+  };
+}
+
+export interface HydratedChatState {
+  readonly state: ChatConversationsState;
+  /** True when at least one persisted conversation was loaded. */
+  readonly restored: boolean;
+}
+
+/**
+ * S9.6-007 — rebuild a store state from persisted conversations (boot
+ * hydrate). When nothing was persisted → returns a default single
+ * conversation (the same shape `defaultChatConversations()` produced).
+ * `nextSeq` is computed past every numeric `conversation-N` id so future
+ * creates never collide with restored ids.
+ */
+export function hydrateFromPersisted(persisted: readonly Conversation[]): HydratedChatState {
+  const conversations: Record<string, Conversation> = {};
+  for (const raw of persisted) {
+    const convo = coerceConversation(raw);
+    conversations[convo.id] = convo;
+  }
+  const ids = Object.keys(conversations);
+  if (ids.length === 0) {
+    return { state: defaultChatConversations(), restored: false };
+  }
+  let maxSeq = 0;
+  for (const id of ids) {
+    const m = /^conversation-(\d+)$/.exec(id);
+    if (m) maxSeq = Math.max(maxSeq, Number(m[1]));
+  }
+  return {
+    state: {
+      conversations,
+      activeId: ids[0] ?? null,
+      nextSeq: maxSeq + 1,
+    },
+    restored: true,
+  };
+}

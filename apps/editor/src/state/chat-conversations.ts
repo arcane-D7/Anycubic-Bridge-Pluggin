@@ -36,6 +36,8 @@ interface ChatConversationsStore {
   /** Snapshot-back the full transcript of a conversation. */
   readonly upsertMessages: (id: string, messages: readonly UIMessageLike[]) => void;
   readonly setPayload: (id: string, payload: Partial<ConversationPayload>) => void;
+  /** S9.6-007 — replace the whole state from persistence (boot hydrate). */
+  readonly hydrate: (state: ChatConversationsState) => void;
 }
 
 export const useChatConversations = create<ChatConversationsStore>()((set) => ({
@@ -46,6 +48,7 @@ export const useChatConversations = create<ChatConversationsStore>()((set) => ({
   remove: (id) => set((s) => coreDelete(s, id)),
   upsertMessages: (id, messages) => set((s) => coreUpsert(s, id, messages)),
   setPayload: (id, payload) => set((s) => coreSetPayload(s, id, payload)),
+  hydrate: (state) => set(state),
 }));
 
 /** Selector-safe: returns the active Conversation object (stable ref) or null. */

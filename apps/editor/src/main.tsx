@@ -3,6 +3,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { bindSystemThemeListener } from "./state/theme";
+import { flushChatPersistenceNow, initChatPersistence } from "./state/chat-persistence-pod";
+import { useChatConversations } from "./state/chat-conversations";
 // Tailwind v4 + design tokens first (Sprint 9.1); legacy styles.css then
 // adds its class rules on top. CSS cascade order is import order, so legacy
 // beats tailwind utilities only where both define the same property.
@@ -42,6 +44,36 @@ const queryClient = new QueryClient({
 
 const rootEl = document.getElementById("root");
 if (!rootEl) throw new Error("root element missing");
+
+// S9.6-007 — chat-store persistence wiring. Boot the pod (resolves the
+// backend: Tauri broker lane in the shell, localStorage fallback in browser
+// dev), hydrate the store from disk, then touch every conversation that a
+// store mutation changes so a 500ms-debounced writer persists it. Flush on
+// close (beforeunload) so nothing is lost on app teardown.
+initChatPersistence()
+  .hydrate()
+  .catch(() => {
+    /* non-fatal — keep in-memory default */
+  });
+
+useChatConversations.subscribe((state, prev) => {
+  const next = useChatConversations.getState();
+  // Touch conversations whose content or payload changed between snapshots.
+  for (const id of Object.keys(next.conversations)) {
+    if (next.conversations[id] !== prev.conversations[id]) {
+      initChatPersistence().touch(id);
+    }
+  }
+  if (next.activeId !== prev.activeId && next.activeId !== null) {
+    initChatPersistence().touch(next.activeId);
+  }
+});
+
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => {
+    void flushChatPersistenceNow();
+  });
+}
 
 createRoot(rootEl).render(
   <StrictMode>
