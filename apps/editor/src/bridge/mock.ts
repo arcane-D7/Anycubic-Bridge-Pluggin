@@ -3,6 +3,8 @@ import type {
   BuildVolume,
   ObjectGeometry,
   ObjectMutation,
+  PrinterInfo,
+  PrinterListResult,
   SceneObjectSnapshot,
   SliceRequest,
   SliceResult,
@@ -12,6 +14,7 @@ import type {
 import { StaleCommitError } from "../state/viewport-core.ts";
 import { arrangeTransforms } from "../state/arrange-core.ts";
 import { DEFAULT_PLATE_ID } from "../state/plates-core.ts";
+import { parsePrinterIps, printerId, printerName } from "../state/printers-core.ts";
 
 export { StaleCommitError };
 export type { ArrangeResult, ArrangePlacement, SliceResult, SliceStats } from "./types.ts";
@@ -648,6 +651,25 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
         blockedBy: [],
       } satisfies SliceResult;
     },
+    // --- S9.5-003 printer discovery lane (G43) ----------------------------
+    // Discovered from `ANYCUBIC_PRINTER_IPS` (env) — the parse/validate/label
+    // logic lives in the pure printers-core so it is testable headless, and a
+    // real LAN probe (reachability fetch with timeout) happens in the React
+    // layer, which owns import.meta.env + fetch. This lane is the source of
+    // the list; `rawEnv` is the env value as supplied by the caller — never a
+    // hardcoded device identifier.
+    async discoverPrinters(rawEnv) {
+      const { ips } = parsePrinterIps(rawEnv ?? "");
+      const printers: PrinterInfo[] = ips.map((ip) => ({
+        id: printerId(ip),
+        name: printerName(ip),
+        ip,
+        machineType: null,
+        reachable: null,
+        lastSeenAt: null,
+      }));
+      return { ok: true as const, source: "env", printers } satisfies PrinterListResult;
+    },
   };
   return handle;
 }
@@ -712,6 +734,13 @@ export interface BridgeContract {
    * read-only over the snapshot.
    */
   slice(req: SliceRequest): Promise<SliceResult | { ok: false; error: string }>;
+  /**
+   * S9.5-003 (G43): printer discovery lane. Parses `ANYCUBIC_PRINTER_IPS`
+   * (env, comma-separated) into the printer list served to the picker. The
+   * list is the source of targets for the confirm-before-send flow — no
+   * hardcoded device identifiers, ever.
+   */
+  discoverPrinters(rawEnv?: string): Promise<PrinterListResult>;
 }
 
 /** Live bridge handle: the fetched profile+scene snapshot PLUS the commit sink

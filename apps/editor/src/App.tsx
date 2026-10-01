@@ -24,6 +24,7 @@ import { ShortcutHelp } from "./components/shortcut-help";
 import { SliceButton } from "./components/SliceButton";
 import { SliceProgress } from "./components/SliceProgress";
 import { SliceStatsPanel } from "./panels/SliceStatsPanel";
+import { PrinterPicker } from "./components/PrinterPicker";
 import { useShortcuts } from "./hooks/useShortcuts";
 import { OverlayRoot } from "./components/dock/overlay-root";
 import { DockPanel } from "./components/dock/dock-panel";
@@ -188,6 +189,7 @@ export function App() {
           </button>
         </nav>
         <SliceButton objects={objects} />
+        <PrinterPicker />
         <button
           type="button"
           className="sidebar-toggle"

@@ -14,6 +14,10 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+  // S9.5-003 (G43): expose ONLY the printer-IP env var to the editor shell
+  // (printer discovery never hardcodes device identifiers). Deliberately NOT
+  // a blanket ANYCUBIC_ prefix — tokens/access codes stay server-side.
+  envPrefix: ["VITE_", "ANYCUBIC_PRINTER_IPS"],
   server: {
     port: 1420,
     strictPort: true,

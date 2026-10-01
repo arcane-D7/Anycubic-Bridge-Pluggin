@@ -179,3 +179,29 @@ export interface ArrangeResult {
   readonly placed: readonly ArrangePlacement[];
   readonly warnings: readonly string[];
 }
+
+/**
+ * S9.5-003 printer descriptor (G43). A discovered Anycubic printer target.
+ * `reachable` is tri-state: `true` when the LAN probe succeeded, `false` when
+ * it timed out/refused, `null` when status is unknown (or probing in flight).
+ * Identifiers come ONLY from `ANYCUBIC_PRINTER_IPS` (env) — never hardcoded.
+ */
+export interface PrinterInfo {
+  readonly id: string;
+  readonly name: string;
+  readonly ip: string;
+  readonly machineType: string | null;
+  readonly reachable: boolean | null;
+  readonly lastSeenAt: number | null;
+}
+
+/**
+ * Result of the bridge printer discovery lane (S9.5-003). `source` mirrors
+ * how the list was built (env list for now; subnet scan later) so the picker
+ * can explain an empty list.
+ */
+export interface PrinterListResult {
+  readonly ok: true;
+  readonly source: "env";
+  readonly printers: readonly PrinterInfo[];
+}

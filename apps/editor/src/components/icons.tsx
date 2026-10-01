@@ -33,7 +33,9 @@ export type IconName =
   | "rotate"
   | "scale"
   | "redo"
-  | "undo";
+  | "undo"
+  | "printer"
+  | "refresh";
 
 const PATHS: Record<IconName, ReactNode> = {
   settings: (
@@ -197,6 +199,20 @@ const PATHS: Record<IconName, ReactNode> = {
     <>
       <path d="M8.5 3L12 6.5 8.5 10" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M12 6.5H6.4a3.6 3.6 0 0 0 0 7.2H9.5" strokeLinecap="round" />
+    </>
+  ),
+  printer: (
+    <>
+      <path d="M2.8 6h10.4l.8 5.2H2z" strokeLinejoin="round" />
+      <rect x="3" y="4" width="10" height="2" rx="0.5" />
+      <path d="M4.5 9h7v4h-7z" strokeLinejoin="round" />
+      <path d="M11.5 7.8v1" strokeLinecap="round" />
+    </>
+  ),
+  refresh: (
+    <>
+      <path d="M13 8a5 5 0 1 1-1.6-3.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13 1.8V5h-3.2" strokeLinecap="round" strokeLinejoin="round" />
     </>
   ),
 };
