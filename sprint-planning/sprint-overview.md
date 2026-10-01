@@ -86,7 +86,7 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
 |  9.3 |    P0    | Transform Controls, Numeric Inspector & Shortcuts (object control) |       5 | L      | ✅ Done              | [sprint](sprint-9-3/sprint.md)  | `8f8069b`   |
 |  9.4 |    P0    | Plate, Auto-Arrange, Toolbar & View Presets                        |       6 | M      | ✅ Done (6/6)        | [sprint](sprint-9-4/sprint.md)  | `b1abbe5`   |
 |  9.5 |    P0    | Slice / Preview / Print Flow (G25 close)                           |       6 | L      | ✅ Done (6/6)        | [sprint](sprint-9-5/sprint.md)  | `014ea28`   |
-|  9.6 |    P1    | Presets, Object Properties, Undo Surface & Isolated Chat History   |       9 | M      | 🔄 In progress (4/9) | [sprint](sprint-9-6/sprint.md)  | `0f04062`   |
+|  9.6 |    P1    | Presets, Object Properties, Undo Surface & Isolated Chat History   |       9 | M      | 🔄 In progress (5/9) | [sprint](sprint-9-6/sprint.md)  | `51ae5f8`   |
 |  9.7 |    P1    | Boolean Modeling, Snapping & Repair                                |       5 | M      | ⏳ Planned           | [sprint](sprint-9-7/sprint.md)  | —           |
 |  9.8 |    P1    | Interaction Polish, Labels, Measure, i18n                          |       7 | M      | ⏳ Planned           | [sprint](sprint-9-8/sprint.md)  | —           |
 |   10 |    P1    | R4 separable auth service + memory (fail-closed sync)              |       5 | L      | ⏳ Planned           | [sprint](sprint-10/sprint.md)   | —           |

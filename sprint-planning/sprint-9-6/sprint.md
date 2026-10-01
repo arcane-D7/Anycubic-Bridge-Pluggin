@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (panels)                                                                                                                                                                                                                                                                                            |
 | **Source**            | Consultor report 2026-09-30 §2 (9.6) + audit G14/G20/G21/G22/G23/G30/G36 + Consultor ronda 2 §3 (chat)                                                                                                                                                                                                          |
 | **Depends On**        | Sprint 9.5 (slice consumes presets) + Sprint 9.1a (dock host)                                                                                                                                                                                                                                                   |
-| **Status**            | 🔄 In progress (4/9)                                                                                                                                                                                                                                                                                            |
+| **Status**            | 🔄 In progress (5/9)                                                                                                                                                                                                                                                                                            |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -256,7 +256,8 @@ Ctrl+Z/Y now drive the journal instead of soft reflow (upgrading the 9.3 soft ho
 | **Priority**         | P1                                                                                        |
 | **Type**             | Feature                                                                                   |
 | **Estimated Effort** | L                                                                                         |
-| **Status**           | ⏳ Planned                                                                                |
+| **Status**           | ✅ Delivered (51ae5f8)                                                                    |
+| **Delivered**        | 2026-10-02 · gate EXIT:0 (unit 508) · commit `51ae5f8`                                    |
 
 #### Context
 
@@ -274,6 +275,53 @@ on `ANYCUBIC_BROKER_URL` env.
 
 - [x] create/switch/rename/delete conversations; per-conversation messages/contextSources/tokenBudget/approvals; `ChatThread` keyed-remount + `setMessages` hydrate.
 - [x] `state/chat-core.ts` untouched (wrap-only); `chat-conversations.ts` has unit tests.
+
+#### Implementation Notes
+
+- **Store core** `apps/editor/src/state/chat-conversations-core.ts` — dependency-free pure core
+  (plates-core pattern; Node 24 runs it headless). `Conversation { id; title; messages:
+UIMessageLike[]; payload { contextSources; tokenBudget; approvals }; createdAt; updatedAt;
+revision }` — note the spec's `contextSources/tokenBudget/approvals` live as a single
+  `payload` object per conversation (isolated per conversation — AC1). Pure fns:
+  `defaultChatConversations` (starts "Conversation 1"), `nextConversationTitle` (skips taken
+  names), `createConversation` (id `conversation-<seq>`, activates, default budget 4000),
+  `switchConversation` (no-op unknown), `renameConversation` (trim + 64-char cap; rejects
+  empty/unchanged), `deleteConversation` (activeId falls back to first remaining; last delete
+  → `activeId: null`), `upsertConversationMessages` (identity-equal arrays → no-op; else bumps
+  `revision++`/`updatedAt`), `setConversationPayload`, `activeConversationOf`. Messages are a
+  structural `UIMessageLike` (id/role/parts/metadata) — the AI SDK `UIMessage` satisfies it;
+  the core never imports `ai`.
+- **Store wrapper** `state/chat-conversations.ts` — thin zustand `useChatConversations`
+  (conversations/activeId/nextSeq + create/switchTo/rename/remove/upsertMessages/setPayload)
+  re-delegating to the core; `useActiveConversation` selector returns the stable conversation
+  ref (zustand + useSyncExternalStore loop guard, same lesson as S9.6-001 reload guard).
+- **`panels/ChatThread.tsx`** — per-conversation AI SDK v7 thread: `useChat({ id:
+conversationId, messages: initialMessages, transport, onFinish })`. Hydrate comes from the
+  STORE prop (never `setMessages` in an effect — the Chat is created in the constructor);
+  snapshot-back ONLY in `onFinish` (single reliable point; `isAbort || isError` guard). The
+  transport is a **module-level singleton** (SDK memoizes the Chat on transport identity —
+  a per-render transport would remount the Chat every render).
+- **`panels/ChatPanel.tsx`** — conversation container: `.panel-chat` (e2e contract kept) +
+  conversation picker (`conversation-picker`) + new button (`conversation-new`) + mounts
+  `<ChatThread key={activeId}/>` (keyed remount per active conversation). The S9-006 harness
+  store (`state/chat.ts`) and core are NOT rendered here — wrap-only per AC.
+- **`bridge/mock.ts`** — `createMockChatTransport()`: `sendMessages` returns an AI SDK
+  UIMessageStream (start → text-start/delta/end → finish stop) via `createUIMessageStream`
+  from `ai` — imported **dynamically inside the function** so root `node --test` never needs
+  the browser `ai` bundle; `reconnectToStream` returns null (offline). Structural
+  `ChatTransportLike` type (no top-level `import from "ai"`). S9.6-008 swaps in the broker
+  `DefaultChatTransport`.
+- `apps/editor/src/styles.css` — `.chat-thread`, `.conversation-bar`, `.conversation-picker`,
+  `.conversation-new`, `.chat-thinking` (before `.chat-transcript`).
+- `tests/chat-conversations.test.mjs` — **12 cases**: default state; create (isolated +
+  activates + unique id); derived default title; nextConversationTitle skips taken; switch
+  no-op unknown; rename trim/reject empty/unchanged; delete fallback; delete last → none;
+  upsert bumps revision/updatedAt + AC1 payload isolation; upsert identity no-op; upsert
+  unknown no-op; setConversationPayload per-field.
+- **Gate** `$env:TEMP\s9-6-005-check1.log` — unit **508** pass (496+12) / fail 0, integration
+  11, rust ok, build ok, smoke 106 tools, e2e:ui + e2e:editor-reload PASS (ChatPanel +
+  overlay mounted), licenses 59, architecture OK, [sanitize] DRY-RUN 0 files.
+- **Commits** `51ae5f8` feat (7 files, +764/−233) + docs (this file).
 
 ### S9.6-006 — Conversation list UI
 
