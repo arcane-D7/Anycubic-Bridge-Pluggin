@@ -495,6 +495,13 @@
     white-space: nowrap;
   }
 
+  .status-dirty {
+    color: var(--accent-primary);
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+
   .status-sep {
     opacity: 0.5;
   }

@@ -8,6 +8,7 @@ import { PanelDivider } from "./layout/PanelDivider";
 import { ChatPanel } from "./panels/ChatPanel";
 import { ImportDialog } from "./panels/ImportDialog";
 import { ObjectTree } from "./panels/ObjectTree";
+import { TransformInspector } from "./panels/TransformInspector";
 import { Timeline } from "./panels/Timeline";
 import { SettingsPanel } from "./panels/SettingsPanel";
 import { buildPreviewModel } from "./viewport/preview-model";
@@ -216,7 +217,10 @@ export function App() {
             <SettingsPanel profile={operatorProfile} onProfileChange={setOperatorProfile} />
           </div>
           {sidebarView === "objects" ? (
-            <ObjectTree scene={scene} onOpenImport={() => setImportOpen(true)} />
+            <>
+              <ObjectTree scene={scene} onOpenImport={() => setImportOpen(true)} />
+              <TransformInspector scene={scene} />
+            </>
           ) : null}{" "}
           {sidebarView === "chat" ? <ChatPanel /> : null}
           <section className="panel-section" aria-label="IR preview loader">

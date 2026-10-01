@@ -49,7 +49,7 @@ export interface SceneGraphEvent {
   readonly name?: string;
   readonly from?: string;
   readonly to?: string;
-  readonly transform?: { readonly x: number; readonly y: number; readonly z: number };
+  readonly transform?: SceneObjectSnapshot["transform"];
 }
 
 /** The S7-002 framed modal steps a destructive op must route through. */

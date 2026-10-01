@@ -52,8 +52,8 @@ export interface SceneStore extends SceneGraphState {
   readonly toggleVisible: (name: string) => void;
   /** Toggle locked flag. */
   readonly toggleLock: (name: string) => void;
-  /** Set per-object transform. */
-  readonly setTransform: (name: string, transform: { x: number; y: number; z: number }) => void;
+  /** Set per-object transform (full position/rotation/scale shape). */
+  readonly setTransform: (name: string, transform: SceneObjectSnapshot["transform"]) => void;
 }
 
 const watertightOf = (objects: readonly SceneObjectSnapshot[], name: string | null): boolean => {

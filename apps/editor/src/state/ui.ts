@@ -35,6 +35,20 @@ interface UiState {
   /** Active toolbar tool (S9.3-001): select|move|rotate|scale. */
   readonly tool: ToolMode;
   readonly setTool: (mode: ToolMode) => void;
+  /**
+   * Transform inspector dirty state (S9.3-002, AC-3). When the numeric
+   * inspector holds a draft that differs from the committed bridge snapshot,
+   * the status bar shows which kinds are dirty (`position|rotation|scale`).
+   * `dirtyTransformName` scopes it to the object the draft belongs to so a
+   * selection change clears the diff.
+   */
+  readonly dirtyTransformName: string | null;
+  readonly dirtyKinds: readonly ("position" | "rotation" | "scale")[] | null;
+  readonly setDirtyTransform: (
+    name: string,
+    kinds: readonly ("position" | "rotation" | "scale")[] | null,
+  ) => void;
+  readonly clearDirtyTransform: () => void;
   /** Toast bus (S9.1-005). Top-right stacked, auto-dismiss. */
   readonly toasts: readonly Toast[];
   readonly pushToast: (t: Omit<Toast, "id" | "createdAt">) => void;
@@ -54,6 +68,10 @@ export const useUi = create<UiState>()((set, get) => ({
   toggleSceneViewEdges: () => set((s) => ({ sceneViewEdges: !s.sceneViewEdges })),
   tool: "select",
   setTool: (mode) => set({ tool: mode }),
+  dirtyTransformName: null,
+  dirtyKinds: null,
+  setDirtyTransform: (name, kinds) => set({ dirtyTransformName: name, dirtyKinds: kinds }),
+  clearDirtyTransform: () => set({ dirtyTransformName: null, dirtyKinds: null }),
   toasts: [],
   pushToast: ({ kind, title, message }) => {
     const id = toastSeq++;
