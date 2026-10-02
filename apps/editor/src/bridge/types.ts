@@ -202,11 +202,12 @@ export interface TransformJournalEvent {
 }
 
 /** Single object placement produced by the arrange lane (mirrors the server's
- * `placed` array from `scripts/cad-arrange.mjs`). */
+ * `placed` array from `scripts/cad-arrange.mjs`). Grid coords on the plate
+ * plane: x = width axis, z = depth axis (Y is up, so it stays 0). */
 export interface ArrangePlacement {
   readonly name: string;
   readonly x: number;
-  readonly y: number;
+  readonly z: number;
   readonly w: number;
   readonly h: number;
 }

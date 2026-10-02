@@ -27,12 +27,17 @@ export interface GroupTransformProps {
   readonly scale: [number, number, number];
 }
 
-export function identityTransform(): SceneTransform {
+/** Fill missing rotation/scale fields so consumers always read defined slots. */
+export type NormalizedTransform = Required<
+  Pick<SceneTransform, "x" | "y" | "z" | "rx" | "ry" | "rz" | "sx" | "sy" | "sz">
+>;
+
+/** Typed identity so `normalizeTransform`'s return is fully-defined. */
+export function identityTransform(): NormalizedTransform {
   return { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, sx: 1, sy: 1, sz: 1 };
 }
 
-/** Fill missing rotation/scale fields so consumers always read defined slots. */
-export function normalizeTransform(t: SceneTransform | undefined): SceneTransform {
+export function normalizeTransform(t: SceneTransform | undefined): NormalizedTransform {
   if (!t) return identityTransform();
   return {
     x: t.x ?? 0,
@@ -46,7 +51,6 @@ export function normalizeTransform(t: SceneTransform | undefined): SceneTransfor
     sz: t.sz ?? 1,
   };
 }
-
 /** R3F group props from a snapshot transform. Rotation is euler DEGREES in
  * the snapshot; three expects radians — convert here (pure, testable). */
 export function applyTransform(t: SceneTransform | undefined): GroupTransformProps {
@@ -57,6 +61,49 @@ export function applyTransform(t: SceneTransform | undefined): GroupTransformPro
     rotation: [n.rx! * d2r, n.ry! * d2r, n.rz! * d2r],
     scale: [n.sx!, n.sy!, n.sz!],
   };
+}
+
+/**
+ * S9.10-001 — "lay on plate" (OrcaSlicer/BambuStudio convention): compute a
+ * transform whose WORLD min-Y touches the plate top (Y=0) — objects must
+ * never sit through the bed. With the snapshot's mesh-offset semantics
+ * (world = transform + bounds*scale), the world bottom is
+ * `transform.y + bounds.min[1] * sy`, so settling means
+ * `transform.y = -bounds.min[1] * sy`. X/Z and rotation/scale are preserved.
+ * Pure — no three.js — headless-testable.
+ */
+export function settleOnPlateTransform(o: {
+  readonly bounds: { readonly min: readonly [number, number, number] };
+  readonly transform?: SceneTransform;
+}): SceneTransform {
+  const n = normalizeTransform(o.transform);
+  const minY = o.bounds.min[1];
+  // `-0` (from -0*sy) is a nasty equality trap — normalize to 0.
+  return {
+    x: n.x,
+    y: -minY * n.sy || 0,
+    z: n.z,
+    rx: n.rx,
+    ry: n.ry,
+    rz: n.rz,
+    sx: n.sx,
+    sy: n.sy,
+    sz: n.sz,
+  };
+}
+
+/**
+ * S9.10-001 — clamp a move draft so the object's world bottom never sinks
+ * below Y=0 (the plate top). `minY` is the mesh's local bottom (bounds.min[1]);
+ * the world bottom = `draft.y + minY * draft.sy`. Orca/Bambu allow hovering
+ * (draft.y > -minY*sy) but never penetrating the bed. Pure + headless.
+ */
+export function clampBedY(draft: SceneTransform, minY: number): SceneTransform {
+  const n = normalizeTransform(draft);
+  const sy = n.sy ?? 1;
+  const bedFloor = -minY * sy; // transform.y that puts the bottom exactly on 0
+  if (n.y >= bedFloor) return draft;
+  return { ...draft, y: bedFloor || 0 };
 }
 
 /** True when the pointer (clientX, clientY) falls inside any floating panel

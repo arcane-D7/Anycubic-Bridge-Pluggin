@@ -76,7 +76,7 @@ test("AC-1: commit returns new authoritative revision + journal events with real
   const { bridge } = await freshBridge("ac1");
   const name = "cube";
   const before = transformOf(bridge, name);
-  assert.deepEqual(before, { x: -16, y: 0, z: -10 });
+  assert.deepEqual(before, { x: -16, y: 10, z: -10 });
 
   // Simulate a gizmo drag: provisional setTransform through the mutation lane.
   const mut = await bridge.mutateObject({
@@ -99,7 +99,7 @@ test("AC-1: commit returns new authoritative revision + journal events with real
   const kinds = commit.journalEvents.map((e) => e.kind);
   assert.deepEqual(kinds, ["+move", "+rotate", "+scale"]);
   const moveEv = commit.journalEvents.find((e) => e.kind === "+move");
-  assert.deepEqual(moveEv?.from, { x: -16, y: 0, z: -10 });
+  assert.deepEqual(moveEv?.from, { x: -16, y: 10, z: -10 });
   assert.deepEqual(moveEv?.to, { x: 0, y: 0, z: 0 });
 });
 

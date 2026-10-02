@@ -261,9 +261,13 @@ function makeInfo(
   };
 }
 
+// S9.10-001 — demo objects now rest ON the plate (Y is up; plate top = Y=0).
+// Cube (-10..10) and sphere (radius 13, centered at 0) were half-/mostly
+// BURIED with transform.y = 0 — lift them by their lower extent so they sit
+// on the bed like in Orca/Bambu. Cone's base is already at minY=0 → stays.
 const CONE = makeInfo("cone", coneGeometry(), true, [14, 0, 14]);
-const CUBE = makeInfo("cube", cubeGeometry(), true, [-16, 0, -10]);
-const SPHERE = makeInfo("sphere-non-watertight", sphereGeometry(), false, [8, 0, -18]);
+const CUBE = makeInfo("cube", cubeGeometry(), true, [-16, 10, -10]);
+const SPHERE = makeInfo("sphere-non-watertight", sphereGeometry(), false, [8, 13, -18]);
 
 /** The mutable object list the CRUD lane operates on (S9.2-001). */
 let sceneObjects: SceneObjectSnapshot[] = [CONE, CUBE, SPHERE];

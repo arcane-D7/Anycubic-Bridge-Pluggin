@@ -37,14 +37,14 @@ function obj(name, opts = {}) {
   };
 }
 
-test("arrange-core: place-on-plate centers X/Y and drops minZ to 0", async () => {
+test("arrange-core: place-on-plate centers X and sits Y (minY=0) on the plate", async () => {
   const core = await corePromise;
-  // Mesh bounds -30..10 (center -10), -5..15 (center 5), minZ -6.
+  // Mesh bounds -30..10 (center -10), minY -5 (buries 5 mm if y=0), minZ -6.
   const o = obj("part", { min: [-30, -5, -6], max: [10, 15, 4] });
   const t = core.centerOnPlateTransform(o);
   assert.equal(t.x, 10); // -cx * 1 = -(-10) = 10
-  assert.equal(t.y, -5); // -cy = -(5) = -5
-  assert.equal(t.z, 6); // -minZ = -(-6) = 6
+  assert.equal(t.y, 5); // -minY = -(-5) = 5 → world bottom = 5 + (-5) = 0
+  assert.equal(t.z, 1); // -cz = -(-1) = 1 → world center Z = 1 + (-1) = 0
 });
 
 test("arrange-core: place-on-plate respects scale", async () => {
@@ -56,8 +56,8 @@ test("arrange-core: place-on-plate respects scale", async () => {
   });
   const t = core.centerOnPlateTransform(o);
   assert.equal(t.x, 0); // center 0 * 2 → offset 0
-  assert.equal(t.y, 0);
-  assert.equal(t.z, 0); // minZ=0 * 4 → 0
+  assert.equal(t.y, 30); // -minY * sy = -(-10)*3 = 30 → world bottom 30 + (-10)*3 = 0
+  assert.equal(t.z, -20); // -cz * sz = -(5)*4 = -20 → world center Z = 0
   assert.equal(t.sx, 2);
   assert.equal(t.sy, 3);
   assert.equal(t.sz, 4);
@@ -78,8 +78,8 @@ test("arrange-core: deterministic layout packs all objects inside the plate", as
   for (const p of r1.placed) {
     assert.ok(p.x - p.w / 2 >= -110 - 1e-6, `${p.name} left edge`);
     assert.ok(p.x + p.w / 2 <= 110 + 1e-6, `${p.name} right edge`);
-    assert.ok(p.y - p.h / 2 >= -110 - 1e-6, `${p.name} top edge`);
-    assert.ok(p.y + p.h / 2 <= 110 + 1e-6, `${p.name} bottom edge`);
+    assert.ok(p.z - p.h / 2 >= -110 - 1e-6, `${p.name} front edge`);
+    assert.ok(p.z + p.h / 2 <= 110 + 1e-6, `${p.name} back edge`);
   }
 });
 
@@ -95,10 +95,11 @@ test("arrange-core: arrange preserves mesh-offset semantics (X = grid - center)"
   assert.ok(t);
   // world center X = t.x + 5 must equal p.x
   assert.ok(Math.abs(t.x + 5 - p.x) < 1e-6);
-  // world center Y = t.y - 3 must equal p.y
-  assert.ok(Math.abs(t.y - 3 - p.y) < 1e-6);
-  // minZ dropped to 0: world minZ = t.z + 0 = 0
-  assert.equal(t.z, 0);
+  // arrange packs along X/Z (the plate plane) — object stays flat on Y...
+  // world center Z = t.z + 5 (bounds center in local Z) must equal p.z
+  assert.ok(Math.abs(t.z + 5 - p.z) < 1e-6);
+  // ...and its world minY = t.y + (-8) = 0 → rests on the plate top (Y=0).
+  assert.ok(Math.abs(t.y - 8) < 1e-6);
 });
 
 test("arrange-core: oversized object emits overflow warning and stays placed", async () => {
@@ -129,16 +130,16 @@ test("arrange-core: block centered on origin when center:true (default)", async 
   const r = core.arrangeTransforms(objects, { center: true });
   let minX = Infinity;
   let maxX = -Infinity;
-  let minY = Infinity;
-  let maxY = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
   for (const p of r.placed) {
     minX = Math.min(minX, p.x - p.w / 2);
     maxX = Math.max(maxX, p.x + p.w / 2);
-    minY = Math.min(minY, p.y - p.h / 2);
-    maxY = Math.max(maxY, p.y + p.h / 2);
+    minZ = Math.min(minZ, p.z - p.h / 2);
+    maxZ = Math.max(maxZ, p.z + p.h / 2);
   }
   assert.ok(Math.abs((minX + maxX) / 2) < 1e-6, "block centered on X");
-  assert.ok(Math.abs((minY + maxY) / 2) < 1e-6, "block centered on Y");
+  assert.ok(Math.abs((minZ + maxZ) / 2) < 1e-6, "block centered on Z");
 });
 
 test("arrange-core: empty object list yields empty result without warnings", async () => {

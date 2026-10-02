@@ -49,7 +49,7 @@ export interface ArrangeOptions {
 export interface ArrangePlacement {
   readonly name: string;
   readonly x: number;
-  readonly y: number;
+  readonly z: number;
   readonly w: number;
   readonly h: number;
 }
@@ -64,25 +64,28 @@ export interface ArrangeTransformResult {
 const clampGap = (value: number | undefined): number => Math.max(0, value ?? 2);
 
 /**
- * Per-object "place on plate": center the object's X/Y footprint on the plate
- * origin and sit its minZ exactly on Z=0. The result is derived from the
- * snapshot bounds + scale only — the previous position is replaced (the mesh
- * offset is recomputed so world center = 0,0 and world minZ = 0).
+ * Per-object "place on plate" (OrcaSlicer/BambuStudio lay-on-plate): center
+ * the object's X/Y footprint on the plate origin and sit its world min-Y
+ * exactly on Y=0 (the plate top — Y is up in this scene). The result is
+ * derived from the snapshot bounds + scale only; the previous position is
+ * replaced (the mesh offset is recomputed so world center = 0,0 and the
+ * object rests ON the bed, never through it).
  */
 export function centerOnPlateTransform(o: SceneObjectSnapshot): SceneTransform {
   const n = normalize(o.transform);
   const { bounds } = o;
   const cx = (bounds.min[0] + bounds.max[0]) / 2;
-  const cy = (bounds.min[1] + bounds.max[1]) / 2;
-  const minZ = bounds.min[2];
+  const cz = (bounds.min[2] + bounds.max[2]) / 2;
+  const minY = bounds.min[1];
   const sx = n.sx;
   const sy = n.sy;
   const sz = n.sz;
-  // `-0` (from -minZ when minZ=0) is a nasty equality trap — normalize to 0.
   return {
     x: -cx * sx || 0,
-    y: -cy * sy || 0,
-    z: -minZ * sz || 0,
+    // world min-Y = 0 → rests ON the bed (Y is up in this scene).
+    y: -minY * sy || 0,
+    // Center the depth axis too (Z is the plate depth on the world grid).
+    z: -cz * sz || 0,
     rx: n.rx,
     ry: n.ry,
     rz: n.rz,
@@ -98,13 +101,13 @@ interface Footprint {
   readonly area: number;
 }
 
-/** X/Y AABB footprint (bounds size scaled) — null when degenerate. */
+/** X/Z AABB footprint (bounds size scaled, ON the plate plane) — null when degenerate. */
 function footprintOf(o: SceneObjectSnapshot): Footprint | null {
   const { min, max } = o.bounds;
   const sx = o.transform?.sx ?? 1;
-  const sy = o.transform?.sy ?? 1;
+  const sz = o.transform?.sz ?? 1;
   const w = (max[0] - min[0]) * sx;
-  const h = (max[1] - min[1]) * sy;
+  const h = (max[2] - min[2]) * sz;
   if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return null;
   return { w, h, area: w * h };
 }
@@ -133,7 +136,7 @@ export function arrangeTransforms(
     readonly h: number;
     readonly area: number;
     x: number;
-    y: number;
+    z: number;
   }
   const items: Item[] = [];
   for (const o of objects) {
@@ -142,19 +145,33 @@ export function arrangeTransforms(
       warnings.push(`object '${o.name}' skipped (empty footprint)`);
       continue;
     }
-    items.push({ o, w: f.w, h: f.h, area: f.area, x: 0, y: 0 });
+    items.push({ o, w: f.w, h: f.h, area: f.area, x: 0, z: 0 });
   }
   items.sort((a, b) => b.area - a.area);
 
-  // 2. Shelf packing — Y grows downward (more negative); block top = 0.
+  // 2. Shelf packing on the PLATE PLANE (X×Z) — Z grows downward (more
+  // negative); block top = 0. Y stays the vertical axis (Y-up scene).
   const shelves: { top: number; xCursor: number; h: number }[] = [{ top: 0, xCursor: 0, h: 0 }];
   let current = shelves[0]!;
   for (const item of items) {
     const slotW = item.w + gap;
     const slotH = item.h + gap;
+    // S9.10-001 — an object wider/deeper than the plate can never be packed;
+    // warn once and drop it on the current row (may overlap — matches the
+    // server cad-arrange fallback).
+    const oversized = item.w > plateW + 1e-6 || item.h > plateD + 1e-6;
+    if (oversized) {
+      warnings.push(
+        `object '${item.o.name}' (${item.w.toFixed(1)}×${item.h.toFixed(1)} mm) does not ` +
+          `fit plate ${plateW}×${plateD} mm — placed on row (may overlap)`,
+      );
+      item.x = current.xCursor + item.w / 2;
+      item.z = current.top - item.h / 2;
+      continue;
+    }
     if (current.xCursor + slotW <= plateW + 1e-6) {
       item.x = current.xCursor + item.w / 2;
-      item.y = current.top - item.h / 2;
+      item.z = current.top - item.h / 2;
       current.xCursor += slotW;
       current.h = Math.max(current.h, slotH);
     } else {
@@ -165,12 +182,12 @@ export function arrangeTransforms(
             `fit plate ${plateW}×${plateD} mm — placed on row (may overlap)`,
         );
         item.x = current.xCursor + item.w / 2;
-        item.y = current.top - item.h / 2;
+        item.z = current.top - item.h / 2;
       } else {
         shelves.push({ top: newTop, xCursor: 0, h: slotH });
         current = shelves[shelves.length - 1]!;
         item.x = current.xCursor + item.w / 2;
-        item.y = current.top - item.h / 2;
+        item.z = current.top - item.h / 2;
         current.xCursor += slotW;
       }
     }
@@ -178,7 +195,7 @@ export function arrangeTransforms(
   const placed: ArrangePlacement[] = items.map((item) => ({
     name: item.o.name,
     x: item.x,
-    y: item.y,
+    z: item.z,
     w: item.w,
     h: item.h,
   }));
@@ -187,25 +204,25 @@ export function arrangeTransforms(
   if (opts.center !== false && placed.length > 0) {
     let minX = Infinity;
     let maxX = -Infinity;
-    let minY = Infinity;
-    let maxY = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
     for (const p of placed) {
       minX = Math.min(minX, p.x - p.w / 2);
       maxX = Math.max(maxX, p.x + p.w / 2);
-      minY = Math.min(minY, p.y - p.h / 2);
-      maxY = Math.max(maxY, p.y + p.h / 2);
+      minZ = Math.min(minZ, p.z - p.h / 2);
+      maxZ = Math.max(maxZ, p.z + p.h / 2);
     }
     const cx = (minX + maxX) / 2;
-    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
     const placedMutable = placed.map((p) => ({ ...p }));
     for (const p of placedMutable) {
       p.x -= cx;
-      p.y -= cy;
+      p.z -= cz;
     }
     // Rebuild the readonly array with the centered values.
     placed.splice(0, placed.length, ...placedMutable);
     const blockW = maxX - minX;
-    const blockH = maxY - minY;
+    const blockH = maxZ - minZ;
     if (blockW > plateW + 1e-6 || blockH > plateD + 1e-6) {
       warnings.push(
         `arranged block ${blockW.toFixed(0)}×${blockH.toFixed(0)} mm exceeds plate ` +
@@ -215,14 +232,14 @@ export function arrangeTransforms(
   }
 
   // 4. Materialize transforms: normalize each object to the origin (center
-  // XY + minZ 0), then apply the grid position as the mesh offset.
+  // X/Z + minY 0), then apply the grid position as the mesh offset.
   const byName = new Map(objects.map((o) => [o.name, o]));
   const transforms = new Map<string, SceneTransform>();
   for (const p of placed) {
     const o = byName.get(p.name);
     if (!o) continue;
     const base = centerOnPlateTransform(o);
-    transforms.set(o.name, { ...base, x: p.x + base.x, y: p.y + base.y });
+    transforms.set(o.name, { ...base, x: p.x + base.x, z: p.z + base.z });
   }
 
   return { transforms, placed, warnings };

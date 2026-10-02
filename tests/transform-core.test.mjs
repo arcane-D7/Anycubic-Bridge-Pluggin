@@ -58,6 +58,62 @@ test("isOverlayPanel: empty rect list always false", () => {
 // The S7-004 mock lane `mutateObject({kind:"setTransform"})` is the snapshot
 // writer the gizmo's onObjectChange/pointer-up flow drives.
 
+// ---- S9.10-001: settle on plate (lay-on-plate, Y-up) -----------------------
+
+test("settleOnPlateTransform: lifts a mesh whose bounds dip below 0 so its world minY = 0", () => {
+  // Sphere: local bounds -13..13 in Y, previous transform y=0 → 13 mm buried.
+  const t = core.settleOnPlateTransform({
+    bounds: { min: [-13, -13, -13] },
+    transform: { x: 8, y: 0, z: -18 },
+  });
+  assert.equal(t.x, 8);
+  assert.equal(t.y, 13); // -minY = -(-13) = 13
+  assert.equal(t.z, -18);
+});
+
+test("settleOnPlateTransform: respects scale (world bottom = y + minY*sy)", () => {
+  const t = core.settleOnPlateTransform({
+    bounds: { min: [-5, -5, 0] },
+    transform: { x: 0, y: 0, z: 0, sy: 2 },
+  });
+  const n = core.normalizeTransform(t);
+  // world bottom = y + minY * sy = 10 + (-5)*2 = 0
+  assert.equal(n.y, 10);
+  assert.equal(n.sy, 2);
+});
+
+test("settleOnPlateTransform: already resting mesh is unchanged (y stays 0)", () => {
+  const t = core.settleOnPlateTransform({
+    bounds: { min: [0, 0, 0] },
+    transform: { x: 14, y: 0, z: 14 },
+  });
+  assert.equal(t.y, 0);
+  // `-0` trap: y must be exactly 0, not -0
+  assert.ok(Object.is(t.y, 0));
+});
+
+test("clampBedY: raises draft y when it would sink below the plate", () => {
+  // Sphere local minY = -13; dropping y to -20 → world bottom = -20 + (-13) = -33 < 0.
+  const before = { x: 0, y: -20, z: 0, rx: 0, ry: 0, rz: 0, sx: 1, sy: 1, sz: 1 };
+  const after = core.clampBedY(before, -13);
+  assert.equal(after.y, 13); // -minY = 13 → world bottom = 13 + (-13) = 0
+  assert.equal(after.x, 0);
+  assert.equal(after.z, 0);
+});
+
+test("clampBedY: hovering above the plate passes through unchanged", () => {
+  const draft = { x: 5, y: 20, z: 0, rx: 0, ry: 0, rz: 0, sx: 1, sy: 1, sz: 1 };
+  const after = core.clampBedY(draft, -13);
+  assert.equal(after, draft); // same identity: no clamp needed
+});
+
+test("clampBedY: honors scale (bed floor = -minY * sy)", () => {
+  const draft = { x: 0, y: -10, z: 0, rx: 0, ry: 0, rz: 0, sx: 1, sy: 2, sz: 1 };
+  const after = core.clampBedY(draft, -5);
+  // bed floor = -(-5)*2 = 10 → y=-10 clamped to 10
+  assert.equal(after.y, 10);
+});
+
 test("bridge lane: setTransform persists real transform into the snapshot", async () => {
   // Fresh module instance (unique URL per run) so scene objects are pristine.
   const freshUrl = pathToFileURL(path.join(root, "apps", "editor", "src", "bridge", "mock.ts"));

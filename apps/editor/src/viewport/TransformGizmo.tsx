@@ -4,10 +4,11 @@ import type * as THREE from "three";
 import { useCallback, useEffect, useMemo, useRef, useState, type ElementRef } from "react";
 import type { BridgeHandle } from "../bridge/mock";
 import type { SceneObjectSnapshot } from "../bridge/types";
+import { useScene } from "../state/scene";
 import { useViewport } from "../state/viewport";
 import { useUi, type ToolMode } from "../state/ui";
 import { SnapReadout, useSnap } from "./SnapController";
-import { constrainToAxis } from "./transform-core";
+import { constrainToAxis, clampBedY } from "./transform-core";
 
 /**
  * S9.3-001 — real drei <TransformControls> gizmo on the selected object.
@@ -182,10 +183,18 @@ export function TransformGizmo({ bridge, selectedName }: TransformGizmoProps) {
     // S9.7-002 AC-1: grid/vertex snaps apply during gizmo drags — the draft
     // is snapped here so the persisted value honors the configurable step.
     const snapped = snapTransform(draft, constraintKind as "move" | "rotate" | "scale");
+    // S9.10-001 — never let the operator drag the object through the bed.
+    // Scene is Y-up, plate top = Y=0. World bottom = y + minY*sy (mesh-offset
+    // semantics), so clamp the translate draft so worldMinY >= 0 — the object
+    // can hover but never sink through the plate (Orca/Bambu lay-on-plate).
+    // `minY` comes from the AUTHORITATIVE snapshot bounds (the target group
+    // itself has no geometry; the mesh child owns it).
+    const selObj = useScene.getState().objects.find((o) => o.name === selectedName);
+    const minY = selObj?.bounds.min[1] ?? 0;
     void bridge.mutateObject({
       kind: "setTransform",
       name: selectedName,
-      transform: snapped,
+      transform: clampBedY(snapped, minY),
     });
   }, [selectedName, bridge, target, tool, snapTransform]);
 
