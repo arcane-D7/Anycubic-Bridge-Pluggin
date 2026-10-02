@@ -1,13 +1,16 @@
 import { memo, useMemo } from "react";
+import { RoundedBox } from "@react-three/drei";
 import type { BuildVolume } from "../bridge/types";
 
 /**
- * Profile-driven build plate placeholder (R0).
+ * S9.10-002 — realistic 3D-print build plate.
  *
  * The plate footprint comes from the machine profile's build volume contract —
- * NEVER a hardcoded 220x220. Until R1 provides geometry authority this renders
- * a simple plate + grid, but the source of truth for dimensions is the profile
- * passed in, so swapping the profile source never touches this component.
+ * NEVER a hardcoded 220x220. Renders a real-looking plate: rounded PEI-style
+ * top (glossy dark surface with subtle tint), a rear locating tab, a grounded
+ * metallic bed, corner feet, a faint alignment grid and a small axes gizmo.
+ * The build-plate TOP sits exactly at Y=0 (objects rest on it via the
+ * lay-on-plate lane).
  */
 
 interface BuildPlateProps {
@@ -45,36 +48,65 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
   // Plate centered on the XY origin, footprint from the profile.
   const halfW = volume.widthMm / 2;
   const halfD = volume.depthMm / 2;
+  // Top slab: sits so its upper face is Y=0 (objects rest exactly on 0).
+  const TOP_THICKNESS = 3;
+  const topY = -TOP_THICKNESS / 2;
 
   return (
     <group>
-      {/* Sides — drawn from the profile footprint so the plate looks real. */}
-      {([halfD, -halfD] as const).map((z, i) => (
-        <mesh key={`front-back-${i}`} position={[0, -0.5, z]}>
-          <boxGeometry args={[volume.widthMm, 1, 0.5]} />
-          <meshStandardMaterial color="#3c4048" />
-        </mesh>
-      ))}
-      {([halfW, -halfW] as const).map((x, i) => (
-        <mesh key={`left-right-${i}`} position={[x, -0.5, 0]}>
-          <boxGeometry args={[0.5, 1, volume.depthMm]} />
-          <meshStandardMaterial color="#3c4048" />
+      {/* PEI-style build surface (rounded edges, glossy dark). */}
+      <RoundedBox
+        args={[volume.widthMm - 2, TOP_THICKNESS, volume.depthMm - 2]}
+        radius={5}
+        smoothness={4}
+        position={[0, topY, 0]}
+      >
+        <meshPhysicalMaterial
+          color="#22272b"
+          roughness={0.34}
+          metalness={0.28}
+          clearcoat={1}
+          clearcoatRoughness={0.5}
+        />
+      </RoundedBox>
+
+      {/* Rear locating tab (the familiar plate handle). */}
+      <RoundedBox
+        args={[Math.max(40, volume.widthMm * 0.22), TOP_THICKNESS + 1, 12]}
+        radius={4}
+        smoothness={3}
+        position={[0, topY + 0.6, halfD + 3]}
+      >
+        <meshStandardMaterial color="#22272b" roughness={0.34} metalness={0.28} />
+      </RoundedBox>
+
+      {/* Metallic heater bed under the surface. */}
+      <mesh position={[0, -1.6, 0]}>
+        <boxGeometry args={[volume.widthMm, 2.2, volume.depthMm]} />
+        <meshStandardMaterial color="#454b47" metalness={0.45} roughness={0.5} />
+      </mesh>
+
+      {/* Corner feet. */}
+      {(
+        [
+          [-halfW + 8, halfD - 8],
+          [halfW - 8, halfD - 8],
+          [-halfW + 8, -halfD + 8],
+          [halfW - 8, -halfD + 8],
+        ] as const
+      ).map(([fx, fz], i) => (
+        <mesh key={`foot-${i}`} position={[fx, -3.2, fz]}>
+          <cylinderGeometry args={[6, 7.5, 3, 16]} />
+          <meshStandardMaterial color="#3a3f45" metalness={0.5} roughness={0.55} />
         </mesh>
       ))}
 
-      <mesh position={[0, -1.3, 0]}>
-        <boxGeometry args={[volume.widthMm, 2.6, volume.depthMm]} />
-        <meshStandardMaterial color="#454b47" metalness={0.15} roughness={0.85} />
-      </mesh>
-      <mesh position={[0, -1.3, halfD + 4]}>
-        <boxGeometry args={[volume.widthMm * 0.2, 2.6, 8]} />
-        <meshStandardMaterial color="#454b47" roughness={0.85} />
-      </mesh>
+      {/* Faint alignment grid (visual only). */}
       <lineSegments>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[grid, 3]} />
         </bufferGeometry>
-        <lineBasicMaterial color="#748078" transparent opacity={0.55} />
+        <lineBasicMaterial color="#9fb4a8" transparent opacity={0.28} />
       </lineSegments>
       <axesHelper args={[25]} position={[-halfW, 0.15, halfD]} />
     </group>
