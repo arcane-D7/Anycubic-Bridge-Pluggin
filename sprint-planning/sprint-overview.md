@@ -1,8 +1,14 @@
 # Sprint Overview — Anycubic Bridge CAD Engine
 
-**Last updated:** 2026-10-01
-**Canonical source:** This file is the authoritative index for sprint status,
-ticket coverage, execution order, and roadmap.
+**Last updated:** 2026-10-02
+
+> **Printer-integration roadmap (2026-10-02, Consultor report)**: Sprints 9.9–9.12 implement
+> the full printer integration the user requested (all 553 MCP property paths → UI + Agent).
+> Read side first (9.9), then gated writes (9.10), slicer-style/live viewport + plate
+> upgrades (9.11), storage/DevTools/Agent parity + i18n/agnosticism audit (9.12) — all
+> BEFORE Sprint 10 (R4 auth/db), per user instruction.
+> **Canonical source:** This file is the authoritative index for sprint status,
+> ticket coverage, execution order, and roadmap.
 
 ## Delivery Status
 
@@ -89,6 +95,10 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
 |  9.6 |    P1    | Presets, Object Properties, Undo Surface & Isolated Chat History   |       9 | M      | ✅ Completed (9/9) | [sprint](sprint-9-6/sprint.md)  | `fd74016`   |
 |  9.7 |    P1    | Boolean Modeling, Snapping & Repair                                |       5 | M      | ✅ Completed (5/5) | [sprint](sprint-9-7/sprint.md)  | `bdb1097`   |
 |  9.8 |    P1    | Interaction Polish, Labels, Measure, i18n                          |       7 | M      | ✅ Complete (7/7)  | [sprint](sprint-9-8/sprint.md)  | `e5408b4`   |
+|  9.9 |    P0    | Printer Data Core & Device Panel (read side)                       |       6 | L      | ⏳ Planned         | [sprint](sprint-9-9/sprint.md)  | —           |
+| 9.10 |    P0    | Printer Actions (write side, gated)                                |       4 | L      | ⏳ Planned         | [sprint](sprint-9-10/sprint.md) | —           |
+| 9.11 |    P0    | Slicer-Style View, Live Overlay & Plate Upgrades                   |       4 | L      | ⏳ Planned         | [sprint](sprint-9-11/sprint.md) | —           |
+| 9.12 |    P1    | Storage Browser, DevTools & Agent Parity                           |       4 | M      | ⏳ Planned         | [sprint](sprint-9-12/sprint.md) | —           |
 |   10 |    P1    | R4 separable auth service + memory (fail-closed sync)              |       5 | L      | ⏳ Planned         | [sprint](sprint-10/sprint.md)   | —           |
 |   11 |    P1    | R5 non-planar S2 (curved-top, per-machine gates, coupon)           |       5 | XL     | ⏳ Planned         | [sprint](sprint-11/sprint.md)   | —           |
 |   12 |    P1    | R6 non-planar S3 conformal/field (paper study, OSQP, art gate)     |       5 | XL     | ⏳ Planned         | [sprint](sprint-12/sprint.md)   | —           |
@@ -148,6 +158,10 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
 | T3b throwaway-VM worker (capability-gated, watchdog, kill/reap)                                                                                                                                  | 13             | S13-002                                                             | VM session dead after run; native never downgraded                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | S4 continuous multi-axis feasibility on actually-existing catalog profiles only                                                                                                                  | 13             | S13-003                                                             | no in-catalog machine → research-only note, no claim; LinuxCNC study; S3-Slicer/Open5x/S4_Slicer/FullControl rows = study/inspiration                                                                                                                                                                                                                                                                                                                               |
 | Full-tier matrix integration test (T0/T1/T3a/T2/T3b) + T3b journal/safety-box audit                                                                                                              | 13             | S13-004                                                             | wrong-tier request fails; journal record completeness; revocation e2e                                                                                                                                                                                                                                                                                                                                                                                               |
+| Printer read side: snapshot schema + agnostic 553-path map + adaptive polling + Device panel (monitor/filaments) + status bar + toasts                                                           | 9.9            | S9.9-001..006                                                       | `PrinterSnapshot`/`AceSlot` null-safe; path→snapshot pure mapper + `raw` mirror; 1.5–2 s print / 10–15 s idle / 30 s ACE polling with SWR; capabilities-gated sections; thresholds → toasts; PT/EN                                                                                                                                                                                                                                                                  |
+| Gated writes: capability surface (user vs Agent policy) + control wiring (temps/fans/speed/lights/dryer/auto-feed/slot) + real print flow with filament guard                                    | 9.10           | S9.10-001..004                                                      | policy `{action,capabilityKey,requiresApproval}` shared UI+Agent; writes through `printer_command_send` confirm gates; Agent writes → S9-006 approval card; approval card shows live snapshot; block send when filament insufficient                                                                                                                                                                                                                                |
+| Slicer-style / live viewport (ACE color → material; toolhead overlay; plate upgrades)                                                                                                            | 9.11           | S9.11-001..004                                                      | extruder→slot→color pure mapper; `MeshStandardMaterial` procedural; live overlay ≤4 Hz memoized; PEI texture/quadrants/hot-end/Z-column toggles; lay-on-plate lane regression (`d9502c0`)                                                                                                                                                                                                                                                                           |
+| Storage browser + DevTools + Agent parity (Agent sees same snapshot; policy-gated writes; i18n PT/EN; agnosticism audit)                                                                         | 9.12           | S9.12-001..004                                                      | DevicePanel Files/DevTools tabs; `printer_get_snapshot` + write tools via capability-surface; sanitizer dry-run 0; zero hardcoded UI strings                                                                                                                                                                                                                                                                                                                        |
 | Health gates: unit + typing + integration + e2e per sprint                                                                                                                                       | 5–13           | S5-006 + per-sprint HS                                              | `pnpm run check` (unit/type/lint/format/knip/licenses) + sprint-specific runner + sanitizer dry-run                                                                                                                                                                                                                                                                                                                                                                 |
 | **Dual slicing modes (standard + non-planar both first-class, optional disable non-planar)**                                                                                                     | 5–6, 8, 11, 12 | S5-001(§3.0a), S6-004, S8-002/004/005, S11-001/002/004, S12-003/005 | **Standard (planar) = default, always available** (R2 full pipeline); **non-planar = opt-in per project** only when profile declares capabilities (else disabled with named reason, never silent fallback). Mode persisted per project (S6-004), in IR provenance + cache key, mode-aware validator (S8-004), Z-ramp isolated post-extrusion, standard mode untouched by S3 flag. User-confirmed 2026-09-28, §3.0a; consultor-validated (Bambu/Cura/Prusa patterns) |
 
@@ -158,7 +172,7 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
 ## Execution Order
 
 1. **Legacy (complete):** Sprint 1 → 2 → 3 → 4.
-2. **New roadmap (planned):** Sprint 5 → 6 → 7 → 8 → 9 → 9.1 → 9.1a → 9.2 → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 → 10 → 11 → 12 → 13,
+2. **New roadmap (planned):** Sprint 5 → 6 → 7 → 8 → 9 → 9.1 → 9.1a → 9.2 → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 → 9.9 → 9.10 → 9.11 → 9.12 → 10 → 11 → 12 → 13,
    strictly sequential — each new sprint depends only on earlier sprints:
    - Sprint 5 (architecture + code-quality foundations) is the **first** new sprint
      (user-approved "primeiro passo").
@@ -171,15 +185,23 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
      broker AI loopback (9.6)**, boolean + snapping + repair (9.7), polish + labels +
      measure + i18n (9.8). Source: `docs/ui-gap-audit-2026-09-30.md` + Consultor report
      2026-09-30 (ronda 1 + ronda 2: Tailwind v4 + shadcn/ui + AI SDK + dockable chat).
+   - **Sprints 9.9–9.12 (printer integration, user-requested 2026-10-02)** land BEFORE Sprint 10,
+     per the Consultor report 2026-10-02 (reader: `chat-session-resources/…/content.txt`):
+     read-side snapshot + Device panel + status bar (9.9), gated writes + real print flow
+     (9.10), slicer-style/live viewport + plate upgrades (9.11), storage/DevTools/Agent
+     parity + i18n/agnosticism audit (9.12). All 553 MCP property paths become UI + Agent
+     surfaces; Agent writes always need approval (S9-006 card).
    - Sprints 6–13 map R0–R7 of the investigation roadmap: R0 shell (6), R1
      editing core (7), R2 planar baseline (8), R3 harness (9), R4 auth/memory (10),
-     R5 S2 (11), R6 S3 (12), R7 T3b + S4 research (13).
+     R5 S2 (11), R6 S3 (12), R7 T3b + S4 research (13). The 9.9–9.12 printer-integration
+     series sits after 9.8 and before 10.
 3. Sprint 4 is plan-only (documentation + packaging checklist, no runnable Electron shell).
 4. **Completed so far (2026-09-29):** Sprints 5–9 delivered (R0–R3: foundation, editing
    core, planar baseline, harness).
-5. **Next active (2026-10-02):** **Sprint 10 (R4 separable auth service + memory, fail-closed
-   sync)** — `9.1 → 9.1a → 9.2 → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8` all delivered (2026-10-02):
-   **the 9.x series is complete and the local system is production-shaped** (final gate
-   EXIT:0 — unit 586, licenses 59, architecture zero-egress, sanitizer 0). Sprint 10 = auth.db
-   loopback XOR Postgres, OAuth PKCE RFC 8252, global memory fail-closed, multi-project
-   isolation.
+5. **Next active (2026-10-02):** **Printer integration series (9.9–9.12)** —
+   `9.1 → 9.1a → 9.2 → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8` all delivered (2026-10-02):
+   the 9.x local series is complete (final gate EXIT:0 — unit 586, licenses 59, architecture
+   zero-egress, sanitizer 0). Next up: **9.9 Printer Data Core & Device Panel** (read side)
+   → 9.10 gated writes → 9.11 slicer-style/live viewport → 9.12 storage/DevTools/Agent
+   parity — then Sprint 10 (R4 auth.db loopback XOR Postgres, OAuth PKCE RFC 8252, global
+   memory fail-closed, multi-project isolation).
