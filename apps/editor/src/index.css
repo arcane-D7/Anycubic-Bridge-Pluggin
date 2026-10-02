@@ -174,6 +174,15 @@
   --viewport-bg: #d9ddd8; /* replaces hard-coded #d5d9d6 */
   --viewport-grid: rgb(25 31 28 / 0.08);
   --viewport-grid-strong: rgb(25 31 28 / 0.16);
+
+  /* Solid popover/readout fallbacks (S9.8-007 audit: these were missing,
+     so styles.css fell back to #ffffff/#f7f9f7 — white panels in dark mode). */
+  --panel-bg: var(--bg-dialog);
+  --bg-panel-solid: var(--bg-dialog);
+  --text-muted: var(--text-tertiary);
+  --ok-primary: var(--sema-success);
+  --danger-primary: var(--sema-error);
+  --accent-warm: #a8663c; /* repair/safety hairline (warm amber, ≤60% sat) */
 }
 
 :root[data-theme="dark"] {
@@ -231,6 +240,14 @@
   --viewport-bg: #151a15;
   --viewport-grid: rgb(255 255 255 / 0.06);
   --viewport-grid-strong: rgb(255 255 255 / 0.12);
+
+  /* Solid popover/readout fallbacks (see light set) */
+  --panel-bg: var(--bg-dialog);
+  --bg-panel-solid: var(--bg-dialog);
+  --text-muted: var(--text-tertiary);
+  --ok-primary: var(--sema-success);
+  --danger-primary: var(--sema-error);
+  --accent-warm: #c98a5e; /* warm amber lifted for dark surfaces */
 }
 
 /* ============================================================

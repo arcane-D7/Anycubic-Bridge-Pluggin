@@ -78,12 +78,12 @@ body,
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--accent-primary, #2f6bd8);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary, #2f6bd8) 20%, transparent);
+  background: var(--accent-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 20%, transparent);
 }
 
 .dirty-chip .dirty-dot.is-clean {
-  background: var(--ok-primary, #2ea44f);
+  background: var(--ok-primary);
   box-shadow: none;
 }
 
@@ -404,10 +404,10 @@ body,
   gap: 3px;
   margin-left: 6px;
   padding: 1px 5px;
-  border: 1px solid var(--accent-warm, #b36a5e);
+  border: 1px solid var(--accent-warm);
   border-radius: 9px;
-  background: color-mix(in srgb, var(--accent-warm, #b36a5e) 14%, transparent);
-  color: var(--accent-warm, #b36a5e);
+  background: color-mix(in srgb, var(--accent-warm) 14%, transparent);
+  color: var(--accent-warm);
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -418,8 +418,8 @@ body,
 }
 
 .obj-repair-badge:hover {
-  background: color-mix(in srgb, var(--accent-warm, #b36a5e) 26%, transparent);
-  border-color: var(--accent-warm, #b36a5e);
+  background: color-mix(in srgb, var(--accent-warm) 26%, transparent);
+  border-color: var(--accent-warm);
 }
 
 /* S9.7-003 (G46) — viewport corner chip listing non-watertight objects */
@@ -434,7 +434,7 @@ body,
   gap: 6px;
   max-width: 70%;
   padding: 5px 8px;
-  background: color-mix(in srgb, var(--glass-fill-2, #ffffff) 88%, transparent);
+  background: color-mix(in srgb, var(--glass-fill-2) 88%, transparent);
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
@@ -456,9 +456,9 @@ body,
   gap: 4px;
   height: 22px;
   padding: 0 8px;
-  border: 1px solid var(--accent-warm, #b36a5e);
+  border: 1px solid var(--accent-warm);
   border-radius: 11px;
-  background: color-mix(in srgb, var(--accent-warm, #b36a5e) 12%, transparent);
+  background: color-mix(in srgb, var(--accent-warm) 12%, transparent);
   color: var(--text-primary);
   font-size: 11px;
   cursor: pointer;
@@ -466,11 +466,11 @@ body,
 }
 
 .viewport-repair-badge svg {
-  color: var(--accent-warm, #b36a5e);
+  color: var(--accent-warm);
 }
 
 .viewport-repair-badge:hover {
-  background: color-mix(in srgb, var(--accent-warm, #b36a5e) 24%, transparent);
+  background: color-mix(in srgb, var(--accent-warm) 24%, transparent);
 }
 
 /* S9.8-002 (G45) — viewport object label chips (hover + always-on).
@@ -702,8 +702,8 @@ body,
 }
 
 .inspector-input.invalid {
-  border-color: #e0523f;
-  color: #e0523f;
+  border-color: var(--sema-error);
+  color: var(--sema-error);
 }
 
 .inspector-delta {
@@ -724,7 +724,7 @@ body,
 .inspector-warning {
   margin: 0;
   padding: 6px 12px 8px;
-  color: #e0a24a;
+  color: var(--sema-warning);
   font-size: var(--t-md, 12px);
   line-height: 1.4;
   border-top: 1px solid var(--border);
@@ -967,7 +967,8 @@ body,
   color: var(--accent-primary);
 }
 
-/* S9.7-002 — snapping readout + guide overlay + step input */
+/* S9.7-002 — snapping readout + guide overlay + step input
+   (S9.8-007 audit: solid fallback → glass HUD family per spec). */
 .viewport-snap-readout {
   position: absolute;
   right: 12px;
@@ -977,18 +978,21 @@ body,
   align-items: baseline;
   gap: 8px;
   padding: 6px 10px;
-  border-radius: 6px;
-  background: var(--panel-bg, #ffffff);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  border-radius: var(--r-md);
+  background: var(--glass-fill-2);
+  -webkit-backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  border: 1px solid var(--glass-stroke);
+  box-shadow: var(--shadow-inset-hi), var(--shadow-2);
   font-size: 12px;
-  color: var(--text-primary, #2b2f33);
+  color: var(--text-primary);
   pointer-events: none;
   user-select: none;
 }
 
 .viewport-snap-readout .snap-readout-axis {
   font-weight: 700;
-  color: var(--accent-primary, #2f6bd8);
+  color: var(--accent-primary);
 }
 
 .viewport-snap-readout .snap-readout-value {
@@ -1017,12 +1021,15 @@ body,
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  border-radius: 6px;
-  background: var(--panel-bg, #ffffff);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  border-radius: var(--r-md);
+  background: var(--glass-fill-2);
+  -webkit-backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  border: 1px solid var(--glass-stroke);
+  box-shadow: var(--shadow-inset-hi), var(--shadow-2);
   font-family: var(--font-mono, ui-monospace, "Cascadia Mono", monospace);
   font-size: 12px;
-  color: var(--text-primary, #2b2f33);
+  color: var(--text-primary);
   user-select: none;
 }
 
@@ -1032,10 +1039,10 @@ body,
 }
 
 .measure-readout .measure-kind-btn {
-  border: 1px solid var(--border, #cfd4d8);
+  border: 1px solid var(--border);
   border-radius: 4px;
-  background: var(--panel-bg, #ffffff);
-  color: var(--text-dim, #687078);
+  background: var(--glass-fill-3);
+  color: var(--text-dim);
   font: 600 11px/1 var(--font-mono, ui-monospace, monospace);
   padding: 3px 6px;
   cursor: pointer;
@@ -1046,9 +1053,9 @@ body,
 }
 
 .measure-readout .measure-kind-btn.is-active {
-  background: var(--accent-primary, #2f6bd8);
-  border-color: var(--accent-primary, #2f6bd8);
-  color: #ffffff;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--text-on-accent);
 }
 
 .measure-readout .measure-value {
@@ -1057,10 +1064,10 @@ body,
 }
 
 .measure-readout .measure-clear {
-  border: 1px solid var(--border, #cfd4d8);
+  border: 1px solid var(--border);
   border-radius: 4px;
   background: transparent;
-  color: var(--text-dim, #687078);
+  color: var(--text-dim);
   font: 500 10px/1 var(--font-mono, ui-monospace, monospace);
   padding: 3px 6px;
   cursor: pointer;
@@ -1068,8 +1075,8 @@ body,
 }
 
 .measure-readout .measure-clear:hover:not(:disabled) {
-  color: var(--danger-primary, #d33a3a);
-  border-color: var(--danger-primary, #d33a3a);
+  color: var(--danger-primary, var(--sema-error));
+  border-color: var(--danger-primary, var(--sema-error));
 }
 
 .measure-readout .measure-clear:disabled {
@@ -1080,10 +1087,10 @@ body,
 .toolbar-snap-step input {
   width: 44px;
   height: 26px;
-  border: 1px solid var(--border, #cfd4d8);
+  border: 1px solid var(--border);
   border-radius: 4px;
-  background: var(--panel-bg, #ffffff);
-  color: var(--text-primary, #2b2f33);
+  background: var(--ctrl-well);
+  color: var(--text-primary);
   font-size: 12px;
   text-align: right;
   padding: 0 4px;
@@ -1274,7 +1281,7 @@ body,
 }
 
 .conversation-delete:hover {
-  color: #d64545;
+  color: var(--sema-error);
   background: var(--bg-raised);
 }
 
@@ -1380,7 +1387,7 @@ body,
 }
 
 .chat-message.assistant {
-  border-left: 3px solid #4f9cf7;
+  border-left: 3px solid var(--border-focus);
 }
 
 .chat-role {
@@ -1438,11 +1445,11 @@ body,
 }
 
 .budget-fill.over {
-  background: #d64545;
+  background: var(--sema-error);
 }
 
 .budget-warn {
-  color: #d64545;
+  color: var(--sema-error);
   font-size: 10px;
 }
 
@@ -1463,7 +1470,7 @@ body,
 }
 
 .approval-card[data-state="pending"] {
-  border-color: #b8860b;
+  border-color: var(--sema-warning);
 }
 
 .approval-card[data-state="approved"] {
@@ -1471,7 +1478,7 @@ body,
 }
 
 .approval-card[data-state="rejected"] {
-  border-color: #d64545;
+  border-color: var(--sema-error);
   opacity: 0.7;
 }
 
@@ -1488,7 +1495,7 @@ body,
 }
 
 .approval-destructive {
-  color: #d64545;
+  color: var(--sema-error);
 }
 
 .approval-actions {
@@ -1517,8 +1524,8 @@ body,
 }
 
 .reject-btn {
-  border-color: #d64545;
-  color: #d64545;
+  border-color: var(--sema-error);
+  color: var(--sema-error);
 }
 
 .chat-input-row {
@@ -1578,7 +1585,7 @@ body,
   margin-left: auto;
   border: none;
   background: none;
-  color: #d64545;
+  color: var(--sema-error);
   font-size: 10px;
   cursor: pointer;
   text-decoration: underline;
@@ -1668,15 +1675,15 @@ body,
 }
 
 .delta-chip.move {
-  color: #4da3ff;
+  color: var(--sema-info);
 }
 
 .delta-chip.rotate {
-  color: #7fbf4d;
+  color: var(--sema-success);
 }
 
 .delta-chip.scale {
-  color: #d6a24d;
+  color: var(--sema-warning);
 }
 
 .journal-nav {
@@ -1858,7 +1865,8 @@ input {
 .settings-tabs button[aria-selected="true"] {
   color: var(--accent);
   border-bottom-color: var(--accent);
-  background: #e3ede5;
+  background: var(--sel-bg);
+  border-radius: 4px 4px 0 0; /* chamfered top, not flat squares */
 }
 .app-header .app-sub {
   margin-left: auto;
@@ -1882,7 +1890,7 @@ input {
 }
 .sidebar-detach:hover {
   color: var(--accent);
-  background: #e3ede5;
+  background: var(--sel-bg);
 }
 .settings-heading {
   display: flex;
@@ -1892,8 +1900,8 @@ input {
 }
 .draft-badge {
   font-size: 10px;
-  color: #805e1d;
-  background: #f5ead0;
+  color: var(--sema-warning);
+  background: var(--sema-warning-soft);
   padding: 3px 6px;
   border-radius: 3px;
 }
@@ -2029,7 +2037,7 @@ input {
   align-items: center;
   gap: 14px;
   padding: 10px 16px;
-  border-bottom: 1px solid #c4cac5;
+  border-bottom: 1px solid var(--border-strong);
   font-size: 12px;
   flex-wrap: wrap;
 }
@@ -2041,7 +2049,7 @@ input {
   border-radius: 999px;
   border: 1px solid transparent;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-secondary, var(--text-muted));
   font-size: 11px;
   font-weight: 500;
   line-height: 1;
@@ -2387,7 +2395,7 @@ input {
 .import-commit {
   border: 1px solid transparent;
   background: var(--accent-primary);
-  color: #fff;
+  color: var(--text-on-accent);
 }
 
 .import-commit:disabled {
@@ -2622,7 +2630,7 @@ input {
     bottom: 0;
     width: min(330px, 88vw);
     z-index: 10;
-    box-shadow: 6px 0 18px #293c3120;
+    box-shadow: 6px 0 18px color-mix(in srgb, var(--shade, #10130f) 22%, transparent);
   }
   .app-main > .panel-divider {
     display: none;
@@ -2685,7 +2693,7 @@ input {
   overflow-y: auto;
   padding: 12px 14px;
   border-radius: 10px;
-  background: var(--bg-panel-solid, #f7f9f7);
+  background: var(--bg-panel-solid);
   border: 1px solid var(--border);
   box-shadow: 0 12px 32px rgba(16, 24, 20, 0.18);
   z-index: 60;
@@ -2755,9 +2763,9 @@ input {
   cursor: pointer;
   height: 26px;
   padding: 0 8px;
-  border: 1px solid var(--border, #d9ded9);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--bg-panel-solid, #f7f9f7);
+  background: var(--bg-panel-solid);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2803,7 +2811,7 @@ input {
   width: min(280px, 84vw);
   padding: 10px 12px;
   border-radius: 10px;
-  background: var(--bg-panel-solid, #f7f9f7);
+  background: var(--bg-panel-solid);
   border: 1px solid var(--border);
   box-shadow: 0 12px 32px rgba(16, 24, 20, 0.18);
   z-index: 60;
@@ -3065,7 +3073,7 @@ input {
 
 .approval-mismatch {
   font-size: 11px;
-  color: var(--sema-error, #d64545);
+  color: var(--sema-error);
 }
 
 .approval-task {
