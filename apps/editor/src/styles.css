@@ -422,17 +422,21 @@ body,
   border-color: var(--accent-warm);
 }
 
-/* S9.7-003 (G46) — viewport corner chip listing non-watertight objects */
+/* S9.7-003 (G46) — viewport corner chip listing non-watertight objects.
+   NOTE (2026-10-02 UX fix): was bottom-center, colliding with .plate-tabs
+   (both bottom:12px; z-index 6 wins because .viewport-frame isolation:isolate
+   pins this z:40 to level 0 in the root context). Moved to TOP-LEFT — the
+   only viewport corner free of controls (toolbar top-center, snap top-right,
+   plate-tabs bottom-center, view-cube bottom-right, measure bottom-left). */
 .viewport-repair-badges {
   position: absolute;
-  left: 50%;
-  bottom: 12px;
-  transform: translateX(-50%);
+  left: 12px;
+  top: 12px;
   z-index: 40;
   display: flex;
   align-items: center;
   gap: 6px;
-  max-width: 70%;
+  max-width: 42%;
   padding: 5px 8px;
   background: color-mix(in srgb, var(--glass-fill-2) 88%, transparent);
   border: 1px solid var(--border);
