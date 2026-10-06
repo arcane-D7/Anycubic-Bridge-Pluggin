@@ -96,7 +96,7 @@ harness` runner (S9-006). Gate per ticket EXIT:0, sanitizer 0 every commit — s
 |  9.7 |    P1    | Boolean Modeling, Snapping & Repair                                |       5 | M      | ✅ Completed (5/5)   | [sprint](sprint-9-7/sprint.md)  | `bdb1097`   |
 |  9.8 |    P1    | Interaction Polish, Labels, Measure, i18n                          |       7 | M      | ✅ Complete (7/7)    | [sprint](sprint-9-8/sprint.md)  | `e5408b4`   |
 |  9.9 |    P0    | Printer Data Core & Device Panel (read side)                       |       6 | L      | ✅ Complete (6/6)    | [sprint](sprint-9-9/sprint.md)  | `10fc20f`   |
-| 9.10 |    P0    | Printer Actions (write side, gated)                                |       4 | L      | 🔄 In progress (2/4) | [sprint](sprint-9-10/sprint.md) | `100fde0`   |
+| 9.10 |    P0    | Printer Actions (write side, gated)                                |       4 | L      | 🔄 In progress (3/4) | [sprint](sprint-9-10/sprint.md) | `751e65d`   |
 | 9.11 |    P0    | Slicer-Style View, Live Overlay & Plate Upgrades                   |       4 | L      | ⏳ Planned           | [sprint](sprint-9-11/sprint.md) | —           |
 | 9.12 |    P1    | Storage Browser, DevTools & Agent Parity                           |       4 | M      | ⏳ Planned           | [sprint](sprint-9-12/sprint.md) | —           |
 |   10 |    P1    | R4 separable auth service + memory (fail-closed sync)              |       5 | L      | ⏳ Planned           | [sprint](sprint-10/sprint.md)   | —           |

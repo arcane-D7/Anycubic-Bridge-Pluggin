@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor + MCP server (`printer_command_send`)                                                                                                                                               |
 | **Source**            | User request 2026-10-02 + Consultor report §B.4/§C.1 (write side, T.7–T.8)                                                                                                                      |
 | **Depends On**        | Sprint 9.9 (snapshot + panel)                                                                                                                                                                   |
-| **Status**            | 🔄 In progress (2/4)                                                                                                                                                                            |
+| **Status**            | 🔄 In progress (3/4)                                                                                                                                                                            |
 
 #### Implementation Notes (S9.10-001)
 
@@ -141,19 +141,31 @@ rust OK, build OK, smoke 106, e2e ×2 PASS, licenses 59, arch OK, sanitize 0.
 | **Priority**         | P1                                                |
 | **Type**             | Feature                                           |
 | **Estimated Effort** | M                                                 |
-| **Status**           | ⏳ Planned                                        |
+| **Status**           | ✅ Done (`751e65d`)                               |
 
-#### Context
+#### Implementation Notes (S9.10-003)
 
-ACE dryer (`ace_dry`), auto-feed (`ace_auto_feed`), slot mapping (`ace_set_slot`) from the
-Device → Filaments tab. User direct with confirm; Agent gated. `use_ams` requires explicit
-`ams_box_mapping`; painted slot is never assumed physical.
+ACE writes (dryer, auto-feed, manual slot bind):
 
-#### Acceptance criteria
+- `printer-control-core.ts` — three new grammar actions: `ace.dry`
+  (`ace_dry` flat args `stop` / `target_temp` 0–80 / `duration_min` 0–1440 /
+  `remain_time:0`), `ace.autoFeed` (`ace_auto_feed` `disabled`→`enabled`),
+  `ace.bindSlot` (`ace_set_slot` `box_id`/`slot_index` 0–9, `material_type`,
+  `color` [R,G,B]) — all `confirm: true`. Bounds per the schema; optional
+  dryer fields only validated when provided (defaults 45°C / 240 min).
+- **Manual path only** — the bind form sends the manual `ace_set_slot`
+  (edit_status stays 1): we NEVER forge an RFID tag. Consumables stay in
+  the local spool registry (spool_bind contract, P1).
+- `DevicePanel.tsx` — Filament tab gained per-box dryer toggle
+  (`device-dryer-toggle`), auto-feed toggle (`device-autofeed-toggle`), and a
+  `BindSlotModal` for empty slots (`device-bind-modal`); all gated by
+  capability `multiColorBox` and locked while a command is in flight (`busy`).
+- i18n: `device.fil.bindSlot/material/color/cancel/bind` (EN + PT_BR).
+- Tests: +8 envelope ACE tests (dryer start/stop/bounds, auto-feed on/off,
+  bind color triple + refusals, box window) + 1 lane test (ACE over lane).
 
-- [x] Dryer start/stop + state feedback; auto-feed toggle persists visibly.
-- [x] Slot bind uses the manual path (`edit_status:1`) — never forges an RFID tag.
-- [x] Unit tests for payloads (box/slot mapping, confirm word).
+Gate EXIT:0 (`$env:TEMP\s910003.log`): unit **654** pass/0 fail (+8), integration
+11, rust OK, smoke 106, e2e ×2 PASS, licenses 59, arch OK, sanitize 0.
 
 ### S9.10-004 — Real print flow: snapshot in approval card + filament guard
 
