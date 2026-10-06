@@ -85,6 +85,10 @@ export type MsgKey =
   | "app.toast.demo.title"
   | "app.toast.demo.message"
   | "app.toast.dismissAria"
+  | "toast.bell.aria"
+  | "toast.bell.empty"
+  | "toast.bell.title"
+  | "toast.bell.clear"
   | "modal.transformValueAria"
   | "snap.step"
   | "dirty.unsaved"
@@ -772,6 +776,10 @@ export const EN: Record<MsgKey, string> = {
   "app.toast.demo.title": "Ready",
   "app.toast.demo.message": "Liquid-glass shell initialized.",
   "app.toast.dismissAria": "Dismiss notification",
+  "toast.bell.aria": "Notifications ({count})",
+  "toast.bell.empty": "No notifications",
+  "toast.bell.title": "Notifications",
+  "toast.bell.clear": "Clear all",
   "modal.transformValueAria": "Transform value",
   "snap.step": "step {step}",
   "dirty.unsaved": "{n} unsaved",
@@ -1432,6 +1440,10 @@ export const PT_BR: Record<MsgKey, string> = {
   "app.toast.demo.title": "Pronto",
   "app.toast.demo.message": "Casca de vidro líquido inicializada.",
   "app.toast.dismissAria": "Dispensar notificação",
+  "toast.bell.aria": "Notificações ({count})",
+  "toast.bell.empty": "Sem notificações",
+  "toast.bell.title": "Notificações",
+  "toast.bell.clear": "Limpar tudo",
   "modal.transformValueAria": "Valor de transformação",
   "snap.step": "passo {step}",
   "dirty.unsaved": "{n} por guardar",

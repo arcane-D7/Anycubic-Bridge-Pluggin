@@ -36,7 +36,8 @@ export type IconName =
   | "undo"
   | "printer"
   | "refresh"
-  | "wrench";
+  | "wrench"
+  | "bell";
 
 const PATHS: Record<IconName, ReactNode> = {
   wrench: (
@@ -223,6 +224,12 @@ const PATHS: Record<IconName, ReactNode> = {
     <>
       <path d="M13 8a5 5 0 1 1-1.6-3.7" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M13 1.8V5h-3.2" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  bell: (
+    <>
+      <path d="M4 9.5V8a4 4 0 1 1 8 0v1.5L13 13H3l1-3.5z" strokeLinejoin="round" />
+      <path d="M7 13.5a1.5 1.5 0 0 0 2 0" strokeLinecap="round" />
     </>
   ),
 };
