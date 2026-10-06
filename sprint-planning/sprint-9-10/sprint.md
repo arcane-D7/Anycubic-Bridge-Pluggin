@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor + MCP server (`printer_command_send`)                                                                                                                                               |
 | **Source**            | User request 2026-10-02 + Consultor report §B.4/§C.1 (write side, T.7–T.8)                                                                                                                      |
 | **Depends On**        | Sprint 9.9 (snapshot + panel)                                                                                                                                                                   |
-| **Status**            | 🔄 In progress (3/4)                                                                                                                                                                            |
+| **Status**            | ✅ Complete (4/4)                                                                                                                                                                               |
 
 #### Implementation Notes (S9.10-001)
 
@@ -176,17 +176,54 @@ Gate EXIT:0 (`$env:TEMP\s910003.log`): unit **654** pass/0 fail (+8), integratio
 | **Priority**         | P1                                                                 |
 | **Type**             | Feature                                                            |
 | **Estimated Effort** | M                                                                  |
-| **Status**           | ⏳ Planned                                                         |
+| **Status**           | ✅ Done (`7f2e090`)                                                |
 
-#### Context
+#### Implementation Notes (S9.10-004)
 
-The approval card currently shows MOCK `SliceStats`. Swap to live snapshot: real temps,
-filament color/slot per extruder, remaining % per arranged filament. Validate the requested
-filament exists in a loaded ACE slot with enough `remainingPct` before approving send; block
-with a clear message otherwise. Keep the token-hash + approve/reject card.
+Real print flow — live snapshot in the approval card + filament guard:
 
-#### Acceptance criteria
+- `apps/editor/src/state/printer-print-guard-core.ts` (pure, headless) —
+  `printReady(boxes)` decides sendability from the LIVE ACE snapshot:
+  no ACE → ready (local spool unknown, honest pass-through); ACE present →
+  needs ≥1 identified/manual slot with `remainingPct >= PRINT_MIN_REMAIN_PCT`
+  (10%) — hard-block below that, warn below 50%. `identifying` slots are never
+  counted. Agnostic — never real printer values.
+- `PrintJobDialog.tsx` — three gates on send:
+  1. `openCard` refuses to open the approval card when the guard fails with an
+     actionable toast;
+  2. the card shows a LIVE block (real temps + per-slot ACE swatches + remain
+     %, from `usePrinterDevice` snapshot — not MOCK stats);
+  3. the Approve button is disabled while blocked AND `runSend` re-checks the
+     guard at send time (snapshot may have emptied after the card was shown).
+     The token-hash approve/reject card is untouched.
+- i18n: `send.blockedTitle` / `send.filamentBlocked` / `send.live.temps` /
+  `send.live.ace` (EN + PT_BR).
+- Tests: `printer-print-guard.test.mjs` (6 — no-ACE pass, ≥min pass, all-empty
+  block, low block, identifying block, warn-only) — the approve→send→completion
+  toast flow is already covered by `printjob-core.test.mjs` (send machine) +
+  `send-job.test.mjs` (mock lane seeds: success/offline/region).
 
-- [x] Card derives from live snapshot (temps, filament colors, remain %).
-- [x] Insufficient/absent filament → send blocked with actionable message.
-- [x] e2e smoke: approve → send → completion toast (mock lane seeds).
+Gate EXIT:0 (`$env:TEMP\s910004.log`): unit **660** pass/0 fail (+6), integration
+11, rust OK, smoke 106, e2e ×2 PASS, licenses 59, arch OK, sanitize 0.
+
+## Sprint Closed — 2026-10-06
+
+All 4/4 tickets delivered; gates green across the whole sprint.
+
+| Ticket    | Commit    |
+| --------- | --------- |
+| S9.10-001 | `f1efc86` |
+| S9.10-002 | `100fde0` |
+| S9.10-003 | `751e65d` |
+| S9.10-004 | `7f2e090` |
+
+| Gate metric       | Value           |
+| ----------------- | --------------- |
+| unit tests        | 660 pass/0 fail |
+| integration       | 11 pass         |
+| rust              | OK              |
+| smoke (MCP tools) | 106             |
+| e2e ×2            | PASS            |
+| licenses          | 59              |
+| architecture      | OK              |
+| sanitizer dry-run | 0 files         |
