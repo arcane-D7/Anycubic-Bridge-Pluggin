@@ -11,40 +11,34 @@ import { getPeiTexture } from "./plate-upgrade-visuals";
  * S9.10-002 — realistic 3D-print build plate.
  *
  * The plate footprint comes from the machine profile's build volume contract —
- * NEVER a hardcoded 220x220. Renders a real-looking plate: rounded PEI-style
- * top (glossy dark surface with subtle tint), a rear locating tab, a grounded
- * metallic bed, corner feet, a faint alignment grid and a small axes gizmo.
- * The build-plate TOP sits exactly at Y=0 (objects rest on it via the
- * lay-on-plate lane).
+ * NEVER a hardcoded 220x220. The plate is a SINGLE THIN LAYER: one rounded
+ * PEI-style surface whose TOP sits exactly at Y=0 — objects rest ON it (via
+ * the lay-on-plate lane) and are never embedded inside a thick block.
+ *
+ * P1-4-pass-2 (2026-10-06) — user feedback: "the plate must be a layer only".
+ *  - removed the heater bed + corner feet: no more giant block under objects.
+ *  - the surface is one thin slab (TOP_THICKNESS=0.8 mm, soft rounded edges)
+ *    and the rear locating tab is the same thin layer (no thick handle).
+ *  - readable minor/major reference grid (default ON, depth-tested so it hides
+ *    behind objects instead of z-fighting through them).
+ *  - plate specs text (W × D × H from the profile build volume) on the +Z
+ *    operator edge — the same value the DOM status bar shows.
  *
  * S9.11-004 — optional upgrades (default OFF, opt-in toggles): procedural PEI
  * texture on the surface, quadrant crosshair + "front" label, and a rear Z
  * reference column. All procedural (zero image assets); Y-axis untouched so
  * the lay-on-plate lane (regression `d9502c0`) keeps passing.
- *
- * P1-4 (2026-10-06) — user feedback pass:
- *  - thinner plate: the metal bed no longer intersects the top slab (the top
- *    face stays EXACTLY at y=0; the bed sits fully below the slab) so objects
- *    no longer look embedded in an over-thick block.
- *  - readable minor/major reference grid (default ON, depth-tested so it hides
- *    behind objects instead of z-fighting through them).
- *  - plate specs text (W × D × H from the profile build volume) on the +Z
- *    operator edge — the same value the DOM status bar shows.
  */
 
 interface BuildPlateProps {
   readonly volume: BuildVolume;
 }
 
-/** Top slab thickness (mm) — visually thin, top face at y=0. */
-const TOP_THICKNESS = 1.4;
-/** Heater bed thickness (mm) — sits ENTIRELY below the slab. */
-const BED_THICKNESS = 1.6;
-/** Gap between slab underside and bed top (mm). */
-const BED_GAP = 0.4;
+/** Plate layer thickness (mm) — a single thin surface; top face at y=0. */
+const TOP_THICKNESS = 0.8;
 
 /** Build plate grid line sets — minor (10 mm) + major (50 mm). Both are
- * depth-tested: they lie just above the surface (y=0.08) so objects resting
+ * depth-tested: they lie just above the surface (y=0.04) so objects resting
  * on the plate correctly occlude them. */
 function plateGridPositions(volume: BuildVolume): {
   readonly minor: Float32Array;
@@ -64,12 +58,12 @@ function plateGridPositions(volume: BuildVolume): {
   const minor: number[] = [];
   const major: number[] = [];
   for (let xMark = -halfWidth; xMark <= halfWidth; xMark += minorPitch) {
-    const line = [xMark, 0.08, -halfDepth, xMark, 0.08, halfDepth];
+    const line = [xMark, 0.04, -halfDepth, xMark, 0.04, halfDepth];
     if (Math.abs(xMark) % majorPitch === 0) major.push(...line);
     else minor.push(...line);
   }
   for (let zMark = -halfDepth; zMark <= halfDepth; zMark += minorPitch) {
-    const line = [-halfWidth, 0.08, zMark, halfWidth, 0.08, zMark];
+    const line = [-halfWidth, 0.04, zMark, halfWidth, 0.04, zMark];
     if (Math.abs(zMark) % majorPitch === 0) major.push(...line);
     else minor.push(...line);
   }
@@ -119,25 +113,20 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
   // Plate centered on the XY origin, footprint from the profile.
   const halfW = volume.widthMm / 2;
   const halfD = volume.depthMm / 2;
-  // Top slab: sits so its upper face is Y=0 (objects rest exactly on 0).
+  // Single thin layer: upper face at Y=0 (objects rest exactly on 0), so the
+  // slab center sits half a layer below the surface.
   const topY = -TOP_THICKNESS / 2;
-  // Bed: top gap below the slab underside (-TOP_THICKNESS), then the slab.
-  const bedTop = -(TOP_THICKNESS + BED_GAP);
-  const bedY = bedTop - BED_THICKNESS / 2;
-  // Feet: below the bed, small cylinders.
-  const footY = bedBottom(bedY, BED_THICKNESS) - 1.2;
   // Specs text: W × D × H from the profile build volume on the +Z operator edge.
   const specs = `${volume.widthMm} × ${volume.depthMm} × ${volume.heightMm} mm`;
 
   return (
     <group>
-      {/* PEI-style build surface (rounded edges, glossy dark). S9.11-004 —
-          optional procedural PEI texture replaces the flat color (canvas
-          value-noise, zero image assets). */}
+      {/* PEI-style build surface — a SINGLE THIN LAYER (top face at y=0).
+          Soft rounded edges only (no thick block under the objects). */}
       <RoundedBox
         args={[volume.widthMm - 2, TOP_THICKNESS, volume.depthMm - 2]}
-        radius={5}
-        smoothness={4}
+        radius={0.4}
+        smoothness={2}
         position={[0, topY, 0]}
       >
         {peiOn ? (
@@ -154,43 +143,22 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
             color="#22272b"
             roughness={0.34}
             metalness={0.28}
-            clearcoat={1}
+            clearcoat={0.6}
             clearcoatRoughness={0.5}
           />
         )}
       </RoundedBox>
 
-      {/* Rear locating tab (the familiar plate handle). */}
+      {/* Rear locating tab — the same thin layer, flush with the plate (no
+          thick handle above the surface). */}
       <RoundedBox
-        args={[Math.max(40, volume.widthMm * 0.22), TOP_THICKNESS + 1, 12]}
-        radius={4}
-        smoothness={3}
-        position={[0, topY + 0.6, halfD + 3]}
+        args={[Math.max(40, volume.widthMm * 0.22), TOP_THICKNESS, 12]}
+        radius={0.3}
+        smoothness={2}
+        position={[0, topY, halfD + 3]}
       >
         <meshStandardMaterial color="#22272b" roughness={0.34} metalness={0.28} />
       </RoundedBox>
-
-      {/* Metallic heater bed UNDER the surface (no overlap with the slab —
-          P1-4: the plate looks thin and objects sit ON it, not inside). */}
-      <mesh position={[0, bedY, 0]}>
-        <boxGeometry args={[volume.widthMm, BED_THICKNESS, volume.depthMm]} />
-        <meshStandardMaterial color="#454b47" metalness={0.45} roughness={0.5} />
-      </mesh>
-
-      {/* Corner feet. */}
-      {(
-        [
-          [-halfW + 8, halfD - 8],
-          [halfW - 8, halfD - 8],
-          [-halfW + 8, -halfD + 8],
-          [halfW - 8, -halfD + 8],
-        ] as const
-      ).map(([fx, fz], i) => (
-        <mesh key={`foot-${i}`} position={[fx, footY, fz]}>
-          <cylinderGeometry args={[6, 7.5, 3, 16]} />
-          <meshStandardMaterial color="#3a3f45" metalness={0.5} roughness={0.55} />
-        </mesh>
-      ))}
 
       {/* P1-4 — readable reference grid: minor (10 mm, faint) + major
           (50 mm, clearer). Both depth-tested — objects occlude them.
@@ -211,13 +179,13 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
           <lineBasicMaterial color="#cfe0d6" transparent opacity={0.42} depthTest />
         </lineSegments>
       ) : null}
-      <axesHelper args={[25]} position={[-halfW, 0.15, halfD]} />
+      <axesHelper args={[25]} position={[-halfW, 0.1, halfD]} />
 
       {/* P1-4 — plate specs (W × D × H from the profile build volume), on the
           +Z operator edge. drei <Text> renders a real mesh so it follows the
           camera; the same value is exposed as the DOM status-bar aria. */}
       <Text
-        position={[0, 0.28, halfD - (volume.depthMm > 220 ? 34 : 26)]}
+        position={[0, 0.2, halfD - (volume.depthMm > 220 ? 34 : 26)]}
         rotation={[-Math.PI / 2, 0, 0]}
         fontSize={volume.widthMm > 230 ? 9 : 8}
         color="#9fb4a8"
@@ -244,7 +212,7 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
             <lineBasicMaterial color="#7fd4ff" transparent opacity={0.5} />
           </lineSegments>
           {/* "front" marker: a short tick on the +Z edge + faint halo line. */}
-          <mesh position={[0, 0.09, -halfD + 3]} rotation={[-Math.PI / 2, 0, 0]}>
+          <mesh position={[0, 0.05, -halfD + 3]} rotation={[-Math.PI / 2, 0, 0]}>
             <planeGeometry args={[20, 4]} />
             <meshBasicMaterial color="#7fd4ff" transparent opacity={0.6} />
           </mesh>
@@ -270,8 +238,3 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
     </group>
   );
 });
-
-/** Helper: bottom of the bed. */
-function bedBottom(bedY: number, bedThickness: number): number {
-  return bedY - bedThickness / 2;
-}
