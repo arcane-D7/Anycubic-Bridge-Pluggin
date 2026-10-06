@@ -71,8 +71,8 @@ export function printerName(ip: string): string {
 /** Printer list + selection state driven by the LAN probe results. */
 export interface PrintersState {
   readonly printers: readonly PrinterInfo[];
-  /** Source of the list — mirrors the lane contract (`env` for now). */
-  readonly source: "env";
+  /** Source of the list — mirrors the lane contract (`env` LAN, `cloud` account). */
+  readonly source: "env" | "cloud";
   /** Id of the armed send target (null until the user selects one). */
   readonly selectedId: string | null;
   /** True while a reachability probe round is in flight. */
@@ -107,6 +107,26 @@ export function initialPrintersState(rawEnv = ""): PrintersState {
     selectedId: null,
     probing: false,
     hint,
+    lastProbedAt: null,
+  };
+}
+
+/**
+ * Build state from a CLOUD device list (S9.13-002). Source is `"cloud"` so
+ * the picker can badge account printers; ids are the stable cloud device ids
+ * (never env-derived LAN ids). Takes already-normalized `PrinterInfo` rows
+ * so this core stays pure and headless — the fetch happens in the bridge.
+ */
+export function cloudPrintersState(printers: readonly PrinterInfo[]): PrintersState {
+  return {
+    printers: printers.map((p) => ({ ...p, lastSeenAt: null })),
+    source: "cloud",
+    selectedId: null,
+    probing: false,
+    hint:
+      printers.length === 0
+        ? "No printers found on the Anycubic account (cloud). Set ANYCUBIC_CLOUD_LOOPBACK_URL + login."
+        : null,
     lastProbedAt: null,
   };
 }

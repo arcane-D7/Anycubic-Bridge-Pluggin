@@ -111,7 +111,14 @@ export function PrinterList({
               >
                 <PrinterLed printer={p} t={t} />
                 <span className="printer-picker-row-main">
-                  <span className="printer-picker-row-name">{p.name}</span>
+                  <span className="printer-picker-row-name">
+                    {p.name}
+                    {p.id.startsWith("cloud-") ? (
+                      <span className="printer-picker-badge" title={t("printer.badge.cloud")}>
+                        {t("printer.badge.cloud")}
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="printer-picker-row-ip">{p.ip}</span>
                 </span>
                 {p.id === selectedId ? (

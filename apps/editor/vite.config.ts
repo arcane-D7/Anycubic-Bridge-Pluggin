@@ -17,7 +17,14 @@ export default defineConfig({
   // S9.5-003 (G43): expose ONLY the printer-IP env var to the editor shell
   // (printer discovery never hardcodes device identifiers). Deliberately NOT
   // a blanket ANYCUBIC_ prefix — tokens/access codes stay server-side.
-  envPrefix: ["VITE_", "ANYCUBIC_PRINTER_IPS"],
+  // S9.13-002: the CLOUD lane is also loopback-only — we expose the bridge
+  // URL + region (no token ever leaves the MCP child).
+  envPrefix: [
+    "VITE_",
+    "ANYCUBIC_PRINTER_IPS",
+    "ANYCUBIC_CLOUD_LOOPBACK_URL",
+    "ANYCUBIC_CLOUD_REGION",
+  ],
   server: {
     port: 1420,
     strictPort: true,

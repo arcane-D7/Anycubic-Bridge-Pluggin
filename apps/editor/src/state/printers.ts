@@ -14,12 +14,14 @@
 
 import { create } from "zustand";
 import {
+  cloudPrintersState,
   initialPrintersState,
   printerId,
   reducePrinters,
   type PrintersState,
 } from "./printers-core";
 import type { PrinterInfo } from "../bridge/types";
+import { cloudDiscoverPrinters } from "../bridge/cloud";
 
 export type { PrinterInfo, PrintersState };
 export { printerId };
@@ -76,6 +78,11 @@ async function probeReachability(candidate: ProbeCandidate): Promise<boolean> {
 interface PrintersStore extends PrintersState {
   /** (Re)run discovery + reachability probe from the env value. */
   readonly refresh: (rawEnv: string, probe?: PrinterProbeFn) => Promise<void>;
+  /** (Re)run CLOUD account-printer discovery via the loopback cloud bridge.
+   * S9.13-002 — merges into the same `printers` list with `source: "cloud"`.
+   * The cloud lane is best-effort: a missing/offline bridge leaves the list
+   * unchanged (LAN discovery still works). */
+  readonly refreshCloud: () => Promise<void>;
   /** Arm the send target by printer id (null clears the selection). */
   readonly select: (id: string | null) => void;
 }
@@ -118,6 +125,31 @@ export const usePrinters = create<PrintersStore>()((set, get) => {
     select(id) {
       const { state } = reducePrinters(get(), { kind: "select", id });
       set(state);
+    },
+
+    async refreshCloud() {
+      // CLOUD lane (S9.13-002): best-effort account discovery. On any error
+      // (bridge down / not logged in / rate-limited) keep the current list.
+      let cloudList: readonly PrinterInfo[];
+      try {
+        const result = await cloudDiscoverPrinters();
+        cloudList = result.printers;
+      } catch {
+        return; // non-fatal — the LAN list (if any) stays usable.
+      }
+      const next = cloudPrintersState(cloudList);
+      const existing = get().printers;
+      // Merge: keep LAN entries the user may have armed, add/refresh cloud
+      // entries, and prefer the CLOUD ones in the list (account is fresh).
+      const byId = new Map(existing.map((p) => [p.id, p]));
+      for (const p of cloudList) byId.set(p.id, { ...p, lastSeenAt: Date.now() });
+      set((s) => ({
+        ...s,
+        printers: [...byId.values()],
+        source: next.source,
+        hint: next.hint,
+        lastProbedAt: Date.now(),
+      }));
     },
   };
 });

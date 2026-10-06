@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { usePrinters } from "@/state/printers";
 import { useI18n } from "@/state/i18n";
 import { useOperatorProfile } from "@/profile/useOperatorProfile";
+import { cloudLaneConfigured, cloudRegion } from "@/bridge/cloud";
 import { Icon } from "./icons";
 import { PrinterList } from "./printer-list";
 import { printerEnvRaw } from "@/lib/printer-env";
@@ -18,6 +19,9 @@ import { printerEnvRaw } from "@/lib/printer-env";
  * machine (Slicer Settings → Printer), the trigger shows that machine as a
  * static label — the Settings config is a real printer, so the header must
  * reflect it instead of "No printer".
+ * S9.13-002: when the CLOUD lane is enabled (`ANYCUBIC_CLOUD_LOOPBACK_URL`),
+ * the picker ALSO discovers the account's printers via the loopback
+ * cloud-bridge and shows them with a cloud badge — same list, both sources.
  * The env value is read ONLY here (the React layer owns import.meta.env);
  * the pure core + bridge lane stay headless-testable.
  */
@@ -30,9 +34,12 @@ export function PrinterPicker() {
   const hint = usePrinters((s) => s.hint);
   const lastProbedAt = usePrinters((s) => s.lastProbedAt);
   const refresh = usePrinters((s) => s.refresh);
+  const refreshCloud = usePrinters((s) => s.refreshCloud);
   const select = usePrinters((s) => s.select);
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const [profile] = useOperatorProfile();
+  const cloudLane = useMemo(() => cloudLaneConfigured(), []);
+  const region = useMemo(() => cloudRegion(), []);
 
   const rawEnv = useMemo(() => printerEnvRaw(), []);
   const selected = useMemo(
@@ -51,10 +58,15 @@ export function PrinterPicker() {
     void refresh(rawEnv);
   }, [rawEnv, refresh]);
 
-  // Discover + probe on mount (and when the env list changes).
+  // Discover + probe on mount (and when the env list changes); when the
+  // cloud lane is enabled, also fold in the account printers.
   useEffect(() => {
     void refresh(rawEnv);
   }, [rawEnv, refresh]);
+
+  useEffect(() => {
+    if (cloudLane) void refreshCloud();
+  }, [cloudLane, refreshCloud]);
 
   const close = useCallback(() => {
     detailsRef.current?.removeAttribute("open");
@@ -93,7 +105,7 @@ export function PrinterPicker() {
           hint={hint}
           selectedId={selectedId}
           lastProbedAt={lastProbedAt}
-          sourceLabel="env"
+          sourceLabel={cloudLane ? `cloud·${region}` : "env"}
           onRefresh={onRefresh}
           onSelect={onPick}
         />

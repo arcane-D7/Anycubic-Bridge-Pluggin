@@ -3170,6 +3170,22 @@ input {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* S9.13-002 — cloud-source printer badge (account printers via loopback). */
+.printer-picker-badge {
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary, #57a8ff) 46%, transparent);
+  background: color-mix(in srgb, var(--accent-primary, #57a8ff) 12%, transparent);
+  color: var(--accent-primary, #57a8ff);
+  font: 650 9px/1.4 var(--font-sans, system-ui, sans-serif);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .printer-picker-row-ip {

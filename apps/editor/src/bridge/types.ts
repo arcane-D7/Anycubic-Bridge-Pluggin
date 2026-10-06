@@ -378,11 +378,12 @@ export interface PrinterInfo {
 /**
  * Result of the bridge printer discovery lane (S9.5-003). `source` mirrors
  * how the list was built (env list for now; subnet scan later) so the picker
- * can explain an empty list.
+ * can explain an empty list. S9.13-002: the CLOUD lane returns
+ * `source: "cloud"` for account printers discovered via the loopback bridge.
  */
 export interface PrinterListResult {
   readonly ok: true;
-  readonly source: "env";
+  readonly source: "env" | "cloud";
   readonly printers: readonly PrinterInfo[];
 }
 
