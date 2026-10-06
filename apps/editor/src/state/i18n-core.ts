@@ -442,6 +442,23 @@ export type MsgKey =
   | "objectTree.placement.aria"
   | "objectTree.menu.title"
   | "objectTree.menu.aria"
+  | "objectTree.moreInfo"
+  | "objectTree.moreInfo.aria"
+  | "objectTree.info.header"
+  | "objectTree.info.mesh"
+  | "objectTree.info.placement"
+  | "objectTree.info.footprint"
+  | "objectTree.info.filament"
+  // object settings (P1-7) -------------------------------------------------
+  | "object.moreInfo"
+  | "object.filament"
+  | "object.inherited"
+  | "object.overridden"
+  | "object.mixed"
+  | "object.resetOverrides"
+  | "object.updateFailed"
+  | "objectTree.info.inherited"
+  | "objectTree.info.overridden"
   | "objectTree.add.title"
   | "objectTree.add"
   | "objectTree.duplicate.title"
@@ -1096,6 +1113,22 @@ export const EN: Record<MsgKey, string> = {
   "objectTree.placement.aria": "Placement metrics",
   "objectTree.menu.title": "Object menu",
   "objectTree.menu.aria": "Actions for {name}",
+  "objectTree.moreInfo": "More info",
+  "objectTree.moreInfo.aria": "Object info",
+  "objectTree.info.header": "Object details",
+  "objectTree.info.mesh": "Mesh",
+  "objectTree.info.placement": "Placement",
+  "objectTree.info.footprint": "Footprint",
+  "objectTree.info.filament": "Filament",
+  "object.moreInfo": "More info",
+  "object.filament": "Filament",
+  "object.inherited": "Inherited (global)",
+  "object.overridden": "Overridden",
+  "object.mixed": "Mixed",
+  "object.resetOverrides": "Reset overrides",
+  "object.updateFailed": "Failed to update object settings.",
+  "objectTree.info.inherited": "Inherited (global)",
+  "objectTree.info.overridden": "Overridden",
   "objectTree.add.title": "Add object (import)",
   "objectTree.add": "Add",
   "objectTree.duplicate.title": "Duplicate selected",
@@ -1740,6 +1773,22 @@ export const PT_BR: Record<MsgKey, string> = {
   "objectTree.placement.aria": "Métricas de colocação",
   "objectTree.menu.title": "Menu de objeto",
   "objectTree.menu.aria": "Ações para {name}",
+  "objectTree.moreInfo": "Mais informação",
+  "objectTree.moreInfo.aria": "Informação do objeto",
+  "objectTree.info.header": "Detalhes do objeto",
+  "objectTree.info.mesh": "Malha",
+  "objectTree.info.placement": "Colocação",
+  "objectTree.info.footprint": "Pegada",
+  "objectTree.info.filament": "Filamento",
+  "object.moreInfo": "Mais informação",
+  "object.filament": "Filamento",
+  "object.inherited": "Herdado (global)",
+  "object.overridden": "Substituído",
+  "object.mixed": "Misto",
+  "object.resetOverrides": "Repor substituições",
+  "object.updateFailed": "Falha ao atualizar as definições do objeto.",
+  "objectTree.info.inherited": "Herdado (global)",
+  "objectTree.info.overridden": "Substituído",
   "objectTree.add.title": "Adicionar objeto (importação)",
   "objectTree.add": "Adicionar",
   "objectTree.duplicate.title": "Duplicar selecionados",

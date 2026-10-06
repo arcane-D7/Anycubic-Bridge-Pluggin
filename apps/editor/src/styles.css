@@ -367,7 +367,97 @@ body,
   padding-left: 6px;
 }
 
-/* S9.6-003 — placement columns (center x/y/z, footprint, volume) */
+/* P1-7 — per-row filament swatch + label (compact; replaced the permanent
+   XYZ/footprint/volume cells which now live in the "More info" popover). */
+.obj-filament {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  order: 3;
+  max-width: 110px;
+  min-width: 0;
+  white-space: nowrap;
+  padding-left: 6px;
+}
+.obj-filament-swatch {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+}
+.obj-filament-swatch.inherited {
+  background: #bdbdbd !important;
+  opacity: 0.55;
+}
+.obj-filament-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+/* P1-7 — "More info" (i) button: opens a Radix Popover with mesh stats +
+   placement metrics + filament state (the XYZ/volume/footprint cells moved
+   here, per the Consultor plan — row is name + filament + eye/lock +
+   overflow + i). */
+.obj-info {
+  order: 5;
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  opacity: 0;
+}
+.object-item:hover .obj-info,
+.object-item.selected .obj-info {
+  opacity: 1;
+}
+.obj-info-popover {
+  z-index: var(--z-dialog, 50);
+  min-width: 210px;
+  max-width: 260px;
+  padding: 10px 12px;
+  background: var(--bg-dialog);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-3);
+  color: var(--text-primary);
+  font-size: 11px;
+}
+.obj-info-popover-inner strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.obj-info-grid {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+.obj-info-grid div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.obj-info-grid dt {
+  color: var(--text-tertiary);
+}
+.obj-info-grid dd {
+  margin: 0;
+  color: var(--text-secondary);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* S9.6-003 — placement columns (center x/y/z, footprint, volume) — kept for
+   compatibility with any surface still rendering cells; the object tree no
+   longer uses them (P1-7 moved them into the info popover). */
 .object-placement {
   display: flex;
   align-items: center;
@@ -393,7 +483,7 @@ body,
 }
 
 .obj-more {
-  order: 5;
+  order: 6;
   width: 20px;
   height: 20px;
   opacity: 0;
@@ -834,6 +924,45 @@ body,
   background: var(--ctrl-well);
   color: var(--text-primary);
   font-size: 12px;
+}
+
+/* P1-7 — compact filament selector: swatch + select + inherited/overridden
+   state label inline, plus a quick reset when overridden. */
+.object-filament-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.object-filament-compact .obj-filament-swatch {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+}
+.object-filament-compact select {
+  flex: 1 1 auto;
+  margin-top: 0;
+}
+.object-filament-state {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+.object-filament-reset {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--accent-primary);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.object-filament-reset:hover {
+  color: var(--accent-strong);
 }
 
 .object-settings-fields {

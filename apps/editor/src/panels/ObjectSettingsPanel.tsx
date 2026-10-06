@@ -16,6 +16,7 @@ import type { ObjectPrintSettings } from "../bridge/types";
 import { FILAMENT_PRESETS } from "../presets/catalog";
 import { useScene } from "../state/scene";
 import { useI18n } from "../state/i18n";
+import { useUi } from "../state/ui";
 import type { MsgKey } from "../state/i18n-core";
 
 interface ObjectSettingsPanelProps {
@@ -40,13 +41,24 @@ const GLOBAL_DEFAULTS: ObjectPrintSettings = {
 export function ObjectSettingsPanel({ scene }: ObjectSettingsPanelProps) {
   const t = useI18n((s) => s.t);
   const queryClient = useQueryClient();
+  const pushToast = useUi((s) => s.pushToast);
   const selected = useScene((s) => s.selected);
+  const selectedNames = useScene((s) => s.selectedNames);
   const objects = useScene((s) => s.objects);
 
   const name = selected?.name ?? null;
   const object = name ? (objects.find((o) => o.name === name) ?? null) : null;
   const forked = object?.printSettings != null;
   const filamentId = object?.filamentId;
+
+  // P1-7 — multi-selection mixed state (plan: `object.mixed`). When more than
+  // one object is selected and their filament assignments differ, show the
+  // mixed label instead of a single resolved value.
+  const multiSelected = selectedNames.filter((n) => objects.some((o) => o.name === n));
+  const filamentIds = new Set(
+    multiSelected.map((n) => objects.find((o) => o.name === n)?.filamentId ?? null),
+  );
+  const filamentMixed = multiSelected.length > 1 && filamentIds.size > 1;
 
   const persist = useCallback(
     async (mutation: Parameters<BridgeHandle["mutateObject"]>[0]) => {
@@ -55,13 +67,23 @@ export function ObjectSettingsPanel({ scene }: ObjectSettingsPanelProps) {
         const res = await scene.mutateObject(mutation);
         if (!res.ok) {
           console.warn(`[object-settings] mutate rejected: ${res.error}`);
+          pushToast({
+            kind: "error",
+            title: t("object.updateFailed"),
+            message: res.error,
+          });
         }
       } catch (err) {
         console.warn("[object-settings] mutate failed", err);
+        pushToast({
+          kind: "error",
+          title: t("object.updateFailed"),
+          message: String(err),
+        });
       }
       await queryClient.invalidateQueries({ queryKey: ["bridge", "scene"] });
     },
-    [scene, queryClient],
+    [scene, queryClient, pushToast, t],
   );
 
   const enableFork = async () => {
@@ -157,21 +179,51 @@ export function ObjectSettingsPanel({ scene }: ObjectSettingsPanelProps) {
 
       <label className="settings-stack">
         {t("objectSettings.filament")}
-        <select
-          data-testid="object-filament-select"
-          value={filamentId ?? "global"}
-          onChange={(event) => {
-            const value = event.currentTarget.value;
-            void (value === "global" ? resetToParent() : assignFilament(value));
-          }}
-        >
-          <option value="global">{t("objectSettings.filament.global")}</option>
-          {FILAMENT_PRESETS.map((filament) => (
-            <option key={filament.id} value={filament.id}>
-              {filament.material}
+        <span className="object-filament-compact" data-testid="object-filament-compact">
+          <span
+            className="obj-filament-swatch"
+            aria-hidden="true"
+            style={{
+              background:
+                (filamentId ? FILAMENT_PRESETS.find((f) => f.id === filamentId)?.color : null) ??
+                "#bdbdbd",
+            }}
+          />
+          <select
+            data-testid="object-filament-select"
+            value={filamentId ?? "global"}
+            onChange={(event) => {
+              const value = event.currentTarget.value;
+              void (value === "global" ? resetToParent() : assignFilament(value));
+            }}
+          >
+            <option value="global">
+              {t("objectSettings.filament.global")} — {t("object.inherited")}
             </option>
-          ))}
-        </select>
+            {FILAMENT_PRESETS.map((filament) => (
+              <option key={filament.id} value={filament.id}>
+                {filament.material}
+              </option>
+            ))}
+          </select>
+          <span className="object-filament-state">
+            {filamentMixed
+              ? t("object.mixed")
+              : filamentId
+                ? t("object.overridden")
+                : t("object.inherited")}
+          </span>
+        </span>
+        {filamentId ? (
+          <button
+            type="button"
+            className="object-filament-reset"
+            data-testid="object-filament-reset"
+            onClick={() => void resetToParent()}
+          >
+            {t("object.resetOverrides")}
+          </button>
+        ) : null}
       </label>
 
       <fieldset className="object-settings-fields" disabled={!forked}>

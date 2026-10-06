@@ -15,6 +15,8 @@ export interface ObjectMenuHandlers {
   readonly onPlaceOnPlate: () => void;
   readonly onRepair: (mode: "replace" | "copy") => void;
   readonly onRemove: () => void;
+  /** P1-7 — optional "More info" item opens the row's info popover. */
+  readonly onMoreInfo?: () => void;
 }
 
 /** Context for buildObjectMenuItems. */
@@ -44,6 +46,18 @@ export function buildObjectMenuItems(
       icon: "fit",
       onSelect: handlers.onRename,
     },
+  ];
+  // P1-7 — "More info" right-click entry (opens the same metrics popover as
+  // the row (i) button).
+  if (handlers.onMoreInfo) {
+    items.push({
+      id: "more-info",
+      label: "More info",
+      icon: "eye",
+      onSelect: handlers.onMoreInfo,
+    });
+  }
+  items.push(
     {
       id: "toggle-visible",
       label: ctx.visible ? "Hide" : "Show",
@@ -56,7 +70,7 @@ export function buildObjectMenuItems(
       icon: "arrange",
       onSelect: handlers.onPlaceOnPlate,
     },
-  ];
+  );
   if (!ctx.watertight) {
     items.push(
       {

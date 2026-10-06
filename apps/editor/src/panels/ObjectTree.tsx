@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
 import type { BridgeHandle } from "../bridge/mock";
 import type { SceneObjectSnapshot } from "../bridge/types";
 import { Icon } from "../components/icons";
@@ -12,6 +13,7 @@ import { useScene } from "../state/scene";
 import { useUi } from "../state/ui";
 import { useI18n } from "../state/i18n";
 import type { MsgKey } from "../state/i18n-core";
+import { FILAMENT_PRESETS } from "../presets/catalog";
 
 /**
  * Left panel — object tree (S9.2-004 full rework).
@@ -57,14 +59,6 @@ function fmtFootprint(o: SceneObjectSnapshot): string {
   const m = placementMetrics(o);
   if (!m.footprint) return "—";
   return `${fmtMm(m.footprint.w)} × ${fmtMm(m.footprint.d)}`;
-}
-
-/** S9.6-003: volume cell — compact cm³-ish (mm³ → 1 decimal when ≥1000). */
-function fmtVolume(o: SceneObjectSnapshot): string {
-  const v = placementMetrics(o).volumeMm3;
-  if (!Number.isFinite(v)) return "—";
-  if (v >= 1000) return `${(v / 1000).toFixed(1)} cm³`;
-  return `${fmtMm(v)} mm³`;
 }
 
 /** Visual column set (S9.6-003). Stable order, headers double as sort buttons. */
@@ -135,6 +129,13 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   // S9.8-001 — shared context menu (single store; one menu for all surfaces).
   const openMenu = useContextMenuStore((s) => s.open);
+  // P1-7 — the info popover is keyed per row; right-click "More info" opens
+  // the same popover. A single `infoOpenFor` name + per-row controlled
+  // Popover keeps both entries point to the same content.
+  const [infoOpenFor, setInfoOpenFor] = useState<string | null>(null);
+  // Map to track radix popover open state per row where the trigger button
+  // controls it natively; the context-menu entry calls `openInfo(name)`.
+  const openInfo = (o: SceneObjectSnapshot) => setInfoOpenFor(o.name);
 
   useEffect(() => {
     if (editing !== null && inputRef.current) {
@@ -201,6 +202,7 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
             onPlaceOnPlate: () => onPlaceOnPlate(o),
             onRepair: (mode) => void onRepair(o, mode),
             onRemove: () => onRemove(o),
+            onMoreInfo: () => openInfo(o),
           },
         ),
       ),
@@ -432,29 +434,95 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
                   ) : null}
                 </span>
               )}
-              <span className="object-meta" aria-label={t("objectTree.mesh.aria")}>
-                {metaOf(o)}
-              </span>
-              <span className="object-placement" aria-label={t("objectTree.placement.aria")}>
+              {/* P1-7 — filament swatch + state label inline on the row
+                  (material name when assigned; inherited when global). The
+                  swatch shows the assigned filament color, grey when none is
+                  explicitly set (inherits the global). */}
+              <span
+                className="obj-filament"
+                data-testid={`obj-filament-${o.name}`}
+                title={o.filamentId ? t("object.overridden") : t("object.inherited")}
+              >
                 <span
-                  className="obj-cell"
-                  title={t("objectTree.col.centerX")}
-                >{`${fmtMm(placementMetrics(o).center[0])}`}</span>
-                <span
-                  className="obj-cell"
-                  title={t("objectTree.col.centerY")}
-                >{`${fmtMm(placementMetrics(o).center[1])}`}</span>
-                <span
-                  className="obj-cell"
-                  title={t("objectTree.col.centerZ")}
-                >{`${fmtMm(placementMetrics(o).center[2])}`}</span>
-                <span className="obj-cell" title={t("objectTree.col.footprint")}>
-                  {fmtFootprint(o)}
+                  className={`obj-filament-swatch${o.filamentId ? "" : " inherited"}`}
+                  aria-hidden="true"
+                  style={{
+                    background:
+                      (o.filamentId
+                        ? FILAMENT_PRESETS.find((f) => f.id === o.filamentId)?.color
+                        : null) ?? "#bdbdbd",
+                  }}
+                />
+                <span className="obj-filament-label">
+                  {o.filamentId
+                    ? (FILAMENT_PRESETS.find((f) => f.id === o.filamentId)?.material ??
+                      o.filamentId)
+                    : t("object.inherited")}
                 </span>
-                <span className="obj-cell" title={t("objectTree.col.volume")}>
-                  {fmtVolume(o)}
-                </span>
               </span>
+              {/* P1-7 — "More info" (i) popover: mesh stats + placement
+                  metrics + filament state. Right-click also opens it via the
+                  shared ContextMenu (More info item). The Root is controlled
+                  by `infoOpenFor` so both entries share one content. */}
+              <PopoverPrimitive.Root
+                open={infoOpenFor === o.name}
+                onOpenChange={(open) => setInfoOpenFor(open ? o.name : null)}
+              >
+                <PopoverPrimitive.Trigger asChild>
+                  <button
+                    type="button"
+                    className="obj-action obj-info"
+                    title={t("object.moreInfo")}
+                    aria-label={t("object.moreInfo")}
+                    data-testid={`obj-info-${o.name}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setInfoOpenFor(o.name);
+                    }}
+                  >
+                    <span aria-hidden="true">i</span>
+                  </button>
+                </PopoverPrimitive.Trigger>
+                <PopoverPrimitive.Portal>
+                  <PopoverPrimitive.Content
+                    className="obj-info-popover"
+                    data-testid={`obj-info-popover-${o.name}`}
+                    side="right"
+                    sideOffset={6}
+                    align="start"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                  >
+                    <div className="obj-info-popover-inner">
+                      <strong>{o.name}</strong>
+                      <dl className="obj-info-grid">
+                        <div>
+                          <dt>{t("objectTree.info.mesh")}</dt>
+                          <dd>{metaOf(o)}</dd>
+                        </div>
+                        <div>
+                          <dt>{t("objectTree.info.placement")}</dt>
+                          <dd className="mono-num">
+                            {`${fmtMm(placementMetrics(o).center[0])}, ${fmtMm(placementMetrics(o).center[1])}, ${fmtMm(placementMetrics(o).center[2])}`}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>{t("objectTree.info.footprint")}</dt>
+                          <dd className="mono-num">{fmtFootprint(o)}</dd>
+                        </div>
+                        <div>
+                          <dt>{t("objectTree.info.filament")}</dt>
+                          <dd>
+                            {o.filamentId
+                              ? (FILAMENT_PRESETS.find((f) => f.id === o.filamentId)?.material ??
+                                o.filamentId)
+                              : t("object.inherited")}
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+                  </PopoverPrimitive.Content>
+                </PopoverPrimitive.Portal>
+              </PopoverPrimitive.Root>
               <button
                 type="button"
                 className="obj-action obj-more"
