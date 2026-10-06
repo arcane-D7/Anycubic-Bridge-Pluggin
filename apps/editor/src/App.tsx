@@ -28,12 +28,13 @@ import { ShortcutHelp } from "./components/shortcut-help";
 import { SliceButton } from "./components/SliceButton";
 import { SliceProgress } from "./components/SliceProgress";
 import { SliceStatsPanel } from "./panels/SliceStatsPanel";
+import { DevicePanelHost } from "./components/dock/DevicePanelHost";
+import { useDock } from "./state/dock";
 import { PrinterPicker } from "./components/PrinterPicker";
 import { PrintJobDialog } from "./dialogs/PrintJobDialog";
 import { useShortcuts } from "./hooks/useShortcuts";
 import { OverlayRoot } from "./components/dock/overlay-root";
 import { DockPanel } from "./components/dock/dock-panel";
-import { useDock } from "./state/dock";
 import { useScene } from "./state/scene";
 import { useUi } from "./state/ui";
 import { useI18n } from "./state/i18n";
@@ -200,6 +201,24 @@ export function App() {
         </nav>
         <SliceButton objects={objects} />
         <PrinterPicker />
+        <button
+          type="button"
+          className="device-panel-toggle"
+          aria-label={t("device.button.aria")}
+          title={t("device.button.title")}
+          data-testid="device-panel-toggle"
+          onClick={() => {
+            const state = useDock.getState().panels.device;
+            if (state.mode === "floating") {
+              useDock.getState().setPanelMode("device", "collapsed");
+            } else {
+              useDock.getState().focusPanel("device");
+              useDock.getState().setPanelMode("device", "floating");
+            }
+          }}
+        >
+          {t("device.panel.title")}
+        </button>
         <button
           type="button"
           className="sidebar-toggle"
@@ -371,6 +390,7 @@ export function App() {
       <ContextMenu />
       <OverlayRoot>
         <DockPanel />
+        <DevicePanelHost />
       </OverlayRoot>
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} scene={scene} />
     </div>

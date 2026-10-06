@@ -26,7 +26,7 @@ import { useDockDrag } from "./use-dock";
  * fractions on drag-stop.
  */
 
-export type FloatingPanelKind = "chat";
+export type FloatingPanelKind = "chat" | "device";
 
 interface FloatingPanelHostProps {
   readonly id: PanelId;

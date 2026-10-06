@@ -3005,6 +3005,310 @@ input {
   color: var(--text-tertiary);
 }
 
+/* ============================================================
+ * S9.9-004 — Device panel (Monitor) — floating/docked panel
+ * content over the live snapshot (no write actions here).
+ * ============================================================ */
+
+.device-panel-toggle {
+  flex: 0 0 auto;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-panel-solid);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.device-panel-toggle:hover {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.device-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  overflow-y: auto;
+  max-height: calc(100% - 40px);
+}
+
+.device-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.device-empty-title {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text-secondary);
+}
+
+.device-empty-msg {
+  font-size: 12px;
+}
+
+.device-banner {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.device-banner-offline {
+  background: var(--sema-error-soft, rgb(194 59 46 / 0.1));
+  border: 1px solid var(--sema-error, #c23b2e);
+  color: var(--sema-error, #c23b2e);
+}
+
+.device-banner-stale {
+  background: var(--sema-warning-soft, rgb(176 116 24 / 0.12));
+  border: 1px solid var(--sema-warning, #9a6b16);
+  color: var(--sema-warning, #9a6b16);
+}
+
+.device-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.device-section-title {
+  font: 600 10px/1 var(--font-sans, system-ui, sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+}
+
+.device-print-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.device-state-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--text-tertiary);
+}
+
+.device-state-dot.device-state-printing {
+  background: var(--sema-success, #2a7a50);
+  animation: device-state-pulse 900ms ease-in-out infinite alternate;
+}
+
+.device-state-dot.device-state-paused {
+  background: var(--sema-warning, #9a6b16);
+}
+
+.device-state-dot.device-state-error,
+.device-state-dot.device-state-offline {
+  background: var(--sema-error, #c23b2e);
+}
+
+.device-state-dot.device-state-idle {
+  background: var(--sema-info, #2f6bb5);
+}
+
+@keyframes device-state-pulse {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.4;
+  }
+}
+
+.device-speed {
+  margin-left: auto;
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+.device-print-file,
+.device-print-layer,
+.device-print-progress,
+.device-print-remaining {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.device-temps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.device-temp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--ctrl-well, rgb(0 0 0 / 0.2));
+}
+
+.device-temp-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+}
+
+.device-temp-current {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.device-temp-target {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  min-height: 14px;
+}
+
+.device-fan-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.device-fan-label {
+  flex: 0 0 92px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.device-fan-track {
+  flex: 1 1 auto;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--track-empty, rgb(255 255 255 / 0.1));
+  overflow: hidden;
+}
+
+.device-fan-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--track-fill, var(--accent-primary));
+  transition: width 160ms ease;
+}
+
+.device-fan-pct {
+  flex: 0 0 36px;
+  text-align: right;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.device-motion {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.device-ai-enabled,
+.device-light {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.device-ai-sens {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.device-light-on {
+  color: var(--sema-success, #2a7a50);
+}
+
+.device-light-off {
+  color: var(--text-tertiary);
+}
+
+.device-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.device-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--ctrl-well);
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+.device-chip-on {
+  border-color: var(--accent-ring, transparent);
+  background: var(--accent-soft, rgb(36 115 72 / 0.1));
+  color: var(--accent-primary);
+}
+
+.device-camera-start {
+  align-self: flex-start;
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid var(--ctrl-border);
+  border-radius: 6px;
+  background: var(--ctrl-bg);
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.device-camera-start:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.device-camera-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.device-camera-hint {
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+.device-camera-video {
+  width: 100%;
+  height: 140px;
+  border-radius: 8px;
+  background: var(--viewport-bg, #151a15);
+}
+
+.device-storage-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
 /* ------------------------------------------------------------------ */
 /* S9.5-004 — Send-to-print dialog (G25). Reuses the S9-006 approval- */
 /* card mask (pending/approved/rejected + token hash) to gate the only */

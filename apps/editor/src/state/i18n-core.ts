@@ -166,6 +166,65 @@ export type MsgKey =
   | "printer.row.title"
   | "printer.foot.probing"
   | "printer.foot.refreshed"
+  // device panel --------------------------------------------------------
+  | "device.panel.aria"
+  | "device.panel.title"
+  | "device.button.title"
+  | "device.button.aria"
+  | "device.tab.monitor"
+  | "device.tab.filament"
+  | "device.empty.title"
+  | "device.empty.msg"
+  | "device.offline.banner"
+  | "device.stale.banner"
+  | "device.temp.nozzle"
+  | "device.temp.bed"
+  | "device.temp.chamber"
+  | "device.temp.current"
+  | "device.temp.target"
+  | "device.fans.part"
+  | "device.fans.hotend"
+  | "device.fans.aria"
+  | "device.peripherals.title"
+  | "device.peripherals.camera"
+  | "device.peripherals.ace"
+  | "device.peripherals.usb"
+  | "device.camera.title"
+  | "device.camera.start"
+  | "device.camera.aria"
+  | "device.motion.title"
+  | "device.motion.xyz"
+  | "device.ai.title"
+  | "device.ai.enabled"
+  | "device.ai.sensitivity"
+  | "device.lights.title"
+  | "device.lights.on"
+  | "device.lights.off"
+  | "device.identity.title"
+  | "device.identity.machine"
+  | "device.identity.firmware"
+  | "device.identity.serial"
+  | "device.identity.nozzle"
+  | "device.storage.title"
+  | "device.storage.kind"
+  | "device.storage.used"
+  | "device.storage.free"
+  | "device.print.title"
+  | "device.print.state.unknown"
+  | "device.print.state.idle"
+  | "device.print.state.printing"
+  | "device.print.state.paused"
+  | "device.print.state.error"
+  | "device.print.state.offline"
+  | "device.print.file"
+  | "device.print.layer"
+  | "device.print.progress"
+  | "device.print.remaining"
+  | "device.print.speed.silent"
+  | "device.print.speed.standard"
+  | "device.print.speed.sport"
+  | "device.capabilities.title"
+  | "device.capabilities.none"
   // status bar -------------------------------------------------------------
   | "status.objects"
   | "status.coords.title"
@@ -669,6 +728,64 @@ export const EN: Record<MsgKey, string> = {
   "printer.row.title": "Arm send target {ip}",
   "printer.foot.probing": "probing…",
   "printer.foot.refreshed": "refreshed {timeAgo}",
+  "device.panel.aria": "Printer device panel",
+  "device.panel.title": "Device",
+  "device.button.title": "Printer device panel",
+  "device.button.aria": "Open printer device panel",
+  "device.tab.monitor": "Monitor",
+  "device.tab.filament": "Filament",
+  "device.empty.title": "No printer selected",
+  "device.empty.msg": "Pick a printer in the header to see live data.",
+  "device.offline.banner": "Printer unreachable — showing last known data",
+  "device.stale.banner": "Data is stale — reconnecting…",
+  "device.temp.nozzle": "Nozzle",
+  "device.temp.bed": "Bed",
+  "device.temp.chamber": "Chamber",
+  "device.temp.current": "current",
+  "device.temp.target": "target",
+  "device.fans.part": "Part cooling",
+  "device.fans.hotend": "Hot end",
+  "device.fans.aria": "Fan speed",
+  "device.peripherals.title": "Peripherals",
+  "device.peripherals.camera": "Camera",
+  "device.peripherals.ace": "ACE unit",
+  "device.peripherals.usb": "USB drive",
+  "device.camera.title": "Camera",
+  "device.camera.start": "Start camera",
+  "device.camera.aria": "Start on-demand camera preview",
+  "device.motion.title": "Toolhead",
+  "device.motion.xyz": "X {x} · Y {y} · Z {z}",
+  "device.ai.title": "AI monitoring",
+  "device.ai.enabled": "Enabled",
+  "device.ai.sensitivity": "Sensitivity",
+  "device.lights.title": "Chamber light",
+  "device.lights.on": "On",
+  "device.lights.off": "Off",
+  "device.identity.title": "Printer",
+  "device.identity.machine": "Machine",
+  "device.identity.firmware": "Firmware",
+  "device.identity.serial": "Serial",
+  "device.identity.nozzle": "Nozzle",
+  "device.storage.title": "Storage",
+  "device.storage.kind": "Kind",
+  "device.storage.used": "Used",
+  "device.storage.free": "Free",
+  "device.print.title": "Print job",
+  "device.print.state.unknown": "Unknown",
+  "device.print.state.idle": "Idle",
+  "device.print.state.printing": "Printing",
+  "device.print.state.paused": "Paused",
+  "device.print.state.error": "Error",
+  "device.print.state.offline": "Offline",
+  "device.print.file": "File",
+  "device.print.layer": "Layer {curr} / {total}",
+  "device.print.progress": "{pct}%",
+  "device.print.remaining": "≈{secs}s left",
+  "device.print.speed.silent": "Silent",
+  "device.print.speed.standard": "Standard",
+  "device.print.speed.sport": "Sport",
+  "device.capabilities.title": "Capabilities",
+  "device.capabilities.none": "None reported",
   "status.objects": "{n} object{s}",
   "status.coords.title": "{name} position (mm)",
   "status.plateDims.title": "{plate} scene bounds (mm)",
@@ -1157,6 +1274,64 @@ export const PT_BR: Record<MsgKey, string> = {
   "printer.row.title": "Armar alvo de envio {ip}",
   "printer.foot.probing": "a sondar…",
   "printer.foot.refreshed": "atualizado {timeAgo}",
+  "device.panel.aria": "Painel do dispositivo da impressora",
+  "device.panel.title": "Dispositivo",
+  "device.button.title": "Painel do dispositivo da impressora",
+  "device.button.aria": "Abrir painel do dispositivo da impressora",
+  "device.tab.monitor": "Monitor",
+  "device.tab.filament": "Filamento",
+  "device.empty.title": "Nenhuma impressora selecionada",
+  "device.empty.msg": "Escolha uma impressora no cabeçalho para ver dados ao vivo.",
+  "device.offline.banner": "Impressora inacessível — a mostrar últimos dados conhecidos",
+  "device.stale.banner": "Dados desatualizados — a reconectar…",
+  "device.temp.nozzle": "Bico",
+  "device.temp.bed": "Mesa",
+  "device.temp.chamber": "Câmara",
+  "device.temp.current": "atual",
+  "device.temp.target": "alvo",
+  "device.fans.part": "Arref. peça",
+  "device.fans.hotend": "Hot end",
+  "device.fans.aria": "Velocidade da ventoinha",
+  "device.peripherals.title": "Periféricos",
+  "device.peripherals.camera": "Câmara",
+  "device.peripherals.ace": "Unidade ACE",
+  "device.peripherals.usb": "Pen USB",
+  "device.camera.title": "Câmara",
+  "device.camera.start": "Iniciar câmara",
+  "device.camera.aria": "Iniciar pré-visualização de câmara a pedido",
+  "device.motion.title": "Cabeçote",
+  "device.motion.xyz": "X {x} · Y {y} · Z {z}",
+  "device.ai.title": "Monitorização IA",
+  "device.ai.enabled": "Ativada",
+  "device.ai.sensitivity": "Sensibilidade",
+  "device.lights.title": "Luz da câmara",
+  "device.lights.on": "Ligada",
+  "device.lights.off": "Desligada",
+  "device.identity.title": "Impressora",
+  "device.identity.machine": "Máquina",
+  "device.identity.firmware": "Firmware",
+  "device.identity.serial": "Série",
+  "device.identity.nozzle": "Bico",
+  "device.storage.title": "Armazenamento",
+  "device.storage.kind": "Tipo",
+  "device.storage.used": "Usado",
+  "device.storage.free": "Livre",
+  "device.print.title": "Trabalho de impressão",
+  "device.print.state.unknown": "Desconhecido",
+  "device.print.state.idle": "Em espera",
+  "device.print.state.printing": "A imprimir",
+  "device.print.state.paused": "Em pausa",
+  "device.print.state.error": "Erro",
+  "device.print.state.offline": "Offline",
+  "device.print.file": "Ficheiro",
+  "device.print.layer": "Camada {curr} / {total}",
+  "device.print.progress": "{pct}%",
+  "device.print.remaining": "≈{secs}s restantes",
+  "device.print.speed.silent": "Silencioso",
+  "device.print.speed.standard": "Padrão",
+  "device.print.speed.sport": "Sport",
+  "device.capabilities.title": "Capacidades",
+  "device.capabilities.none": "Nada reportado",
   "status.objects": "{n} objeto{s}",
   "status.coords.title": "{name} posição (mm)",
   "status.plateDims.title": "{plate} limites de cena (mm)",

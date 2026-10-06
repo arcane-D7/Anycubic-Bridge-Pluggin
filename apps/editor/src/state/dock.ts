@@ -15,7 +15,7 @@ export interface PanelRect {
   readonly h: number;
 }
 
-export type PanelId = "chat";
+export type PanelId = "chat" | "device";
 
 export interface PanelState {
   readonly mode: PanelMode;
@@ -49,6 +49,7 @@ interface DockState {
 
 const initialPanels: Record<PanelId, PanelState> = {
   chat: { mode: "docked", rect: DEFAULT_RECT, z: 1 },
+  device: { mode: "collapsed", rect: DEFAULT_RECT, z: 1 },
 };
 
 function loadPersisted(): Record<PanelId, PanelState> {
@@ -56,14 +57,19 @@ function loadPersisted(): Record<PanelId, PanelState> {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return initialPanels;
     const parsed = JSON.parse(raw) as Record<PanelId, PanelState>;
-    const out: Record<PanelId, PanelState> = { chat: initialPanels.chat };
-    const p = parsed.chat;
-    if (p && (p.mode === "docked" || p.mode === "floating" || p.mode === "collapsed")) {
-      out.chat = {
-        mode: p.mode,
-        rect: clampRect(p.rect ?? DEFAULT_RECT),
-        z: typeof p.z === "number" ? p.z : 1,
-      };
+    const out: Record<PanelId, PanelState> = {
+      chat: initialPanels.chat,
+      device: initialPanels.device,
+    };
+    for (const id of ["chat", "device"] as const) {
+      const p = parsed[id];
+      if (p && (p.mode === "docked" || p.mode === "floating" || p.mode === "collapsed")) {
+        out[id] = {
+          mode: p.mode,
+          rect: clampRect(p.rect ?? DEFAULT_RECT),
+          z: typeof p.z === "number" ? p.z : 1,
+        };
+      }
     }
     return out;
   } catch {
