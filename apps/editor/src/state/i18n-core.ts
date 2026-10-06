@@ -159,6 +159,14 @@ export type MsgKey =
   | "plate.upgrade.hotend.title"
   | "plate.upgrade.zColumn.aria"
   | "plate.upgrade.zColumn.title"
+  // plate identity + quick actions (P1-5) ---------------------------------
+  | "plate.number.aria"
+  | "plate.number.title"
+  | "plate.specifications"
+  | "plate.rail.aria"
+  | "plate.rail.fit"
+  | "plate.rail.top"
+  | "plate.rail.grid"
   // printer picker --------------------------------------------------------
   | "printer.led.aria"
   | "printer.led.title.probing"
@@ -817,6 +825,13 @@ export const EN: Record<MsgKey, string> = {
   "plate.upgrade.hotend.title": "Hot-end duct + nozzle (live mode)",
   "plate.upgrade.zColumn.aria": "Z column",
   "plate.upgrade.zColumn.title": "Rear Z reference column with height ticks",
+  "plate.number.aria": "Plate {n}",
+  "plate.number.title": "Plate {n} — {name}",
+  "plate.specifications": "Build volume {w} × {d} × {h} mm",
+  "plate.rail.aria": "Plate actions",
+  "plate.rail.fit": "Fit view to plate",
+  "plate.rail.top": "Top view",
+  "plate.rail.grid": "Toggle reference grid",
   "printer.led.aria": "{ip} {state}",
   "printer.led.title.probing": "Probing…",
   "printer.led.title.online": "Online",
@@ -1452,6 +1467,13 @@ export const PT_BR: Record<MsgKey, string> = {
   "plate.upgrade.hotend.title": "Duto + bico do hot-end (modo ao vivo)",
   "plate.upgrade.zColumn.aria": "Coluna Z",
   "plate.upgrade.zColumn.title": "Coluna Z traseira de referência com marcas de altura",
+  "plate.number.aria": "Chapa {n}",
+  "plate.number.title": "Chapa {n} — {name}",
+  "plate.specifications": "Volume de construção {w} × {d} × {h} mm",
+  "plate.rail.aria": "Ações da chapa",
+  "plate.rail.fit": "Ajustar vista à chapa",
+  "plate.rail.top": "Vista de topo",
+  "plate.rail.grid": "Alternar grelha de referência",
   "printer.led.aria": "{ip} {state}",
   "printer.led.title.probing": "A sondar…",
   "printer.led.title.online": "Online",

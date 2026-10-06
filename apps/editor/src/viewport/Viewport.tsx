@@ -25,6 +25,7 @@ import { MeasureReadout } from "./MeasureReadout";
 import { MeasureTool } from "./MeasureTool";
 import { ModalInteraction } from "./ModalInteraction";
 import { NonWatertightBadges } from "./NonWatertightBadges";
+import { PlateRail } from "./PlateRail";
 import { RendererGuard } from "./RendererGuard";
 import { SceneObjectModel } from "./SceneObjectModel";
 import { SnapReadout } from "./SnapController";
@@ -99,6 +100,8 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
           {t("viewport.live.banner")}
         </div>
       ) : null}
+      {/* P1-5 — plate identity + quick actions (fit/top/grid). */}
+      {!preview ? <PlateRail volume={volume} /> : null}
       <RendererGuard scene={scene} />
       <Canvas
         camera={{ position: [180, 260, 320], fov: 40, near: 0.1, far: 10000 }}

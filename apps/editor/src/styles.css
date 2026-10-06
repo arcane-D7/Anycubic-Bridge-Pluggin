@@ -2138,6 +2138,7 @@ input {
   display: flex;
   align-items: center;
   gap: 4px;
+
   padding: 4px 6px;
   background: var(--glass-fill-2);
   -webkit-backdrop-filter: blur(var(--blur-2)) saturate(1.15);
@@ -2167,6 +2168,76 @@ input {
   border: 1px solid color-mix(in srgb, var(--sema-warning) 40%, var(--glass-stroke));
   border-radius: var(--r-md);
   box-shadow: var(--shadow-2);
+}
+/* P1-5 — plate identity + quick-action rail (DOM, top-RIGHT inside the
+   viewport frame, mirroring the toolbar's glass material). */
+.plate-rail {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 4px 6px;
+  background: var(--glass-fill-2);
+  -webkit-backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+  border: 1px solid var(--glass-stroke);
+  box-shadow:
+    var(--shadow-inset-hi),
+    inset 0 0 0 1px var(--border-strong),
+    var(--shadow-2);
+  border-radius: var(--r-lg);
+  font-size: 11px;
+  user-select: none;
+}
+.plate-rail-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  padding: 0 4px;
+}
+.plate-rail-ordinal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-primary);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.plate-rail-name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-weight: 600;
+}
+.plate-rail-specs {
+  padding-left: 10px;
+  border-left: 1px solid var(--border-strong);
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.plate-rail-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 2px;
+  border-left: 1px solid var(--border-strong);
+}
+.plate-rail-actions .toolbar-btn {
+  width: 28px;
+  min-width: 28px;
+  padding: 0;
 }
 .toolbar-group {
   display: flex;
