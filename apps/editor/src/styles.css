@@ -46,6 +46,13 @@ body,
   backdrop-filter: blur(var(--blur-1)) saturate(1.15);
   border-bottom: 1px solid var(--glass-stroke);
   box-shadow: var(--shadow-inset-hi);
+  /* 2026-10-06 — P0: elevate the header above the viewport so its popovers
+     (printer picker, device toggle, shortcut help) aren't imprisoned by the
+     header's own stacking context (backdrop-filter). The viewport-frame uses
+     `isolation: isolate`, so without a z-index the whole viewport paints over
+     the header's absolute-positioned panels (z-index:60 stays trapped). */
+  position: relative;
+  z-index: 40;
 }
 
 .app-brand {
