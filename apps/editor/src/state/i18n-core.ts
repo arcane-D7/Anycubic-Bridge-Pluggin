@@ -193,6 +193,7 @@ export type MsgKey =
   | "printer.row.title"
   | "printer.foot.probing"
   | "printer.foot.refreshed"
+  | "printer.badge.cloud"
   // shared printer list (P1-2: header picker + device panel) -------------
   | "printers.select"
   | "printers.refresh"
@@ -880,6 +881,7 @@ export const EN: Record<MsgKey, string> = {
   "printer.row.title": "Arm send target {ip}",
   "printer.foot.probing": "probing…",
   "printer.foot.refreshed": "refreshed {timeAgo}",
+  "printer.badge.cloud": "Cloud",
   "printers.select": "Select printer",
   "printers.refresh": "Refresh",
   "printers.discovering": "Discovering…",
@@ -1544,6 +1546,7 @@ export const PT_BR: Record<MsgKey, string> = {
   "printer.row.title": "Armar alvo de envio {ip}",
   "printer.foot.probing": "a sondar…",
   "printer.foot.refreshed": "atualizado {timeAgo}",
+  "printer.badge.cloud": "Cloud",
   "printers.select": "Selecionar impressora",
   "printers.refresh": "Atualizar",
   "printers.discovering": "A descobrir…",
