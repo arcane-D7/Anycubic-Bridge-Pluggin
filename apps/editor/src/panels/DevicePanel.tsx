@@ -5,6 +5,7 @@ import { usePrinterDevice, type PollingStatus } from "@/state/printer-device";
 import { usePrinterControl, type ControlRequest } from "@/state/printer-control";
 import { useUi } from "@/state/ui";
 import { useDock } from "@/state/dock";
+import { useOperatorProfile } from "@/profile/useOperatorProfile";
 import { PrinterList } from "@/components/printer-list";
 import { printerEnvRaw } from "@/lib/printer-env";
 import {
@@ -452,6 +453,9 @@ function DevicePickerEmpty() {
   const lastProbedAt = usePrinters((s) => s.lastProbedAt);
   const refresh = usePrinters((s) => s.refresh);
   const select = usePrinters((s) => s.select);
+  // P1-8 — when no LAN printer exists, the operator profile machine name
+  // (Slicer Settings → Printer) is still a real printer worth showing.
+  const [profile] = useOperatorProfile();
 
   const onRefresh = useCallback(() => {
     void refresh(printerEnvRaw());
@@ -477,7 +481,14 @@ function DevicePickerEmpty() {
           </div>
         </>
       ) : (
-        <span className="device-empty-msg">{t("device.empty.msg")}</span>
+        <>
+          <span className="device-empty-msg">{t("device.empty.msg")}</span>
+          {profile.displayName ? (
+            <span className="device-empty-profile" data-testid="device-empty-profile">
+              {profile.displayName}
+            </span>
+          ) : null}
+        </>
       )}
     </div>
   );

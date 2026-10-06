@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { usePrinters } from "@/state/printers";
 import { useI18n } from "@/state/i18n";
+import { useOperatorProfile } from "@/profile/useOperatorProfile";
 import { Icon } from "./icons";
 import { PrinterList } from "./printer-list";
 import { printerEnvRaw } from "@/lib/printer-env";
@@ -13,6 +14,10 @@ import { printerEnvRaw } from "@/lib/printer-env";
  *
  * LED states: probing (pulsing amber) → online (green) / offline (red).
  * P1-2: the list body is shared with the Device panel via `PrinterList`.
+ * P1-8: when no LAN printer is armed but the operator profile names a
+ * machine (Slicer Settings → Printer), the trigger shows that machine as a
+ * static label — the Settings config is a real printer, so the header must
+ * reflect it instead of "No printer".
  * The env value is read ONLY here (the React layer owns import.meta.env);
  * the pure core + bridge lane stay headless-testable.
  */
@@ -27,12 +32,20 @@ export function PrinterPicker() {
   const refresh = usePrinters((s) => s.refresh);
   const select = usePrinters((s) => s.select);
   const detailsRef = useRef<HTMLDetailsElement>(null);
+  const [profile] = useOperatorProfile();
 
   const rawEnv = useMemo(() => printerEnvRaw(), []);
   const selected = useMemo(
     () => printers.find((p) => p.id === selectedId) ?? null,
     [printers, selectedId],
   );
+  // P1-8 — headline label: armed LAN printer → its IP; else the operator
+  // profile machine name; else the empty-state hint.
+  const triggerLabel = useMemo(() => {
+    if (selected) return selected.ip;
+    if (profile.displayName) return profile.displayName;
+    return printers.length > 0 ? t("printer.trigger.pick") : t("printer.trigger.none");
+  }, [selected, profile.displayName, printers.length, t]);
 
   const onRefresh = useCallback(() => {
     void refresh(rawEnv);
@@ -60,13 +73,7 @@ export function PrinterPicker() {
       <summary aria-label={t("printer.summary.aria")} title={t("printer.summary.title")}>
         <span className="printer-picker-trigger">
           <Icon name="printer" size={14} />
-          <span className="printer-picker-trigger-label">
-            {selected
-              ? selected.ip
-              : printers.length > 0
-                ? t("printer.trigger.pick")
-                : t("printer.trigger.none")}
-          </span>
+          <span className="printer-picker-trigger-label">{triggerLabel}</span>
           {selected ? (
             <span
               className={`printer-led printer-led-${selected.reachable === null ? "probing" : selected.reachable ? "online" : "offline"}`}

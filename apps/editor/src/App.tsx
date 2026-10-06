@@ -40,6 +40,7 @@ import { useScene } from "./state/scene";
 import { useUi } from "./state/ui";
 import { useI18n } from "./state/i18n";
 import { usePlates } from "./state/plates";
+import { usePrinters } from "./state/printers";
 import { activePlate as activePlateOf } from "./state/plates-core";
 
 /**
@@ -99,6 +100,12 @@ export function App() {
   }, [scene, hydrate]);
 
   const [operatorProfile, setOperatorProfile] = useOperatorProfile();
+  // P1-8 — headline printer label: armed LAN printer → IP; else the
+  // operator profile machine name (matches the header picker label).
+  const printerLabel = usePrinters(
+    (s) => s.printers.find((p) => p.id === s.selectedId)?.ip ?? null,
+  );
+  const deviceTitle = printerLabel ?? operatorProfile.displayName ?? null;
   const eligibility = useMemo(
     () => resolveNonPlanarEligibility(scene?.capabilities, operatorProfile),
     [scene?.capabilities, operatorProfile],
@@ -218,7 +225,12 @@ export function App() {
             }
           }}
         >
-          {t("device.panel.title")}
+          <span className="device-panel-toggle-label">{t("device.panel.title")}</span>
+          {deviceTitle ? (
+            <span className="device-panel-toggle-ctx" data-testid="device-panel-toggle-ctx">
+              {deviceTitle}
+            </span>
+          ) : null}
         </button>
         <button
           type="button"

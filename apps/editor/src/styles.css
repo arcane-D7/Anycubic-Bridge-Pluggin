@@ -3244,8 +3244,8 @@ input {
 
 .device-panel-toggle {
   flex: 0 0 auto;
-  height: 26px;
-  padding: 0 10px;
+  min-height: 26px;
+  padding: 2px 10px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg-panel-solid);
@@ -3253,6 +3253,9 @@ input {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   transition:
     color 0.15s ease,
     border-color 0.15s ease;
@@ -3261,6 +3264,22 @@ input {
 .device-panel-toggle:hover {
   color: var(--accent-primary);
   border-color: var(--accent-primary);
+}
+
+.device-panel-toggle-ctx {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  border-left: 1px solid var(--border);
+  padding-left: 6px;
+}
+
+.device-panel-toggle:hover .device-panel-toggle-ctx {
+  color: var(--text-secondary);
 }
 
 .device-panel {
@@ -3289,6 +3308,22 @@ input {
 
 .device-empty-msg {
   font-size: 12px;
+}
+
+/* P1-8 — the Settings-configured machine is a real printer: when no LAN
+   printer was found, show its name here as a static chip. */
+.device-empty-profile {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-panel-solid);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  align-self: flex-start;
 }
 
 /* P1-2 — Device empty state embeds the shared PrinterList (no popover
