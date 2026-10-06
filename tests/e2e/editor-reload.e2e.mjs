@@ -197,10 +197,16 @@ try {
   // Puppeteer real click may be intercepted by the R3F canvas overlay; use a
   // DOM-level click (el.click()) which fires the React onClick handler.
   await page.$eval('[data-testid="plate-rail-grid"]', (el) => el.click());
-  await new Promise((r) => setTimeout(r, 150));
-  const gridPressedAfter = await page.$eval('[data-testid="plate-rail-grid"]', (el) =>
-    el.getAttribute("aria-pressed"),
-  );
+  // The store → DOM round-trip is async; poll for the flip instead of a
+  // fixed sleep (stable under CPU contention from parallel gate steps).
+  let gridPressedAfter = gridPressedBefore;
+  const gridPollStart = Date.now();
+  while (Date.now() - gridPollStart < 2000 && gridPressedAfter === gridPressedBefore) {
+    await new Promise((r) => setTimeout(r, 60));
+    gridPressedAfter = await page.$eval('[data-testid="plate-rail-grid"]', (el) =>
+      el.getAttribute("aria-pressed"),
+    );
+  }
   assert.notEqual(
     gridPressedAfter,
     gridPressedBefore,
