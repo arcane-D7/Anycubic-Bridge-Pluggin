@@ -15,7 +15,7 @@ export interface PanelRect {
   readonly h: number;
 }
 
-export type PanelId = "chat" | "device";
+export type PanelId = "chat" | "device" | "transform";
 
 export interface PanelState {
   readonly mode: PanelMode;
@@ -54,6 +54,7 @@ interface DockState {
 const initialPanels: Record<PanelId, PanelState> = {
   chat: { mode: "docked", rect: DEFAULT_RECT, z: 1 },
   device: { mode: "collapsed", rect: DEFAULT_RECT, z: 1 },
+  transform: { mode: "collapsed", rect: { x: 0.62, y: 0.2, w: 0.3, h: 0.46 }, z: 1 },
 };
 
 function loadPersisted(): Record<PanelId, PanelState> {
@@ -64,8 +65,9 @@ function loadPersisted(): Record<PanelId, PanelState> {
     const out: Record<PanelId, PanelState> = {
       chat: initialPanels.chat,
       device: initialPanels.device,
+      transform: initialPanels.transform,
     };
-    for (const id of ["chat", "device"] as const) {
+    for (const id of ["chat", "device", "transform"] as const) {
       const p = parsed[id];
       if (p && (p.mode === "docked" || p.mode === "floating" || p.mode === "collapsed")) {
         out[id] = {

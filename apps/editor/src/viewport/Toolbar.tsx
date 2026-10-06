@@ -14,6 +14,7 @@ import type { BridgeHandle } from "../bridge/mock";
 import { usePrinters } from "../state/printers";
 import { useViewMode, effectiveViewMode, VIEW_MODES } from "../state/view-mode";
 import { PLATE_UPGRADE_KEYS, usePlateUpgrades } from "../state/plate-upgrades";
+import { useDock } from "../state/dock";
 
 /**
  * S9.4-001 floating viewport toolbar (AC-1/AC-2).
@@ -368,6 +369,21 @@ export function Toolbar({ scene }: ToolbarProps) {
           onClick={onFit}
         >
           <Icon name="fit" size={18} />
+        </button>
+        {/* P1-6 — open the numeric transform inspector as a floating viewport
+            panel (selection-aware; no-op hint when nothing is selected). */}
+        <button
+          type="button"
+          className="toolbar-btn"
+          aria-label={t("transform.panel.aria")}
+          title={t("transform.panel.title")}
+          data-testid="toolbar-transform-panel"
+          onClick={() => {
+            useDock.getState().focusPanel("transform");
+            useDock.getState().setPanelMode("transform", "floating");
+          }}
+        >
+          <Icon name="objects" size={18} />
         </button>
       </div>
 

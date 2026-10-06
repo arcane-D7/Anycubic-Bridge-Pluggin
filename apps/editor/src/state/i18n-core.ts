@@ -556,6 +556,8 @@ export type MsgKey =
   | "transform.label"
   | "transform.title"
   | "transform.emptyHint"
+  | "transform.panel.title"
+  | "transform.panel.aria"
   | "transform.abs"
   | "transform.rel"
   | "transform.mode.relative"
@@ -1206,6 +1208,8 @@ export const EN: Record<MsgKey, string> = {
   "transform.label": "Transform inspector",
   "transform.title": "Transform",
   "transform.emptyHint": "Select an object to edit parts, position and scale.",
+  "transform.panel.title": "Transform",
+  "transform.panel.aria": "Open transform panel",
   "transform.abs": "abs",
   "transform.rel": "rel",
   "transform.mode.relative": "Relative mode",
@@ -1849,6 +1853,8 @@ export const PT_BR: Record<MsgKey, string> = {
   "transform.label": "Inspetor de transformação",
   "transform.title": "Transformação",
   "transform.emptyHint": "Selecione um objeto para editar peças, posição e escala.",
+  "transform.panel.title": "Transformação",
+  "transform.panel.aria": "Abrir painel de transformação",
   "transform.abs": "abs",
   "transform.rel": "rel",
   "transform.mode.relative": "Modo relativo",

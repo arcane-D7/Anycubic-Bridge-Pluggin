@@ -8,7 +8,6 @@ import { PanelDivider } from "./layout/PanelDivider";
 import { ChatPanelLazy } from "./panels/ChatPanelLazy";
 import { ImportDialog } from "./panels/ImportDialog";
 import { ObjectTree } from "./panels/ObjectTree";
-import { TransformInspector } from "./panels/TransformInspector";
 import { ObjectSettingsPanel } from "./panels/ObjectSettingsPanel";
 import { BooleanToolPanel } from "./panels/BooleanToolPanel";
 import { Timeline } from "./panels/Timeline";
@@ -30,6 +29,7 @@ import { SliceButton } from "./components/SliceButton";
 import { SliceProgress } from "./components/SliceProgress";
 import { SliceStatsPanel } from "./panels/SliceStatsPanel";
 import { DevicePanelHost } from "./components/dock/DevicePanelHost";
+import { TransformPanelHost } from "./components/dock/TransformPanelHost";
 import { useDock } from "./state/dock";
 import { PrinterPicker } from "./components/PrinterPicker";
 import { PrintJobDialog } from "./dialogs/PrintJobDialog";
@@ -284,7 +284,6 @@ export function App() {
           {sidebarView === "objects" ? (
             <>
               <ObjectTree scene={scene} onOpenImport={() => setImportOpen(true)} />
-              <TransformInspector scene={scene} />
               <ObjectSettingsPanel scene={scene} />
               <BooleanToolPanel scene={scene} />
             </>
@@ -393,6 +392,7 @@ export function App() {
       <OverlayRoot>
         <DockPanel />
         <DevicePanelHost />
+        <TransformPanelHost scene={scene} />
       </OverlayRoot>
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} scene={scene} />
     </div>

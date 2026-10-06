@@ -768,6 +768,20 @@
     flex-direction: column;
   }
 
+  /* P1-6 — transform inspector floating shell: the inspector is a bordered
+     section; inside a floating panel we drop the outer border and let the
+     panel's own padding breathe. */
+  .transform-floating-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 10px 12px;
+  }
+  .transform-floating-body .panel-transform-inspector {
+    border-top: none;
+    background: transparent;
+  }
+
   .resize-handle {
     position: absolute;
     z-index: 2;
