@@ -6,6 +6,7 @@ import { usePrinterControl, type ControlRequest } from "@/state/printer-control"
 import { useUi } from "@/state/ui";
 import { useDock } from "@/state/dock";
 import { useOperatorProfile } from "@/profile/useOperatorProfile";
+import { cloudLaneConfigured, cloudFetchSnapshot } from "@/bridge/cloud";
 import { PrinterList } from "@/components/printer-list";
 import { printerEnvRaw } from "@/lib/printer-env";
 import {
@@ -567,9 +568,24 @@ export function DevicePanelMonitor() {
   const [bindTarget, setBindTarget] = useState<{ boxId: number; slotIndex: number } | null>(null);
 
   // Wire the polling loop to the LAN selection: pick a printer → poll it.
+  // S9.13-003 — when the selected printer is a CLOUD-account printer (id
+  // prefix `cloud-`) and the cloud lane is enabled, swap the snapshot
+  // fetcher to the loopback cloud-bridge (read-only diagnostics); LAN
+  // printers keep the default mock fetcher. The store swap point is
+  // `setFetcher` (documented provider-swap — never a type change).
   useEffect(() => {
     const store = usePrinterDevice;
     if (selectedId) {
+      const cloud = selectedId.startsWith("cloud-") && cloudLaneConfigured();
+      if (cloud) {
+        store.getState().setFetcher((id) => cloudFetchSnapshot({ printerId: id }));
+      } else {
+        // Revert to the store's lazy default (LAN mock fetcher).
+        store.getState().setFetcher(async (id) => {
+          const { createMockSnapshotFetcher } = await import("@/bridge/mock");
+          return createMockSnapshotFetcher()(id);
+        });
+      }
       store.getState().startPolling(selectedId);
     } else {
       store.getState().stopPolling();
