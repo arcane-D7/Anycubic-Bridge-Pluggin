@@ -48,8 +48,12 @@ const FRAME_THICKNESS = 0.9;
 const FRAME_INSET = 6;
 
 /** Build plate grid line sets — minor (10 mm) + major (50 mm). Both lie just
- * above the PRINTABLE AREA (y=0.04) and are clipped to its bounds, so the
- * grid ends at the area boundary — never over the outer rim. */
+ * above the PRINTABLE AREA (y=GRID_Y) and are clipped to its bounds, so the
+ * grid ends at the area boundary — never over the outer rim. GRID_Y is kept
+ * high enough above the surface (0.08 mm) to avoid depth-buffer z-fighting
+ * at zoom-out distances (0.04 mm flickered while orbiting). */
+const GRID_Y = 0.08;
+
 function plateGridPositions(volume: BuildVolume): {
   readonly minor: Float32Array;
   readonly major: Float32Array;
@@ -68,12 +72,12 @@ function plateGridPositions(volume: BuildVolume): {
   const minor: number[] = [];
   const major: number[] = [];
   for (let xMark = -halfWidth; xMark <= halfWidth; xMark += minorPitch) {
-    const line = [xMark, 0.04, -halfDepth, xMark, 0.04, halfDepth];
+    const line = [xMark, GRID_Y, -halfDepth, xMark, GRID_Y, halfDepth];
     if (Math.abs(xMark) % majorPitch === 0) major.push(...line);
     else minor.push(...line);
   }
   for (let zMark = -halfDepth; zMark <= halfDepth; zMark += minorPitch) {
-    const line = [-halfWidth, 0.04, zMark, halfWidth, 0.04, zMark];
+    const line = [-halfWidth, GRID_Y, zMark, halfWidth, GRID_Y, zMark];
     if (Math.abs(zMark) % majorPitch === 0) major.push(...line);
     else minor.push(...line);
   }
@@ -98,12 +102,18 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
   const quadrantsOn = usePlateUpgrades((s) => s.quadrants);
   const zColumnOn = usePlateUpgrades((s) => s.zColumn);
   // Procedural PEI texture (cached per class — safe to toggle repeatedly) +
-  // a GPU CanvasTexture created once per enabled flag.
+  // a GPU CanvasTexture created once per enabled flag. Configured for
+  // repeat (grain tiles across the sheet ~6×8) + anisotropy so the PEI
+  // grain stays crisp at grazing angles (no banding, no stretch).
   const peiCanvas = useMemo(() => (peiOn ? getPeiTexture().canvas : null), [peiOn]);
-  const peiTexture = useMemo(
-    () => (peiCanvas ? new THREE.CanvasTexture(peiCanvas) : null),
-    [peiCanvas],
-  );
+  const peiTexture = useMemo(() => {
+    if (!peiCanvas) return null;
+    const tex = new THREE.CanvasTexture(peiCanvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(6, 8);
+    return tex;
+  }, [peiCanvas]);
   const zMarks = useMemo(
     () => (zColumnOn ? zColumnMarks(volume.heightMm) : []),
     [zColumnOn, volume.heightMm],
@@ -172,6 +182,9 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
             metalness={0.18}
             clearcoat={0.7}
             clearcoatRoughness={0.45}
+            polygonOffset
+            polygonOffsetFactor={1}
+            polygonOffsetUnits={1}
           />
         ) : (
           <meshPhysicalMaterial
@@ -210,7 +223,15 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
           <bufferGeometry>
             <bufferAttribute attach="attributes-position" args={[minorGrid, 3]} />
           </bufferGeometry>
-          <lineBasicMaterial color="#b8d4c4" transparent opacity={0.38} depthTest />
+          <lineBasicMaterial
+            color="#b8d4c4"
+            transparent
+            opacity={0.38}
+            depthTest
+            polygonOffset
+            polygonOffsetFactor={1}
+            polygonOffsetUnits={1}
+          />
         </lineSegments>
       ) : null}
       {gridOn && majorGrid.length > 0 ? (
@@ -218,7 +239,15 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
           <bufferGeometry>
             <bufferAttribute attach="attributes-position" args={[majorGrid, 3]} />
           </bufferGeometry>
-          <lineBasicMaterial color="#e8f4ee" transparent opacity={0.85} depthTest />
+          <lineBasicMaterial
+            color="#e8f4ee"
+            transparent
+            opacity={0.85}
+            depthTest
+            polygonOffset
+            polygonOffsetFactor={1}
+            polygonOffsetUnits={1}
+          />
         </lineSegments>
       ) : null}
       <axesHelper args={[25]} position={[-halfW, 0.1, halfD]} />

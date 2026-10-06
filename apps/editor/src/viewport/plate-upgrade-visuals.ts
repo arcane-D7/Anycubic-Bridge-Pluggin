@@ -31,19 +31,25 @@ function makeCanvas(size: number): HTMLCanvasElement {
   return canvas;
 }
 
-/** Deterministic value-noise value at (x, y) — hashless LCG, no assets. */
+/** Deterministic value-noise value at (x, y) — hash-like LCG, no assets.
+ * NOTE: a naive `Math.sin` hash (x*127.1 + y*311.7 …) produces visible
+ * wave bands on a flat 64px sheet; this uses an integer-math hash so the
+ * grain is spectrally flat (no banding under any camera angle). */
 function valueNoise(x: number, y: number, seed: number): number {
-  let n = Math.sin(x * 127.1 + y * 311.7 + seed * 74.7) * 43758.5453;
-  n = n - Math.floor(n); // fractional part
-  return n;
+  let h = (x | 0) + (y | 0) * 374761393 + seed * 668265263;
+  h = (h ^ (h >> 13)) * 1274126177;
+  h = h ^ (h >> 16);
+  return ((h >>> 0) % 1000) / 1000; // [0,1)
 }
 
 /**
  * Build the procedural PEI texture: coarse diagonal machining strokes on a
- * fine value-noise grain, plus a faint tint/roughness variation. 64×64 keeps
- * it memory-safe (one GPU texture for the whole plate).
+ * fine value-noise grain, plus a faint tint/roughness variation. 128×128,
+ * repeated ~6×/8× across the plate surface (set via texture.repeat in the
+ * material binding) so the grain reads as a real surface texture at any zoom
+ * — not a single stretched image.
  */
-function buildPeiTexture(size = 64): CanvasTexture {
+function buildPeiTexture(size = 128): CanvasTexture {
   const canvas = makeCanvas(size);
   const ctx = canvas.getContext("2d");
   if (!ctx) {
@@ -75,10 +81,10 @@ function buildPeiTexture(size = 64): CanvasTexture {
  * disabling the flag never leaks GPU textures (one per class label).
  */
 export function getPeiTexture(): CanvasTexture {
-  const label = "pei-64";
+  const label = "pei-128";
   let cached = textureCache.get(label);
   if (!cached) {
-    cached = buildPeiTexture(64);
+    cached = buildPeiTexture(128);
     textureCache.set(label, cached);
   }
   return cached;
