@@ -93,6 +93,135 @@ test("envelope: brightness maps to light_control with on + brightness", async ()
 });
 
 /* ------------------------------------------------------------------ */
+/* S9.10-003 — ACE writes (dryer, auto-feed, slot bind)                */
+/* ------------------------------------------------------------------ */
+
+test("envelope: dryer start maps to ace_dry flat stop=false with defaults", async () => {
+  const { buildCommandEnvelope } = await corePromise;
+  const r = buildCommandEnvelope({ action: "ace.dry", boxId: 1, active: true });
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  assert.equal(r.envelope.command, "ace_dry");
+  assert.equal(r.envelope.confirm, true);
+  assert.equal(r.envelope.args.box_id, 1);
+  assert.equal(r.envelope.args.stop, false);
+  assert.equal(r.envelope.args.target_temp, 45);
+  assert.equal(r.envelope.args.duration_min, 240);
+  assert.equal(r.envelope.args.remain_time, 0);
+});
+
+test("envelope: dryer stop maps to ace_dry stop=true (overrides targets)", async () => {
+  const { buildCommandEnvelope } = await corePromise;
+  const r = buildCommandEnvelope({
+    action: "ace.dry",
+    boxId: 0,
+    active: false,
+    targetC: 99,
+    durationMin: 999,
+  });
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  assert.equal(r.envelope.command, "ace_dry");
+  assert.equal(r.envelope.args.stop, true);
+  // Stop is a state clear — the target/duration fields are not validated.
+  assert.equal(r.envelope.args.target_temp, 99);
+  assert.equal(r.envelope.args.duration_min, 999);
+});
+
+test("envelope: dryer active requires target/duration inside the schema window", async () => {
+  const { buildCommandEnvelope } = await corePromise;
+  assert.equal(
+    buildCommandEnvelope({ action: "ace.dry", boxId: 0, active: true, targetC: 81 }).ok,
+    false,
+  );
+  assert.equal(
+    buildCommandEnvelope({ action: "ace.dry", boxId: 0, active: true, targetC: -1 }).ok,
+    false,
+  );
+  assert.equal(
+    buildCommandEnvelope({ action: "ace.dry", boxId: 0, active: true, durationMin: 1441 }).ok,
+    false,
+  );
+});
+
+test("envelope: auto-feed maps to ace_auto_feed with enabled 1/0", async () => {
+  const { buildCommandEnvelope } = await corePromise;
+  const on = buildCommandEnvelope({ action: "ace.autoFeed", boxId: 2, enabled: true });
+  const off = buildCommandEnvelope({ action: "ace.autoFeed", boxId: 2, enabled: false });
+  assert.equal(on.ok, true);
+  if (!on.ok) return;
+  assert.equal(on.envelope.command, "ace_auto_feed");
+  assert.equal(on.envelope.args.box_id, 2);
+  assert.equal(on.envelope.args.enabled, true);
+  assert.equal(off.ok, true);
+  if (!off.ok) return;
+  assert.equal(off.envelope.args.enabled, false);
+});
+
+test("envelope: slot bind maps to ace_set_slot with color triple", async () => {
+  const { buildCommandEnvelope } = await corePromise;
+  const r = buildCommandEnvelope({
+    action: "ace.bindSlot",
+    boxId: 0,
+    slotIndex: 3,
+    material: "PLA",
+    colorHex: "#4fa8dc",
+  });
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  assert.equal(r.envelope.command, "ace_set_slot");
+  assert.equal(r.envelope.confirm, true);
+  assert.equal(r.envelope.args.box_id, 0);
+  assert.equal(r.envelope.args.slot_index, 3);
+  assert.equal(r.envelope.args.material_type, "PLA");
+  // #4fa8dc → [79,168,220]
+  assert.deepEqual(r.envelope.args.color, [79, 168, 220]);
+});
+
+test("envelope: slot bind refuses bad color/missing material/box window", async () => {
+  const { buildCommandEnvelope } = await corePromise;
+  assert.equal(
+    buildCommandEnvelope({
+      action: "ace.bindSlot",
+      boxId: 0,
+      slotIndex: 1,
+      material: "PLA",
+      colorHex: "not-a-color", // invalid hex
+    }).ok,
+    false,
+  );
+  assert.equal(
+    buildCommandEnvelope({
+      action: "ace.bindSlot",
+      boxId: 0,
+      slotIndex: 1,
+      material: "",
+      colorHex: "#4fa8dc",
+    }).ok,
+    false,
+  );
+  assert.equal(
+    buildCommandEnvelope({
+      action: "ace.bindSlot",
+      boxId: 10,
+      slotIndex: 1,
+      material: "PLA",
+      colorHex: "#4fa8dc",
+    }).ok,
+    false,
+  );
+});
+
+test("envelope: ACE writes reject out-of-window box id", async () => {
+  const { buildCommandEnvelope } = await corePromise;
+  assert.equal(buildCommandEnvelope({ action: "ace.dry", boxId: 10, active: true }).ok, false);
+  assert.equal(
+    buildCommandEnvelope({ action: "ace.autoFeed", boxId: -1, enabled: true }).ok,
+    false,
+  );
+});
+
+/* ------------------------------------------------------------------ */
 /* Window bounds / refusals                                            */
 /* ------------------------------------------------------------------ */
 

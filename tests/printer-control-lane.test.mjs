@@ -47,6 +47,21 @@ test("lane: valid envelope accepted with confirm true and command echo", async (
   assert.equal(res.command, "temperature_set");
 });
 
+test("lane: ACE dryer envelope accepted over the lane", async () => {
+  const [{ fetchSceneSnapshot }, { buildCommandEnvelope }] = await Promise.all([
+    mockPromise,
+    corePromise,
+  ]);
+  const handle = await fetchSceneSnapshot();
+  const envelope = buildCommandEnvelope({ action: "ace.dry", boxId: 1, active: true });
+  assert.equal(envelope.ok, true);
+  if (!envelope.ok) return;
+  const res = await handle.printerControl({ printerId: "printer-1", envelope: envelope.envelope });
+  assert.equal(res.ok, true);
+  if (!res.ok) return;
+  assert.equal(res.command, "ace_dry");
+});
+
 test("lane: confirm missing → invalid (never accepted)", async () => {
   const { fetchSceneSnapshot } = await mockPromise;
   const handle = await fetchSceneSnapshot();

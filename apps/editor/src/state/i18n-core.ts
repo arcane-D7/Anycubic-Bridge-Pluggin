@@ -247,6 +247,12 @@ export type MsgKey =
   | "device.fil.autoFeed.title"
   | "device.fil.autoFeed.on"
   | "device.fil.autoFeed.off"
+  // S9.10-003 — manual slot bind (ace_set_slot, edit_status stays 1)
+  | "device.fil.bindSlot"
+  | "device.fil.material"
+  | "device.fil.color"
+  | "device.fil.cancel"
+  | "device.fil.bind"
   | "device.fil.capabilities.none"
   // status bar printer chips (S9.9-006) -----------------------------------
   | "status.printer.nozzle"
@@ -869,6 +875,11 @@ export const EN: Record<MsgKey, string> = {
   "device.fil.autoFeed.title": "Auto-feed",
   "device.fil.autoFeed.on": "On",
   "device.fil.autoFeed.off": "Off",
+  "device.fil.bindSlot": "Bind slot",
+  "device.fil.material": "Material",
+  "device.fil.color": "Color",
+  "device.fil.cancel": "Cancel",
+  "device.fil.bind": "Bind",
   "device.fil.capabilities.none": "No ACE data",
   "status.printer.nozzle": "Nozzle",
   "status.printer.bed": "Bed",
@@ -1473,6 +1484,11 @@ export const PT_BR: Record<MsgKey, string> = {
   "device.fil.autoFeed.title": "Auto-alimentação",
   "device.fil.autoFeed.on": "Ligada",
   "device.fil.autoFeed.off": "Desligada",
+  "device.fil.bindSlot": "Vincular ranhura",
+  "device.fil.material": "Material",
+  "device.fil.color": "Cor",
+  "device.fil.cancel": "Cancelar",
+  "device.fil.bind": "Vincular",
   "device.fil.capabilities.none": "Sem dados ACE",
   "status.printer.nozzle": "Bico",
   "status.printer.bed": "Mesa",

@@ -487,7 +487,7 @@ export interface PrinterControlRequest {
   readonly printerId: string;
   readonly envelope: Readonly<{
     readonly command: string;
-    readonly args: Readonly<Record<string, string | number | boolean | null>>;
+    readonly args: Readonly<Record<string, string | number | boolean | readonly number[] | null>>;
     readonly confirm: true;
     readonly confirmWord?: string;
   }>;

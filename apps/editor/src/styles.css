@@ -3587,6 +3587,113 @@ input {
   margin-top: 4px;
 }
 
+/* S9.10-003 — write chips for dryer/auto-feed/bind inside the box meta. */
+.device-meta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--glass-fill-1);
+  color: var(--text-secondary);
+  font-size: 10px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+.device-meta-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.device-meta-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.device-meta-btn.is-on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.device-meta-bind {
+  border-style: dashed;
+}
+
+/* S9.10-003 — slot bind modal (manual path; never forges a tag). */
+.device-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.45);
+}
+.device-modal-card {
+  width: min(320px, calc(100vw - 32px));
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.device-modal-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.device-bind-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.device-bind-input {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--glass-fill-1);
+  color: var(--text);
+  font-size: 12px;
+}
+.device-bind-input[type="color"] {
+  height: 32px;
+  padding: 2px;
+}
+.device-bind-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+.device-bind-cancel,
+.device-bind-submit {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.device-bind-cancel {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+}
+.device-bind-submit {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+.device-bind-submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .device-meta-chip {
   display: inline-flex;
   align-items: center;

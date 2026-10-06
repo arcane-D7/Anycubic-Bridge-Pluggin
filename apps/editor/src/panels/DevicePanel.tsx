@@ -195,12 +195,9 @@ function useControlSender() {
 }
 
 /**
- * S9.9-005 — Filament tab (read-only ACE view).
- *
- * Grid of slots (4 per box, up to 2 boxes): real color swatch, material,
- * remaining% progress ring (amber <50%, red <15% → toast), RFID-vs-manual
- * badge, box temp/humidity, dryer state + temp + remaining, auto-feed tag,
- * loaded_slot highlight. Write actions (dryer/auto-feed/bind) are Sprint 9.10.
+ * S9.9-005 — Filament tab (ACE view). Read-only until S9.10-003 wired the
+ * write actions: dryer start/stop + auto-feed toggle per box, and a manual
+ * slot bind form (`ace_set_slot` via the manual path — never forges a tag).
  */
 function SlotCard({
   t,
@@ -269,7 +266,19 @@ function SlotCard({
   );
 }
 
-function FilamentTab({ snap }: { snap: PrinterSnapshot | null }) {
+function FilamentTab({
+  snap,
+  onDry,
+  onAutoFeed,
+  onBind,
+  busy,
+}: {
+  snap: PrinterSnapshot | null;
+  onDry: (boxId: number, active: boolean) => void;
+  onAutoFeed: (boxId: number, enabled: boolean) => void;
+  onBind: (boxId: number, slotIndex: number) => void;
+  busy: boolean;
+}) {
   const t = useI18n((s) => s.t);
   const boxes: readonly AceBox[] = snap?.ace.boxes ?? [];
   if (boxes.length === 0) {
@@ -298,9 +307,15 @@ function FilamentTab({ snap }: { snap: PrinterSnapshot | null }) {
               <SlotCard t={t} box={box} slot={slot} key={slot.index} />
             ))}
           </div>
-          {/* Dryer + auto-feed (read-only here — writes are 9.10) */}
+          {/* S9.10-003 — dryer + auto-feed WRITE controls per box. */}
           <div className="device-box-meta">
-            <span className="device-meta-chip" data-testid="device-dryer">
+            <button
+              type="button"
+              className={`device-meta-btn${box.drying.active ? " is-on" : ""}`}
+              data-testid="device-dryer-toggle"
+              disabled={busy}
+              onClick={() => onDry(box.index, !box.drying.active)}
+            >
               {t("device.fil.dryer.title")}: {box.drying.active ? "on" : "off"}
               {box.drying.active && box.drying.targetTempC !== null
                 ? ` · ${Math.round(box.drying.targetTempC)}°C`
@@ -308,13 +323,115 @@ function FilamentTab({ snap }: { snap: PrinterSnapshot | null }) {
               {box.drying.active && box.drying.remainingSeconds !== null
                 ? ` · ${FormatSeconds(box.drying.remainingSeconds)}`
                 : ""}
-            </span>
-            <span className="device-meta-chip" data-testid="device-autofeed">
+            </button>
+            <button
+              type="button"
+              className={`device-meta-btn${box.autoFeed ? " is-on" : ""}`}
+              data-testid="device-autofeed-toggle"
+              disabled={busy}
+              onClick={() => onAutoFeed(box.index, !box.autoFeed)}
+            >
               {t("device.fil.autoFeed.title")}: {box.autoFeed ? "on" : "off"}
-            </span>
+            </button>
+            {box.slots.map((slot) =>
+              slot.state !== "empty" ? null : (
+                <button
+                  key={`bind-${slot.index}`}
+                  type="button"
+                  className="device-meta-btn device-meta-bind"
+                  data-testid="device-slot-bind"
+                  data-slot-index={slot.index}
+                  disabled={busy}
+                  onClick={() => onBind(box.index, slot.index)}
+                >
+                  {t("device.fil.bindSlot")}
+                </button>
+              ),
+            )}
           </div>
         </section>
       ))}
+    </div>
+  );
+}
+
+/**
+ * S9.10-003 — manual ACE slot bind form. Collects material + color and sends
+ * `ace_set_slot` via the manual path (edit_status stays 1 — we never forge an
+ * RFID tag; consumables stay in the local spool registry, spool_bind).
+ */
+function BindSlotModal({
+  boxId,
+  slotIndex,
+  onClose,
+  onConfirm,
+  disabled,
+}: {
+  boxId: number;
+  slotIndex: number;
+  onClose: () => void;
+  onConfirm: (material: string, colorHex: string) => void;
+  disabled: boolean;
+}) {
+  const t = useI18n((s) => s.t);
+  const [material, setMaterial] = useState("PLA");
+  const [colorHex, setColorHex] = useState("#4fa8dc");
+  const submit = () => {
+    if (!material.trim() || !/^#[0-9a-fA-F]{6}$/.test(colorHex)) return;
+    onConfirm(material.trim(), colorHex);
+  };
+  return (
+    <div className="device-modal" data-testid="device-bind-modal" onClick={onClose}>
+      <div
+        className="device-modal-card"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("device.fil.bindSlot")}
+      >
+        <header className="device-modal-title">
+          {t("device.fil.bindSlot")} — {t("device.fil.box", { index: String(boxId + 1) })},
+          {t("device.fil.slot", { index: String(slotIndex + 1) })}
+        </header>
+        <label className="device-bind-label">
+          {t("device.fil.material")}
+          <input
+            className="device-bind-input"
+            value={material}
+            onChange={(e) => setMaterial(e.target.value)}
+            data-testid="device-bind-material"
+          />
+        </label>
+        <label className="device-bind-label">
+          {t("device.fil.color")}
+          <input
+            className="device-bind-input"
+            type="color"
+            value={colorHex}
+            onChange={(e) => setColorHex(e.target.value)}
+            data-testid="device-bind-color"
+          />
+        </label>
+        <div className="device-bind-actions">
+          <button
+            type="button"
+            className="device-bind-cancel"
+            onClick={onClose}
+            data-testid="device-bind-cancel"
+          >
+            {t("device.fil.cancel")}
+          </button>
+          <button
+            type="button"
+            className="device-bind-submit"
+            onClick={submit}
+            disabled={disabled || !material.trim() || !/^#[0-9a-fA-F]{6}$/.test(colorHex)}
+            data-testid="device-bind-submit"
+          >
+            {t("device.fil.bind")}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -379,6 +496,17 @@ export function DevicePanelMonitor() {
     (mode: SpeedMode) => void send({ action: "speed.setMode", mode }),
     [send],
   );
+  // S9.10-003 — ACE writes (dryer + auto-feed toggles; slot bind form).
+  const setDry = useCallback(
+    (boxId: number, active: boolean) =>
+      void send({ action: "ace.dry", boxId, active, targetC: 45, durationMin: 240 }),
+    [send],
+  );
+  const setAutoFeed = useCallback(
+    (boxId: number, enabled: boolean) => void send({ action: "ace.autoFeed", boxId, enabled }),
+    [send],
+  );
+  const [bindTarget, setBindTarget] = useState<{ boxId: number; slotIndex: number } | null>(null);
 
   // Wire the polling loop to the LAN selection: pick a printer → poll it.
   useEffect(() => {
@@ -441,7 +569,13 @@ export function DevicePanelMonitor() {
         </button>
       </div>
       {tab === "filament" ? (
-        <FilamentTab snap={snap} />
+        <FilamentTab
+          snap={snap}
+          onDry={setDry}
+          onAutoFeed={setAutoFeed}
+          onBind={(boxId, slotIndex) => setBindTarget({ boxId, slotIndex })}
+          busy={busy}
+        />
       ) : (
         <>
           {statusBanner}
@@ -682,6 +816,26 @@ export function DevicePanelMonitor() {
           ) : null}
         </>
       )}
+
+      {/* S9.10-003 — manual slot bind (never forges a tag). */}
+      {bindTarget ? (
+        <BindSlotModal
+          boxId={bindTarget.boxId}
+          slotIndex={bindTarget.slotIndex}
+          onClose={() => setBindTarget(null)}
+          onConfirm={(material, colorHex) => {
+            void send({
+              action: "ace.bindSlot",
+              boxId: bindTarget.boxId,
+              slotIndex: bindTarget.slotIndex,
+              material,
+              colorHex,
+            });
+            setBindTarget(null);
+          }}
+          disabled={busy}
+        />
+      ) : null}
     </div>
   );
 }
