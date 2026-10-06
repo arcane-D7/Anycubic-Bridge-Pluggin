@@ -31,6 +31,7 @@ import { Toolbar } from "./Toolbar";
 import { TransformGizmo } from "./TransformGizmo";
 import { ViewCube } from "./ViewCube";
 import { ViewportCamera } from "./ViewportCamera";
+import { LiveOverlay } from "./LiveOverlay";
 import type { PreviewModel } from "./preview-model";
 
 interface ViewportProps {
@@ -108,6 +109,8 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
         <directionalLight position={[80, 160, 120]} intensity={1} />
         <directionalLight position={[-100, 60, -60]} intensity={0.35} color="#9fb4ff" />
         {volume ? <BuildPlate volume={volume} /> : null}
+        {/* S9.11-003 — live overlay (toolhead ≤4 Hz, nozzle color, spray, layer bar). */}
+        {effectiveMode === "live" ? <LiveOverlay volume={volume ?? null} /> : null}
         <FitCamera
           radius={Math.max(
             volume ? Math.hypot(volume.widthMm, volume.depthMm) / 2 : 160,
