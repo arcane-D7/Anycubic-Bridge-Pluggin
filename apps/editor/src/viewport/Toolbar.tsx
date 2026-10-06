@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { BridgeHandle } from "../bridge/mock";
 import { usePrinters } from "../state/printers";
 import { useViewMode, effectiveViewMode, VIEW_MODES } from "../state/view-mode";
+import { PLATE_UPGRADE_KEYS, usePlateUpgrades } from "../state/plate-upgrades";
 
 /**
  * S9.4-001 floating viewport toolbar (AC-1/AC-2).
@@ -87,6 +88,22 @@ export function Toolbar({ scene }: ToolbarProps) {
   const selectedPrinter = usePrinters((s) => s.printers.find((p) => p.id === s.selectedId));
   const liveReachable = selectedPrinter?.reachable === true;
   const effectiveMode = effectiveViewMode(viewMode, liveReachable);
+
+  // S9.11-004 — optional plate upgrades (PEI / quadrants / hot-end / Z
+  // column): opt-in toggles, all DEFAULT OFF (base viewport unchanged).
+  // NOTE: zustand selectors MUST return primitives (a fresh object identity
+  // per render triggers an infinite getSnapshot loop under React 19).
+  const platePei = usePlateUpgrades((s) => s.pei);
+  const plateQuadrants = usePlateUpgrades((s) => s.quadrants);
+  const plateHotend = usePlateUpgrades((s) => s.hotend);
+  const plateZColumn = usePlateUpgrades((s) => s.zColumn);
+  const toggleUpgrade = usePlateUpgrades((s) => s.toggleUpgrade);
+  const plateFlags = {
+    pei: platePei,
+    quadrants: plateQuadrants,
+    hotend: plateHotend,
+    zColumn: plateZColumn,
+  } as const;
 
   // S9.4-004 arrange target = the ACTIVE plate's objects (same filter as the
   // viewport render so the layout you see is the layout that arranges).
@@ -286,6 +303,46 @@ export function Toolbar({ scene }: ToolbarProps) {
               onClick={() => setViewMode(mode)}
             >
               {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* S9.11-004 — optional plate upgrades (opt-in, default OFF): PEI
+          texture, quadrant marks, hot-end visual, Z column. */}
+      <div className="toolbar-group" role="group" aria-label={t("plate.upgrade.aria")}>
+        {PLATE_UPGRADE_KEYS.map((key) => {
+          const on = plateFlags[key];
+          const label = t(
+            key === "pei"
+              ? "plate.upgrade.pei.aria"
+              : key === "quadrants"
+                ? "plate.upgrade.quadrants.aria"
+                : key === "hotend"
+                  ? "plate.upgrade.hotend.aria"
+                  : "plate.upgrade.zColumn.aria",
+          );
+          const title = t(
+            key === "pei"
+              ? "plate.upgrade.pei.title"
+              : key === "quadrants"
+                ? "plate.upgrade.quadrants.title"
+                : key === "hotend"
+                  ? "plate.upgrade.hotend.title"
+                  : "plate.upgrade.zColumn.title",
+          );
+          return (
+            <button
+              type="button"
+              key={key}
+              className={`toolbar-btn toolbar-toggle${on ? " is-active" : ""}`}
+              aria-pressed={on}
+              aria-label={label}
+              title={title}
+              data-testid={`plate-upgrade-${key}`}
+              onClick={() => toggleUpgrade(key)}
+            >
+              <Icon name={key === "hotend" ? "printer" : "settings"} size={18} />
             </button>
           );
         })}

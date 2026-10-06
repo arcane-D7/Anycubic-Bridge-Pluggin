@@ -149,6 +149,16 @@ export type MsgKey =
   | "toolbar.viewmode.fallback"
   | "toolbar.view.infoTitle"
   | "toolbar.view.infoMsg"
+  // plate upgrades (S9.11-004) --------------------------------------------
+  | "plate.upgrade.aria"
+  | "plate.upgrade.pei.aria"
+  | "plate.upgrade.pei.title"
+  | "plate.upgrade.quadrants.aria"
+  | "plate.upgrade.quadrants.title"
+  | "plate.upgrade.hotend.aria"
+  | "plate.upgrade.hotend.title"
+  | "plate.upgrade.zColumn.aria"
+  | "plate.upgrade.zColumn.title"
   // printer picker --------------------------------------------------------
   | "printer.led.aria"
   | "printer.led.title.probing"
@@ -790,6 +800,15 @@ export const EN: Record<MsgKey, string> = {
   "toolbar.viewmode.fallback": "Live needs a reachable printer — showing slicer style.",
   "toolbar.view.infoTitle": "Arrange",
   "toolbar.view.infoMsg": "Use the toolbar Arrange for shelf packing.",
+  "plate.upgrade.aria": "Plate upgrades",
+  "plate.upgrade.pei.aria": "PEI texture",
+  "plate.upgrade.pei.title": "Procedural PEI build surface texture",
+  "plate.upgrade.quadrants.aria": "Quadrant marks",
+  "plate.upgrade.quadrants.title": "Crosshair quadrants + front label",
+  "plate.upgrade.hotend.aria": "Hot-end visual",
+  "plate.upgrade.hotend.title": "Hot-end duct + nozzle (live mode)",
+  "plate.upgrade.zColumn.aria": "Z column",
+  "plate.upgrade.zColumn.title": "Rear Z reference column with height ticks",
   "printer.led.aria": "{ip} {state}",
   "printer.led.title.probing": "Probing…",
   "printer.led.title.online": "Online",
@@ -1409,6 +1428,15 @@ export const PT_BR: Record<MsgKey, string> = {
   "toolbar.viewmode.fallback": "Ao vivo precisa de impressora alcançável — a mostrar slicer.",
   "toolbar.view.infoTitle": "Arrumar",
   "toolbar.view.infoMsg": "Use a barra de ferramentas Arrumar para empacotamento de prateleira.",
+  "plate.upgrade.aria": "Melhorias da placa",
+  "plate.upgrade.pei.aria": "Textura PEI",
+  "plate.upgrade.pei.title": "Textura de superfície PEI processual",
+  "plate.upgrade.quadrants.aria": "Marcas de quadrantes",
+  "plate.upgrade.quadrants.title": "Quadrantes cruzados + etiqueta frontal",
+  "plate.upgrade.hotend.aria": "Visual do hot-end",
+  "plate.upgrade.hotend.title": "Duto + bico do hot-end (modo ao vivo)",
+  "plate.upgrade.zColumn.aria": "Coluna Z",
+  "plate.upgrade.zColumn.title": "Coluna Z traseira de referência com marcas de altura",
   "printer.led.aria": "{ip} {state}",
   "printer.led.title.probing": "A sondar…",
   "printer.led.title.online": "Online",

@@ -1,6 +1,10 @@
 import { memo, useMemo } from "react";
 import { RoundedBox } from "@react-three/drei";
+import * as THREE from "three";
 import type { BuildVolume } from "../bridge/types";
+import { quadrantCrosshairPositions, zColumnMarks } from "../state/plate-upgrade-core";
+import { usePlateUpgrades } from "../state/plate-upgrades";
+import { getPeiTexture } from "./plate-upgrade-visuals";
 
 /**
  * S9.10-002 — realistic 3D-print build plate.
@@ -11,6 +15,11 @@ import type { BuildVolume } from "../bridge/types";
  * metallic bed, corner feet, a faint alignment grid and a small axes gizmo.
  * The build-plate TOP sits exactly at Y=0 (objects rest on it via the
  * lay-on-plate lane).
+ *
+ * S9.11-004 — optional upgrades (default OFF, opt-in toggles): procedural PEI
+ * texture on the surface, quadrant crosshair + "front" label, and a rear Z
+ * reference column. All procedural (zero image assets); Y-axis untouched so
+ * the lay-on-plate lane (regression `d9502c0`) keeps passing.
  */
 
 interface BuildPlateProps {
@@ -38,6 +47,27 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
     }
     return new Float32Array(positions);
   }, [volume.widthMm, volume.depthMm]);
+
+  // S9.11-004 — optional upgrade toggles (all default OFF).
+  const peiOn = usePlateUpgrades((s) => s.pei);
+  const quadrantsOn = usePlateUpgrades((s) => s.quadrants);
+  const zColumnOn = usePlateUpgrades((s) => s.zColumn);
+  // Procedural PEI texture (cached per class — safe to toggle repeatedly) +
+  // a GPU CanvasTexture created once per enabled flag.
+  const peiCanvas = useMemo(() => (peiOn ? getPeiTexture().canvas : null), [peiOn]);
+  const peiTexture = useMemo(
+    () => (peiCanvas ? new THREE.CanvasTexture(peiCanvas) : null),
+    [peiCanvas],
+  );
+  const quadrantPositions = useMemo(
+    () => (quadrantsOn ? quadrantCrosshairPositions(volume.widthMm, volume.depthMm) : []),
+    [quadrantsOn, volume.widthMm, volume.depthMm],
+  );
+  const zMarks = useMemo(
+    () => (zColumnOn ? zColumnMarks(volume.heightMm) : []),
+    [zColumnOn, volume.heightMm],
+  );
+
   if (
     ![volume.widthMm, volume.depthMm, volume.heightMm].every(
       (value) => Number.isFinite(value) && value > 0,
@@ -54,20 +84,33 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
 
   return (
     <group>
-      {/* PEI-style build surface (rounded edges, glossy dark). */}
+      {/* PEI-style build surface (rounded edges, glossy dark). S9.11-004 —
+          optional procedural PEI texture replaces the flat color (canvas
+          value-noise, zero image assets). */}
       <RoundedBox
         args={[volume.widthMm - 2, TOP_THICKNESS, volume.depthMm - 2]}
         radius={5}
         smoothness={4}
         position={[0, topY, 0]}
       >
-        <meshPhysicalMaterial
-          color="#22272b"
-          roughness={0.34}
-          metalness={0.28}
-          clearcoat={1}
-          clearcoatRoughness={0.5}
-        />
+        {peiOn ? (
+          <meshPhysicalMaterial
+            map={peiTexture}
+            color="#ffffff"
+            roughness={0.42}
+            metalness={0.18}
+            clearcoat={0.7}
+            clearcoatRoughness={0.45}
+          />
+        ) : (
+          <meshPhysicalMaterial
+            color="#22272b"
+            roughness={0.34}
+            metalness={0.28}
+            clearcoat={1}
+            clearcoatRoughness={0.5}
+          />
+        )}
       </RoundedBox>
 
       {/* Rear locating tab (the familiar plate handle). */}
@@ -109,6 +152,44 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
         <lineBasicMaterial color="#9fb4a8" transparent opacity={0.28} />
       </lineSegments>
       <axesHelper args={[25]} position={[-halfW, 0.15, halfD]} />
+
+      {/* S9.11-004 — optional quadrant crosshair (fine lines + "front" label
+          at the +Z operator edge) to help print submission. */}
+      {quadrantsOn ? (
+        <group>
+          <lineSegments>
+            <bufferGeometry>
+              <bufferAttribute
+                attach="attributes-position"
+                args={[new Float32Array(quadrantPositions), 3]}
+              />
+            </bufferGeometry>
+            <lineBasicMaterial color="#7fd4ff" transparent opacity={0.5} />
+          </lineSegments>
+          {/* "front" marker: a short tick on the +Z edge + faint halo line. */}
+          <mesh position={[0, 0.09, -halfD + 3]} rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[20, 4]} />
+            <meshBasicMaterial color="#7fd4ff" transparent opacity={0.6} />
+          </mesh>
+        </group>
+      ) : null}
+
+      {/* S9.11-004 — optional rear Z reference column (height ticks every
+          20 mm, zero footprint change — visual only). */}
+      {zColumnOn ? (
+        <group position={[-halfW - 8, 0, -halfD + 10]}>
+          <mesh position={[0, volume.heightMm / 2, 0]}>
+            <cylinderGeometry args={[2, 2, volume.heightMm, 12]} />
+            <meshStandardMaterial color="#4a525a" roughness={0.55} metalness={0.25} />
+          </mesh>
+          <lineSegments>
+            <bufferGeometry>
+              <bufferAttribute attach="attributes-position" args={[new Float32Array(zMarks), 3]} />
+            </bufferGeometry>
+            <lineBasicMaterial color="#9fb4a8" transparent opacity={0.6} />
+          </lineSegments>
+        </group>
+      ) : null}
     </group>
   );
 });

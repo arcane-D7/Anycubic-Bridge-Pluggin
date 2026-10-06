@@ -28,6 +28,7 @@ import {
   NOZZLE_NEUTRAL_HEX,
 } from "../state/live-overlay-core";
 import { useViewMode } from "../state/view-mode";
+import { usePlateUpgrades } from "../state/plate-upgrades";
 
 interface LiveOverlayProps {
   readonly volume: BuildVolume | null;
@@ -59,6 +60,7 @@ function LayerBar({ fraction }: { readonly fraction: number | null }) {
 export const LiveOverlay = memo(function LiveOverlay({ volume }: LiveOverlayProps) {
   const snapshot = usePrinterDevice((s) => s.snapshot);
   const viewMode = useViewMode((s) => s.mode);
+  const hotendOn = usePlateUpgrades((s) => s.hotend);
 
   const groupRef = useRef<THREE.Group>(null);
   const nozzleRef = useRef<THREE.Mesh>(null);
@@ -108,6 +110,20 @@ export const LiveOverlay = memo(function LiveOverlay({ volume }: LiveOverlayProp
           <coneGeometry args={[NOZZLE_RADIUS, 8, 16]} />
           <meshStandardMaterial color={NOZZLE_NEUTRAL_HEX} metalness={0.7} roughness={0.3} />
         </mesh>
+        {/* S9.11-004 — optional hot-end visual (duct shroud + nozzle cone),
+            opt-in via plate-upgrades; defaults OFF. */}
+        {hotendOn ? (
+          <group position={[0, -6, 0]}>
+            <mesh>
+              <boxGeometry args={[16, 9, 14]} />
+              <meshStandardMaterial color="#3a4048" metalness={0.55} roughness={0.4} />
+            </mesh>
+            <mesh position={[0, -7, 0]}>
+              <coneGeometry args={[2.6, 6, 12]} />
+              <meshStandardMaterial color="#c9a13b" metalness={0.85} roughness={0.25} />
+            </mesh>
+          </group>
+        ) : null}
       </group>
 
       {/* Spray of data: % + layer + nozzle temp floating near the toolhead. */}
