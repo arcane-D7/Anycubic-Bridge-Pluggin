@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport + materials)                                                                                                                                    |
 | **Source**            | User request 2026-10-02 (plate + integration visuals) + Consultor report §C.3 (T.9–T.10)                                                                              |
 | **Depends On**        | Sprints 9.9 (snapshot), 9.10 (actions)                                                                                                                                |
-| **Status**            | 🔄 In progress (2/4)                                                                                                                                                  |
+| **Status**            | 🔄 In progress (3/4)                                                                                                                                                  |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -152,7 +152,34 @@ models. Multi-material objects split by extruder as in the slice preview.
 | **Priority**         | P1                                                                  |
 | **Type**             | Feature (viewport)                                                  |
 | **Estimated Effort** | L                                                                   |
-| **Status**           | ⏳ Planned                                                          |
+| **Status**           | ✅ Done (`0d42141`)                                                 |
+
+#### Implementation Notes (S9.11-003)
+
+Live overlay (real printer state, ≤4 Hz, imperative mutation — no scene re-render):
+
+- `state/live-overlay-core.ts` (pure, headless) — `toolheadWorld(motion,
+volume)` (Y-up mapping `[x, y, -zM]` clamped to the build volume; null
+  when motion/volume incomplete — no guessing), `nozzleColor(boxes)` (first
+  ACE box's loaded slot with a color-usable filament, else `NOZZLE_NEUTRAL_HEX`
+  `#c8ccd2`), `shouldUpdateLive(last, now)` (≥250 ms → ≤4 Hz), `layerBarFraction`
+  (currLayer+1/totalLayers, pct fallback, clamped 0..1), `sprayPct`/`sprayLayerText`
+  ("12/120" format matching the status bar).
+- `viewport/LiveOverlay.tsx` (R3F, memoized) — renders only when
+  `effectiveMode === 'live'`; `useEffect` interval (250 ms) applies toolhead
+  `group` position (plate-top offset) + nozzle cone color imperatively via
+  refs (no per-tick React state); carriage box + nozzle cone (radius 3.4),
+  spray sprite group (% / layer / nozzle temps as canvas `TextSprite`s,
+  textures disposed on unmount), layer bar scaled by fraction.
+- `viewport/Viewport.tsx` — `{effectiveMode === 'live' ? <LiveOverlay
+volume={volume ?? null} /> : null}` inside Canvas after BuildPlate.
+- No new i18n keys (banner already covers the fallback messaging).
+- Tests: `tests/live-overlay-core.test.mjs` (6 — toolhead mapping + clamp,
+  null on incomplete input, nozzle color priority/neutral, 250 ms throttle,
+  layer fraction from layers/pct/clamp, spray pct/layer text).
+
+Gate EXIT:0 (`$env:TEMP\s911003.log`): unit **680** pass/0 fail (+6), integration
+11, rust OK, smoke 106, e2e PASS, licenses 59, arch OK, sanitize 0.
 
 #### Context
 
