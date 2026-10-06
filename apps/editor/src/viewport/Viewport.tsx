@@ -1,7 +1,7 @@
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type * as THREE from "three";
+import * as THREE from "three";
 import type { BridgeHandle } from "../bridge/mock";
 import type { BuildVolume } from "../bridge/types";
 import { useImportCommit } from "../bridge/import-actions";
@@ -140,7 +140,19 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
         {!preview ? <ViewportCamera /> : null}
         {/* S9.8-006 — GL context-loss recovery (inside Canvas via useThree). */}
         <ContextLossGuard />
-        <OrbitControls makeDefault enableDamping />
+        {/* S9.9-010 — navigation like Orca/Anycubic Slicer: LEFT drag = orbit,
+            MIDDLE drag = PAN (not dolly), RIGHT drag = pan. Middle-button
+            dolly was the default OrbitControls mapping; users dragging with
+            the scroll button expected view panning and got zoom. */}
+        <OrbitControls
+          makeDefault
+          enableDamping
+          mouseButtons={{
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.PAN,
+            RIGHT: THREE.MOUSE.PAN,
+          }}
+        />
       </Canvas>
       {!preview ? <ViewCube /> : null} {!preview ? <NonWatertightBadges bridge={scene} /> : null}{" "}
       {/* S9.8-002 — chip overlay outside the Canvas (no three re-renders). */}
