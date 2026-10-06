@@ -56,13 +56,15 @@ const STATE = Object.freeze({
   UNAVAILABLE: "unavailable",
 });
 
-function json(res, status, body) {
+function json(res, status, body, origin) {
   const payload = JSON.stringify(body);
-  res.writeHead(status, {
+  const headers = {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
     "Content-Length": Buffer.byteLength(payload),
-  });
+  };
+  if (origin) headers["Access-Control-Allow-Origin"] = origin;
+  res.writeHead(status, headers);
   res.end(payload);
 }
 
@@ -125,6 +127,13 @@ export async function startCloudBridge(options = {}) {
       json(res, 403, { ok: false, error: "origin not allowed" });
       return;
     }
+    // CORS parity: inject Access-Control-Allow-Origin into EVERY response
+    // (the `json()` helper writes headers; wrap writeHead so health/devices/
+    // snapshot all carry ACAO for the browser Origin that passed the gate).
+    const corsOrigin = req.headers.origin ?? ALLOWED_ORIGIN_DEV;
+    const baseWriteHead = res.writeHead.bind(res);
+    res.writeHead = (status, headers) =>
+      baseWriteHead(status, { ...headers, "Access-Control-Allow-Origin": corsOrigin });
     const url = new URL(req.url ?? "/", `http://127.0.0.1:${port}`);
     const pathname = url.pathname;
 
