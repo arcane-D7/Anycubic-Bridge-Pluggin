@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport + materials)                                                                                                                                    |
 | **Source**            | User request 2026-10-02 (plate + integration visuals) + Consultor report §C.3 (T.9–T.10)                                                                              |
 | **Depends On**        | Sprints 9.9 (snapshot), 9.10 (actions)                                                                                                                                |
-| **Status**            | 🔄 In progress (1/4)                                                                                                                                                  |
+| **Status**            | 🔄 In progress (2/4)                                                                                                                                                  |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -99,7 +99,36 @@ printer; falls back to `slicer` with a banner if offline.
 | **Priority**         | P0                                                         |
 | **Type**             | Feature (materials)                                        |
 | **Estimated Effort** | L                                                          |
-| **Status**           | ⏳ Planned                                                 |
+| **Status**           | ✅ Done (`212b816`)                                        |
+
+#### Implementation Notes (S9.11-002)
+
+Slicer-style material assignment (ACE slot → preset → neutral, no assets):
+
+- `state/material-assign-core.ts` (pure, headless) — `resolveFilamentColor`
+  with the strict priority chain: ACE slot real color (exact material match
+  on the object's `filamentId`/label, then the ACE box's loaded slot — never
+  an empty/identifying slot), local `FILAMENT_PRESETS` (by filament id, then
+  normalized material label), neutral `#bdbdbd` placeholder (never guesses).
+  `matchAceSlot`, `slotIsColorUsable`, `materialClassFor` (smooth/matte/
+  textured/flex from material label).
+- `viewport/filament-material.ts` (procedural) — `filamentMaterial(colorHex,
+cls)` builds a `MeshStandardMaterial` with a shared 64×64 value-noise
+  bump/roughness `CanvasTexture` per material class (one GPU texture per
+  class — memory-safe, no image/channel assets); `disposeFilamentTextures`
+  for tests.
+- `viewport/SceneObjectModel.tsx` — when the view mode is `slicer`, the
+  object uses the filament material: per-object `filamentId` (S9.6-002)
+  else the global preset filament id, mapped through the LIVE ACE snapshot
+  (`usePrinterDevice`) with the preset/neutral fallback; mesh-mode keeps
+  the standard tint. Never guessed — neutral placeholder only when nothing
+  resolves.
+- Tests: `tests/material-assign-core.test.mjs` (7 — neutral, preset by id,
+  preset by label, ACE wins, loaded-slot fallback, empty/identifying never
+  drive color, class mapping).
+
+Gate EXIT:0 (`$env:TEMP\s911002.log`): unit **674** pass/0 fail (+7), integration
+11, rust OK, smoke 106, e2e ×2 PASS, licenses 59, arch OK, sanitize 0.
 
 #### Context
 
