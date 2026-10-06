@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport + materials)                                                                                                                                    |
 | **Source**            | User request 2026-10-02 (plate + integration visuals) + Consultor report §C.3 (T.9–T.10)                                                                              |
 | **Depends On**        | Sprints 9.9 (snapshot), 9.10 (actions)                                                                                                                                |
-| **Status**            | ⏳ Planned                                                                                                                                                            |
+| **Status**            | 🔄 In progress (1/4)                                                                                                                                                  |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -52,7 +52,32 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Priority**         | P0                                                    |
 | **Type**             | Feature (state/UI)                                    |
 | **Estimated Effort** | S                                                     |
-| **Status**           | ⏳ Planned                                            |
+| **Status**           | ✅ Done (`d2d2051`)                                   |
+
+#### Implementation Notes (S9.11-001)
+
+View mode state + toolbar toggle with live fallback:
+
+- `state/view-mode-core.ts` (pure, headless) — `ViewMode = 'mesh'|'slicer'|'live'`,
+  `VIEW_MODES`, `DEFAULT_VIEW_MODE = 'mesh'`, `parseViewMode` (invalid → mesh),
+  `effectiveViewMode(requested, liveReachable)` (live without reachable printer →
+  slicer), `isLiveFallback`. Storage key `anycubic:view-mode:v1`.
+- `state/view-mode.ts` (zustand) — mode persisted to localStorage; setter ignores
+  non-modes; DOM-guarded (SSR/tests safe).
+- `viewport/Toolbar.tsx` — seg group `view-mode-{mesh|slicer|live}` next to the
+  transform tools; active state from the EFFECTIVE mode; live button tooltip
+  explains the fallback when no reachable printer.
+- `viewport/Viewport.tsx` — `effectiveMode` + reachability from the printers
+  store (`selected` printer reachable===true); when live was requested but
+  downgraded, a one-line banner (`viewport-live-banner`, testid
+  `viewport-live-banner`) shows `viewport.live.banner`.
+- i18n: `toolbar.viewmode.{aria,mesh,slicer,live,fallback}` +
+  `viewport.live.banner` (EN + PT_BR).
+- Tests: `tests/view-mode-core.test.mjs` (7 — default, isViewMode, parse,
+  effective identity, live fallback, isLiveFallback, storage key).
+
+Gate EXIT:0 (`$env:TEMP\s911001.log`): unit **667** pass/0 fail (+7), integration
+11, rust OK, smoke 106, e2e ×2 PASS, licenses 59, arch OK, sanitize 0.
 
 #### Context
 
