@@ -475,3 +475,36 @@ export interface RepairResult {
   /** The repaired (or copied) snapshot (authoritative post-commit). */
   readonly objectSnapshot: SceneObjectSnapshot;
 }
+
+/**
+ * S9.10-002 — printer control lane request. Carries the validated
+ * `printer_command_send` ENVELOPE built by the pure control core
+ * (`state/printer-control-core.ts`) — the bridge lane is a transport, never
+ * the authority on grammar. `printerId` identifies the target from the
+ * picker (never a raw IP in the contract surface).
+ */
+export interface PrinterControlRequest {
+  readonly printerId: string;
+  readonly envelope: Readonly<{
+    readonly command: string;
+    readonly args: Readonly<Record<string, string | number | boolean | null>>;
+    readonly confirm: true;
+    readonly confirmWord?: string;
+  }>;
+}
+
+/**
+ * S9.10-002 — control lane result. `ok: true` means the bus accepted the
+ * command. Failure carries a SEMANTIC kind so the UI can show distinct
+ * toasts: `invalid` (the envelope failed local validation — a programming
+ * error, never expected from the gated UI), `refused` (the printer/bus
+ * rejected the command), `timeout` (no reply before the deadline — neither
+ * success nor failure, per the MQTT honesty rule).
+ */
+export type PrinterControlResult =
+  | { readonly ok: true; readonly command: string }
+  | {
+      readonly ok: false;
+      readonly error: string;
+      readonly kind: "invalid" | "refused" | "timeout";
+    };

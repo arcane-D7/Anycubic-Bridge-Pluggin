@@ -272,6 +272,20 @@ export type MsgKey =
   | "toast.temp.off.message"
   | "toast.ace.error.title"
   | "toast.ace.error.message"
+  // printer control toasts (S9.10-002) ------------------------------------
+  | "control.accepted.title"
+  | "control.accepted.message"
+  | "control.refused.title"
+  | "control.refused.message"
+  | "control.timeout.title"
+  | "control.timeout.message"
+  | "control.invalid.title"
+  | "control.invalid.message"
+  | "control.failed.title"
+  // printer control UI (S9.10-002) ----------------------------------------
+  | "control.step.decrement"
+  | "control.step.increment"
+  | "control.speed.aria"
   // status bar -------------------------------------------------------------
   | "status.objects"
   | "status.coords.title"
@@ -879,6 +893,18 @@ export const EN: Record<MsgKey, string> = {
   "toast.temp.off.message": "Nozzle temp differs from the material's recommended range",
   "toast.ace.error.title": "ACE error detected",
   "toast.ace.error.message": "Check the Device panel — error code {code}",
+  "control.accepted.title": "Command sent",
+  "control.accepted.message": "{command} applied to the printer",
+  "control.refused.title": "Command refused",
+  "control.refused.message": "The printer rejected the command",
+  "control.timeout.title": "Command timed out",
+  "control.timeout.message": "No reply from the printer — command status unknown",
+  "control.invalid.title": "Invalid command",
+  "control.invalid.message": "The command was not sent:",
+  "control.failed.title": "Command failed",
+  "control.step.decrement": "Decrease",
+  "control.step.increment": "Increase",
+  "control.speed.aria": "Print speed mode",
   "status.objects": "{n} object{s}",
   "status.coords.title": "{name} position (mm)",
   "status.plateDims.title": "{plate} scene bounds (mm)",
@@ -1471,6 +1497,18 @@ export const PT_BR: Record<MsgKey, string> = {
   "toast.temp.off.message": "A temperatura do bico difere da gama recomendada do material",
   "toast.ace.error.title": "Erro ACE detetado",
   "toast.ace.error.message": "Verifique o painel Dispositivo — código {code}",
+  "control.accepted.title": "Comando enviado",
+  "control.accepted.message": "{command} aplicado à impressora",
+  "control.refused.title": "Comando recusado",
+  "control.refused.message": "A impressora recusou o comando",
+  "control.timeout.title": "Comando expirou",
+  "control.timeout.message": "Sem resposta da impressora — estado do comando desconhecido",
+  "control.invalid.title": "Comando inválido",
+  "control.invalid.message": "O comando não foi enviado:",
+  "control.failed.title": "Falha no comando",
+  "control.step.decrement": "Diminuir",
+  "control.step.increment": "Aumentar",
+  "control.speed.aria": "Modo de velocidade de impressão",
   "status.objects": "{n} objeto{s}",
   "status.coords.title": "{name} posição (mm)",
   "status.plateDims.title": "{plate} limites de cena (mm)",

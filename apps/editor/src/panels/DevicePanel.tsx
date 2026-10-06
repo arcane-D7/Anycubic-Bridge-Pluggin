@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/state/i18n";
 import { usePrinters } from "@/state/printers";
 import { usePrinterDevice, type PollingStatus } from "@/state/printer-device";
+import { usePrinterControl, type ControlRequest } from "@/state/printer-control";
+import { useUi } from "@/state/ui";
 import { useDock } from "@/state/dock";
 import {
   editOriginKey,
@@ -33,23 +35,64 @@ interface TempCardProps {
   readonly label: string;
   readonly currentC: number | null;
   readonly targetC: number | null;
+  /** When provided the card gets target steppers (S9.10-002). */
+  readonly onTarget?: (targetC: number) => void;
+  readonly stepC?: number;
+  readonly disabled?: boolean;
 }
 
-function TempCard({ label, currentC, targetC }: TempCardProps) {
+function TempCard({ label, currentC, targetC, onTarget, stepC = 5, disabled }: TempCardProps) {
+  const t = useI18n((s) => s.t);
+  const target = targetC ?? currentC ?? 0;
   return (
     <div className="device-temp-card" data-testid="device-temp-card">
       <span className="device-temp-label">{label}</span>
       <span className="device-temp-current mono-num" data-testid="device-temp-current">
         {currentC === null ? "—" : `${Math.round(currentC)}°`}
       </span>
-      <span className="device-temp-target mono-num" data-testid="device-temp-target">
-        {targetC === null ? null : `→ ${Math.round(targetC)}°`}
-      </span>
+      <div className="device-temp-target-row">
+        <span className="device-temp-target mono-num" data-testid="device-temp-target">
+          {targetC === null ? null : `→ ${Math.round(targetC)}°`}
+        </span>
+        {onTarget ? (
+          <div className="device-step" data-testid="device-temp-step">
+            <button
+              type="button"
+              className="device-step-btn"
+              aria-label={t("control.step.decrement")}
+              disabled={disabled}
+              onClick={() => onTarget(target - stepC)}
+            >
+              −
+            </button>
+            <button
+              type="button"
+              className="device-step-btn"
+              aria-label={t("control.step.increment")}
+              disabled={disabled}
+              onClick={() => onTarget(target + stepC)}
+            >
+              +
+            </button>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
 
-function FanRow({ label, pct }: { readonly label: string; readonly pct: number | null }) {
+interface FanRowProps {
+  readonly label: string;
+  readonly pct: number | null;
+  /** When provided the row gets speed steppers (S9.10-002). */
+  readonly onSpeed?: (pct: number) => void;
+  readonly stepPct?: number;
+  readonly disabled?: boolean;
+}
+
+function FanRow({ label, pct, onSpeed, stepPct = 5, disabled }: FanRowProps) {
+  const t = useI18n((s) => s.t);
+  const value = pct ?? 0;
   return (
     <div className="device-fan-row" data-testid="device-fan-row">
       <span className="device-fan-label">{label}</span>
@@ -61,6 +104,28 @@ function FanRow({ label, pct }: { readonly label: string; readonly pct: number |
         />
       </div>
       <span className="device-fan-pct mono-num">{pct === null ? "—" : `${Math.round(pct)}%`}</span>
+      {onSpeed ? (
+        <div className="device-step" data-testid="device-fan-step">
+          <button
+            type="button"
+            className="device-step-btn"
+            aria-label={t("control.step.decrement")}
+            disabled={disabled}
+            onClick={() => onSpeed(value - stepPct)}
+          >
+            −
+          </button>
+          <button
+            type="button"
+            className="device-step-btn"
+            aria-label={t("control.step.increment")}
+            disabled={disabled}
+            onClick={() => onSpeed(value + stepPct)}
+          >
+            +
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -85,6 +150,48 @@ function FormatSeconds(total: number | null): string | null {
   const m = Math.floor(total / 60);
   const s = Math.floor(total % 60);
   return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+/**
+ * S9.10-002 — single control-send path for the Device Monitor controls.
+ * Every stepper/slider/select maps to `printer_command_send` through the
+ * pure envelope core (bounds + confirm + policy) and the store's semantic
+ * toasts (accepted/refused/timeout/invalid — no silent failures).
+ */
+function useControlSender() {
+  const t = useI18n((s) => s.t);
+  const sendControl = usePrinterControl((s) => s.sendControl);
+  const busy = usePrinterControl((s) => s.busy);
+  const selectedId = usePrinters((s) => s.selectedId);
+  const pushToast = useUi((s) => s.pushToast);
+
+  const send = useCallback(
+    (payload: ControlRequest) => {
+      if (!selectedId) {
+        pushToast({
+          kind: "warning",
+          title: t("device.empty.title"),
+          message: t("device.empty.msg"),
+        });
+        return;
+      }
+      void (async () => {
+        const lane = await import("@/bridge/mock");
+        const handle = await lane.fetchSceneSnapshot();
+        await sendControl({
+          action: payload.action,
+          payload,
+          printerId: selectedId,
+          lane: handle,
+          toast: pushToast,
+          t,
+        });
+      })();
+    },
+    [selectedId, sendControl, pushToast, t],
+  );
+
+  return { send, busy };
 }
 
 /**
@@ -242,6 +349,37 @@ export function DevicePanelMonitor() {
     [snapshot],
   );
 
+  // S9.10-002 — Device Monitor write controls map to printer_command_send.
+  const { send, busy } = useControlSender();
+  const toggleLight = useCallback(() => {
+    void send({
+      action: "lights.setEnabled",
+      enabled: !snap?.lights?.enabled,
+    });
+  }, [send, snap?.lights?.enabled]);
+  const setBrightness = useCallback(
+    (brightnessPct: number) => {
+      void send({ action: "lights.setBrightness", brightnessPct });
+    },
+    [send],
+  );
+  const setNozzleTarget = useCallback(
+    (targetC: number) => void send({ action: "temps.setNozzle", targetC }),
+    [send],
+  );
+  const setBedTarget = useCallback(
+    (targetC: number) => void send({ action: "temps.setBed", targetC }),
+    [send],
+  );
+  const setPartFan = useCallback(
+    (speedPct: number) => void send({ action: "fans.setPart", speedPct }),
+    [send],
+  );
+  const setSpeedMode = useCallback(
+    (mode: SpeedMode) => void send({ action: "speed.setMode", mode }),
+    [send],
+  );
+
   // Wire the polling loop to the LAN selection: pick a printer → poll it.
   useEffect(() => {
     const store = usePrinterDevice;
@@ -339,6 +477,25 @@ export function DevicePanelMonitor() {
                 })}
               </div>
             ) : null}
+            {snap?.capabilities.print ? (
+              <div className="device-speed-select" data-testid="device-speed-select">
+                <label className="device-speed-label" htmlFor="device-speed-mode">
+                  {t("control.speed.aria")}
+                </label>
+                <select
+                  id="device-speed-mode"
+                  className="device-speed-input"
+                  value={snap.print.speedMode ?? "standard"}
+                  disabled={busy}
+                  data-testid="device-speed-mode"
+                  onChange={(e) => setSpeedMode(e.target.value as SpeedMode)}
+                >
+                  <option value="silent">{t("device.print.speed.silent")}</option>
+                  <option value="standard">{t("device.print.speed.standard")}</option>
+                  <option value="sport">{t("device.print.speed.sport")}</option>
+                </select>
+              </div>
+            ) : null}
           </section>
 
           <section className="device-section" data-testid="device-section-temps">
@@ -348,11 +505,15 @@ export function DevicePanelMonitor() {
                 label={t("device.temp.nozzle")}
                 currentC={snap?.temps.nozzle.currentC ?? null}
                 targetC={snap?.temps.nozzle.targetC ?? null}
+                onTarget={snap?.capabilities.tempature ? setNozzleTarget : undefined}
+                disabled={busy}
               />
               <TempCard
                 label={t("device.temp.bed")}
                 currentC={snap?.temps.bed.currentC ?? null}
                 targetC={snap?.temps.bed.targetC ?? null}
+                onTarget={snap?.capabilities.tempature ? setBedTarget : undefined}
+                disabled={busy}
               />
               {snap?.capabilities.chamber ? (
                 <TempCard
@@ -366,7 +527,12 @@ export function DevicePanelMonitor() {
 
           <section className="device-section" data-testid="device-section-fans">
             <header className="device-section-title">{t("device.fans.aria")}</header>
-            <FanRow label={t("device.fans.part")} pct={snap?.fans.partCoolingPct ?? null} />
+            <FanRow
+              label={t("device.fans.part")}
+              pct={snap?.fans.partCoolingPct ?? null}
+              onSpeed={snap?.capabilities.fans ? setPartFan : undefined}
+              disabled={busy}
+            />
             <FanRow label={t("device.fans.hotend")} pct={snap?.fans.hotendPct ?? null} />
           </section>
 
@@ -401,12 +567,42 @@ export function DevicePanelMonitor() {
           {snap?.lights ? (
             <section className="device-section" data-testid="device-section-lights">
               <header className="device-section-title">{t("device.lights.title")}</header>
-              <span className={`device-light device-light-${snap.lights.enabled ? "on" : "off"}`}>
-                {t(snap.lights.enabled ? "device.lights.on" : "device.lights.off")}
-                {snap.lights.brightnessPct !== null ? (
-                  <span className="mono-num"> {Math.round(snap.lights.brightnessPct)}%</span>
+              <div className="device-light-row">
+                <button
+                  type="button"
+                  className={`device-light-toggle${snap.lights.enabled ? " is-on" : ""}`}
+                  data-testid="device-light-toggle"
+                  disabled={busy}
+                  onClick={toggleLight}
+                >
+                  {t(snap.lights.enabled ? "device.lights.on" : "device.lights.off")}
+                </button>
+                {snap.lights.enabled && snap.lights.brightnessPct !== null ? (
+                  <div className="device-step" data-testid="device-light-step">
+                    <button
+                      type="button"
+                      className="device-step-btn"
+                      aria-label={t("control.step.decrement")}
+                      disabled={busy}
+                      onClick={() => setBrightness((snap.lights?.brightnessPct ?? 0) - 10)}
+                    >
+                      −
+                    </button>
+                    <span className="device-light-pct mono-num">
+                      {Math.round(snap.lights.brightnessPct)}%
+                    </span>
+                    <button
+                      type="button"
+                      className="device-step-btn"
+                      aria-label={t("control.step.increment")}
+                      disabled={busy}
+                      onClick={() => setBrightness((snap.lights?.brightnessPct ?? 0) + 10)}
+                    >
+                      +
+                    </button>
+                  </div>
                 ) : null}
-              </span>
+              </div>
             </section>
           ) : null}
 

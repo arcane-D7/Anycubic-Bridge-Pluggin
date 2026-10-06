@@ -5,6 +5,8 @@ import type {
   BuildVolume,
   ObjectGeometry,
   ObjectMutation,
+  PrinterControlRequest,
+  PrinterControlResult,
   PrinterInfo,
   PrinterListResult,
   PrinterSnapshot,
@@ -1109,6 +1111,46 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
         objectSnapshot: { ...resultSnap },
       } satisfies RepairResult;
     },
+    // --- S9.10-002 printer control lane (printer_command_send) ----------
+    // Executes a VALIDATED envelope from the pure control core. The lane is
+    // a TRANSPORT — grammar/window/confirm rules live in the core, so the
+    // mock never re-implements them. Deterministic seams (module seeds below)
+    // make refused/timeout paths testable headless, mirroring how the real
+    // cloud MQTT reply correlation reports a timeout as neither success nor
+    // failure (the honest semantics rule in printer-command-bus.md).
+    async printerControl(req) {
+      const { envelope } = req;
+      // The UI core always builds confirm:true; a missing flag is a
+      // programming error — refuse loudly (kind: "invalid").
+      if (!envelope || envelope.confirm !== true) {
+        return {
+          ok: false as const,
+          error: "control envelope missing confirm:true — refusing",
+          kind: "invalid",
+        };
+      }
+      const seam = mockControlResults.get(req.printerId);
+      if (seam) {
+        return { ok: false as const, error: seam.error, kind: seam.kind };
+      }
+      if (mockControlRefused) {
+        return {
+          ok: false as const,
+          error: `printer ${req.printerId} refused ${envelope.command}`,
+          kind: "refused",
+        };
+      }
+      if (mockControlTimeout) {
+        return {
+          ok: false as const,
+          error: `no reply from ${req.printerId} for ${envelope.command}`,
+          kind: "timeout",
+        };
+      }
+      // Accepted — the printer executed the command (mock applies nothing
+      // but the snapshots are immutable anyway; the real lane re-fetches).
+      return { ok: true as const, command: envelope.command };
+    },
   };
   return handle;
 }
@@ -1129,6 +1171,36 @@ export function setMockOfflinePrinters(ids: readonly string[]): void {
 /** Test seam: force every send to fail with a region error (S9.5-004). */
 export function setMockRegionBlocked(blocked: boolean): void {
   mockRegionBlocked = blocked;
+}
+
+/**
+ * S9.10-002 test seams — deterministic seeds for the printer control lane.
+ * The React layer never sets these; unit tests do (same pattern as the
+ * send-job seams above). `setMockControlResults` maps printer id → forced
+ * failure result; the booleans force the refusal / timeout paths globally.
+ */
+let mockControlResults: ReadonlyMap<
+  string,
+  { readonly kind: "refused" | "timeout"; readonly error: string }
+> = new Map();
+let mockControlRefused = false;
+let mockControlTimeout = false;
+
+/** Test seam: force specific printers to fail control with a kind (S9.10-002). */
+export function setMockControlResults(
+  results: ReadonlyMap<string, { readonly kind: "refused" | "timeout"; readonly error: string }>,
+): void {
+  mockControlResults = results;
+}
+
+/** Test seam: force every control to refuse (S9.10-002). */
+export function setMockControlRefused(refused: boolean): void {
+  mockControlRefused = refused;
+}
+
+/** Test seam: force every control to time out (S9.10-002). */
+export function setMockControlTimeout(timeout: boolean): void {
+  mockControlTimeout = timeout;
 }
 
 const EMPTY_COMMIT_SELECTION: CommitSinkPayload["selection"] = {
@@ -1224,6 +1296,15 @@ export interface BridgeContract {
    * object passes it.
    */
   repair(req: RepairRequest): Promise<RepairResult | { ok: false; error: string }>;
+  /**
+   * S9.10-002 (printer_command_send): printer control lane. Executes the
+   * VALIDATED envelope from the pure control core — the lane is transport,
+   * never grammar authority. Non-read commands always carry
+   * `confirm: true`; motion/job additionally need the `EXECUTE` word (the
+   * core emits it only for those classes). Result kinds are semantic
+   * (accepted / refused / timeout / invalid) so the UI toasts distinctly.
+   */
+  printerControl(req: PrinterControlRequest): Promise<PrinterControlResult>;
 }
 
 /** Live bridge handle: the fetched profile+scene snapshot PLUS the commit sink

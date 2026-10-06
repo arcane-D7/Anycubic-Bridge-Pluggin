@@ -3184,6 +3184,44 @@ input {
   min-height: 14px;
 }
 
+.device-temp-target-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* S9.10-002 — step steppers (temp targets, fan speed, lights) */
+.device-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.device-step-btn {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ctrl-border);
+  border-radius: 4px;
+  background: var(--ctrl-bg);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.device-step-btn:hover:not(:disabled) {
+  background: var(--ctrl-hover, rgb(255 255 255 / 0.08));
+}
+
+.device-step-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .device-fan-row {
   display: flex;
   align-items: center;
@@ -3216,6 +3254,60 @@ input {
   text-align: right;
   color: var(--text-secondary);
   font-size: 11px;
+}
+
+.device-speed-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.device-speed-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.device-speed-input {
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--ctrl-border);
+  border-radius: 6px;
+  background: var(--ctrl-bg);
+  color: var(--text-primary);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+/* S9.10-002 — chamber light toggle + brightness */
+.device-light-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.device-light-toggle {
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--ctrl-border);
+  border-radius: 6px;
+  background: var(--ctrl-bg);
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.device-light-toggle.is-on {
+  border-color: var(--accent-ring, transparent);
+  background: var(--accent-soft, rgb(36 115 72 / 0.1));
+  color: var(--accent-primary);
+}
+
+.device-light-pct {
+  color: var(--text-secondary);
+  font-size: 11px;
+  min-width: 34px;
+  text-align: right;
 }
 
 .device-motion {
