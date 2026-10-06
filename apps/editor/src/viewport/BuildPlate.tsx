@@ -162,13 +162,16 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
 
       {/* P1-4 — readable reference grid: minor (10 mm, faint) + major
           (50 mm, clearer). Both depth-tested — objects occlude them.
-          Hidden when the toolbar grid flag is off (default ON). */}
+          Hidden when the toolbar grid flag is off (default ON).
+          Pass-3: brighter colors + higher opacity so the grid is clearly
+          visible over the dark plate from any angle (was only readable
+          depending on the lighting/angle). */}
       {gridOn && minorGrid.length > 0 ? (
         <lineSegments>
           <bufferGeometry>
             <bufferAttribute attach="attributes-position" args={[minorGrid, 3]} />
           </bufferGeometry>
-          <lineBasicMaterial color="#9fb4a8" transparent opacity={0.16} depthTest />
+          <lineBasicMaterial color="#b8d4c4" transparent opacity={0.38} depthTest />
         </lineSegments>
       ) : null}
       {gridOn && majorGrid.length > 0 ? (
@@ -176,23 +179,24 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
           <bufferGeometry>
             <bufferAttribute attach="attributes-position" args={[majorGrid, 3]} />
           </bufferGeometry>
-          <lineBasicMaterial color="#cfe0d6" transparent opacity={0.42} depthTest />
+          <lineBasicMaterial color="#e8f4ee" transparent opacity={0.85} depthTest />
         </lineSegments>
       ) : null}
       <axesHelper args={[25]} position={[-halfW, 0.1, halfD]} />
 
       {/* P1-4 — plate specs (W × D × H from the profile build volume), on the
           +Z operator edge. drei <Text> renders a real mesh so it follows the
-          camera; the same value is exposed as the DOM status-bar aria. */}
+          camera; the same value is exposed as the DOM status-bar aria.
+          Pass-3: smaller font so it stays subtle next to the brighter grid. */}
       <Text
         position={[0, 0.2, halfD - (volume.depthMm > 220 ? 34 : 26)]}
         rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={volume.widthMm > 230 ? 9 : 8}
-        color="#9fb4a8"
+        fontSize={volume.widthMm > 230 ? 6.5 : 6}
+        color="#b8d4c4"
         anchorX="center"
         anchorY="middle"
-        letterSpacing={0.6}
-        fillOpacity={0.85}
+        letterSpacing={0.4}
+        fillOpacity={0.9}
         renderOrder={5}
       >
         {specs}
