@@ -3781,6 +3781,46 @@ input {
   color: var(--sema-error);
 }
 
+/* S9.10-004 — live snapshot block + filament guard in the approval card. */
+.approval-live {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.approval-live-temps,
+.approval-live-ace {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.approval-live-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 10px/1.2 var(--font-mono, ui-monospace, monospace);
+}
+.approval-live-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid rgb(255 255 255 / 0.25);
+}
+.approval-block {
+  margin-top: 4px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--sema-error) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sema-error) 40%, transparent);
+  color: var(--sema-error);
+  font-size: 11px;
+}
+
 .approval-task {
   font: 10px/1.2 var(--font-mono, ui-monospace, monospace);
   color: var(--accent);

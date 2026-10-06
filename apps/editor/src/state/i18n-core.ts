@@ -666,6 +666,11 @@ export type MsgKey =
   | "send.printerOffline"
   | "send.jobSent.title"
   | "send.jobSent.message"
+  // S9.10-004 — live filament guard on the send approval card
+  | "send.blockedTitle"
+  | "send.filamentBlocked"
+  | "send.live.temps"
+  | "send.live.ace"
   | "send.sendTitle"
   | "send.sendToPrinter"
   | "send.stage.negotiate"
@@ -1274,6 +1279,10 @@ export const EN: Record<MsgKey, string> = {
   "send.printerOffline": "Printer offline",
   "send.jobSent.title": "Print job sent",
   "send.jobSent.message": "{name} · {taskId}",
+  "send.blockedTitle": "No usable filament",
+  "send.filamentBlocked": "Filament blocked",
+  "send.live.temps": "Live temps",
+  "send.live.ace": "ACE slots",
   "send.sendTitle": "Send to print",
   "send.sendToPrinter": "Send to printer",
   "send.stage.negotiate": "Negotiating with printer…",
@@ -1886,6 +1895,10 @@ export const PT_BR: Record<MsgKey, string> = {
   "send.printerOffline": "Impressora offline",
   "send.jobSent.title": "Trabalho de impressão enviado",
   "send.jobSent.message": "{name} · {taskId}",
+  "send.blockedTitle": "Sem filamento utilizável",
+  "send.filamentBlocked": "Filamento bloqueado",
+  "send.live.temps": "Temps ao vivo",
+  "send.live.ace": "Ranhuras ACE",
   "send.sendTitle": "Enviar para impressão",
   "send.sendToPrinter": "Enviar para impressora",
   "send.stage.negotiate": "A negociar com a impressora…",

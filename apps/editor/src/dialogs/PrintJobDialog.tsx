@@ -3,6 +3,8 @@ import { usePrintJob, tokenHash, sendTokenFor } from "@/state/printjob";
 import { usePrinters } from "@/state/printers";
 import { useUi } from "@/state/ui";
 import { useI18n } from "@/state/i18n";
+import { usePrinterDevice } from "@/state/printer-device";
+import { printReady } from "@/state/printer-print-guard-core";
 import type { MsgKey } from "@/state/i18n-core";
 
 /**
@@ -43,6 +45,8 @@ export function PrintJobDialog() {
   const pushToast = useUi((s) => s.pushToast);
   const selectedId = usePrinters((s) => s.selectedId);
   const printers = usePrinters((s) => s.printers);
+  // S9.10-004 — live snapshot for the approval card (temps + ACE filament).
+  const snapshot = usePrinterDevice((s) => s.snapshot);
 
   const selected = printers.find((p) => p.id === selectedId) ?? null;
   const ready = status === "ready" && stats !== null;
@@ -54,6 +58,14 @@ export function PrintJobDialog() {
 
   // When a slice lands ready AND a printer is armed, surface the send affordance.
   const canOpen = ready && selected !== null && !busy && approval === null;
+
+  // S9.10-004 — filament readiness from the LIVE ACE snapshot (never MOCK).
+  // Local-spool printers pass-through (no ACE → honest unknown).
+  const aceBoxes = snapshot?.ace.boxes ?? [];
+  const readiness = printReady(aceBoxes);
+  // A hard block is switch-level: the physical printer has no usable
+  // filament at all — Approve must not send.
+  const filamentBlocked = !readiness.ready;
 
   // Close/settle the dialog after a sent job (or when the slice resets).
   useEffect(() => {
@@ -69,13 +81,23 @@ export function PrintJobDialog() {
 
   const openCard = useCallback(() => {
     if (!stats || !selected) return;
+    // S9.10-004 — refuse to even show the approve affordance when the live
+    // ACE has no usable filament (absent/too low). Block with a message.
+    if (filamentBlocked) {
+      pushToast({
+        kind: "error",
+        title: t("send.blockedTitle"),
+        message: readiness.reason,
+      });
+      return;
+    }
     openSendApproval({
       summary: `${stats.layers} layers · ${stats.estimatedMinutes} min · ${stats.materialGrams.toFixed(1)} g`,
       printerIp: selected.ip,
       printerName: selected.name,
       stats,
     });
-  }, [stats, selected, openSendApproval]);
+  }, [stats, selected, openSendApproval, filamentBlocked, readiness, pushToast, t]);
 
   // The hash the user approved vs the hash of the CURRENT payload: if they
   // differ, the send would go out with a payload that was not approved.
@@ -89,6 +111,19 @@ export function PrintJobDialog() {
         kind: "error",
         title: t("send.sendBlocked"),
         message: t("send.approveCardFirst"),
+      });
+      return;
+    }
+    // S9.10-004 — re-check the live filament guard at send time. The ACE
+    // may have emptied/been unloaded after the card was shown; never let a
+    // print go to a printer without usable filament.
+    const guard = printReady(usePrinterDevice.getState().snapshot?.ace.boxes ?? []);
+    if (!guard.ready) {
+      closeSendApproval();
+      pushToast({
+        kind: "error",
+        title: t("send.blockedTitle"),
+        message: guard.reason,
       });
       return;
     }
@@ -151,7 +186,6 @@ export function PrintJobDialog() {
     sendStart,
     t,
   ]);
-
   // Auto-run the send as soon as the card is approved (the dialog shows
   // progress; the user already confirmed by clicking Approve).
   useEffect(() => {
@@ -205,6 +239,46 @@ export function PrintJobDialog() {
         <div className="approval-target" data-testid="send-approval-target">
           → {approval.printerName} ({approval.printerIp})
         </div>
+        {/* S9.10-004 — live snapshot in the card (temps + ACE filament). */}
+        {snapshot ? (
+          <div className="approval-live" data-testid="send-approval-live">
+            <span className="approval-live-temps">
+              {t("send.live.temps")}:{" "}
+              {snapshot.temps.nozzle.currentC === null
+                ? "—"
+                : `${Math.round(snapshot.temps.nozzle.currentC)}°`}
+              {" / "}
+              {snapshot.temps.bed.currentC === null
+                ? "—"
+                : `${Math.round(snapshot.temps.bed.currentC)}°`}
+            </span>
+            {aceBoxes.length > 0 ? (
+              <span className="approval-live-ace">
+                {t("send.live.ace")}:{" "}
+                {aceBoxes.map((box) =>
+                  box.slots.map((slot) => (
+                    <span
+                      key={`${box.index}-${slot.index}`}
+                      className="approval-live-slot"
+                      data-testid="send-approval-slot"
+                    >
+                      <i
+                        className="approval-live-swatch"
+                        style={{ background: slot.color ?? "transparent" }}
+                      />
+                      {slot.state === "empty" ? "empty" : `${slot.remainingPct ?? "—"}%`}
+                    </span>
+                  )),
+                )}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+        {filamentBlocked ? (
+          <div className="approval-block" data-testid="send-approval-block">
+            {t("send.filamentBlocked")}: {readiness.reason}
+          </div>
+        ) : null}
         <div
           className="approval-token"
           data-testid="send-approval-token"
@@ -252,6 +326,7 @@ export function PrintJobDialog() {
               type="button"
               className="approval-approve"
               data-testid="send-approval-approve"
+              disabled={filamentBlocked}
               onClick={() => decideSendApproval(approval.id, true)}
             >
               {t("send.approve")}
