@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor + bridge + MCP server bridge                                                                                                             |
 | **Source**            | User request 2026-10-02 + Consultor report §A/§B for the read side (T.1–T.6)                                                                         |
 | **Depends On**        | Sprints 9.1–9.8 (everything)                                                                                                                         |
-| **Status**            | ⏳ Planned                                                                                                                                           |
+| **Status**            | ✅ Complete (delivered 2026-10-02, commits ea6f7ad / 97f1bf2 / 72d9dd3 / 10fc20f)                                                                    |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -52,7 +52,7 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Priority**         | P0                                                        |
 | **Type**             | Feature (contract)                                        |
 | **Estimated Effort** | S                                                         |
-| **Status**           | ⏳ Planned                                                |
+| **Status**           | ✅ Done (ea6f7ad)                                         |
 
 #### Context
 
@@ -79,7 +79,7 @@ numbers. Capabilities kept raw (`Record<string, boolean>`).
 | **Priority**         | P0                                                 |
 | **Type**             | Feature (mapping)                                  |
 | **Estimated Effort** | M                                                  |
-| **Status**           | ⏳ Planned                                         |
+| **Status**           | ✅ Done (ea6f7ad)                                  |
 
 #### Context
 
@@ -104,7 +104,7 @@ Consultor §B.2. Declarative (JSON-parseable) map `path → snapshot field + nor
 | **Priority**         | P0                                                              |
 | **Type**             | Feature (state)                                                 |
 | **Estimated Effort** | M                                                               |
-| **Status**           | ⏳ Planned                                                      |
+| **Status**           | ✅ Done (ea6f7ad)                                               |
 
 #### Context
 
@@ -130,7 +130,7 @@ re-renders).
 | **Priority**         | P0                                                 |
 | **Type**             | Feature (UI)                                       |
 | **Estimated Effort** | L                                                  |
-| **Status**           | ⏳ Planned                                         |
+| **Status**           | ✅ Done (97f1bf2)                                  |
 
 #### Context
 
@@ -154,7 +154,7 @@ has them (`capabilities`-driven). New Device button in the editor header next to
 | **Priority**         | P0                                                               |
 | **Type**             | Feature (UI)                                                     |
 | **Estimated Effort** | M                                                                |
-| **Status**           | ⏳ Planned                                                       |
+| **Status**           | ✅ Done (72d9dd3)                                                |
 
 #### Context
 
@@ -178,7 +178,7 @@ toggle (read-only view here; write in 9.10), `loaded_slot` highlighted.
 | **Priority**         | P1                                                   |
 | **Type**             | Feature (UI)                                         |
 | **Estimated Effort** | M                                                    |
-| **Status**           | ⏳ Planned                                           |
+| **Status**           | ✅ Done (10fc20f)                                    |
 
 #### Context
 
