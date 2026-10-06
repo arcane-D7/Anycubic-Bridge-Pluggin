@@ -26,6 +26,12 @@ interface SceneObjectModelProps {
 import { resolveModelRenderState } from "./scene-model-render.ts";
 import { applyTransform } from "./transform-core";
 import { selectionGlow, selectionOutline } from "./theme-colors";
+import { useViewMode } from "../state/view-mode";
+import { usePresets } from "../state/presets";
+import { usePrinterDevice } from "../state/printer-device";
+import { FILAMENT_PRESETS } from "../presets/catalog";
+import { resolveFilamentColor, materialClassFor } from "../state/material-assign-core";
+import { filamentMaterial } from "./filament-material";
 
 /** Re-exported pure helpers (headless-tested in tests/scene-object-model.test.mjs). */
 export { geometryExists } from "./scene-model-render.ts";
@@ -119,10 +125,37 @@ export const SceneObjectModel = memo(function SceneObjectModel({ info }: SceneOb
   // gizmo drags move/rotate/scale the OBJECT — geometry buffers untouched.
   const transform = useMemo(() => applyTransform(info.transform), [info.transform]);
 
+  // ---- S9.11-002 slicer-style material ---------------------------------
+  // When the view mode is 'slicer' (and NOT 'live'/'mesh'), the object shows
+  // the REAL material + color: per-object `filamentId` (S9.6-002), else the
+  // global preset filament, mapped through the live ACE snapshot with the
+  // preset-neutral fallback chain (never guesses). Procedural material only.
+  const viewMode = useViewMode((s) => s.mode);
+  const selectedMode = viewMode === "slicer" ? "slicer" : null;
+  const globalFilamentId = usePresets((s) => s.filamentId);
+  const slicerMatch = selectedMode
+    ? resolveFilamentColor({
+        boxes: usePrinterDevice.getState().snapshot?.ace.boxes ?? [],
+        filamentId: info.filamentId ?? globalFilamentId,
+        materialLabel: undefined,
+        presets: FILAMENT_PRESETS,
+      })
+    : null;
+
   // ---- render-state -----------------------------------------------------
   const isSelected = !!(selected || authoritativeSelected);
   const { visible, baseColor } = renderState;
   const outlineColor = isSelected ? selectionOutline() : null;
+  const filamentColor = slicerMatch?.color;
+  const effectiveBaseColor = filamentColor ?? baseColor;
+  const useFilamentMaterial = selectedMode === "slicer";
+  const material = useMemo(
+    () =>
+      useFilamentMaterial && filamentColor
+        ? filamentMaterial(filamentColor, materialClassFor(slicerMatch!))
+        : null,
+    [useFilamentMaterial, filamentColor, slicerMatch],
+  );
 
   if (!visible) return null;
 
@@ -153,13 +186,17 @@ export const SceneObjectModel = memo(function SceneObjectModel({ info }: SceneOb
           }}
           onPointerOut={() => onHover(false)}
         >
-          <meshStandardMaterial
-            color={baseColor}
-            roughness={0.55}
-            metalness={0.08}
-            transparent
-            opacity={0.92}
-          />
+          {material ? (
+            <primitive object={material} attach="material" />
+          ) : (
+            <meshStandardMaterial
+              color={effectiveBaseColor}
+              roughness={0.55}
+              metalness={0.08}
+              transparent
+              opacity={0.92}
+            />
+          )}
         </mesh>
       ) : (
         <mesh
