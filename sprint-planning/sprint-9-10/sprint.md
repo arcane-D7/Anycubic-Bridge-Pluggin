@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor + MCP server (`printer_command_send`)                                                                                                                                               |
 | **Source**            | User request 2026-10-02 + Consultor report §B.4/§C.1 (write side, T.7–T.8)                                                                                                                      |
 | **Depends On**        | Sprint 9.9 (snapshot + panel)                                                                                                                                                                   |
-| **Status**            | 🔄 In progress (1/4)                                                                                                                                                                            |
+| **Status**            | 🔄 In progress (2/4)                                                                                                                                                                            |
 
 #### Implementation Notes (S9.10-001)
 
@@ -98,21 +98,39 @@ raw `printer_command_send` (hidden) → DevTools+confirm only, Agent blocked by 
 | **Priority**         | P0                                                            |
 | **Type**             | Feature                                                       |
 | **Estimated Effort** | L                                                             |
-| **Status**           | ⏳ Planned                                                    |
+| **Status**           | ✅ Done (`100fde0`)                                           |
 
-#### Context
+#### Implementation Notes (S9.10-002)
 
-Consultor §C.1/§E. Nozzle/bed target steppers (hint: only applies to the active job — the
-Anycubic protocol has no preheat order), fan sliders, `speed_mode` selector
-(silent/standard/sport → 1/2/3), lights toggles+sliders. All go through
-`printer_command_send` with `confirm: true`; replies (success/refused/timeout) surface as
-toasts. Stop remains a modal-confirmed cancel (verified: Stop cancels, not pauses).
+Wiring Device Monitor → `printer_command_send`:
 
-#### Acceptance criteria
+- `apps/editor/src/state/printer-control-core.ts` (pure, headless) — the envelope
+  grammar: `buildCommandEnvelope(action, payload)` maps each write to the bus
+  command with the schema windows (nozzle 0–320 °C, bed 0–120 °C, fan 0–100 %,
+  brightness 0–100) — `temperature_set`, `fan_set` (fan: `"part"`),
+  `print_update` (speed mode silent/standard/sport → 1/2/3 via `SPEED_MODE_NUM`),
+  `light_control` (on / on+brightness). Every envelope is `confirm: true`;
+  motion/job would add `confirm_word: "EXECUTE"` (not emitted by Monitor here).
+- `apps/editor/src/bridge/mock.ts` — `printerControl(req)` lane: TRANSPORT only,
+  refuses envelopes without `confirm:true` (kind `invalid`), deterministic seams
+  (`setMockControlResults` / `setMockControlRefused` / `setMockControlTimeout`)
+  for refused/timeout paths; results are semantic
+  (`accepted | refused | timeout | invalid`).
+- `apps/editor/src/bridge/types.ts` — `PrinterControlRequest` + `PrinterControlResult`.
+- `apps/editor/src/state/printer-control.ts` — thin zustand store `sendControl()`
+  → builds envelope → lane → DISTINCT toasts (accepted success / refused warning /
+  timeout warning / invalid error); lane never called on invalid envelope.
+- `DevicePanel.tsx` — steppers on temp targets (+/− 5°C), fan part (+/− 5 %),
+  speed select (silent/standard/sport), lights toggle + brightness steppers;
+  all capability-gated (`tempature`/`fans`/`print`/`light`), `busy` locks the
+  controls while a command is in flight.
+- i18n: `control.*` keys (accepted/refused/timeout/invalid/failed + step arias).
+- Tests: `printer-control.test.mjs` (10 — envelope grammar + bounds + agent raw
+  block), `printer-control-lane.test.mjs` (4 — lane accepted/invalid/refused/timeout
+  seams), `printer-control-store.test.mjs` (4 — outcome→toast mapping headless).
 
-- [x] Every control maps to a validated bus command; confirm gates enforced.
-- [x] Refused/timeout states shown distinctly; no silent failures.
-- [x] Unit tests for the command envelope construction (no network).
+Gate EXIT:0 (`$env:TEMP\s910002.log`): unit **646** pass/0 fail, integration 11,
+rust OK, build OK, smoke 106, e2e ×2 PASS, licenses 59, arch OK, sanitize 0.
 
 ### S9.10-003 — ACE write: dryer, auto-feed, slot mapping
 
