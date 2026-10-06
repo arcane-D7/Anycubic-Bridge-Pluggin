@@ -58,8 +58,9 @@ sintéticos: números → `0`, strings → `""` ou `"redacted"`, IPs → `"127.0
 Tudo o que varia por máquina/conta entra por env vars com prefixo `ANYCUBIC_`:
 
 `ANYCUBIC_ACCESS_CODE` · `ANYCUBIC_PRINTER_IPS` · `ANYCUBIC_CLOUD_TOKEN` ·
-`ANYCUBIC_CLOUD_REGION` · `ANYCUBIC_SLICER_EXE` · `ANYCUBIC_CONTROL_OUTPUT_ROOT` ·
-`ANYCUBIC_FW_VERSION` · `ANYCUBIC_PRINTER_ID` · `CAD_AI_API_KEY` · `CAD_AI_BASE_URL` · `CAD_AI_MODEL`
+`ANYCUBIC_CLOUD_REGION` · `ANYCUBIC_CLOUD_LOOPBACK_URL` · `ANYCUBIC_SLICER_EXE` ·
+`ANYCUBIC_CONTROL_OUTPUT_ROOT` · `ANYCUBIC_FW_VERSION` · `ANYCUBIC_PRINTER_ID` ·
+`CAD_AI_API_KEY` · `CAD_AI_BASE_URL` · `CAD_AI_MODEL`
 
 Regra: se precisaste de um valor só teu para testar, lê-o de uma env var com
 default seguro (`process.env.X ?? defaultAgnostico`), nunca de um literal.
