@@ -529,6 +529,122 @@
 }
 
 /* ============================================================
+ * Printer status bar (S9.9-006) — chips + LED strip under the
+ * header. Paired with .status-bar below it; shares the 28px
+ * rhythm and the same tokens.
+ * ============================================================ */
+@layer components {
+  .printer-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 14px;
+    font-size: var(--t-md);
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--glass-stroke);
+    background: var(--glass-fill-1);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .printer-status-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .printer-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    padding: 2px 8px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--glass-stroke);
+    background: var(--glass-fill-2);
+    color: var(--text-primary);
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition:
+      border-color 120ms ease,
+      background 120ms ease;
+  }
+  .printer-chip:hover {
+    border-color: var(--accent-primary);
+    background: var(--glass-fill-3);
+  }
+
+  .mono-num {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 11px;
+  }
+
+  .printer-led-chip {
+    padding: 2px 6px;
+    cursor: default;
+  }
+
+  .printer-led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    background: var(--text-tertiary);
+  }
+  .printer-led-printing {
+    background: #2ecc71;
+    box-shadow: 0 0 6px #2ecc71cc;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  .printer-led-paused {
+    background: var(--accent-warning, #f0a500);
+    box-shadow: 0 0 6px #f0a500cc;
+  }
+  .printer-led-idle {
+    background: var(--text-tertiary);
+  }
+  .printer-led-offline {
+    background: var(--danger, #e5484d);
+  }
+  .printer-led-error {
+    background: var(--danger, #e5484d);
+    box-shadow: 0 0 6px #e5484dcc;
+    animation: pulse 1s ease-in-out infinite;
+  }
+
+  .printer-chip-error {
+    border-color: var(--danger, #e5484d);
+    color: var(--danger, #e5484d);
+  }
+  .printer-chip-offline,
+  .printer-chip-stale {
+    cursor: default;
+    border-color: var(--danger, #e5484d);
+    background: color-mix(in srgb, var(--danger, #e5484d) 12%, transparent);
+  }
+  .printer-chip-stale {
+    border-color: var(--accent-warning, #f0a500);
+    background: color-mix(in srgb, var(--accent-warning, #f0a500) 12%, transparent);
+  }
+
+  .printer-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 2px;
+  }
+  .printer-dot-warn {
+    background: var(--accent-warning, #f0a500);
+    box-shadow: 0 0 5px #f0a500aa;
+  }
+  .printer-dot-crit {
+    background: var(--danger, #e5484d);
+    box-shadow: 0 0 5px #e5484daa;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+}
+
+/* ============================================================
  * Z-ladder (S9.1a-001) — single source of truth for stacking.
  *   canvas z-0 · ViewportHud z-10 · floating panels z-40 ·
  *   Radix Dialog/Dropdown portals z-50 · toasts z-60

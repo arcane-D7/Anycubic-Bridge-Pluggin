@@ -41,9 +41,13 @@ interface DockState {
   readonly panels: Record<PanelId, PanelState>;
   readonly activePanel: PanelId | null;
   readonly nextZ: number;
+  /** Device panel focus target set by status-bar chips (S9.9-006):
+   *  tab + optional section id; DevicePanel settles/scrolls on mount. */
+  readonly deviceFocus: { readonly tab: "monitor" | "filament"; readonly section?: string } | null;
   readonly setPanelMode: (id: PanelId, mode: PanelMode) => void;
   readonly setPanelRect: (id: PanelId, rect: PanelRect) => void;
   readonly focusPanel: (id: PanelId) => void;
+  readonly focusDevicePanel: (tab: "monitor" | "filament", section?: string) => void;
   readonly resetPanel: (id: PanelId) => void;
 }
 
@@ -89,6 +93,7 @@ export const useDock = create<DockState>()((set, get) => ({
   panels: typeof window === "undefined" ? initialPanels : loadPersisted(),
   activePanel: null,
   nextZ: 2,
+  deviceFocus: null,
 
   setPanelMode: (id, mode) => {
     const panels = { ...get().panels };
@@ -108,6 +113,14 @@ export const useDock = create<DockState>()((set, get) => ({
     const panels = { ...get().panels };
     panels[id] = { ...panels[id], z: nextZ };
     set({ panels, activePanel: id, nextZ });
+  },
+
+  focusDevicePanel: (tab, section) => {
+    const nextZ = get().nextZ + 1;
+    const panels = { ...get().panels };
+    panels.device = { ...panels.device, mode: "floating", z: nextZ };
+    set({ panels, activePanel: "device", nextZ, deviceFocus: { tab, section } });
+    persist(panels);
   },
 
   resetPanel: (id) => {

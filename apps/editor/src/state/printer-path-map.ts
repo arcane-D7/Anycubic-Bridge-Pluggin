@@ -153,6 +153,7 @@ export function aceSlotFrom(raw: Readonly<Record<string, unknown>>, index: numbe
     color: asString(raw["color"] ?? raw["color_group"]),
     remainingPct: toPctOrNull(raw["consumables_percent"]) ?? toPctOrNull(raw["remainder"]),
     editOrigin: editOriginFrom(raw["edit_status"]),
+    stateCode: asNumber(raw["state_code"] ?? raw["error_code"] ?? raw["slot_state"]),
     recommendedTempsC: {
       nozzle: null,
       bed: null,

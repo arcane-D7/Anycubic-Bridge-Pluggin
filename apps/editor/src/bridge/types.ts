@@ -188,6 +188,11 @@ export interface AceSlot {
   /** Remaining filament, 0–100. `-1` sentinel → null. */
   readonly remainingPct: number | null;
   readonly editOrigin: EditOrigin;
+  /**
+   * Raw slot state code (feed/slot states). 129–135 are errors → alert
+   * (S9.9-006); null when the bus didn't report a number.
+   */
+  readonly stateCode: number | null;
   /** Manufacturer's recommended nozzle/bed range, when known (°C). */
   readonly recommendedTempsC: {
     readonly nozzle: { readonly min: number; readonly max: number } | null;

@@ -248,6 +248,30 @@ export type MsgKey =
   | "device.fil.autoFeed.on"
   | "device.fil.autoFeed.off"
   | "device.fil.capabilities.none"
+  // status bar printer chips (S9.9-006) -----------------------------------
+  | "status.printer.nozzle"
+  | "status.printer.bed"
+  | "status.printer.layer"
+  | "status.printer.progress"
+  | "status.printer.clock"
+  | "status.printer.fan"
+  | "status.printer.ace.slot"
+  | "status.printer.ace.error"
+  | "status.printer.led.printing"
+  | "status.printer.led.paused"
+  | "status.printer.led.idle"
+  | "status.printer.led.offline"
+  | "status.printer.led.error"
+  | "status.printer.reachability.offline"
+  | "status.printer.reachability.stale"
+  | "toast.filament.low.title"
+  | "toast.filament.low.message"
+  | "toast.filament.crit.title"
+  | "toast.filament.crit.message"
+  | "toast.temp.off.title"
+  | "toast.temp.off.message"
+  | "toast.ace.error.title"
+  | "toast.ace.error.message"
   // status bar -------------------------------------------------------------
   | "status.objects"
   | "status.coords.title"
@@ -832,6 +856,29 @@ export const EN: Record<MsgKey, string> = {
   "device.fil.autoFeed.on": "On",
   "device.fil.autoFeed.off": "Off",
   "device.fil.capabilities.none": "No ACE data",
+  "status.printer.nozzle": "Nozzle",
+  "status.printer.bed": "Bed",
+  "status.printer.layer": "Layer",
+  "status.printer.progress": "Progress",
+  "status.printer.clock": "ETA",
+  "status.printer.fan": "Fan",
+  "status.printer.ace.slot": "ACE slot",
+  "status.printer.ace.error": "ACE error",
+  "status.printer.led.printing": "Printing",
+  "status.printer.led.paused": "Paused",
+  "status.printer.led.idle": "Idle",
+  "status.printer.led.offline": "Offline",
+  "status.printer.led.error": "Error",
+  "status.printer.reachability.offline": "Printer unreachable — last data shown",
+  "status.printer.reachability.stale": "Data stale — reconnecting…",
+  "toast.filament.low.title": "Filament low",
+  "toast.filament.low.message": "Slot is under 15% remaining",
+  "toast.filament.crit.title": "Filament critical",
+  "toast.filament.crit.message": "Slot is under 5% — refill soon",
+  "toast.temp.off.title": "Temperature outside window",
+  "toast.temp.off.message": "Nozzle temp differs from the material's recommended range",
+  "toast.ace.error.title": "ACE error detected",
+  "toast.ace.error.message": "Check the Device panel — error code {code}",
   "status.objects": "{n} object{s}",
   "status.coords.title": "{name} position (mm)",
   "status.plateDims.title": "{plate} scene bounds (mm)",
@@ -1401,6 +1448,29 @@ export const PT_BR: Record<MsgKey, string> = {
   "device.fil.autoFeed.on": "Ligada",
   "device.fil.autoFeed.off": "Desligada",
   "device.fil.capabilities.none": "Sem dados ACE",
+  "status.printer.nozzle": "Bico",
+  "status.printer.bed": "Mesa",
+  "status.printer.layer": "Camada",
+  "status.printer.progress": "Progresso",
+  "status.printer.clock": "Restante",
+  "status.printer.fan": "Ventoinha",
+  "status.printer.ace.slot": "Ranhu ACE",
+  "status.printer.ace.error": "Erro ACE",
+  "status.printer.led.printing": "A imprimir",
+  "status.printer.led.paused": "Em pausa",
+  "status.printer.led.idle": "Em espera",
+  "status.printer.led.offline": "Offline",
+  "status.printer.led.error": "Erro",
+  "status.printer.reachability.offline": "Impressora inacessível — últimos dados mostrados",
+  "status.printer.reachability.stale": "Dados desatualizados — a reconectar…",
+  "toast.filament.low.title": "Filamento baixo",
+  "toast.filament.low.message": "A ranhura tem menos de 15% restante",
+  "toast.filament.crit.title": "Filamento crítico",
+  "toast.filament.crit.message": "A ranhura tem menos de 5% — reponha em breve",
+  "toast.temp.off.title": "Temperatura fora da janela",
+  "toast.temp.off.message": "A temperatura do bico difere da gama recomendada do material",
+  "toast.ace.error.title": "Erro ACE detetado",
+  "toast.ace.error.message": "Verifique o painel Dispositivo — código {code}",
   "status.objects": "{n} objeto{s}",
   "status.coords.title": "{name} posição (mm)",
   "status.plateDims.title": "{plate} limites de cena (mm)",

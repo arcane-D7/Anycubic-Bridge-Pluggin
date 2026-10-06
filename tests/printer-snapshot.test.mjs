@@ -196,6 +196,7 @@ test("path map: AceSlot/AceBox defaults stay safe on sparse raw", async () => {
   assert.equal(slot.color, null);
   assert.equal(slot.remainingPct, null);
   assert.equal(slot.editOrigin, "rfid");
+  assert.equal(slot.stateCode, null);
   assert.equal(slot.recommendedTempsC.nozzle, null);
   const box = aceBoxFrom({}, 0);
   assert.equal(box.index, 0);

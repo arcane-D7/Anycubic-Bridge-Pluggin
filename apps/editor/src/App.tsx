@@ -21,6 +21,7 @@ import { resolveNonPlanarEligibility } from "./profile/capabilities";
 import { useOperatorProfile } from "./profile/useOperatorProfile";
 import { ThemeToggle } from "./components/theme-toggle";
 import { StatusBar } from "./components/status-bar";
+import { PrinterStatusBar } from "./components/PrinterStatusBar";
 import { ToastViewport } from "./components/toast-viewport";
 import { ContextMenu } from "./components/ContextMenu";
 import { DirtyChip } from "./components/dirty-chip";
@@ -373,6 +374,7 @@ export function App() {
         onSizeChange={setBottomSize}
       />
       <footer className="app-footer">
+        <PrinterStatusBar />
         <StatusBar scene={scene} buildVolume={operatorProfile.buildVolume ?? undefined} />
         <SliceProgress />
         <SliceStatsPanel />

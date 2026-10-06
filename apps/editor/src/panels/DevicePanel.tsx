@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/state/i18n";
 import { usePrinters } from "@/state/printers";
 import { usePrinterDevice, type PollingStatus } from "@/state/printer-device";
+import { useDock } from "@/state/dock";
 import {
   editOriginKey,
   isLoadedSlot,
@@ -217,6 +218,23 @@ export function DevicePanelMonitor() {
   const { printerId, snapshot, pollingStatus } = usePrinterDevice();
   const [cameraOn, setCameraOn] = useState(false);
   const [tab, setTab] = useState<"monitor" | "filament">("monitor");
+
+  // S9.9-006 — status-bar chips navigate here: focus flips the tab and, when
+  // a section id is given, scrolls the panel to that section after render.
+  const deviceFocus = useDock((s) => s.deviceFocus);
+  useEffect(() => {
+    if (!deviceFocus) return;
+    setTab(deviceFocus.tab);
+    if (deviceFocus.section) {
+      // Let the tab content mount first, then reveal the section.
+      const raf = requestAnimationFrame(() => {
+        const el = document.querySelector(`[data-testid="${deviceFocus?.section}"]`);
+        el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+    return undefined;
+  }, [deviceFocus]);
 
   const snap: PrinterSnapshot | null = useMemo(
     () => snapshot,
