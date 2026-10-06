@@ -150,6 +150,139 @@ export interface BuildVolume {
   readonly heightMm: number;
 }
 
+/* ============================================================================
+ * S9.9-001 — Printer live snapshot (agnostic, versioned).
+ *
+ * Mirrors EVERYTHING the MCP server exposes for a printer (553 property
+ * paths — `docs/printer-property-map.md`), normalized to a single schema
+ * that the editor UI AND the future Agent draw from. Rules:
+ *  - `schemaVersion: 1` — the schema is versioned; bumps are explicit.
+ *  - Every telemetry field is NULLABLE. A bare Kobra 3 differs from a
+ *    Kobra S1 + 2×ACE; absent = "hardware does not expose it", never 0/NaN.
+ *  - Units SI (°C, %, seconds, mm). Enums are NAMED (`PrinterState`,
+ *    `SpeedMode`, `EditOrigin`), never raw numbers (`0`, `-1`, `20025`).
+ *  - `capabilities` stays a raw `Record<string, boolean>` — visibility is
+ *    driven by it, never by interpreting `modelName`.
+ *  - `raw` mirrors every unmapped path for DevTools/Agent diagnostics.
+ * ========================================================================== */
+
+export type PrinterState = "unknown" | "idle" | "printing" | "paused" | "error" | "offline";
+
+/** Named speed modes (Anycubic bus: silent=1, standard=2, sport=3). */
+export type SpeedMode = "silent" | "standard" | "sport";
+
+/** How a filament slot's material info was set: RFID tag or manual edit. */
+export type EditOrigin = "rfid" | "manual";
+
+/** Filament load state per ACE slot (FILAMENT_STATES subset). */
+export type FilamentState = "empty" | "unknown" | "identified" | "identifying";
+
+export interface AceSlot {
+  readonly index: number;
+  readonly state: FilamentState;
+  /** Material short name from RFID/slot info (e.g. "PLA"). */
+  readonly material: string | null;
+  readonly sku: string | null;
+  /** Filament color (#hex) from `color_group`/color payload. */
+  readonly color: string | null;
+  /** Remaining filament, 0–100. `-1` sentinel → null. */
+  readonly remainingPct: number | null;
+  readonly editOrigin: EditOrigin;
+  /** Manufacturer's recommended nozzle/bed range, when known (°C). */
+  readonly recommendedTempsC: {
+    readonly nozzle: { readonly min: number; readonly max: number } | null;
+    readonly bed: { readonly min: number; readonly max: number } | null;
+  };
+}
+
+export interface AceBox {
+  readonly index: number;
+  readonly modelId: number | null;
+  readonly slots: readonly AceSlot[];
+  readonly ambientTempC: number | null;
+  readonly humidityPct: number | null;
+  readonly drying: {
+    readonly active: boolean;
+    readonly targetTempC: number | null;
+    readonly remainingSeconds: number | null;
+  };
+  readonly autoFeed: boolean;
+  /** Index of the slot currently loaded into the toolhead, if any. */
+  readonly loadedSlotIndex: number | null;
+}
+
+/** A single live temperature probe (nozzle/bed/chamber). */
+export interface TempProbe {
+  readonly currentC: number | null;
+  readonly targetC: number | null;
+}
+
+export interface PrintProgress {
+  readonly state: PrinterState;
+  readonly filename: string | null;
+  readonly currLayer: number | null;
+  readonly totalLayers: number | null;
+  readonly progressPct: number | null;
+  readonly remainingSeconds: number | null;
+  readonly speedMode: SpeedMode | null;
+}
+
+/** Perceived printer (all fields nullable per the agnostic rule). */
+export interface PrinterSnapshot {
+  readonly schemaVersion: 1;
+  readonly printerId: string;
+  readonly capturedAt: number | null;
+  /** Identifier fields stay raw — visibility is `capabilities`-driven. */
+  readonly identity: {
+    readonly machineType: string | null;
+    readonly firmwareVersion: string | null;
+    readonly serial: string | null;
+    readonly nozzleDiameterMm: number | null;
+    readonly buildVolume: BuildVolume | null;
+  };
+  readonly temps: {
+    readonly nozzle: TempProbe;
+    readonly bed: TempProbe;
+    readonly chamber: TempProbe;
+  };
+  readonly fans: {
+    readonly partCoolingPct: number | null;
+    readonly hotendPct: number | null;
+  };
+  readonly print: PrintProgress;
+  readonly ace: {
+    readonly boxes: readonly AceBox[];
+    readonly totalSlots: number;
+  };
+  readonly motion: {
+    readonly xMm: number | null;
+    readonly yMm: number | null;
+    readonly zMm: number | null;
+  } | null;
+  readonly ai: {
+    readonly enabled: boolean;
+    readonly sensitivity: number | null;
+  } | null;
+  readonly lights: {
+    readonly enabled: boolean;
+    readonly brightnessPct: number | null;
+  } | null;
+  readonly peripherals: {
+    readonly hasCamera: boolean;
+    readonly hasMultiColorBox: boolean;
+    readonly hasUsbDrive: boolean;
+  };
+  readonly storage: {
+    readonly kind: "local" | "usb" | "unknown";
+    readonly usedBytes: number | null;
+    readonly totalBytes: number | null;
+    readonly freeBytes: number | null;
+  };
+  readonly capabilities: Readonly<Record<string, boolean>>;
+  /** Every path the mapper did NOT understand — diagnostics/Agent. */
+  readonly raw: Readonly<Record<string, unknown>>;
+}
+
 /**
  * S9.5 slice result (G24). The bridge slice lane computes these from the
  * authoritative snapshot: layers come from the object stack height over the

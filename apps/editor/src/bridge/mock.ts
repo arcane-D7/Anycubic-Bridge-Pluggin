@@ -7,6 +7,7 @@ import type {
   ObjectMutation,
   PrinterInfo,
   PrinterListResult,
+  PrinterSnapshot,
   RepairRequest,
   RepairResult,
   SceneObjectSnapshot,
@@ -23,6 +24,7 @@ import { DEFAULT_PLATE_ID } from "../state/plates-core.ts";
 import { parsePrinterIps, printerId, printerName } from "../state/printers-core.ts";
 import { booleanProvenance } from "../state/toolbar-core.ts";
 import { copyNameFor, repairResultNote } from "../state/repair.ts";
+import { mapPrinterPayload } from "../state/printer-path-map.ts";
 
 export { StaleCommitError };
 export type { ArrangeResult, ArrangePlacement, SliceResult, SliceStats } from "./types.ts";
@@ -567,6 +569,111 @@ export function journalEventsFor(
     });
   }
   return events;
+}
+
+/**
+ * S9.9-003 — deterministic fixture snapshot for the active printer.
+ *
+ * This is the MOCK lane feed for `usePrinterDevice`. It produces a realistic,
+ * fully-normalized `PrinterSnapshot` (via the pure `mapPrinterPayload`
+ * mapper) WITHOUT any real device values — a Kobra S1 + 2×ACE-shaped device
+ * with synthetic temps/ACE slots/progress. Swapping the real MCP lane in is a
+ * provider change: the schema and polling store stay identical.
+ */
+export function mockPrinterSnapshot(printerIdValue: string): PrinterSnapshot | null {
+  const fixture = mapPrinterPayload(printerIdValue, {
+    device: { machine_type: "<MACHINE_TYPE>", firmware: "<FW_VERSION>", serial: "<MD5>" },
+    machine_data: { size: { x: 220, y: 220, z: 250 } },
+    tempature: {
+      nozzle_temp: 218,
+      nozzle_target: 220,
+      bed_temp: 59,
+      bed_target: 60,
+      chamber_temp: -1,
+    },
+    fan: { part: 34, hotend: 40 },
+    print: {
+      status: "idle",
+      file_name: null,
+      curr_layer: 0,
+      total_layer: 120,
+      progress: 0,
+      remain_time: -1,
+      speed_mode: 2,
+    },
+    ace: {
+      boxes: [
+        {
+          model_id: 40002,
+          temp: 27,
+          humidity: 42,
+          drying: false,
+          auto_feed: true,
+          loaded_slot: 2,
+          slots: [
+            {
+              property: 3,
+              type: "PLA",
+              sku: "PLA-1",
+              color: "#4fa8dc",
+              consumables_percent: 87,
+              edit_status: 0,
+            },
+            {
+              property: 3,
+              type: "PETG",
+              sku: "PETG-1",
+              color: "#8cc63f",
+              consumables_percent: 63,
+              edit_status: 1,
+            },
+            {
+              property: 3,
+              type: "PLA",
+              sku: "PLA-2",
+              color: "#f2b705",
+              consumables_percent: 42,
+              edit_status: 0,
+            },
+            {
+              property: 0,
+              type: null,
+              sku: null,
+              color: null,
+              consumables_percent: -1,
+              edit_status: 0,
+            },
+          ],
+        },
+      ],
+    },
+    motion: { x: 110.5, y: 0.3, z: 5.2 },
+    ai: { enabled: true, sensitivity: 5 },
+    light: { enabled: false, brightness: 0 },
+    peripherie: { camera: true, multiColorBox: true, udisk: false },
+    storage: { kind: "local", used: 4096, total: 8192 },
+    features: {
+      chamber: false,
+      multi_color: true,
+      camera: true,
+      auto_leveling: true,
+      vibration_compensation: true,
+    },
+  });
+  return fixture;
+}
+
+/**
+ * S9.9-004 — expose the fixture lane as a `PrinterSnapshotFetcher` so the
+ * device store can consume it identically to a real MCP fetch. Determinstic
+ * per call (idle state) — tests seed progress via `mapPrinterPayload`.
+ */
+export function createMockSnapshotFetcher() {
+  return async (printerIdValue: string): Promise<PrinterSnapshot> => {
+    const snap = mockPrinterSnapshot(printerIdValue);
+    if (!snap) throw new Error(`[mock] no snapshot for "${printerIdValue}"`);
+    return snap;
+  };
 }
 
 export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
