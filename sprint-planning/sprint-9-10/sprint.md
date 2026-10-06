@@ -12,7 +12,29 @@
 | **Primary Owner**     | apps/editor + MCP server (`printer_command_send`)                                                                                                                                               |
 | **Source**            | User request 2026-10-02 + Consultor report §B.4/§C.1 (write side, T.7–T.8)                                                                                                                      |
 | **Depends On**        | Sprint 9.9 (snapshot + panel)                                                                                                                                                                   |
-| **Status**            | ⏳ Planned                                                                                                                                                                                      |
+| **Status**            | 🔄 In progress (1/4)                                                                                                                                                                            |
+
+#### Implementation Notes (S9.10-001)
+
+`apps/editor/src/state/capability-surface.ts` — pure headless shared policy:
+
+- `READ_ACTIONS` (11) — `snapshot.get`, `printer.identity/temps/fans/print/ace/motion/
+ai/lights/peripherals/storage` — kind `"read"`, `requiresApproval: "never"`.
+- `WRITE_ACTIONS` (14) — temp targets, fans, speed mode, lights, ACE (dry/autoFeed/
+  bindSlot), print pause/resume/stop (kind `"write"`, `requiresApproval: "user"`),
+  plus `raw.command` (kind `"raw"`, `agentBlocked: true` — DevTools + confirm only).
+- Policies: `allowedFor(actor, entry)` — reads direct for both; writes direct for
+  user, allowed for agent but always via approval card (`needsApproval(actor, entry)`
+  true for agent writes); raw → user only, agent BLOCKED structurally.
+- `buildSurface` indexes by action; `entryFor`; `surfaceIsValid` rejects duplicates.
+- Same object imported by UI control surface and the Agent tool surface (S9.12) —
+  no second copy of the rules.
+- Tests: `tests/capability-surface.test.mjs` (8) — validity, duplicates, read
+  direct, user direct / agent approval, raw blocked, lookup, classification.
+
+Gate EXIT:0 (`$env:TEMP\s9-10-001-check1.log`): unit **628** pass/0 fail, integration
+11, rust OK, build dist 254883 B, smoke 106, e2e ×2 PASS, licenses 59, arch OK,
+sanitize DRY-RUN 0.
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -52,7 +74,7 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Priority**         | P0                                                   |
 | **Type**             | Feature (contract/policy)                            |
 | **Estimated Effort** | M                                                    |
-| **Status**           | ⏳ Planned                                           |
+| **Status**           | ✅ Done (`f1efc86`)                                  |
 
 #### Context
 
