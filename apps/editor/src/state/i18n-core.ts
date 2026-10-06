@@ -225,6 +225,29 @@ export type MsgKey =
   | "device.print.speed.sport"
   | "device.capabilities.title"
   | "device.capabilities.none"
+  | "device.fil.title"
+  | "device.fil.empty"
+  | "device.fil.noBoxes"
+  | "device.fil.box"
+  | "device.fil.slot"
+  | "device.fil.loaded"
+  | "device.fil.emptySlot"
+  | "device.fil.unknown"
+  | "device.fil.na"
+  | "device.fil.remaining"
+  | "device.fil.origin.title"
+  | "device.fil.origin.rfid"
+  | "device.fil.origin.manual"
+  | "device.fil.dryer.title"
+  | "device.fil.dryer.off"
+  | "device.fil.dryer.on"
+  | "device.fil.dryer.active"
+  | "device.fil.dryer.temp"
+  | "device.fil.dryer.remaining"
+  | "device.fil.autoFeed.title"
+  | "device.fil.autoFeed.on"
+  | "device.fil.autoFeed.off"
+  | "device.fil.capabilities.none"
   // status bar -------------------------------------------------------------
   | "status.objects"
   | "status.coords.title"
@@ -786,6 +809,29 @@ export const EN: Record<MsgKey, string> = {
   "device.print.speed.sport": "Sport",
   "device.capabilities.title": "Capabilities",
   "device.capabilities.none": "None reported",
+  "device.fil.title": "Filaments",
+  "device.fil.empty": "No filament data yet",
+  "device.fil.noBoxes": "No ACE unit connected",
+  "device.fil.box": "ACE box {index}",
+  "device.fil.slot": "Slot {index}",
+  "device.fil.loaded": "Loaded",
+  "device.fil.emptySlot": "—",
+  "device.fil.unknown": "Unknown",
+  "device.fil.na": "n/a",
+  "device.fil.remaining": "{pct}%",
+  "device.fil.origin.title": "Set by",
+  "device.fil.origin.rfid": "RFID",
+  "device.fil.origin.manual": "Manual",
+  "device.fil.dryer.title": "Dryer",
+  "device.fil.dryer.off": "Off",
+  "device.fil.dryer.on": "Active",
+  "device.fil.dryer.active": "Drying",
+  "device.fil.dryer.temp": "{tempC}°C",
+  "device.fil.dryer.remaining": "{secs}s",
+  "device.fil.autoFeed.title": "Auto-feed",
+  "device.fil.autoFeed.on": "On",
+  "device.fil.autoFeed.off": "Off",
+  "device.fil.capabilities.none": "No ACE data",
   "status.objects": "{n} object{s}",
   "status.coords.title": "{name} position (mm)",
   "status.plateDims.title": "{plate} scene bounds (mm)",
@@ -1332,6 +1378,29 @@ export const PT_BR: Record<MsgKey, string> = {
   "device.print.speed.sport": "Sport",
   "device.capabilities.title": "Capacidades",
   "device.capabilities.none": "Nada reportado",
+  "device.fil.title": "Filamentos",
+  "device.fil.empty": "Ainda sem dados de filamento",
+  "device.fil.noBoxes": "Sem unidade ACE ligada",
+  "device.fil.box": "Caixa ACE {index}",
+  "device.fil.slot": "Ranhura {index}",
+  "device.fil.loaded": "Carregado",
+  "device.fil.emptySlot": "—",
+  "device.fil.unknown": "Desconhecido",
+  "device.fil.na": "n/d",
+  "device.fil.remaining": "{pct}%",
+  "device.fil.origin.title": "Definido por",
+  "device.fil.origin.rfid": "RFID",
+  "device.fil.origin.manual": "Manual",
+  "device.fil.dryer.title": "Secador",
+  "device.fil.dryer.off": "Desligado",
+  "device.fil.dryer.on": "Ativo",
+  "device.fil.dryer.active": "A secar",
+  "device.fil.dryer.temp": "{tempC}°C",
+  "device.fil.dryer.remaining": "{secs}s",
+  "device.fil.autoFeed.title": "Auto-alimentação",
+  "device.fil.autoFeed.on": "Ligada",
+  "device.fil.autoFeed.off": "Desligada",
+  "device.fil.capabilities.none": "Sem dados ACE",
   "status.objects": "{n} objeto{s}",
   "status.coords.title": "{name} posição (mm)",
   "status.plateDims.title": "{plate} limites de cena (mm)",

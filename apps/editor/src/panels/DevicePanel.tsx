@@ -2,6 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/state/i18n";
 import { usePrinters } from "@/state/printers";
 import { usePrinterDevice, type PollingStatus } from "@/state/printer-device";
+import {
+  editOriginKey,
+  isLoadedSlot,
+  materialLabel,
+  ringClassFor,
+  type AceBox,
+  type AceSlot,
+} from "@/state/printer-filament-core";
 import type { PrinterSnapshot, SpeedMode } from "@/bridge/types";
 import type { MsgKey } from "@/state/i18n-core";
 
@@ -78,11 +86,137 @@ function FormatSeconds(total: number | null): string | null {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+/**
+ * S9.9-005 — Filament tab (read-only ACE view).
+ *
+ * Grid of slots (4 per box, up to 2 boxes): real color swatch, material,
+ * remaining% progress ring (amber <50%, red <15% → toast), RFID-vs-manual
+ * badge, box temp/humidity, dryer state + temp + remaining, auto-feed tag,
+ * loaded_slot highlight. Write actions (dryer/auto-feed/bind) are Sprint 9.10.
+ */
+function SlotCard({
+  t,
+  box,
+  slot,
+}: {
+  t: (k: MsgKey, vars?: Readonly<Record<string, string>>) => string;
+  box: AceBox;
+  slot: AceSlot;
+}) {
+  const loaded = isLoadedSlot(box, slot.index);
+  const ring = ringClassFor(slot.remainingPct);
+  const pct = slot.remainingPct;
+  return (
+    <div
+      className={`device-slot${loaded ? " is-loaded" : ""}${slot.state === "empty" ? " is-empty" : ""}`}
+      data-testid="device-slot"
+      data-slot-index={slot.index}
+      data-loaded={loaded ? "true" : "false"}
+    >
+      <header className="device-slot-head">
+        <span className="device-slot-name">
+          {t("device.fil.slot", { index: String(slot.index + 1) })}
+        </span>
+        {loaded ? (
+          <span className="device-slot-loaded" data-testid="device-slot-loaded">
+            {t("device.fil.loaded")}
+          </span>
+        ) : null}
+      </header>
+      <div className="device-slot-body">
+        <div
+          className={`device-ring${ring}`}
+          role="img"
+          aria-label={t("device.fil.remaining", { pct: String(pct ?? "—") })}
+          data-testid="device-ring"
+          data-tone={ring.replace(" device-ring-", "") || "na"}
+        >
+          <svg viewBox="0 0 36 36" aria-hidden="true">
+            <circle className="device-ring-track" cx="18" cy="18" r="15.5" />
+            <circle
+              className="device-ring-fill"
+              cx="18"
+              cy="18"
+              r="15.5"
+              strokeDasharray={`${pct === null ? 0 : Math.max(0, Math.min(100, pct))} 100`}
+            />
+          </svg>
+          <span className="device-ring-pct mono-num">{pct === null ? "—" : `${pct}%`}</span>
+        </div>
+        <div className="device-slot-info">
+          <span className="device-swatch-line">
+            <span
+              className="device-swatch"
+              style={{ background: slot.color ?? "transparent" }}
+              data-testid="device-swatch"
+            />
+            <span className="device-material">{materialLabel(slot)}</span>
+          </span>
+          <span className="device-origin">
+            {t("device.fil.origin.title")}: {t(editOriginKey(slot.editOrigin))}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FilamentTab({ snap }: { snap: PrinterSnapshot | null }) {
+  const t = useI18n((s) => s.t);
+  const boxes: readonly AceBox[] = snap?.ace.boxes ?? [];
+  if (boxes.length === 0) {
+    return (
+      <div className="device-empty" data-testid="device-fil-empty">
+        <span className="device-empty-title">{t("device.fil.title")}</span>
+        <span className="device-empty-msg">{t("device.fil.noBoxes")}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="device-panel device-fil-tab" data-testid="device-fil-tab">
+      {boxes.map((box) => (
+        <section className="device-section" key={box.index} data-testid="device-fil-box">
+          <header className="device-section-title">
+            {t("device.fil.box", { index: String(box.index + 1) })}
+          </header>
+          {box.ambientTempC !== null ? (
+            <div className="device-box-env mono-num" data-testid="device-box-env">
+              {Math.round(box.ambientTempC)}°C
+              {box.humidityPct !== null ? ` · ${Math.round(box.humidityPct)}%` : ""}
+            </div>
+          ) : null}
+          <div className="device-slot-grid">
+            {box.slots.map((slot) => (
+              <SlotCard t={t} box={box} slot={slot} key={slot.index} />
+            ))}
+          </div>
+          {/* Dryer + auto-feed (read-only here — writes are 9.10) */}
+          <div className="device-box-meta">
+            <span className="device-meta-chip" data-testid="device-dryer">
+              {t("device.fil.dryer.title")}: {box.drying.active ? "on" : "off"}
+              {box.drying.active && box.drying.targetTempC !== null
+                ? ` · ${Math.round(box.drying.targetTempC)}°C`
+                : ""}
+              {box.drying.active && box.drying.remainingSeconds !== null
+                ? ` · ${FormatSeconds(box.drying.remainingSeconds)}`
+                : ""}
+            </span>
+            <span className="device-meta-chip" data-testid="device-autofeed">
+              {t("device.fil.autoFeed.title")}: {box.autoFeed ? "on" : "off"}
+            </span>
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
 export function DevicePanelMonitor() {
   const t = useI18n((s) => s.t);
   const selectedId = usePrinters((s) => s.selectedId);
   const { printerId, snapshot, pollingStatus } = usePrinterDevice();
   const [cameraOn, setCameraOn] = useState(false);
+  const [tab, setTab] = useState<"monitor" | "filament">("monitor");
 
   const snap: PrinterSnapshot | null = useMemo(
     () => snapshot,
@@ -128,184 +262,212 @@ export function DevicePanelMonitor() {
 
   return (
     <div className="device-panel" data-testid="device-panel">
-      {statusBanner}
-      <section className="device-section" data-testid="device-section-print">
-        <header className="device-section-title">{t("device.print.title")}</header>
-        <div className="device-print-state" data-testid="device-print-state">
-          <span className={`device-state-dot device-state-${printState}`} aria-hidden="true" />
-          {t(PRINT_STATE_KEY[printState] ?? "device.print.state.unknown")}
-          {speedKey ? <span className="device-speed mono-num">{t(speedKey)}</span> : null}
-        </div>
-        {snap?.print.filename ? (
-          <div className="device-print-file mono-num" data-testid="device-print-file">
-            {t("device.print.file")}: {snap.print.filename}
-          </div>
-        ) : null}
-        {snap?.print.totalLayers ? (
-          <div className="device-print-layer mono-num" data-testid="device-print-layer">
-            {t("device.print.layer", {
-              curr: String(snap.print.currLayer ?? 0),
-              total: String(snap.print.totalLayers),
-            })}
-          </div>
-        ) : null}
-        {snap?.print.progressPct !== null && snap?.print.progressPct !== undefined ? (
-          <div className="device-print-progress mono-num" data-testid="device-print-progress">
-            {t("device.print.progress", { pct: String(Math.round(snap.print.progressPct)) })}
-          </div>
-        ) : null}
-        {snap?.print.remainingSeconds != null ? (
-          <div className="device-print-remaining mono-num" data-testid="device-print-remaining">
-            {t("device.print.remaining", {
-              secs: FormatSeconds(snap.print.remainingSeconds) ?? "0",
-            })}
-          </div>
-        ) : null}
-      </section>
+      <div className="device-tabs" role="tablist" aria-label={t("device.panel.title")}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "monitor"}
+          className={`device-tab${tab === "monitor" ? " is-active" : ""}`}
+          data-testid="device-tab-monitor"
+          onClick={() => setTab("monitor")}
+        >
+          {t("device.tab.monitor")}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "filament"}
+          className={`device-tab${tab === "filament" ? " is-active" : ""}`}
+          data-testid="device-tab-filament"
+          onClick={() => setTab("filament")}
+        >
+          {t("device.tab.filament")}
+        </button>
+      </div>
+      {tab === "filament" ? (
+        <FilamentTab snap={snap} />
+      ) : (
+        <>
+          {statusBanner}
+          <section className="device-section" data-testid="device-section-print">
+            <header className="device-section-title">{t("device.print.title")}</header>
+            <div className="device-print-state" data-testid="device-print-state">
+              <span className={`device-state-dot device-state-${printState}`} aria-hidden="true" />
+              {t(PRINT_STATE_KEY[printState] ?? "device.print.state.unknown")}
+              {speedKey ? <span className="device-speed mono-num">{t(speedKey)}</span> : null}
+            </div>
+            {snap?.print.filename ? (
+              <div className="device-print-file mono-num" data-testid="device-print-file">
+                {t("device.print.file")}: {snap.print.filename}
+              </div>
+            ) : null}
+            {snap?.print.totalLayers ? (
+              <div className="device-print-layer mono-num" data-testid="device-print-layer">
+                {t("device.print.layer", {
+                  curr: String(snap.print.currLayer ?? 0),
+                  total: String(snap.print.totalLayers),
+                })}
+              </div>
+            ) : null}
+            {snap?.print.progressPct !== null && snap?.print.progressPct !== undefined ? (
+              <div className="device-print-progress mono-num" data-testid="device-print-progress">
+                {t("device.print.progress", { pct: String(Math.round(snap.print.progressPct)) })}
+              </div>
+            ) : null}
+            {snap?.print.remainingSeconds != null ? (
+              <div className="device-print-remaining mono-num" data-testid="device-print-remaining">
+                {t("device.print.remaining", {
+                  secs: FormatSeconds(snap.print.remainingSeconds) ?? "0",
+                })}
+              </div>
+            ) : null}
+          </section>
 
-      <section className="device-section" data-testid="device-section-temps">
-        <header className="device-section-title">{t("device.temp.nozzle")}</header>
-        <div className="device-temps-grid">
-          <TempCard
-            label={t("device.temp.nozzle")}
-            currentC={snap?.temps.nozzle.currentC ?? null}
-            targetC={snap?.temps.nozzle.targetC ?? null}
-          />
-          <TempCard
-            label={t("device.temp.bed")}
-            currentC={snap?.temps.bed.currentC ?? null}
-            targetC={snap?.temps.bed.targetC ?? null}
-          />
-          {snap?.capabilities.chamber ? (
-            <TempCard
-              label={t("device.temp.chamber")}
-              currentC={snap?.temps.chamber.currentC ?? null}
-              targetC={snap?.temps.chamber.targetC ?? null}
-            />
-          ) : null}
-        </div>
-      </section>
+          <section className="device-section" data-testid="device-section-temps">
+            <header className="device-section-title">{t("device.temp.nozzle")}</header>
+            <div className="device-temps-grid">
+              <TempCard
+                label={t("device.temp.nozzle")}
+                currentC={snap?.temps.nozzle.currentC ?? null}
+                targetC={snap?.temps.nozzle.targetC ?? null}
+              />
+              <TempCard
+                label={t("device.temp.bed")}
+                currentC={snap?.temps.bed.currentC ?? null}
+                targetC={snap?.temps.bed.targetC ?? null}
+              />
+              {snap?.capabilities.chamber ? (
+                <TempCard
+                  label={t("device.temp.chamber")}
+                  currentC={snap?.temps.chamber.currentC ?? null}
+                  targetC={snap?.temps.chamber.targetC ?? null}
+                />
+              ) : null}
+            </div>
+          </section>
 
-      <section className="device-section" data-testid="device-section-fans">
-        <header className="device-section-title">{t("device.fans.aria")}</header>
-        <FanRow label={t("device.fans.part")} pct={snap?.fans.partCoolingPct ?? null} />
-        <FanRow label={t("device.fans.hotend")} pct={snap?.fans.hotendPct ?? null} />
-      </section>
+          <section className="device-section" data-testid="device-section-fans">
+            <header className="device-section-title">{t("device.fans.aria")}</header>
+            <FanRow label={t("device.fans.part")} pct={snap?.fans.partCoolingPct ?? null} />
+            <FanRow label={t("device.fans.hotend")} pct={snap?.fans.hotendPct ?? null} />
+          </section>
 
-      {snap?.motion ? (
-        <section className="device-section" data-testid="device-section-motion">
-          <header className="device-section-title">{t("device.motion.title")}</header>
-          <span className="device-motion mono-num">
-            {t("device.motion.xyz", {
-              x: String(snap.motion.xMm ?? 0),
-              y: String(snap.motion.yMm ?? 0),
-              z: String(snap.motion.zMm ?? 0),
-            })}
-          </span>
-        </section>
-      ) : null}
-
-      {snap?.ai ? (
-        <section className="device-section" data-testid="device-section-ai">
-          <header className="device-section-title">{t("device.ai.title")}</header>
-          <span className="device-ai-enabled">
-            {t(snap.ai.enabled ? "device.ai.enabled" : "device.lights.off")}
-            {snap.ai.sensitivity !== null ? (
-              <span className="device-ai-sens mono-num">
-                {" "}
-                · {t("device.ai.sensitivity")} {snap.ai.sensitivity}
+          {snap?.motion ? (
+            <section className="device-section" data-testid="device-section-motion">
+              <header className="device-section-title">{t("device.motion.title")}</header>
+              <span className="device-motion mono-num">
+                {t("device.motion.xyz", {
+                  x: String(snap.motion.xMm ?? 0),
+                  y: String(snap.motion.yMm ?? 0),
+                  z: String(snap.motion.zMm ?? 0),
+                })}
               </span>
-            ) : null}
-          </span>
-        </section>
-      ) : null}
+            </section>
+          ) : null}
 
-      {snap?.lights ? (
-        <section className="device-section" data-testid="device-section-lights">
-          <header className="device-section-title">{t("device.lights.title")}</header>
-          <span className={`device-light device-light-${snap.lights.enabled ? "on" : "off"}`}>
-            {t(snap.lights.enabled ? "device.lights.on" : "device.lights.off")}
-            {snap.lights.brightnessPct !== null ? (
-              <span className="mono-num"> {Math.round(snap.lights.brightnessPct)}%</span>
-            ) : null}
-          </span>
-        </section>
-      ) : null}
+          {snap?.ai ? (
+            <section className="device-section" data-testid="device-section-ai">
+              <header className="device-section-title">{t("device.ai.title")}</header>
+              <span className="device-ai-enabled">
+                {t(snap.ai.enabled ? "device.ai.enabled" : "device.lights.off")}
+                {snap.ai.sensitivity !== null ? (
+                  <span className="device-ai-sens mono-num">
+                    {" "}
+                    · {t("device.ai.sensitivity")} {snap.ai.sensitivity}
+                  </span>
+                ) : null}
+              </span>
+            </section>
+          ) : null}
 
-      <section className="device-section" data-testid="device-section-peripherals">
-        <header className="device-section-title">{t("device.peripherals.title")}</header>
-        <div className="device-chip-row">
-          <span
-            className={`device-chip${snap?.peripherals.hasCamera ? " device-chip-on" : ""}`}
-            data-testid="device-chip-camera"
-          >
-            {t("device.peripherals.camera")}
-          </span>
-          <span
-            className={`device-chip${snap?.peripherals.hasMultiColorBox ? " device-chip-on" : ""}`}
-            data-testid="device-chip-ace"
-          >
-            {t("device.peripherals.ace")}
-          </span>
-          <span
-            className={`device-chip${snap?.peripherals.hasUsbDrive ? " device-chip-on" : ""}`}
-            data-testid="device-chip-usb"
-          >
-            {t("device.peripherals.usb")}
-          </span>
-        </div>
-      </section>
+          {snap?.lights ? (
+            <section className="device-section" data-testid="device-section-lights">
+              <header className="device-section-title">{t("device.lights.title")}</header>
+              <span className={`device-light device-light-${snap.lights.enabled ? "on" : "off"}`}>
+                {t(snap.lights.enabled ? "device.lights.on" : "device.lights.off")}
+                {snap.lights.brightnessPct !== null ? (
+                  <span className="mono-num"> {Math.round(snap.lights.brightnessPct)}%</span>
+                ) : null}
+              </span>
+            </section>
+          ) : null}
 
-      {snap?.capabilities.camera ? (
-        <section className="device-section" data-testid="device-section-camera">
-          <header className="device-section-title">{t("device.camera.title")}</header>
-          {cameraOn ? (
-            <div className="device-camera-preview" data-testid="device-camera-preview">
-              <span className="device-camera-hint">{t("device.camera.title")} —</span>
-              {/* The player wires here in S9.11-003 live overlay (H.264/FLV by
+          <section className="device-section" data-testid="device-section-peripherals">
+            <header className="device-section-title">{t("device.peripherals.title")}</header>
+            <div className="device-chip-row">
+              <span
+                className={`device-chip${snap?.peripherals.hasCamera ? " device-chip-on" : ""}`}
+                data-testid="device-chip-camera"
+              >
+                {t("device.peripherals.camera")}
+              </span>
+              <span
+                className={`device-chip${snap?.peripherals.hasMultiColorBox ? " device-chip-on" : ""}`}
+                data-testid="device-chip-ace"
+              >
+                {t("device.peripherals.ace")}
+              </span>
+              <span
+                className={`device-chip${snap?.peripherals.hasUsbDrive ? " device-chip-on" : ""}`}
+                data-testid="device-chip-usb"
+              >
+                {t("device.peripherals.usb")}
+              </span>
+            </div>
+          </section>
+
+          {snap?.capabilities.camera ? (
+            <section className="device-section" data-testid="device-section-camera">
+              <header className="device-section-title">{t("device.camera.title")}</header>
+              {cameraOn ? (
+                <div className="device-camera-preview" data-testid="device-camera-preview">
+                  <span className="device-camera-hint">{t("device.camera.title")} —</span>
+                  {/* The player wires here in S9.11-003 live overlay (H.264/FLV by
                   capability); starting ONLY on demand avoids turning the
                   chamber light on without user intent. */}
-              <video
-                className="device-camera-video"
-                muted
-                playsInline
-                data-testid="device-camera-video"
-              />
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="device-camera-start"
-              data-testid="device-camera-start"
-              onClick={() => setCameraOn(true)}
-            >
-              {t("device.camera.start")}
-            </button>
-          )}
-        </section>
-      ) : null}
+                  <video
+                    className="device-camera-video"
+                    muted
+                    playsInline
+                    data-testid="device-camera-video"
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="device-camera-start"
+                  data-testid="device-camera-start"
+                  onClick={() => setCameraOn(true)}
+                >
+                  {t("device.camera.start")}
+                </button>
+              )}
+            </section>
+          ) : null}
 
-      {snap?.storage ? (
-        <section className="device-section" data-testid="device-section-storage">
-          <header className="device-section-title">{t("device.storage.title")}</header>
-          <div className="device-storage-row mono-num">
-            <span>
-              {t("device.storage.kind")}: {snap.storage.kind}
-            </span>
-            {snap.storage.usedBytes != null ? (
-              <span>
-                {t("device.storage.used")}: {mb(snap.storage.usedBytes)} MB
-              </span>
-            ) : null}
-            {snap.storage.totalBytes != null ? (
-              <span>
-                {t("device.storage.free")}:{" "}
-                {mb(snap.storage.totalBytes - (snap.storage.usedBytes ?? 0))} MB
-              </span>
-            ) : null}
-          </div>
-        </section>
-      ) : null}
+          {snap?.storage ? (
+            <section className="device-section" data-testid="device-section-storage">
+              <header className="device-section-title">{t("device.storage.title")}</header>
+              <div className="device-storage-row mono-num">
+                <span>
+                  {t("device.storage.kind")}: {snap.storage.kind}
+                </span>
+                {snap.storage.usedBytes != null ? (
+                  <span>
+                    {t("device.storage.used")}: {mb(snap.storage.usedBytes)} MB
+                  </span>
+                ) : null}
+                {snap.storage.totalBytes != null ? (
+                  <span>
+                    {t("device.storage.free")}:{" "}
+                    {mb(snap.storage.totalBytes - (snap.storage.usedBytes ?? 0))} MB
+                  </span>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }
