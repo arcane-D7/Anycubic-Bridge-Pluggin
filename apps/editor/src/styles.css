@@ -3091,6 +3091,28 @@ input {
   font-size: 12px;
 }
 
+/* P1-2 — Device empty state embeds the shared PrinterList (no popover
+   chrome needed — it renders inline inside the floating panel). */
+.device-picker-list {
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-align: left;
+  background: var(--bg-panel-solid);
+  max-height: min(46vh, 340px);
+  overflow-y: auto;
+}
+
+.device-picker-list .printer-picker-head {
+  margin-bottom: 6px;
+}
+
+.device-picker-list .printer-picker-list {
+  max-height: none;
+  overflow-y: visible;
+}
+
 .device-banner {
   padding: 6px 10px;
   border-radius: 6px;

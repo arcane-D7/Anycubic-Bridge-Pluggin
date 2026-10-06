@@ -181,6 +181,13 @@ export type MsgKey =
   | "printer.row.title"
   | "printer.foot.probing"
   | "printer.foot.refreshed"
+  // shared printer list (P1-2: header picker + device panel) -------------
+  | "printers.select"
+  | "printers.refresh"
+  | "printers.discovering"
+  | "printers.empty"
+  | "printers.discoveryFailed"
+  | "printers.unavailable"
   // device panel --------------------------------------------------------
   | "device.panel.aria"
   | "device.panel.title"
@@ -190,6 +197,7 @@ export type MsgKey =
   | "device.tab.filament"
   | "device.empty.title"
   | "device.empty.msg"
+  | "device.empty.pick"
   | "device.offline.banner"
   | "device.stale.banner"
   | "device.temp.nozzle"
@@ -830,6 +838,12 @@ export const EN: Record<MsgKey, string> = {
   "printer.row.title": "Arm send target {ip}",
   "printer.foot.probing": "probing…",
   "printer.foot.refreshed": "refreshed {timeAgo}",
+  "printers.select": "Select printer",
+  "printers.refresh": "Refresh",
+  "printers.discovering": "Discovering…",
+  "printers.empty": "No printers discovered. Set {env} (comma-separated IPs).",
+  "printers.discoveryFailed": "Discovery failed — no printers found.",
+  "printers.unavailable": "No printer configured. Use the header picker.",
   "device.panel.aria": "Printer device panel",
   "device.panel.title": "Device",
   "device.button.title": "Printer device panel",
@@ -838,6 +852,7 @@ export const EN: Record<MsgKey, string> = {
   "device.tab.filament": "Filament",
   "device.empty.title": "No printer selected",
   "device.empty.msg": "Pick a printer in the header to see live data.",
+  "device.empty.pick": "Pick a discovered printer to start monitoring:",
   "device.offline.banner": "Printer unreachable — showing last known data",
   "device.stale.banner": "Data is stale — reconnecting…",
   "device.temp.nozzle": "Nozzle",
@@ -1458,6 +1473,12 @@ export const PT_BR: Record<MsgKey, string> = {
   "printer.row.title": "Armar alvo de envio {ip}",
   "printer.foot.probing": "a sondar…",
   "printer.foot.refreshed": "atualizado {timeAgo}",
+  "printers.select": "Selecionar impressora",
+  "printers.refresh": "Atualizar",
+  "printers.discovering": "A descobrir…",
+  "printers.empty": "Nenhuma impressora descoberta. Defina {env} (IPs separados por vírgula).",
+  "printers.discoveryFailed": "Descoberta falhou — nenhuma impressora encontrada.",
+  "printers.unavailable": "Nenhuma impressora configurada. Use o seletor no cabeçalho.",
   "device.panel.aria": "Painel do dispositivo da impressora",
   "device.panel.title": "Dispositivo",
   "device.button.title": "Painel do dispositivo da impressora",
@@ -1466,6 +1487,7 @@ export const PT_BR: Record<MsgKey, string> = {
   "device.tab.filament": "Filamento",
   "device.empty.title": "Nenhuma impressora selecionada",
   "device.empty.msg": "Escolha uma impressora no cabeçalho para ver dados ao vivo.",
+  "device.empty.pick": "Escolha uma impressora descoberta para começar a monitorizar:",
   "device.offline.banner": "Impressora inacessível — a mostrar últimos dados conhecidos",
   "device.stale.banner": "Dados desatualizados — a reconectar…",
   "device.temp.nozzle": "Bico",

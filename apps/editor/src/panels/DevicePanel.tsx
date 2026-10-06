@@ -5,6 +5,8 @@ import { usePrinterDevice, type PollingStatus } from "@/state/printer-device";
 import { usePrinterControl, type ControlRequest } from "@/state/printer-control";
 import { useUi } from "@/state/ui";
 import { useDock } from "@/state/dock";
+import { PrinterList } from "@/components/printer-list";
+import { printerEnvRaw } from "@/lib/printer-env";
 import {
   editOriginKey,
   isLoadedSlot,
@@ -436,6 +438,51 @@ function BindSlotModal({
   );
 }
 
+/**
+ * P1-2 — Device empty state now doubles as a printer list when discovery
+ * found candidates but none is armed. Selecting here is a pure store write
+ * (`usePrinters.select`) — it never sends a hardware command.
+ */
+function DevicePickerEmpty() {
+  const t = useI18n((s) => s.t);
+  const printers = usePrinters((s) => s.printers);
+  const probing = usePrinters((s) => s.probing);
+  const selectedId = usePrinters((s) => s.selectedId);
+  const hint = usePrinters((s) => s.hint);
+  const lastProbedAt = usePrinters((s) => s.lastProbedAt);
+  const refresh = usePrinters((s) => s.refresh);
+  const select = usePrinters((s) => s.select);
+
+  const onRefresh = useCallback(() => {
+    void refresh(printerEnvRaw());
+  }, [refresh]);
+
+  return (
+    <div className="device-empty" data-testid="device-empty">
+      <span className="device-empty-title">{t("device.empty.title")}</span>
+      {printers.length > 0 ? (
+        <>
+          <span className="device-empty-msg">{t("device.empty.pick")}</span>
+          <div className="device-picker-list" data-testid="device-picker-list">
+            <PrinterList
+              printers={printers}
+              probing={probing}
+              hint={hint}
+              selectedId={selectedId}
+              lastProbedAt={lastProbedAt}
+              sourceLabel="env"
+              onRefresh={onRefresh}
+              onSelect={(id) => select(id)}
+            />
+          </div>
+        </>
+      ) : (
+        <span className="device-empty-msg">{t("device.empty.msg")}</span>
+      )}
+    </div>
+  );
+}
+
 export function DevicePanelMonitor() {
   const t = useI18n((s) => s.t);
   const selectedId = usePrinters((s) => s.selectedId);
@@ -522,12 +569,7 @@ export function DevicePanelMonitor() {
   }, [selectedId]);
 
   if (!selectedId) {
-    return (
-      <div className="device-empty" data-testid="device-empty">
-        <span className="device-empty-title">{t("device.empty.title")}</span>
-        <span className="device-empty-msg">{t("device.empty.msg")}</span>
-      </div>
-    );
+    return <DevicePickerEmpty />;
   }
 
   const statusBanner =
