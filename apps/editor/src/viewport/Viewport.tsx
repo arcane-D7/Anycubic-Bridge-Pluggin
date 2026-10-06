@@ -11,6 +11,8 @@ import { usePlates } from "../state/plates";
 import { objectsOnPlate } from "../state/plates-core";
 import { useUi } from "../state/ui";
 import { useI18n } from "../state/i18n";
+import { usePrinters } from "../state/printers";
+import { effectiveViewMode, useViewMode } from "../state/view-mode";
 import { openContextMenuAt } from "../components/context-menu-core";
 import { useContextMenuStore } from "../state/context-menu";
 import type { ContextMenuItem } from "../components/context-menu-core";
@@ -73,6 +75,14 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
   const [showWalls, setShowWalls] = useState(true);
   const [showInfill, setShowInfill] = useState(true);
 
+  // S9.11-001 view mode: live requires a reachable printer, otherwise the
+  // effective mode falls back to slicer and a one-line banner shows why.
+  const viewMode = useViewMode((s) => s.mode);
+  const selectedPrinter = usePrinters((s) => s.printers.find((p) => p.id === s.selectedId));
+  const liveReachable = selectedPrinter?.reachable === true;
+  const effectiveMode = effectiveViewMode(viewMode, liveReachable);
+  const modeFallbackActive = viewMode === "live" && effectiveMode !== "live";
+
   const layerCount = preview?.layerCount ?? 0;
   useEffect(() => {
     setLayerIndex(0);
@@ -82,6 +92,11 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
   return (
     <ViewportFrame bridge={scene}>
       <Toolbar scene={scene} />
+      {modeFallbackActive ? (
+        <div className="viewport-live-banner" data-testid="viewport-live-banner" role="status">
+          {t("viewport.live.banner")}
+        </div>
+      ) : null}
       <RendererGuard scene={scene} />
       <Canvas
         camera={{ position: [180, 260, 320], fov: 40, near: 0.1, far: 10000 }}

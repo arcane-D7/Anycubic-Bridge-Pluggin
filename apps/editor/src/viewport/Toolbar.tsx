@@ -11,6 +11,8 @@ import { useScene } from "../state/scene";
 import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { BridgeHandle } from "../bridge/mock";
+import { usePrinters } from "../state/printers";
+import { useViewMode, effectiveViewMode, VIEW_MODES } from "../state/view-mode";
 
 /**
  * S9.4-001 floating viewport toolbar (AC-1/AC-2).
@@ -76,6 +78,15 @@ export function Toolbar({ scene }: ToolbarProps) {
   const toggleObjectLabelsAlwaysOn = useUi((s) => s.toggleObjectLabelsAlwaysOn);
   const queryClient = useQueryClient();
   const pushToast = useUi((s) => s.pushToast);
+
+  // S9.11-001 view mode: requested mode persisted per-context; live falls
+  // back to slicer when the selected printer isn't reachable. Reachability
+  // is tri-state (null = probing) — treat only `true` as reachable.
+  const viewMode = useViewMode((s) => s.mode);
+  const setViewMode = useViewMode((s) => s.setMode);
+  const selectedPrinter = usePrinters((s) => s.printers.find((p) => p.id === s.selectedId));
+  const liveReachable = selectedPrinter?.reachable === true;
+  const effectiveMode = effectiveViewMode(viewMode, liveReachable);
 
   // S9.4-004 arrange target = the ACTIVE plate's objects (same filter as the
   // viewport render so the layout you see is the layout that arranges).
@@ -249,6 +260,35 @@ export function Toolbar({ scene }: ToolbarProps) {
           />
           <span className="snap-step-unit">mm</span>
         </label>
+      </div>
+
+      {/* S9.11-001 — view mode seg (mesh | slicer | live). Live requires a
+          reachable printer; when it isn't, the seg still shows the request
+          but the effective mode falls back to slicer (+ toolbar hint). */}
+      <div className="toolbar-group" role="group" aria-label={t("toolbar.viewmode.aria")}>
+        {VIEW_MODES.map((mode) => {
+          const label = t(`toolbar.viewmode.${mode}`);
+          const active = effectiveMode === mode;
+          return (
+            <button
+              type="button"
+              key={mode}
+              className={`toolbar-btn${active ? " is-active" : ""}`}
+              aria-pressed={active}
+              aria-label={label}
+              title={
+                mode === "live"
+                  ? t("toolbar.viewmode.live") +
+                    (liveReachable ? "" : ` — ${t("toolbar.viewmode.fallback")}`)
+                  : label
+              }
+              data-testid={`view-mode-${mode}`}
+              onClick={() => setViewMode(mode)}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="toolbar-group" role="group" aria-label={t("toolbar.group.scene.aria")}>

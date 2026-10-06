@@ -142,6 +142,11 @@ export type MsgKey =
   | "toolbar.fit.aria"
   | "toolbar.fit.title"
   | "toolbar.presets.aria"
+  | "toolbar.viewmode.aria"
+  | "toolbar.viewmode.mesh"
+  | "toolbar.viewmode.slicer"
+  | "toolbar.viewmode.live"
+  | "toolbar.viewmode.fallback"
   | "toolbar.view.infoTitle"
   | "toolbar.view.infoMsg"
   // printer picker --------------------------------------------------------
@@ -586,6 +591,7 @@ export type MsgKey =
   | "viewport.preview.layerOf"
   | "viewport.preview.walls"
   | "viewport.preview.infill"
+  | "viewport.live.banner"
   | "viewport.repairLabel"
   | "viewport.dropHint"
   | "viewport.menu.arrange"
@@ -777,6 +783,11 @@ export const EN: Record<MsgKey, string> = {
   "toolbar.fit.aria": "Fit view",
   "toolbar.fit.title": "Fit view ({shortcut})",
   "toolbar.presets.aria": "View presets",
+  "toolbar.viewmode.aria": "View mode",
+  "toolbar.viewmode.mesh": "Mesh",
+  "toolbar.viewmode.slicer": "Slicer",
+  "toolbar.viewmode.live": "Live",
+  "toolbar.viewmode.fallback": "Live needs a reachable printer — showing slicer style.",
   "toolbar.view.infoTitle": "Arrange",
   "toolbar.view.infoMsg": "Use the toolbar Arrange for shelf packing.",
   "printer.led.aria": "{ip} {state}",
@@ -1206,6 +1217,7 @@ export const EN: Record<MsgKey, string> = {
   "viewport.preview.layerOf": "Layer {n} of {total}",
   "viewport.preview.walls": "Walls",
   "viewport.preview.infill": "Infill",
+  "viewport.live.banner": "Live mode needs a reachable printer — showing slicer style.",
   "viewport.repairLabel": "Needs repair:",
   "viewport.dropHint": "Drop to import",
   "viewport.menu.arrange": "Arrange objects",
@@ -1390,6 +1402,11 @@ export const PT_BR: Record<MsgKey, string> = {
   "toolbar.fit.aria": "Enquadrar vista",
   "toolbar.fit.title": "Enquadrar vista ({shortcut})",
   "toolbar.presets.aria": "Predefinições de vista",
+  "toolbar.viewmode.aria": "Modo de vista",
+  "toolbar.viewmode.mesh": "Malha",
+  "toolbar.viewmode.slicer": "Slicer",
+  "toolbar.viewmode.live": "Ao vivo",
+  "toolbar.viewmode.fallback": "Ao vivo precisa de impressora alcançável — a mostrar slicer.",
   "toolbar.view.infoTitle": "Arrumar",
   "toolbar.view.infoMsg": "Use a barra de ferramentas Arrumar para empacotamento de prateleira.",
   "printer.led.aria": "{ip} {state}",
@@ -1821,6 +1838,7 @@ export const PT_BR: Record<MsgKey, string> = {
   "viewport.preview.layerOf": "Camada {n} de {total}",
   "viewport.preview.walls": "Paredes",
   "viewport.preview.infill": "Preenchimento",
+  "viewport.live.banner": "O modo ao vivo precisa de impressora alcançável — a mostrar slicer.",
   "viewport.repairLabel": "Precisa de reparação:",
   "viewport.dropHint": "Solte para importar",
   "viewport.menu.arrange": "Arrumar objetos",
