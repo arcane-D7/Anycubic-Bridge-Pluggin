@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor (viewport + materials)                                                                                                                                    |
 | **Source**            | User request 2026-10-02 (plate + integration visuals) + Consultor report §C.3 (T.9–T.10)                                                                              |
 | **Depends On**        | Sprints 9.9 (snapshot), 9.10 (actions)                                                                                                                                |
-| **Status**            | 🔄 In progress (3/4)                                                                                                                                                  |
+| **Status**            | ✅ Complete (4/4)                                                                                                                                                     |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -202,7 +202,7 @@ layer bar alongside the model. Purpose: instant visual confirmation of the live 
 | **Priority**         | P1                                             |
 | **Type**             | Feature (visual)                               |
 | **Estimated Effort** | M                                              |
-| **Status**           | ⏳ Planned                                     |
+| **Status**           | ✅ Done (`09629ca`)                            |
 
 #### Context
 
@@ -211,6 +211,41 @@ or typical PEI look via noise on the existing `meshPhysicalMaterial`; (b) quadra
 (fine lines + "front" label) to help print submission; (c) hot-end visual (duct + nozzle)
 in live mode; (d) Z column for height reference. All optional toggles defaulting off so the
 base viewport stays clean; Y-axis untouched (lay-on-plate lane stays).
+
+#### Implementation Notes (S9.11-004)
+
+BuildPlate upgrades — all opt-in toggles DEFAULT OFF (base viewport unchanged):
+
+- `state/plate-upgrade-core.ts` (pure, headless) — `PlateUpgradeFlags`
+  (`pei` / `quadrants` / `hotend` / `zColumn`), `DEFAULT_PLATE_UPGRADES`
+  (all false), `togglePlateUpgrade`, `quadrantCrosshairPositions(widthMm,
+depthMm)` (2 crosshair lines + "front" marker from the contract footprint),
+  `zColumnMarks(heightMm, everyMm=20)` (height ticks, parity 2 vertices/tick).
+- `state/plate-upgrades.ts` (zustand) — thin wrapper; `toggleUpgrade`
+  ignores non-keys. **IMPORTANT:** selectors in consumers must return
+  PRIMITIVES — a fresh object identity per render triggers a React 19
+  `getSnapshot` infinite loop (caught in the gate e2e:editor-reload; fixed
+  before commit).
+- `viewport/plate-upgrade-visuals.ts` (procedural, zero image assets) —
+  `getPeiTexture()` builds a 64×64 value-noise + machining-stroke canvas
+  texture, cached per class (`disposePlateTextures` test-only).
+- `viewport/BuildPlate.tsx` — PEI `meshPhysicalMaterial` map swap when the
+  flag is on, crosshair `lineSegments` + front tick, rear Z reference column
+  with ticks. Y-axis untouched.
+- `viewport/LiveOverlay.tsx` — hot-end duct + brass nozzle group gated by
+  `hotend` (opt-in).
+- `viewport/Toolbar.tsx` — new "plate upgrades" toggle group
+  (`data-testid={plate-upgrade-${key}}`, icons settings/printer) after the
+  view-mode segment.
+- i18n: `plate.upgrade.{aria,pei.*,quadrants.*,hotend.*,zColumn.*}` (EN +
+  PT_BR).
+- Tests: `tests/plate-upgrade-core.test.mjs` (7 — defaults all-off, toggle
+  single-flag, key bounds, crosshair 2 segments, crosshair malformed empty,
+  z-marks parity + everyMm, z-marks malformed empty).
+
+Gate EXIT:0 (`$env:TEMP\s911004b.log`): unit **687** pass/0 fail (+7), integration
+11, rust OK, smoke 106, e2e ×2 PASS (cad-ui + editor-reload), licenses 59,
+arch OK, sanitize 0.
 
 #### Acceptance criteria
 
