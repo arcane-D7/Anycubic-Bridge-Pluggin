@@ -27,6 +27,7 @@ import { ModalInteraction } from "./ModalInteraction";
 import { NonWatertightBadges } from "./NonWatertightBadges";
 import { RendererGuard } from "./RendererGuard";
 import { SceneObjectModel } from "./SceneObjectModel";
+import { SnapReadout } from "./SnapController";
 import { Toolbar } from "./Toolbar";
 import { TransformGizmo } from "./TransformGizmo";
 import { ViewCube } from "./ViewCube";
@@ -143,6 +144,9 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
       {!preview ? <ObjectLabels objects={visibleObjects} /> : null}{" "}
       {/* S9.8-003 — measure readout overlay (mono, bottom-left) outside the canvas. */}
       {!preview ? <MeasureReadout /> : null}{" "}
+      {/* S9.13 — snap readout overlay (axis/value/step chip) outside the canvas.
+          DOM must never mount inside the R3F tree (crash fix). */}
+      {!preview ? <SnapReadout volume={volume} /> : null}{" "}
       {preview ? (
         <div className="viewport-preview-controls" data-testid="preview-controls">
           {" "}

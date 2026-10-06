@@ -427,7 +427,11 @@ body,
    (both bottom:12px; z-index 6 wins because .viewport-frame isolation:isolate
    pins this z:40 to level 0 in the root context). Moved to TOP-LEFT — the
    only viewport corner free of controls (toolbar top-center, snap top-right,
-   plate-tabs bottom-center, view-cube bottom-right, measure bottom-left). */
+   plate-tabs bottom-center, view-cube bottom-right, measure bottom-left).
+   S9.13 (2026-10-06): the toolbar top-center reaches far left (~110px from the
+   frame edge), so the badges must stay in the corner — tight max-width +
+   container pointer-events:none (only the chips are clickable). Without this
+   the chip strip swallowed clicks meant for the toolbar's Move/Rotate/etc. */
 .viewport-repair-badges {
   position: absolute;
   left: 12px;
@@ -436,8 +440,9 @@ body,
   display: flex;
   align-items: center;
   gap: 6px;
-  max-width: 42%;
+  max-width: 88px;
   padding: 5px 8px;
+  pointer-events: none; /* never block canvas/toolbar clicks */
   background: color-mix(in srgb, var(--glass-fill-2) 88%, transparent);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -460,6 +465,7 @@ body,
   gap: 4px;
   height: 22px;
   padding: 0 8px;
+  pointer-events: auto; /* only the chip is clickable (container is none) */
   border: 1px solid var(--accent-warm);
   border-radius: 11px;
   background: color-mix(in srgb, var(--accent-warm) 12%, transparent);

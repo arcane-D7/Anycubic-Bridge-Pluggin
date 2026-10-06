@@ -16,14 +16,22 @@
  * Rotations snap on a fixed 15° step. All math lives in
  * `transform-core` (`snapValue` / `snapRotationDeg` / `snapStepFor`) and is
  * unit-tested headless — the component is a thin wiring layer.
+ *
+ * S9.13 — crash fix (R3F "Span is not part of the THREE namespace!"): the
+ * readout is DOM, so it can NEVER mount inside the `<Canvas>`. It now lives
+ * OUTSIDE (sibling overlay in `Viewport`, next to `ObjectLabels`/
+ * `MeasureReadout`) and reads the shared snap bus; the in-canvas gizmo only
+ * writes the target and renders the three-only `SnapGuide`. Two render
+ * locations, one source of truth, zero HTML in the three tree.
  */
 
 import { BufferGeometry, Float32BufferAttribute } from "three";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import type { BuildVolume } from "../bridge/types";
 import { useI18n } from "../state/i18n";
+import { useSnapBus } from "../state/snap-bus";
 import { useToolbar } from "../state/toolbar";
-import { snapDraft, snapStepFor, type SceneTransform, type SnapTarget } from "./transform-core";
+import { snapDraft, snapStepFor, type SceneTransform } from "./transform-core";
 
 export interface SnapHandle {
   /** Snap a gizmo draft; returns the same object identity when no snap applies. */
@@ -31,45 +39,42 @@ export interface SnapHandle {
     draft: SceneTransform,
     kind: "move" | "rotate" | "scale",
   ) => SceneTransform;
-  /** Last snapped target for the readout (null until a snap occurs). */
-  readonly readout: SnapTarget | null;
 }
 
 /**
- * Overlay readout + guide for the viewport (S9.7-002 AC-1).
+ * Overlay readout for the viewport (S9.7-002 AC-1). Rendered OUTSIDE the
+ * R3F Canvas (sibling overlay, same host as ObjectLabels/MeasureReadout).
+ * Subscribes to the snap bus — zero canvas re-renders, zero HTML in three.
  */
-export function SnapReadout({
-  readout,
-  volume,
-}: {
-  readonly readout: SnapTarget | null;
-  readonly volume?: BuildVolume;
-}) {
+export function SnapReadout({ volume }: { readonly volume?: BuildVolume }) {
   const snap = useToolbar((s) => s.snap);
   const step = useToolbar((s) => s.snapStep);
+  const readout = useSnapBus((s) => s.target);
   const effStep = snapStepFor(step, volume);
   const t = useI18n((s) => s.t);
 
+  if (!snap || !readout) return null;
   return (
-    <>
-      {snap && readout ? (
-        <div className="viewport-snap-readout" data-testid="snap-readout">
-          <span className="snap-readout-axis">{readout.axis}</span>
-          <span className="snap-readout-value">{readout.value}</span>
-          <span className="snap-readout-step">{t("snap.step", { step: String(effStep) })}</span>
-        </div>
-      ) : null}
-      {snap && readout ? <SnapGuide target={readout} /> : null}
-    </>
+    <div className="viewport-snap-readout" data-testid="snap-readout" role="status">
+      <span className="snap-readout-axis">{readout.axis}</span>
+      <span className="snap-readout-value">{readout.value}</span>
+      <span className="snap-readout-step">{t("snap.step", { step: String(effStep) })}</span>
+    </div>
   );
 }
 
-/** Faint world-space guide line at the snapped coordinate (axis-colored). */
-function SnapGuide({ target }: { readonly target: SnapTarget }) {
-  const geometry = useMemo<BufferGeometry>(
-    () => makeGuideGeometry(target.axis, target.value),
-    [target.axis, target.value],
+/**
+ * Faint world-space guide line at the snapped coordinate (axis-colored).
+ * Lives INSIDE the Canvas next to the gizmo — three primitives only.
+ */
+export function SnapGuide() {
+  const target = useSnapBus((s) => s.target);
+  const snap = useToolbar((s) => s.snap);
+  const geometry = useMemo<BufferGeometry | null>(
+    () => (target ? makeGuideGeometry(target.axis, target.value) : null),
+    [target],
   );
+  if (!snap || !target || !geometry) return null;
   return (
     <lineSegments geometry={geometry} data-testid="snap-guide">
       <lineBasicMaterial
@@ -95,23 +100,22 @@ function makeGuideGeometry(axis: string, value: number): BufferGeometry {
 }
 
 /**
- * Hook: exposes `snapTransform` (wraps `snapDraft`) and the readout state.
- * The TransformGizmo calls `snapTransform` in `onObjectChange` before
- * `mutateObject`; the readout state lives here so both share one source.
+ * Hook: exposes `snapTransform` (wraps `snapDraft`) and writes the readout
+ * target to the SHARED SNAP BUS. The out-of-canvas `SnapReadout` and the
+ * in-canvas `SnapGuide` both read the same bus — one source of truth.
  */
 export function useSnap(volume?: BuildVolume): SnapHandle {
   const snap = useToolbar((s) => s.snap);
   const snapStep = useToolbar((s) => s.snapStep);
-  const [readout, setReadout] = useState<SnapTarget | null>(null);
 
   const snapTransform = useCallback(
     (draft: SceneTransform, _kind: "move" | "rotate" | "scale") => {
       const { transform, target } = snapDraft(draft, { snap, stepMm: snapStep, volume });
-      setReadout(target);
+      useSnapBus.getState().setTarget(target);
       return transform;
     },
     [snap, snapStep, volume],
   );
 
-  return { snapTransform, readout };
+  return { snapTransform };
 }

@@ -7,7 +7,7 @@ import type { SceneObjectSnapshot } from "../bridge/types";
 import { useScene } from "../state/scene";
 import { useViewport } from "../state/viewport";
 import { useUi, type ToolMode } from "../state/ui";
-import { SnapReadout, useSnap } from "./SnapController";
+import { SnapGuide, useSnap } from "./SnapController";
 import { constrainToAxis, clampBedY } from "./transform-core";
 
 /**
@@ -59,7 +59,7 @@ export function TransformGizmo({ bridge, selectedName }: TransformGizmoProps) {
   const sessionStatus = useViewport((s) => s.sessionStatus);
   // S9.7-002 — effective snap step from the toolbar store; the gizmo snaps
   // the draft BEFORE persisting and shows the target in the readout.
-  const { snapTransform, readout } = useSnap(bridge?.buildVolume);
+  const { snapTransform } = useSnap(bridge?.buildVolume);
   const runFlow = useViewport((s) => s.runFlow);
   const cancel = useViewport((s) => s.cancel);
   const sceneGraph = useThree((s) => s.scene);
@@ -240,8 +240,10 @@ export function TransformGizmo({ bridge, selectedName }: TransformGizmoProps) {
         rotationSnap={null}
         scaleSnap={null}
       />
-      {/* S9.7-002 AC-1 — snap target readout + guide while dragging. */}
-      <SnapReadout readout={readout} volume={bridge?.buildVolume} />
+      {/* S9.7-002 AC-1 — snap guide (three primitives only). The DOM readout
+          lives OUTSIDE the Canvas as a sibling overlay (`SnapReadout` in
+          Viewport) reading the shared snap bus — S9.13 crash fix. */}
+      <SnapGuide />
     </>
   );
 }
