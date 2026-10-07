@@ -3,6 +3,7 @@ import type {
   BooleanRequest,
   BooleanResult,
   BuildVolume,
+  DevtoolsReadModel,
   ObjectGeometry,
   ObjectMutation,
   PrinterControlRequest,
@@ -11,6 +12,8 @@ import type {
   PrinterInfo,
   PrinterListResult,
   PrinterSnapshot,
+  RawCommandRequest,
+  RawCommandResult,
   RepairRequest,
   RepairResult,
   SceneObjectSnapshot,
@@ -1197,6 +1200,39 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
         fileId: req.fileId,
       };
     },
+    // --- S9.12-002 DevTools lanes -----------------------------------------
+    // Read-only model (catalog + hidden command map, fixture mirrors) + the
+    // raw command lane. The raw lane obeys the same seams as printerControl:
+    // refused/timeout are deterministic; `invalid` covers unknown command /
+    // failed validation. The UI gates this lane behind the typed confirm AND
+    // the capability policy (raw.command: agentBlocked) — the lane itself
+    // never trusts the caller.
+    async devtoolsReadModel() {
+      const { devtoolsReadModel } = await import("../state/devtools-core.ts");
+      return devtoolsReadModel();
+    },
+    async rawCommand(req) {
+      const { validateRawCommand } = await import("../state/devtools-core.ts");
+      const reason = validateRawCommand(req.command, req.args);
+      if (reason) {
+        return { ok: false as const, error: reason, kind: "invalid" };
+      }
+      if (mockControlRefused) {
+        return {
+          ok: false as const,
+          error: `printer refused raw ${req.command}`,
+          kind: "refused",
+        };
+      }
+      if (mockControlTimeout) {
+        return {
+          ok: false as const,
+          error: `no reply for raw ${req.command}`,
+          kind: "timeout",
+        };
+      }
+      return { ok: true as const, command: req.command };
+    },
   };
   return handle;
 }
@@ -1411,6 +1447,19 @@ export interface BridgeContract {
    * mints a deterministic mock task id.
    */
   sendFile(req: SendFileRequest): Promise<SendFileResult>;
+  /**
+   * S9.12-002: DevTools read-only model (property catalog + hidden command
+   * map, deterministic fixtures). Rendered as searchable tables by the
+   * DevTools pane.
+   */
+  devtoolsReadModel(): Promise<DevtoolsReadModel>;
+  /**
+   * S9.12-002: raw command send lane. The UI gates it behind the typed
+   * confirm AND the capability policy (`raw.command` — Agent blocked); the
+   * lane validates the payload and returns semantic kinds (invalid/refused/
+   * timeout).
+   */
+  rawCommand(req: RawCommandRequest): Promise<RawCommandResult>;
 }
 
 /** Live bridge handle: the fetched profile+scene snapshot PLUS the commit sink

@@ -132,4 +132,16 @@ test("sample translations landed in both locales (spot-check)", async () => {
   assert.equal(STRINGS.en["app.tab.prepare"], "Prepare");
   assert.equal(STRINGS["pt-BR"]["measure.clear"], "limpar");
   assert.equal(STRINGS.en["measure.clear"], "clear");
+  // S9.12-002 — DevTools keys landed in both locales.
+  assert.equal(STRINGS.en["devtools.rawConfirmWord"], "Type EXECUTE to enable send");
+  assert.equal(STRINGS["pt-BR"]["devtools.rawConfirmWord"], "Escreva EXECUTE para ativar o envio");
+  assert.equal(
+    STRINGS.en["devtools.rawBlockedAgent"],
+    "Raw hidden commands are blocked for the Agent by policy.",
+  );
+  assert.equal(
+    STRINGS["pt-BR"]["devtools.rawBlockedAgent"],
+    "Comandos ocultos brutos estão bloqueados para o Agente por política.",
+  );
+  assert.equal(STRINGS.en["device.tab.devtools"], "DevTools");
 });

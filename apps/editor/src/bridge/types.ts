@@ -584,3 +584,63 @@ export type SendFileResult =
       readonly error: string;
       readonly kind: "offline" | "region" | "unknown";
     };
+
+/**
+ * S9.12-002 — DevTools catalog entry (fixture mirror of the MCP
+ * `printer_property_catalog`). One row = one readable property path with its
+ * source group + evidence. The UI renders these as a searchable table; the
+ * entries are deterministic fixtures (AGENTS.md §6) — no real endpoints.
+ */
+export interface DevtoolsPropertyEntry {
+  readonly source: string;
+  readonly path: string;
+  readonly type: string;
+  readonly unit: string | null;
+  readonly group: string;
+  readonly note: string | null;
+}
+
+/**
+ * S9.12-002 — DevTools hidden command map row (fixture mirror of the MCP
+ * `printer_hidden_command_map`). Describes a writable channel: command
+ * type/action, payload fields, safety class + evidence. READ-ONLY
+ * description — never an executor (the raw send form validates separately).
+ */
+export interface DevtoolsCommandEntry {
+  readonly type: string;
+  readonly action: string;
+  readonly data: string | null;
+  readonly safety: "read" | "state" | "thermal" | "motion" | "job";
+  readonly evidence: string;
+  readonly note: string | null;
+}
+
+/**
+ * S9.12-002 — the whole DevTools read-only surface the pane renders:
+ * catalog + command map (both fixture mirrors, searchable client-side).
+ */
+export interface DevtoolsReadModel {
+  readonly catalog: readonly DevtoolsPropertyEntry[];
+  readonly commands: readonly DevtoolsCommandEntry[];
+}
+
+/**
+ * S9.12-002 — raw command send request. `command` is the raw command key
+ * (e.g. `AXIS`), `args` the raw payload. The UI gates this with a typed
+ * confirm; the policy (`raw.command` in capability-surface) blocks the
+ * Agent from ever reaching this lane.
+ */
+export interface RawCommandRequest {
+  readonly command: string;
+  readonly args: Readonly<Record<string, string | number | boolean>>;
+}
+
+/** Result of the raw-command lane (S9.12-002) — same semantic union as
+ * `PrinterControlResult`; `invalid` covers unknown command/empty payload. */
+export type RawCommandResult =
+  | { readonly ok: true; readonly command: string }
+  | {
+      readonly ok: false;
+      readonly error: string;
+      readonly kind: "invalid" | "refused" | "timeout";
+    };

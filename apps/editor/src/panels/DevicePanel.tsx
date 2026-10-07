@@ -24,6 +24,7 @@ import type {
   SpeedMode,
 } from "@/bridge/types";
 import type { MsgKey } from "@/state/i18n-core";
+import { DevToolsPane } from "./DevToolsPane";
 
 /**
  * S9.9-004 — Device panel: Monitor tab (read-only).
@@ -748,7 +749,7 @@ export function DevicePanelMonitor() {
   const selectedId = usePrinters((s) => s.selectedId);
   const { printerId, snapshot, pollingStatus } = usePrinterDevice();
   const [cameraOn, setCameraOn] = useState(false);
-  const [tab, setTab] = useState<"monitor" | "filament" | "files">("monitor");
+  const [tab, setTab] = useState<"monitor" | "filament" | "files" | "devtools">("monitor");
 
   // S9.9-006 — status-bar chips navigate here: focus flips the tab and, when
   // a section id is given, scrolls the panel to that section after render.
@@ -894,6 +895,16 @@ export function DevicePanelMonitor() {
         >
           {t("device.tab.files")}
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "devtools"}
+          className={`device-tab${tab === "devtools" ? " is-active" : ""}`}
+          data-testid="device-tab-devtools"
+          onClick={() => setTab("devtools")}
+        >
+          {t("device.tab.devtools")}
+        </button>
       </div>
       {tab === "filament" ? (
         <FilamentTab
@@ -905,6 +916,8 @@ export function DevicePanelMonitor() {
         />
       ) : tab === "files" ? (
         <FilesTab storage={snap?.storage ?? null} />
+      ) : tab === "devtools" ? (
+        <DevToolsPane raw={snap?.raw ?? {}} />
       ) : (
         <>
           {statusBanner}

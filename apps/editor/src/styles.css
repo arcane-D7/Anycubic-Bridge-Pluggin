@@ -4119,6 +4119,224 @@ input {
   margin-bottom: 8px;
 }
 
+/* ------------------------------------------------------------------ */
+/* S9.12-002 — DevicePanel DevTools pane (raw snapshot mirror,         */
+/* property catalog + hidden command map tables, typed-confirm raw     */
+/* send form, session journal).                                        */
+/* ------------------------------------------------------------------ */
+
+.devtools-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.devtools-tabs {
+  display: flex;
+  gap: 6px;
+}
+.devtools-tab {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.devtools-tab.is-active {
+  border-color: var(--accent);
+  color: var(--accent-primary);
+  background: var(--accent-soft);
+}
+.devtools-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.devtools-raw-toggle {
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12px;
+  text-align: left;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.devtools-json {
+  max-height: 260px;
+  overflow: auto;
+  font-size: 11px;
+  line-height: 1.5;
+  background: var(--glass-fill-1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-secondary);
+}
+.devtools-search {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--glass-fill-1);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 11px;
+}
+.devtools-table-wrap {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.devtools-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.devtools-table th {
+  position: sticky;
+  top: 0;
+  text-align: left;
+  padding: 5px 8px;
+  background: var(--glass-fill-2);
+  color: var(--text-tertiary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+.devtools-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-secondary);
+}
+.devtools-safety {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 10px;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.devtools-safety-read {
+  color: var(--accent-primary);
+  border-color: var(--accent);
+}
+.devtools-safety-state {
+  color: var(--warn-primary, #d98e2b);
+  border-color: var(--warn-border, #d98e2b);
+}
+.devtools-safety-thermal {
+  color: #d94a3d;
+  border-color: #d94a3d;
+}
+.devtools-safety-motion {
+  color: #5a9fd9;
+  border-color: #5a9fd9;
+}
+.devtools-safety-job {
+  color: #b06fd9;
+  border-color: #b06fd9;
+}
+.devtools-rawsend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 6px;
+}
+.devtools-rawsend-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+.devtools-blocked {
+  font-size: 11px;
+  color: var(--warn-primary, #d98e2b);
+}
+.devtools-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.devtools-input {
+  border: 1px solid var(--border);
+  background: var(--glass-fill-1);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+}
+.devtools-args {
+  resize: vertical;
+}
+.devtools-hint {
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+.devtools-hint-error {
+  color: #d94a3d;
+}
+.devtools-send {
+  align-self: flex-start;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--text-on-accent, #fff);
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+.devtools-send:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.devtools-journal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+}
+.devtools-journal-clear {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-size: 10px;
+  cursor: pointer;
+}
+.devtools-journal-empty {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.devtools-journal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 160px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--glass-fill-1);
+}
+.devtools-journal-item {
+  padding: 3px 8px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-soft);
+}
+.devtools-journal-item:last-child {
+  border-bottom: none;
+}
+
 .device-meta-chip {
   display: inline-flex;
   align-items: center;

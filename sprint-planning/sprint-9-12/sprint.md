@@ -75,7 +75,7 @@ Cloud files listed read-only per burner caps (metadados only).
 | **Priority**         | P1                                                                 |
 | **Type**             | Feature                                                            |
 | **Estimated Effort** | M                                                                  |
-| **Status**           | ⏳ Planned                                                         |
+| **Status**           | ✅ Done                                                            |
 
 #### Context
 

@@ -316,6 +316,42 @@ export type MsgKey =
   | "device.files.sendRegion"
   | "device.files.sendUnknown"
   | "device.files.sendBusy"
+  // S9.12-002 — DevTools pane (raw snapshot mirror + catalogs + raw cmd) ----
+  | "device.tab.devtools"
+  | "devtools.title"
+  | "devtools.raw"
+  | "devtools.rawEmpty"
+  | "devtools.catalog"
+  | "devtools.catalogSearch"
+  | "devtools.commands"
+  | "devtools.commandsSearch"
+  | "devtools.row.source"
+  | "devtools.row.path"
+  | "devtools.row.type"
+  | "devtools.row.unit"
+  | "devtools.row.group"
+  | "devtools.row.note"
+  | "devtools.row.safety"
+  | "devtools.row.evidence"
+  | "devtools.row.data"
+  | "devtools.safety.read"
+  | "devtools.safety.state"
+  | "devtools.safety.thermal"
+  | "devtools.safety.motion"
+  | "devtools.safety.job"
+  | "devtools.rawSend"
+  | "devtools.rawCommand"
+  | "devtools.rawArgs"
+  | "devtools.rawConfirmWord"
+  | "devtools.rawConfirmHint"
+  | "devtools.rawConfirmMismatch"
+  | "devtools.rawBlockedAgent"
+  | "devtools.rawLoadError"
+  | "devtools.journal.title"
+  | "devtools.journal.empty"
+  | "devtools.journal.clear"
+  | "devtools.accepted"
+  | "devtools.failed"
   // status bar printer chips (S9.9-006) -----------------------------------
   | "status.printer.nozzle"
   | "status.printer.bed"
@@ -1028,6 +1064,42 @@ export const EN: Record<MsgKey, string> = {
   "device.files.sendRegion": "Cloud region unavailable",
   "device.files.sendUnknown": "Send failed",
   "device.files.sendBusy": "Sending…",
+  // S9.12-002 — DevTools pane (EN)
+  "device.tab.devtools": "DevTools",
+  "devtools.title": "DevTools",
+  "devtools.raw": "Raw snapshot",
+  "devtools.rawEmpty": "Empty raw payload.",
+  "devtools.catalog": "Property catalog",
+  "devtools.catalogSearch": "Filter catalog…",
+  "devtools.commands": "Hidden command map",
+  "devtools.commandsSearch": "Filter commands…",
+  "devtools.row.source": "Source",
+  "devtools.row.path": "Path",
+  "devtools.row.type": "Type",
+  "devtools.row.unit": "Unit",
+  "devtools.row.group": "Group",
+  "devtools.row.note": "Note",
+  "devtools.row.safety": "Safety",
+  "devtools.row.evidence": "Evidence",
+  "devtools.row.data": "Payload",
+  "devtools.safety.read": "read",
+  "devtools.safety.state": "state",
+  "devtools.safety.thermal": "thermal",
+  "devtools.safety.motion": "motion",
+  "devtools.safety.job": "job",
+  "devtools.rawSend": "Raw command",
+  "devtools.rawCommand": "Command (e.g. light)",
+  "devtools.rawArgs": "Arguments (JSON object)",
+  "devtools.rawConfirmWord": "Type EXECUTE to enable send",
+  "devtools.rawConfirmHint": "This bypasses UI validation and can move axes, heat or stop a print.",
+  "devtools.rawConfirmMismatch": "Type the exact word to unlock send.",
+  "devtools.rawBlockedAgent": "Raw hidden commands are blocked for the Agent by policy.",
+  "devtools.rawLoadError": "Could not load the DevTools model.",
+  "devtools.journal.title": "DevTools journal",
+  "devtools.journal.empty": "No DevTools actions logged.",
+  "devtools.journal.clear": "Clear",
+  "devtools.accepted": "Raw command accepted",
+  "devtools.failed": "Raw command failed",
   "status.printer.nozzle": "Nozzle",
   "status.printer.bed": "Bed",
   "status.printer.layer": "Layer",
@@ -1720,6 +1792,44 @@ export const PT_BR: Record<MsgKey, string> = {
   "device.files.sendRegion": "Região cloud indisponível",
   "device.files.sendUnknown": "Falha no envio",
   "device.files.sendBusy": "A enviar…",
+  // S9.12-002 — DevTools pane (pt-BR)
+  "device.tab.devtools": "DevTools",
+  "devtools.title": "DevTools",
+  "devtools.raw": "Snapshot bruta",
+  "devtools.rawEmpty": "Payload bruto vazio.",
+  "devtools.catalog": "Catálogo de propriedades",
+  "devtools.catalogSearch": "Filtrar catálogo…",
+  "devtools.commands": "Mapa de comandos ocultos",
+  "devtools.commandsSearch": "Filtrar comandos…",
+  "devtools.row.source": "Origem",
+  "devtools.row.path": "Caminho",
+  "devtools.row.type": "Tipo",
+  "devtools.row.unit": "Unidade",
+  "devtools.row.group": "Grupo",
+  "devtools.row.note": "Nota",
+  "devtools.row.safety": "Segurança",
+  "devtools.row.evidence": "Evidência",
+  "devtools.row.data": "Payload",
+  "devtools.safety.read": "leitura",
+  "devtools.safety.state": "estado",
+  "devtools.safety.thermal": "térmico",
+  "devtools.safety.motion": "movimento",
+  "devtools.safety.job": "trabalho",
+  "devtools.rawSend": "Comando bruto",
+  "devtools.rawCommand": "Comando (ex.: light)",
+  "devtools.rawArgs": "Argumentos (objeto JSON)",
+  "devtools.rawConfirmWord": "Escreva EXECUTE para ativar o envio",
+  "devtools.rawConfirmHint":
+    "Isto ignora a validação da UI e pode mover eixos, aquecer ou parar uma impressão.",
+  "devtools.rawConfirmMismatch": "Escreva a palavra exata para desbloquear o envio.",
+  "devtools.rawBlockedAgent":
+    "Comandos ocultos brutos estão bloqueados para o Agente por política.",
+  "devtools.rawLoadError": "Não foi possível carregar o modelo DevTools.",
+  "devtools.journal.title": "Diário DevTools",
+  "devtools.journal.empty": "Sem ações DevTools registadas.",
+  "devtools.journal.clear": "Limpar",
+  "devtools.accepted": "Comando bruto aceite",
+  "devtools.failed": "Falha no comando bruto",
   "status.printer.nozzle": "Bico",
   "status.printer.bed": "Mesa",
   "status.printer.layer": "Camada",
