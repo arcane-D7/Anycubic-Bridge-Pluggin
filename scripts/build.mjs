@@ -108,6 +108,7 @@ async function build() {
   assert.ok(out.includes("registerCadAiTool"), "cad ai wiring missing");
   assert.ok(out.includes("registerSlicerTools"), "slicer CLI tools wiring missing");
   assert.ok(out.includes("registerPresetTools"), "preset catalog tools wiring missing");
+  assert.ok(out.includes("registerAgentTools"), "agent parity tools wiring missing");
   assert.ok(out.includes('case "ai_prompt":'), "ai_prompt case missing");
   assert.ok(out.includes('case "parametric":'), "parametric case missing");
   assert.ok(out.includes(TRANSPORT_ANCHOR), "transport connect anchor missing");

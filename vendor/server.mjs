@@ -7090,6 +7090,24 @@ registerPrinterCommands(server, z2, {
     return printer;
   },
 });
+// Agent parity (S9.12-003): printer_get_snapshot (exact 9.9-001 schema via
+// the editor's own pure mapper) + write tools policy-routed (Agent approval).
+const { registerAgentTools } = await import("../scripts/printer-agent-tools.mjs");
+registerAgentTools(server, z2, {
+  manager: commandManager,
+  resolvePrinter: async (cloud, printerId) => {
+    const printers = await cloud.listPrinters();
+    const printer =
+      printerId === void 0 ? printers[0] : printers.find((p) => Number(p.id) === printerId);
+    if (!printer)
+      throw new Error(
+        printerId === void 0
+          ? "No printer bound to this account"
+          : "Requested printer is not bound to this account",
+      );
+    return printer;
+  },
+});
 // Audit-gap tools: cloud file upload, upload+print flow, LAN camera snapshot,
 // session close, material catalog (capabilities implemented but unreachable before).
 const { registerAuditGapTools } = await import("../scripts/audit-gap-tools.mjs");

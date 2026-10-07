@@ -644,6 +644,94 @@
       "outputSchema": {}
     },
     {
+      "name": "ace_auto_feed",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "box_id": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          },
+          "confirm_word": {
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "ace_dry",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "box_id": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "target_temp": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 80
+          },
+          "duration_min": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          },
+          "confirm_word": {
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
       "name": "ace_feed_finish",
       "readOnlyHint": false,
       "inputSchema": {
@@ -2041,6 +2129,42 @@
       "outputSchema": {}
     },
     {
+      "name": "printer_get_snapshot",
+      "readOnlyHint": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 48
+            }
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "minimum": 1000,
+            "maximum": 60000
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
       "name": "printer_gcode_resolve",
       "readOnlyHint": true,
       "inputSchema": {
@@ -2922,6 +3046,99 @@
       "outputSchema": {}
     },
     {
+      "name": "print_pause",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          },
+          "confirm_word": {
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "print_resume",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          },
+          "confirm_word": {
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "print_stop",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          },
+          "confirm_word": {
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
       "name": "run_slice_job",
       "readOnlyHint": false,
       "inputSchema": {
@@ -2986,6 +3203,82 @@
         "required": ["dev_id", "dev_ip", "local_file"],
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "set_speed_mode",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "mode": {
+            "enum": ["silent", "standard", "sport"],
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          },
+          "confirm_word": {
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "set_temperature",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "nozzle": {
+            "type": "number",
+            "minimum": 150,
+            "maximum": 300
+          },
+          "bed": {
+            "type": "number",
+            "minimum": 20,
+            "maximum": 120
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          },
+          "confirm_word": {
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {}
     },
@@ -3731,6 +4024,58 @@
           }
         },
         "required": ["input_file"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {}
+    },
+    {
+      "name": "slot_bind",
+      "readOnlyHint": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "printer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "access_token": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "resources_dir": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "box_id": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "slot_index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "material_type": {
+            "type": "string"
+          },
+          "color": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            }
+          },
+          "confirm": {
+            "default": false,
+            "type": "boolean"
+          },
+          "confirm_word": {
+            "type": "string"
+          }
+        },
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {}

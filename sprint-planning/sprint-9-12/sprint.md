@@ -99,7 +99,7 @@ by policy from 9.10-001.
 | **Priority**         | P0                                       |
 | **Type**             | Feature (Agent)                          |
 | **Estimated Effort** | L                                        |
-| **Status**           | ⏳ Planned                               |
+| **Status**           | ✅ Done                                  |
 
 #### Context
 
