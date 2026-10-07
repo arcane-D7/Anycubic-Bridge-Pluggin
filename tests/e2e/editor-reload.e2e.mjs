@@ -287,6 +287,9 @@ try {
     await page.keyboard.press("Escape");
     await page.waitForSelector('[data-testid="context-menu"]', { hidden: true, timeout: 5000 });
   }
+  // Context-menu clamping is exercised down to 640px above. Restore the
+  // minimum supported control-layout width before toolbar/plate assertions.
+  await page.setViewport({ width: 1024, height: 768, deviceScaleFactor: 1 });
 
   await page.setViewport({ width: 800, height: 600, deviceScaleFactor: 2 });
   const resizedAnchor = await page.$eval('[data-testid="viewport-frame"]', (frame) => {
@@ -368,6 +371,10 @@ try {
   );
   assert.equal(frameRestored, true, "Escape should restore focus to the keyboard anchor");
 
+  // Context-menu clamping is exercised down to 640px above. Restore the
+  // minimum supported control-layout width before toolbar/plate assertions.
+  await page.setViewport({ width: 1024, height: 768, deviceScaleFactor: 1 });
+
   // ---- 1b. UI REFACTOR (P1-4..P1-7) — direct browser coverage ----
 
   // P1-5 — plate identity + action rail (DOM, inside viewport frame).
@@ -380,13 +387,33 @@ try {
     /(?:Plate|Chapa)\s*1/i,
     `plate-rail should name the active plate, got "${railName}"`,
   );
-  const railSpecs = await page.$eval('[data-testid="plate-rail-specs"]', (el) => el.textContent);
+  await page.click('[data-testid="plate-info-trigger"]');
+  await page.waitForSelector('[data-testid="plate-info-popover"]', { timeout: 5000 });
+  const railSpecs = await page.$eval('[data-testid="plate-info-popover"]', (el) => el.textContent);
   assert.match(
     railSpecs,
     /220/,
     `plate-rail-specs should show the build volume (220), got "${railSpecs}"`,
   );
   assert.match(railSpecs, /mm/, `plate-rail-specs should carry units, got "${railSpecs}"`);
+  assert.match(railSpecs, /Kobra S1 \(e2e\)/, "plate information should name the active profile");
+  assert.match(
+    railSpecs,
+    /operator declaration/i,
+    "plate information should report profile origin",
+  );
+  await page.keyboard.press("Escape");
+  await page.waitForSelector('[data-testid="plate-info-popover"]', { hidden: true, timeout: 5000 });
+  const infoFocusRestored = await page.$eval(
+    '[data-testid="plate-info-trigger"]',
+    (trigger) => document.activeElement === trigger,
+  );
+  assert.equal(infoFocusRestored, true, "Escape should restore focus to plate information trigger");
+  await page.keyboard.press("Enter");
+  await page.waitForSelector('[data-testid="plate-info-popover"]', { timeout: 5000 });
+  await page.click('[data-testid="plate-rail-fit"]');
+  await page.waitForSelector('[data-testid="plate-info-popover"]', { hidden: true, timeout: 5000 });
+  await page.click('[data-testid="plate-rail-top"]');
   for (const tid of ["plate-rail-fit", "plate-rail-top", "plate-rail-grid"]) {
     const present = await page.$(`[data-testid="${tid}"]`);
     assert.ok(present, `missing plate rail action ${tid}`);
@@ -395,9 +422,9 @@ try {
   const gridPressedBefore = await page.$eval('[data-testid="plate-rail-grid"]', (el) =>
     el.getAttribute("aria-pressed"),
   );
-  // Puppeteer real click may be intercepted by the R3F canvas overlay; use a
-  // DOM-level click (el.click()) which fires the React onClick handler.
-  await page.$eval('[data-testid="plate-rail-grid"]', (el) => el.click());
+  await page.click('[data-testid="plate-info-trigger"]');
+  await page.click('[data-testid="plate-rail-grid"]');
+  await page.waitForSelector('[data-testid="plate-info-popover"]', { hidden: true, timeout: 5000 });
   // The store → DOM round-trip is async; poll for the flip instead of a
   // fixed sleep (stable under CPU contention from parallel gate steps).
   let gridPressedAfter = gridPressedBefore;
@@ -414,6 +441,254 @@ try {
     `plate-rail-grid toggle should flip the pressed state (${gridPressedBefore} -> ${gridPressedAfter})`,
   );
 
+  for (const width of [1024, 1280, 1743]) {
+    await page.setViewport({ width, height: 768, deviceScaleFactor: 1 });
+    const layout = await page.evaluate(() => {
+      const rect = (selector) => document.querySelector(selector)?.getBoundingClientRect();
+      const toolbar = rect('[data-testid="viewport-toolbar"]');
+      const rail = rect('[data-testid="plate-rail"]');
+      const tabs = rect('[data-testid="plate-tabs"]');
+      const frame = rect('[data-testid="viewport-frame"]');
+      const controls = [
+        '[data-testid="repair-control"] summary',
+        '[data-testid="toolbar-transform-panel"]',
+        '[data-testid="plate-info-trigger"]',
+        '[data-testid="plate-rail-fit"]',
+        '[data-testid="plate-rail-top"]',
+        '[data-testid="plate-rail-grid"]',
+      ];
+      const reachable = controls.map((selector) => {
+        const button = document.querySelector(selector);
+        const box = button?.getBoundingClientRect();
+        if (!button || !box) return { selector, hit: false };
+        const x = box.left + box.width / 2;
+        const y = box.top + box.height / 2;
+        const hit = document.elementFromPoint(x, y);
+        const toolbarElement = button.closest(".viewport-toolbar");
+        return {
+          selector,
+          hit: hit === button || button.contains(hit),
+          disabled: button.disabled,
+          rect: box.toJSON(),
+          hitElement: hit?.getAttribute("data-testid") ?? hit?.className ?? hit?.tagName ?? null,
+          stack: document
+            .elementsFromPoint(x, y)
+            .slice(0, 4)
+            .map((el) => ({
+              tag: el.tagName,
+              testid: el.getAttribute("data-testid"),
+              className: typeof el.className === "string" ? el.className : null,
+              z: getComputedStyle(el).zIndex,
+              pointerEvents: getComputedStyle(el).pointerEvents,
+            })),
+          toolbarStyle: {
+            z: toolbarElement ? getComputedStyle(toolbarElement).zIndex : null,
+            pointerEvents: toolbarElement ? getComputedStyle(toolbarElement).pointerEvents : null,
+          },
+        };
+      });
+      return {
+        frame: frame?.toJSON(),
+        toolbar: toolbar?.toJSON(),
+        rail: rail?.toJSON(),
+        tabs: tabs?.toJSON(),
+        reachable,
+        fitSelectionDisabled: document.querySelector('[data-testid="toolbar-fit-selection"]')
+          ?.disabled,
+      };
+    });
+    assert.ok(
+      layout.toolbar && layout.rail && layout.tabs && layout.frame,
+      `controls should mount at ${width}px`,
+    );
+    assert.ok(
+      layout.toolbar.bottom <= layout.rail.top,
+      `toolbar and plate rail must not overlap at ${width}px: ${JSON.stringify(layout)}`,
+    );
+    assert.ok(
+      layout.rail.bottom <= layout.tabs.top,
+      `plate rail must stay above plate tabs at ${width}px: ${JSON.stringify(layout)}`,
+    );
+    assert.ok(
+      layout.reachable.every((entry) => entry.hit),
+      `priority controls must receive real pointer hits at ${width}px: ${JSON.stringify(layout)}`,
+    );
+    assert.equal(
+      layout.fitSelectionDisabled,
+      true,
+      `Fit selection should be unavailable without a selected object at ${width}px`,
+    );
+  }
+  await page.select('[data-testid="settings-language"]', "pt-BR");
+  const localizedHits = await page.evaluate(() =>
+    ["toolbar-transform-panel", "plate-info-trigger", "plate-rail-fit", "plate-rail-grid"].map(
+      (testId) => {
+        const button = document.querySelector(`[data-testid="${testId}"]`);
+        if (!button) return { testId, hit: false };
+        const rect = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(
+          rect.left + rect.width / 2,
+          rect.top + rect.height / 2,
+        );
+        return { testId, hit: button === hit || button.contains(hit) };
+      },
+    ),
+  );
+  assert.ok(
+    localizedHits.every((entry) => entry.hit),
+    `priority controls should remain reachable with Portuguese labels: ${JSON.stringify(localizedHits)}`,
+  );
+  await page.select('[data-testid="settings-language"]', "en");
+
+  const dividerBefore = await page.$eval('[data-testid="divider-vertical"]', (divider) => {
+    const rect = divider.getBoundingClientRect();
+    return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+  });
+  const frameWidthBeforeResize = await page.$eval(
+    '[data-testid="viewport-frame"]',
+    (frame) => frame.getBoundingClientRect().width,
+  );
+  await page.mouse.move(dividerBefore.x, dividerBefore.y);
+  await page.mouse.down();
+  await page.mouse.move(dividerBefore.x + 64, dividerBefore.y, { steps: 4 });
+  await page.mouse.up();
+  const frameWidthAfterResize = await page.$eval(
+    '[data-testid="viewport-frame"]',
+    (frame) => frame.getBoundingClientRect().width,
+  );
+  assert.ok(
+    frameWidthAfterResize < frameWidthBeforeResize - 40,
+    `resizing the sidebar should resize the viewport frame (${frameWidthBeforeResize} -> ${frameWidthAfterResize})`,
+  );
+  await page.mouse.move(dividerBefore.x + 64, dividerBefore.y);
+  await page.mouse.down();
+  await page.mouse.move(dividerBefore.x, dividerBefore.y, { steps: 4 });
+  await page.mouse.up();
+
+  await page.evaluate(() => {
+    document.documentElement.style.zoom = "90%";
+  });
+  const zoomHit = await page.$eval('[data-testid="toolbar-transform-panel"]', (button) => {
+    const rect = button.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    return hit === button || button.contains(hit);
+  });
+  assert.equal(zoomHit, true, "toolbar controls should remain hit-accessible at 90% zoom");
+  await page.evaluate(() => {
+    document.documentElement.style.zoom = "";
+  });
+  await page.setViewport({ width: 1024, height: 768, deviceScaleFactor: 1 });
+
+  // SCR-01..05 — shared scroll policy: native wheel/keyboard/touch/thumb
+  // input remains available, while scrollbar colors follow theme/system mode.
+  await page.setViewport({ width: 1024, height: 480, deviceScaleFactor: 1 });
+  const scrollBox = await page.$eval(".panel-left", (panel) => {
+    const rect = panel.getBoundingClientRect();
+    return {
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height,
+      scrollHeight: panel.scrollHeight,
+      clientHeight: panel.clientHeight,
+    };
+  });
+  assert.ok(
+    scrollBox.scrollHeight > scrollBox.clientHeight,
+    `settings panel should expose a real vertical scroll range: ${JSON.stringify(scrollBox)}`,
+  );
+  await page.mouse.move(scrollBox.x + 40, scrollBox.y + 80);
+  await page.mouse.wheel({ deltaY: 180 });
+  await page.waitForFunction(() => document.querySelector(".panel-left").scrollTop > 0, {
+    timeout: 3000,
+  });
+  const scrollbarStyle = await page.$eval(".panel-left", (panel) => ({
+    width: getComputedStyle(panel, "::-webkit-scrollbar").width,
+    thumb: getComputedStyle(panel, "::-webkit-scrollbar-thumb").backgroundColor,
+    policy: getComputedStyle(panel).scrollbarWidth,
+  }));
+  assert.equal(
+    scrollbarStyle.width,
+    "10px",
+    "scrollbar thumb should retain the shared 10px hit area",
+  );
+  assert.equal(
+    scrollbarStyle.policy,
+    "thin",
+    "scroll region should use the shared thin scrollbar policy",
+  );
+  assert.notEqual(
+    scrollbarStyle.thumb,
+    "rgba(0, 0, 0, 0)",
+    "scrollbar thumb should remain visible",
+  );
+  await page.$eval(".panel-left", (panel) => {
+    panel.scrollTop = 0;
+    panel.querySelector(".sidebar-nav button")?.focus();
+  });
+  await page.keyboard.press("PageDown");
+  await page.waitForFunction(() => document.querySelector(".panel-left").scrollTop > 0, {
+    timeout: 3000,
+  });
+  await page.$eval(".panel-left", (panel) => {
+    panel.scrollTop = 0;
+  });
+  const touchClient = await page.target().createCDPSession();
+  await touchClient.send("Emulation.setTouchEmulationEnabled", {
+    enabled: true,
+    maxTouchPoints: 1,
+  });
+  const touchX = Math.round(scrollBox.x + 80);
+  const touchStartY = Math.round(scrollBox.y + 150);
+  await touchClient.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: touchX, y: touchStartY, id: 1 }],
+  });
+  await touchClient.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ x: touchX, y: touchStartY - 100, id: 1 }],
+  });
+  await touchClient.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await page.waitForFunction(() => document.querySelector(".panel-left").scrollTop > 0, {
+    timeout: 3000,
+  });
+  await touchClient.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+  await touchClient.detach();
+
+  const themeScrollColors = await page.evaluate(() => {
+    const root = document.documentElement;
+    const previous = root.getAttribute("data-theme");
+    const panel = document.querySelector(".panel-left");
+    root.setAttribute("data-theme", "light");
+    const light = getComputedStyle(panel).scrollbarColor;
+    root.setAttribute("data-theme", "dark");
+    const dark = getComputedStyle(panel).scrollbarColor;
+    if (previous === null) root.removeAttribute("data-theme");
+    else root.setAttribute("data-theme", previous);
+    return { light, dark };
+  });
+  assert.notEqual(
+    themeScrollColors.light,
+    themeScrollColors.dark,
+    "scrollbar colors should follow theme tokens",
+  );
+  const mediaClient = await page.target().createCDPSession();
+  await mediaClient.send("Emulation.setEmulatedMedia", {
+    features: [{ name: "forced-colors", value: "active" }],
+  });
+  const forcedScrollbar = await page.evaluate(() => ({
+    active: matchMedia("(forced-colors: active)").matches,
+    color: getComputedStyle(document.querySelector(".panel-left")).scrollbarColor,
+  }));
+  assert.equal(forcedScrollbar.active, true, "forced-colors media mode should be active");
+  assert.ok(
+    /canvastext/i.test(forcedScrollbar.color) || forcedScrollbar.color === "auto",
+    `forced-colors should use system scrollbar colors: ${forcedScrollbar.color}`,
+  );
+  await mediaClient.send("Emulation.setEmulatedMedia", { features: [] });
+  await mediaClient.detach();
+  await page.setViewport({ width: 1024, height: 768, deviceScaleFactor: 1 });
+
   // P1-6 — transform editing lives in the viewport now: the toolbar button
   // opens the floating panel; the sidebar no longer mounts TransformInspector.
   await page.waitForSelector('[data-testid="toolbar-transform-panel"]', { timeout: 15000 });
@@ -428,8 +703,45 @@ try {
     false,
     "TransformInspector must NOT be mounted in the sidebar (P1-6 rehost)",
   );
+  const transformButtonHit = await page.$eval(
+    '[data-testid="toolbar-transform-panel"]',
+    (button) => {
+      const rect = button.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return {
+        hitButton: hit === button || button.contains(hit),
+        backdrop: Boolean(document.querySelector('[data-testid="context-menu-backdrop"]')),
+      };
+    },
+  );
+  assert.equal(
+    transformButtonHit.backdrop,
+    false,
+    "context menu backdrop must close before toolbar input",
+  );
+  assert.equal(
+    transformButtonHit.hitButton,
+    true,
+    "real toolbar click must hit the transform button",
+  );
   await page.click('[data-testid="toolbar-transform-panel"]');
-  await page.waitForSelector('[data-testid="floating-panel-transform"]', { timeout: 10000 });
+  await page
+    .waitForSelector('[data-testid="floating-panel-transform"]', { timeout: 10000 })
+    .catch(async (error) => {
+      const state = await page.evaluate(() => ({
+        errors: [],
+        dockState: localStorage.getItem("anycubic:dock-state:v2"),
+        dockRoot: Boolean(document.querySelector("#viewport-dock-root")),
+        backdrop: Boolean(document.querySelector('[data-testid="context-menu-backdrop"]')),
+        panels: [...document.querySelectorAll('[data-testid^="floating-panel-"]')].map((el) =>
+          el.getAttribute("data-testid"),
+        ),
+      }));
+      throw new Error(
+        `${error.message}; click=${JSON.stringify(transformButtonHit)}; ` +
+          `browserErrors=${JSON.stringify(errors)}; transform panel diagnostics=${JSON.stringify(state)}`,
+      );
+    });
   const transformBody = await page.$eval(
     '[data-testid="floating-panel-transform"]',
     (el) => el.textContent,
@@ -492,6 +804,16 @@ try {
   );
   assert.deepEqual(selectedAfterContext, ["cone", "cube"]);
   await page.keyboard.press("Escape");
+  const fitSelectionEnabled = await page.$eval(
+    '[data-testid="toolbar-fit-selection"]',
+    (button) => !button.disabled,
+  );
+  assert.equal(
+    fitSelectionEnabled,
+    true,
+    "Fit selection should enable when scene objects are selected",
+  );
+  await page.click('[data-testid="toolbar-fit-selection"]');
 
   // info popover opens with mesh stats + placement metrics.
   const infoBtn = await page.$('[data-testid^="obj-info-"]');

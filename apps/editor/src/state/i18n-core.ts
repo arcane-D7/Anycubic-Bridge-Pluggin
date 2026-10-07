@@ -153,6 +153,8 @@ export type MsgKey =
   | "toolbar.viewmode.fallback"
   | "toolbar.view.infoTitle"
   | "toolbar.view.infoMsg"
+  | "toolbar.fitSelection.aria"
+  | "toolbar.fitSelection.title"
   // plate upgrades (S9.11-004) --------------------------------------------
   | "plate.upgrade.aria"
   | "plate.upgrade.pei.aria"
@@ -171,6 +173,16 @@ export type MsgKey =
   | "plate.rail.fit"
   | "plate.rail.top"
   | "plate.rail.grid"
+  | "plate.actions.aria"
+  | "plate.info.aria"
+  | "plate.info.title"
+  | "plate.info.unknown"
+  | "plate.info.profile"
+  | "plate.info.source"
+  | "plate.info.source.unknown"
+  | "plate.info.volume"
+  | "plate.info.occupancy"
+  | "plate.info.objectCount"
   // printer picker --------------------------------------------------------
   | "printer.led.aria"
   | "printer.led.title.probing"
@@ -908,6 +920,8 @@ export const EN: Record<MsgKey, string> = {
   "toolbar.viewmode.fallback": "Live needs a reachable printer — showing slicer style.",
   "toolbar.view.infoTitle": "Arrange",
   "toolbar.view.infoMsg": "Use the toolbar Arrange for shelf packing.",
+  "toolbar.fitSelection.aria": "Fit selection",
+  "toolbar.fitSelection.title": "Fit selected objects to view ({shortcut})",
   "plate.upgrade.aria": "Plate upgrades",
   "plate.upgrade.pei.aria": "PEI texture",
   "plate.upgrade.pei.title": "Procedural PEI build surface texture",
@@ -924,6 +938,16 @@ export const EN: Record<MsgKey, string> = {
   "plate.rail.fit": "Fit view to plate",
   "plate.rail.top": "Top view",
   "plate.rail.grid": "Toggle reference grid",
+  "plate.actions.aria": "Plate identity and actions",
+  "plate.info.aria": "Plate information",
+  "plate.info.title": "Plate profile and capacity",
+  "plate.info.unknown": "Unknown",
+  "plate.info.profile": "Profile",
+  "plate.info.source": "Source",
+  "plate.info.source.unknown": "Unknown",
+  "plate.info.volume": "Build volume",
+  "plate.info.occupancy": "Objects on plate",
+  "plate.info.objectCount": "{n} objects",
   "printer.led.aria": "{ip} {state}",
   "printer.led.title.probing": "Probing…",
   "printer.led.title.online": "Online",
@@ -1639,6 +1663,8 @@ export const PT_BR: Record<MsgKey, string> = {
   "toolbar.viewmode.fallback": "Ao vivo precisa de impressora alcançável — a mostrar slicer.",
   "toolbar.view.infoTitle": "Arrumar",
   "toolbar.view.infoMsg": "Use a barra de ferramentas Arrumar para empacotamento de prateleira.",
+  "toolbar.fitSelection.aria": "Ajustar seleção",
+  "toolbar.fitSelection.title": "Ajustar objetos selecionados à vista ({shortcut})",
   "plate.upgrade.aria": "Melhorias da placa",
   "plate.upgrade.pei.aria": "Textura PEI",
   "plate.upgrade.pei.title": "Textura de superfície PEI processual",
@@ -1655,6 +1681,16 @@ export const PT_BR: Record<MsgKey, string> = {
   "plate.rail.fit": "Ajustar vista à chapa",
   "plate.rail.top": "Vista de topo",
   "plate.rail.grid": "Alternar grelha de referência",
+  "plate.actions.aria": "Identidade e ações da chapa",
+  "plate.info.aria": "Informações da chapa",
+  "plate.info.title": "Perfil e capacidade da chapa",
+  "plate.info.unknown": "Desconhecido",
+  "plate.info.profile": "Perfil",
+  "plate.info.source": "Origem",
+  "plate.info.source.unknown": "Desconhecida",
+  "plate.info.volume": "Volume de construção",
+  "plate.info.occupancy": "Objetos na chapa",
+  "plate.info.objectCount": "{n} objetos",
   "printer.led.aria": "{ip} {state}",
   "printer.led.title.probing": "A sondar…",
   "printer.led.title.online": "Online",

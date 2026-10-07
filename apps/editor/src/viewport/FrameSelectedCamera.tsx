@@ -21,19 +21,15 @@ export function FrameSelectedCamera() {
   const camera = useThree((s) => s.camera);
   const sceneMain = useThree((s) => s.scene);
   const size = useThree((s) => s.size);
-  const objects = useScene((s) => s.objects);
-  const selectedName = useScene((s) => s.selected?.name ?? null);
+  const selectedNames = useScene((s) => s.selectedNames);
 
   const frameSelected = useCallback(() => {
-    const name = selectedName ?? null;
-    const target = name ? sceneMain?.getObjectByName(name) : undefined;
-    // No selection → frame the whole scene (first object's group bounds,
-    // which sits on the plate center).
-    const resolved =
-      target ?? (objects.length > 0 ? sceneMain?.getObjectByName(objects[0]!.name) : undefined);
-    if (!resolved) return;
-
-    const box = new THREE.Box3().setFromObject(resolved);
+    if (selectedNames.length === 0) return;
+    const box = new THREE.Box3();
+    for (const name of selectedNames) {
+      const resolved = sceneMain?.getObjectByName(name);
+      if (resolved) box.expandByObject(resolved);
+    }
     if (box.isEmpty()) return;
 
     const center = box.getCenter(new THREE.Vector3());
@@ -49,7 +45,7 @@ export function FrameSelectedCamera() {
     camera.position.copy(center).add(offset);
     camera.lookAt(center);
     camera.updateProjectionMatrix();
-  }, [camera, sceneMain, objects, selectedName, size.width, size.height]);
+  }, [camera, sceneMain, selectedNames, size.width, size.height]);
 
   useEffect(() => {
     const onFrame = () => frameSelected();

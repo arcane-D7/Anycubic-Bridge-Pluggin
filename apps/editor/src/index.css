@@ -655,10 +655,6 @@
     border-bottom: 1px solid var(--glass-stroke);
     background: var(--glass-fill-1);
     overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .printer-status-bar::-webkit-scrollbar {
-    display: none;
   }
 
   .printer-chip {

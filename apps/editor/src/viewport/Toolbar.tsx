@@ -13,7 +13,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { BridgeHandle } from "../bridge/mock";
 import { usePrinters } from "../state/printers";
 import { useViewMode, effectiveViewMode, VIEW_MODES } from "../state/view-mode";
-import { PLATE_UPGRADE_KEYS, usePlateUpgrades } from "../state/plate-upgrades";
 import { useDock } from "../state/dock";
 
 /**
@@ -72,7 +71,6 @@ export function Toolbar({ scene }: ToolbarProps) {
   const tool = useUi((s) => s.tool);
   const setTool = useUi((s) => s.setTool);
   const snap = useToolbar((s) => s.snap);
-  const grid = useToolbar((s) => s.grid);
   const snapStep = useToolbar((s) => s.snapStep);
   const setSnapStep = useToolbar((s) => s.setSnapStep);
   const toggleFlag = useToolbar((s) => s.toggleFlag);
@@ -90,25 +88,10 @@ export function Toolbar({ scene }: ToolbarProps) {
   const liveReachable = selectedPrinter?.reachable === true;
   const effectiveMode = effectiveViewMode(viewMode, liveReachable);
 
-  // S9.11-004 — optional plate upgrades (PEI / quadrants / hot-end / Z
-  // column): opt-in toggles, all DEFAULT OFF (base viewport unchanged).
-  // NOTE: zustand selectors MUST return primitives (a fresh object identity
-  // per render triggers an infinite getSnapshot loop under React 19).
-  const platePei = usePlateUpgrades((s) => s.pei);
-  const plateQuadrants = usePlateUpgrades((s) => s.quadrants);
-  const plateHotend = usePlateUpgrades((s) => s.hotend);
-  const plateZColumn = usePlateUpgrades((s) => s.zColumn);
-  const toggleUpgrade = usePlateUpgrades((s) => s.toggleUpgrade);
-  const plateFlags = {
-    pei: platePei,
-    quadrants: plateQuadrants,
-    hotend: plateHotend,
-    zColumn: plateZColumn,
-  } as const;
-
   // S9.4-004 arrange target = the ACTIVE plate's objects (same filter as the
   // viewport render so the layout you see is the layout that arranges).
   const allObjects = useScene((s) => s.objects);
+  const hasSelection = useScene((s) => s.selectedNames.length > 0);
   const activePlateId = usePlates((s) => s.activeId);
   const dispatchPreset = (preset: ViewPreset) => {
     window.dispatchEvent(
@@ -224,7 +207,11 @@ export function Toolbar({ scene }: ToolbarProps) {
         })}
       </div>
 
-      <div className="toolbar-group" role="group" aria-label={t("toolbar.group.view.aria")}>
+      <div
+        className="toolbar-group toolbar-authoring-view"
+        role="group"
+        aria-label={t("toolbar.group.view.aria")}
+      >
         <button
           type="button"
           className={`toolbar-btn toolbar-toggle${snap ? " is-active" : ""}`}
@@ -235,17 +222,6 @@ export function Toolbar({ scene }: ToolbarProps) {
           onClick={() => toggleFlag("snap")}
         >
           <Icon name="snap" size={18} />
-        </button>
-        <button
-          type="button"
-          className={`toolbar-btn toolbar-toggle${grid ? " is-active" : ""}`}
-          aria-pressed={grid}
-          aria-label={t("toolbar.toggle.grid.aria")}
-          title={t("toolbar.toggle.grid.title", { shortcut: toolTip("grid.toggle") ?? "" })}
-          data-testid="toggle-grid"
-          onClick={() => toggleFlag("grid")}
-        >
-          <Icon name="grid" size={18} />
         </button>
         {/* S9.8-002 — object label chips always-on toggle (hover shows a
             chip per object; this forces them all visible). */}
@@ -309,46 +285,6 @@ export function Toolbar({ scene }: ToolbarProps) {
         })}
       </div>
 
-      {/* S9.11-004 — optional plate upgrades (opt-in, default OFF): PEI
-          texture, quadrant marks, hot-end visual, Z column. */}
-      <div className="toolbar-group" role="group" aria-label={t("plate.upgrade.aria")}>
-        {PLATE_UPGRADE_KEYS.map((key) => {
-          const on = plateFlags[key];
-          const label = t(
-            key === "pei"
-              ? "plate.upgrade.pei.aria"
-              : key === "quadrants"
-                ? "plate.upgrade.quadrants.aria"
-                : key === "hotend"
-                  ? "plate.upgrade.hotend.aria"
-                  : "plate.upgrade.zColumn.aria",
-          );
-          const title = t(
-            key === "pei"
-              ? "plate.upgrade.pei.title"
-              : key === "quadrants"
-                ? "plate.upgrade.quadrants.title"
-                : key === "hotend"
-                  ? "plate.upgrade.hotend.title"
-                  : "plate.upgrade.zColumn.title",
-          );
-          return (
-            <button
-              type="button"
-              key={key}
-              className={`toolbar-btn toolbar-toggle${on ? " is-active" : ""}`}
-              aria-pressed={on}
-              aria-label={label}
-              title={title}
-              data-testid={`plate-upgrade-${key}`}
-              onClick={() => toggleUpgrade(key)}
-            >
-              <Icon name={key === "hotend" ? "printer" : "settings"} size={18} />
-            </button>
-          );
-        })}
-      </div>
-
       <div className="toolbar-group" role="group" aria-label={t("toolbar.group.scene.aria")}>
         <button
           type="button"
@@ -363,9 +299,10 @@ export function Toolbar({ scene }: ToolbarProps) {
         <button
           type="button"
           className="toolbar-btn"
-          aria-label={t("toolbar.fit.aria")}
-          title={t("toolbar.fit.title", { shortcut: toolTip("view.fit") ?? "" })}
-          data-testid="toolbar-fit"
+          aria-label={t("toolbar.fitSelection.aria")}
+          title={t("toolbar.fitSelection.title", { shortcut: toolTip("view.fit") ?? "" })}
+          data-testid="toolbar-fit-selection"
+          disabled={!hasSelection}
           onClick={onFit}
         >
           <Icon name="fit" size={18} />

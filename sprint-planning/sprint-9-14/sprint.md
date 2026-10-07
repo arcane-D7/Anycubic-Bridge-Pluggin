@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor                                                                                                                            |
 | **Source**            | [Editor workspace CAD/AI audit](../../docs/audit/editor-workspace-cad-ai-audit-2026-10-07.md), AUD-01–03/AUD-15; sections 8, 9, 16, 19 |
 | **Depends On**        | Sprint 9.13                                                                                                                            |
-| **Status**            | 🔄 In Progress (3/4)                                                                                                                   |
+| **Status**            | ✅ Complete (4/4, 2026-10-07)                                                                                                          |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -108,7 +108,7 @@ The tree and canvas currently expose divergent actions and target resolution. Ro
 | **Type**             | Fix                                                         |
 | **Estimated Effort** | M                                                           |
 | **Source Finding**   | AUD-02; CTX-09–CTX-10                                       |
-| **Status**           | ⏳ Planned                                                  |
+| **Status**           | ✅ Delivered                                                |
 
 #### Context
 
@@ -138,7 +138,7 @@ Right-button panning must not open a menu after the pointer crosses the drag thr
 | **Type**             | Feature + Accessibility                                                |
 | **Estimated Effort** | L                                                                      |
 | **Source Finding**   | AUD-03/AUD-15; UI-01–UI-10; SCR-01–SCR-05                              |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | ✅ Delivered                                                           |
 
 #### Context
 
@@ -146,12 +146,30 @@ Toolbar and plate rail compete for the same canvas space, Fit semantics are ambi
 
 #### Acceptance Criteria
 
-- [ ] **UI-01–UI-04:** No priority-control overlap at 1743/1280/1024 widths; sidebar resize, zoom and long locale labels retain hit access.
-- [ ] **UI-05–UI-07:** Fit plate, Fit selection, Grid and Top have distinct truthful semantics and no redundant permanent owner.
-- [ ] **UI-08:** Plate controls sit above plate tabs without covering other overlays.
-- [ ] **UI-09–UI-10:** The plate `(i)` popup reports correct profile/origin and supports keyboard, outside/Escape close and focus restoration.
-- [ ] **SCR-01–SCR-05:** Inventory and theme all relevant scroll containers; light/dark/forced-colors, wheel/keyboard/touch/thumb, gutter and shared policy are verified.
-- [ ] Run focused browser geometry/accessibility checks, full gate and sanitizer dry-run successfully.
+- [x] **UI-01–UI-04:** No priority-control overlap at 1743/1280/1024 widths; sidebar resize, zoom and Portuguese labels retain hit access.
+- [x] **UI-05–UI-07:** Fit plate, Fit selection, Grid and Top have distinct truthful semantics and no redundant permanent owner.
+- [x] **UI-08:** Plate controls sit above plate tabs without covering the repair trigger or other overlays.
+- [x] **UI-09–UI-10:** The plate `(i)` popup reports correct profile/origin and supports keyboard, outside/Escape close and focus restoration.
+- [x] **SCR-01–SCR-05:** Scroll containers inventoried and themed; light/dark/forced-colors, wheel/keyboard/touch, gutter and shared policy verified. Native scrollbar-thumb drag was verified in the live browser; headless Chromium uses an overlay scrollbar, so its E2E checks thumb styling and exercises the other input modes.
+- [x] Focused browser geometry/accessibility checks, full gate and standalone sanitizer dry-run pass.
+
+#### Implementation Progress
+
+- Root cause of the interrupted E2E failure: the context-menu viewport test left the browser at 640px, where the responsive sidebar intentionally overlays the canvas, then later assertions attempted to click viewport controls underneath it. At the supported 1024px layout, the 1026px toolbar content also overflowed the narrower canvas and the plate-info trigger covered the transform button. The test now restores 1024px before control checks; compact toolbars wrap below the top-left repair trigger and the plate rail occupies its own row. Wide canvases retain a centered toolbar.
+- The toolbar no longer owns Grid. The plate rail owns Fit plate, Top, Grid, optional plate upgrades, identity and an information popover. Fit plate uses a dedicated camera event and the profile-derived build-volume radius. Fit selection is disabled without selected objects and frames the union of all selected object bounds.
+- Plate information now reports active plate name, profile, provenance, build volume and object count. Its Radix popover is keyboard-operable, closes on outside click/Escape, and restores trigger focus.
+- The shared scroll policy covers shell panels/footer, object/chat/journal lists, repair and other popovers, printer/device/DevTools lists and tables, floating panel bodies, viewport toolbar/plate rail, status strip and context menu. Scrollbar colors follow theme tokens; forced colors use system colors; overflow owners retain native wheel/keyboard/touch behavior, contained overscroll and stable vertical gutters. The formerly hidden printer status scrollbar is visible.
+- Focused checks: `node --test tests/camera-presets.test.mjs tests/i18n.test.mjs` passed 14/14; `node tests/e2e/editor-reload.e2e.mjs` passed with 1024/1280/1743 geometry and center hit tests, sidebar resize, 90% CSS zoom, Portuguese labels, profile/origin, Fit/Top/Grid, popover focus, wheel/PageDown/touch and forced-colors. Live browser pointer drag moved the settings scrollbar from `scrollTop 0` to `342` at 1024×480. `pnpm exec tsc --noEmit`, touched-source ESLint and Prettier passed.
+- Full gate: `pnpm run check` EXIT 0 — unit 729/729, integration 11/11, Rust workspace/editor shell passed, build 255608 bytes, smoke 115 tools, both E2E suites passed, licenses 59, architecture clean, integrated sanitizer 0 files/0 substitutions. Standalone `node scripts/sanitize-repo.mjs --dry-run` EXIT 0 with 0 files/0 substitutions.
+
+## Sprint Execution Summary
+
+| Ticket    | Status       | Evidence                                                                         |
+| --------- | ------------ | -------------------------------------------------------------------------------- |
+| S9.14-001 | ✅ Delivered | Context-menu anchor/focus E2E + full gate                                        |
+| S9.14-002 | ✅ Delivered | Shared target/action resolution E2E + full gate                                  |
+| S9.14-003 | ✅ Delivered | Right-drag/action E2E + full gate                                                |
+| S9.14-004 | ✅ Delivered | Responsive geometry, fit semantics, plate info, scroll inputs/themes + full gate |
 
 ## Sprint Commit
 

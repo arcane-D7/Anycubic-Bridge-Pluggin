@@ -1,19 +1,21 @@
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { BridgeHandle } from "../bridge/mock";
 import type { BuildVolume, SceneObjectSnapshot } from "../bridge/types";
 import { useImportCommit } from "../bridge/import-actions";
 import { classifyFile } from "../bridge/import-core";
 import { useScene } from "../state/scene";
+import { FIT_PLATE_EVENT, fitDistanceForRadius } from "../state/camera-core";
 import { usePlates } from "../state/plates";
 import { objectsOnPlate } from "../state/plates-core";
 import { useUi } from "../state/ui";
 import { useI18n } from "../state/i18n";
 import { usePrinters } from "../state/printers";
 import { effectiveViewMode, useViewMode } from "../state/view-mode";
+import { useOperatorProfile } from "../profile/useOperatorProfile";
 import { openContextMenuAt } from "../components/context-menu-core";
 import { useContextMenuStore } from "../state/context-menu";
 import type { ContextMenuItem } from "../components/context-menu-core";
@@ -67,6 +69,7 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
   );
   const visibleObjects = objectsOnPlate(objects, activePlateId);
   const selectedName = useScene((s) => s.selected?.name ?? null);
+  const [operatorProfile] = useOperatorProfile();
 
   // Live theme-aware canvas backdrop (S9.1-002): read the --viewport-bg CSS
   // token imperatively and re-resolve when data-theme changes — no re-render
@@ -111,7 +114,7 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
         </div>
       ) : null}
       {/* P1-5 — plate identity + quick actions (fit/top/grid). */}
-      {!preview ? <PlateRail volume={volume} /> : null}
+      {!preview ? <PlateRail volume={volume} profile={operatorProfile} objects={objects} /> : null}
       <RendererGuard scene={scene} />
       <Canvas
         camera={{ position: [180, 260, 320], fov: 40, near: 0.1, far: 10000 }}
@@ -341,15 +344,19 @@ function PreviewScene({
 function FitCamera({ radius }: { readonly radius: number }) {
   const camera = useThree((s) => s.camera);
   const size = useThree((state) => state.size);
-  useEffect(() => {
-    const fovRad = ((camera as THREE.PerspectiveCamera).fov * Math.PI) / 180;
-    const aspect = Math.max(0.2, size.width / Math.max(1, size.height));
-    const limitingAngle = Math.min(fovRad / 2, Math.atan(Math.tan(fovRad / 2) * aspect));
-    const dist = Math.max(120, (radius / Math.sin(limitingAngle)) * 1.12);
-    camera.position.set(dist * 0.36, dist * 0.62, dist * 0.7);
+  const fitPlate = useCallback(() => {
+    const perspective = camera as THREE.PerspectiveCamera;
+    const distance = fitDistanceForRadius(radius, perspective.fov, size.width, size.height);
+    const direction = new THREE.Vector3(0.36, 0.62, 0.7).normalize();
+    camera.position.copy(direction.multiplyScalar(distance));
     camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();
   }, [camera, radius, size.width, size.height]);
+  useEffect(() => {
+    fitPlate();
+    window.addEventListener(FIT_PLATE_EVENT, fitPlate);
+    return () => window.removeEventListener(FIT_PLATE_EVENT, fitPlate);
+  }, [fitPlate]);
   return null;
 }
 

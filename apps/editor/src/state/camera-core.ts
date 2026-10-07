@@ -19,6 +19,21 @@ export interface CameraOrbit {
   readonly up: readonly [number, number, number];
 }
 
+export const FIT_PLATE_EVENT = "anycubic:fit-plate";
+
+export function fitDistanceForRadius(
+  radius: number,
+  fovDeg: number,
+  width: number,
+  height: number,
+  padding = 1.12,
+): number {
+  const fovRad = (fovDeg * Math.PI) / 180;
+  const aspect = Math.max(0.2, width / Math.max(1, height));
+  const limitingAngle = Math.min(fovRad / 2, Math.atan(Math.tan(fovRad / 2) * aspect));
+  return Math.max(120, (Math.max(0, radius) / Math.sin(limitingAngle)) * padding);
+}
+
 /** View cube cell ids: 3×3 grid around the target. */
 export type ViewCubeCell =
   | "faceFront"

@@ -519,14 +519,8 @@ body,
   border-color: var(--accent-warm);
 }
 
-/* S9.7-003 (G46) — viewport repair affordance.
-   2026-10-02: corner chip collision with plate-tabs → moved top-left.
-   2026-10-07 layout fix: chip replaced by a compact trigger + popover pinned
-   to the TOP-LEFT of the frame (the zone freed by removing the old truncated
-   strip). It floats OUTSIDE the toolbar because the centered bar's right edge
-   slides under the top-right plate rail — inside-bar placement was
-   unclickable there. Never overlaps the toolbar (x:348..411 slot) or the
-   plate rail (top-right). */
+/* S9.7-003 (G46) — viewport repair trigger + popover, in the dedicated
+  top-left slot above the toolbar/plate control rows. */
 .repair-control-wrap {
   position: absolute;
   left: 12px;
@@ -2301,12 +2295,15 @@ input {
   margin-left: auto;
   color: var(--text-dim);
 }
-/* S9.4-001 floating viewport toolbar — glass fill-2/blur-2 row, top-center. */
+/* S9.4-001 floating viewport toolbar — centered on wide canvases. */
 .viewport-toolbar {
   position: absolute;
   top: 12px;
   left: 50%;
   transform: translateX(-50%);
+  max-width: calc(100% - 24px);
+  overflow-x: auto;
+  scrollbar-width: thin;
   z-index: 6;
   display: flex;
   align-items: center;
@@ -2342,12 +2339,14 @@ input {
   border-radius: var(--r-md);
   box-shadow: var(--shadow-2);
 }
-/* P1-5 — plate identity + quick-action rail (DOM, top-RIGHT inside the
-   viewport frame, mirroring the toolbar's glass material). */
+/* P1-5 — plate identity + quick-action rail (DOM, below the toolbar row). */
 .plate-rail {
   position: absolute;
-  top: 12px;
+  top: 56px;
   right: 12px;
+  max-width: calc(100% - 24px);
+  overflow-x: auto;
+  scrollbar-width: thin;
   z-index: 6;
   display: flex;
   align-items: center;
@@ -2932,6 +2931,159 @@ input {
   }
   .viewport-preview-controls input[type="range"] {
     width: 95px;
+  }
+  .viewport-toolbar {
+    top: 52px;
+    left: 12px;
+    transform: none;
+    width: calc(100% - 24px);
+    max-width: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow: visible;
+  }
+  .viewport-toolbar .toolbar-group {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .plate-rail {
+    top: 132px;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1280px) {
+  .viewport-toolbar {
+    top: 52px;
+    left: 12px;
+    transform: none;
+    width: calc(100% - 24px);
+    max-width: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow: visible;
+  }
+  .viewport-toolbar .toolbar-group {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .plate-rail {
+    top: 132px;
+  }
+}
+
+:root {
+  scrollbar-color: var(--text-tertiary) transparent;
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-tertiary) 65%, transparent);
+  background-clip: padding-box;
+}
+
+:where(
+  .panel-left,
+  .panel-right,
+  .app-footer,
+  .object-list,
+  .repair-popover,
+  .conversation-list,
+  .conversation-popover-inner,
+  .chat-transcript,
+  .journal-strip,
+  .journal-chips,
+  .viewport-toolbar,
+  .plate-rail,
+  .shortcut-help,
+  .printer-picker-list,
+  .device-panel,
+  .device-picker-list,
+  .device-files-list,
+  .devtools-json,
+  .devtools-table-wrap,
+  .devtools-journal-list,
+  .toast-popover-list,
+  .printer-status-bar,
+  .floating-body,
+  .transform-floating-body,
+  .context-menu
+) {
+  overscroll-behavior: contain;
+  scrollbar-color: var(--text-tertiary) transparent;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+:where(
+  .panel-left,
+  .panel-right,
+  .app-footer,
+  .object-list,
+  .repair-popover,
+  .conversation-list,
+  .conversation-popover-inner,
+  .chat-transcript,
+  .shortcut-help,
+  .printer-picker-list,
+  .device-panel,
+  .device-picker-list,
+  .device-files-list,
+  .devtools-json,
+  .devtools-table-wrap,
+  .devtools-journal-list,
+  .toast-popover-list,
+  .floating-body,
+  .transform-floating-body,
+  .context-menu
+) {
+  scrollbar-gutter: stable;
+}
+
+@media (forced-colors: active) {
+  :root {
+    scrollbar-color: CanvasText Canvas;
+  }
+
+  :where(
+    .panel-left,
+    .panel-right,
+    .app-footer,
+    .object-list,
+    .repair-popover,
+    .conversation-list,
+    .conversation-popover-inner,
+    .chat-transcript,
+    .journal-strip,
+    .journal-chips,
+    .viewport-toolbar,
+    .plate-rail,
+    .shortcut-help,
+    .printer-picker-list,
+    .device-panel,
+    .device-picker-list,
+    .device-files-list,
+    .devtools-json,
+    .devtools-table-wrap,
+    .devtools-journal-list,
+    .toast-popover-list,
+    .printer-status-bar,
+    .floating-body,
+    .transform-floating-body,
+    .context-menu
+  ) {
+    scrollbar-color: CanvasText Canvas;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border-color: Canvas;
+    background: CanvasText;
   }
 }
 

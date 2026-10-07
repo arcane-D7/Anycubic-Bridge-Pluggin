@@ -85,3 +85,11 @@ test("camera-core: unknown cell throws", async () => {
   const core = await corePromise;
   assert.throws(() => core.cellDirection("bogus"), /unknown view cube cell/);
 });
+
+test("camera-core: fit distance contains the target for wide and narrow viewports", async () => {
+  const core = await corePromise;
+  const wide = core.fitDistanceForRadius(100, 40, 1600, 900);
+  const narrow = core.fitDistanceForRadius(100, 40, 400, 900);
+  assert.ok(wide >= 100 && narrow > wide);
+  assert.equal(core.fitDistanceForRadius(0, 40, 800, 600), 120);
+});
