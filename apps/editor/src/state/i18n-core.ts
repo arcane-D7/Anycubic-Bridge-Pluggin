@@ -56,6 +56,7 @@ export type MsgKey =
   | "app.sidebarToggle"
   | "app.bridgeState.fetching"
   | "app.bridgeState.demo"
+  | "app.bridgeState.real"
   | "app.bridgeState.unavailable"
   | "app.shortcutHelp.aria"
   | "app.shortcutHelp.title"
@@ -825,6 +826,7 @@ export const EN: Record<MsgKey, string> = {
   "app.sidebarToggle": "Settings",
   "app.bridgeState.fetching": "bridge: loading…",
   "app.bridgeState.demo": "Demo geometry",
+  "app.bridgeState.real": "Local project",
   "app.bridgeState.unavailable": "bridge: unavailable",
   "app.shortcutHelp.aria": "Keyboard shortcuts help",
   "app.shortcutHelp.title": "Keyboard shortcuts",
@@ -1567,6 +1569,7 @@ export const PT_BR: Record<MsgKey, string> = {
   "app.sidebarToggle": "Definições",
   "app.bridgeState.fetching": "bridge: a carregar…",
   "app.bridgeState.demo": "Geometria de demonstração",
+  "app.bridgeState.real": "Projeto local",
   "app.bridgeState.unavailable": "bridge: indisponível",
   "app.shortcutHelp.aria": "Ajuda de atalhos de teclado",
   "app.shortcutHelp.title": "Atalhos de teclado",

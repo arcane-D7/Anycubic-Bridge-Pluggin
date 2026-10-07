@@ -38,7 +38,10 @@ export interface SceneStore extends SceneGraphState {
   /** Frozen API: empty the selection. */
   readonly clear: () => void;
   /** Replace the whole graph from an authoritative snapshot (hydrate). */
-  readonly hydrate: (objects: readonly SceneObjectSnapshot[]) => void;
+  readonly hydrate: (
+    objects: readonly SceneObjectSnapshot[],
+    selection?: { readonly selectedNames: readonly string[]; readonly anchorName: string | null },
+  ) => void;
   /** Add an object; selects it; emits the S7-002 add mutation. */
   readonly add: (object: SceneObjectSnapshot) => boolean;
   /** Remove an object; returns the S7-002 modal pipeline to route (begin→update→commit). */
@@ -106,12 +109,21 @@ export const useScene = create<SceneStore>()((set, get) => ({
     }));
   },
 
-  hydrate: (objects) => {
+  hydrate: (objects, selection) => {
+    const selectedNames = (selection?.selectedNames ?? []).filter((name) =>
+      objects.some((object) => object.name === name),
+    );
+    const anchorName =
+      selection?.anchorName && selectedNames.includes(selection.anchorName)
+        ? selection.anchorName
+        : (selectedNames[0] ?? null);
     set(() => ({
       objects,
-      selectedNames: [],
-      anchorName: null,
-      selected: null,
+      selectedNames,
+      anchorName,
+      selected: anchorName
+        ? { name: anchorName, watertight: watertightOf(objects, anchorName) }
+        : null,
     }));
   },
 

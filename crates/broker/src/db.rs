@@ -3,11 +3,11 @@
 //! Versioned rusqlite schema (`PRAGMA user_version` enforced). Auth never
 //! touches this DB; BYOK keys never do either (see [`crate::keystore`]).
 
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 use std::path::Path;
 
 /// Current schema version. Bump + add a migration arm when evolving.
-pub const SCHEMA_VERSION: i64 = 2;
+pub const SCHEMA_VERSION: i64 = 3;
 
 #[derive(Debug, thiserror::Error)]
 pub enum MigrationError {
@@ -57,6 +57,9 @@ impl DbHandle {
         }
         if current < 2 {
             self.apply_v2()?;
+        }
+        if current < 3 {
+            self.apply_v3()?;
         }
         Ok(())
     }
@@ -120,6 +123,36 @@ impl DbHandle {
         )
         .map_err(|source| MigrationError::Apply { version: 2, source })?;
         tx.pragma_update(None, "user_version", 2)?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    fn apply_v3(&mut self) -> Result<(), MigrationError> {
+        let tx = self.conn.transaction()?;
+        tx.execute_batch(
+            "CREATE TABLE project_state (
+                project_id TEXT PRIMARY KEY REFERENCES projects(id) ON DELETE CASCADE,
+                revision INTEGER NOT NULL DEFAULT 0,
+                state_json TEXT NOT NULL
+            );
+            CREATE TABLE project_events (
+                project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                revision INTEGER NOT NULL,
+                op_type TEXT NOT NULL,
+                payload TEXT NOT NULL,
+                created_ms INTEGER NOT NULL,
+                PRIMARY KEY (project_id, revision)
+            );
+            CREATE TABLE project_operation_keys (
+                project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                operation_id TEXT NOT NULL,
+                revision INTEGER NOT NULL,
+                request_hash TEXT NOT NULL,
+                PRIMARY KEY (project_id, operation_id)
+            );",
+        )
+        .map_err(|source| MigrationError::Apply { version: 3, source })?;
+        tx.pragma_update(None, "user_version", 3)?;
         tx.commit()?;
         Ok(())
     }
@@ -217,6 +250,153 @@ impl DbHandle {
                 other => Err(other),
             })
     }
+
+    /// Read the durable project document and its monotonic revision.
+    pub fn project_state(
+        &self,
+        project_id: &str,
+    ) -> Result<Option<(u64, String)>, rusqlite::Error> {
+        self.conn
+            .query_row(
+                "SELECT revision, state_json FROM project_state WHERE project_id = ?1",
+                [project_id],
+                |row| Ok((row.get::<_, i64>(0)? as u64, row.get(1)?)),
+            )
+            .map(Some)
+            .or_else(|error| match error {
+                rusqlite::Error::QueryReturnedNoRows => Ok(None),
+                other => Err(other),
+            })
+    }
+
+    pub fn project_operations(&self, project_id: &str) -> Result<Vec<String>, rusqlite::Error> {
+        let mut statement = self.conn.prepare(
+            "SELECT payload FROM project_events WHERE project_id = ?1 ORDER BY revision ASC",
+        )?;
+        let rows = statement.query_map([project_id], |row| row.get(0))?;
+        rows.collect()
+    }
+
+    pub fn legacy_project_objects(
+        &self,
+        project_id: &str,
+    ) -> Result<Vec<(String, String, Option<String>)>, rusqlite::Error> {
+        let mut statement = self.conn.prepare(
+            "SELECT id, name, mesh_sha256 FROM objects WHERE project_id = ?1 ORDER BY id ASC",
+        )?;
+        let rows = statement.query_map([project_id], |row| {
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+        })?;
+        rows.collect()
+    }
+
+    pub fn put_project_object(
+        &self,
+        id: &str,
+        project_id: &str,
+        name: &str,
+        mesh_sha256: Option<&str>,
+    ) -> Result<(), rusqlite::Error> {
+        self.conn.execute(
+            "INSERT INTO objects (id, project_id, name, mesh_sha256) VALUES (?1, ?2, ?3, ?4)",
+            rusqlite::params![id, project_id, name, mesh_sha256],
+        )?;
+        Ok(())
+    }
+
+    /// Atomically compare revision, persist the actual state, and append its
+    /// operation record. A conflict performs no writes.
+    pub fn commit_project_state(
+        &mut self,
+        project_id: &str,
+        expected_revision: u64,
+        operation_id: &str,
+        request_hash: &str,
+        op_type: &str,
+        payload: &str,
+        state_json: &str,
+        artifacts: &[(String, String, u64)],
+    ) -> Result<Result<u64, u64>, rusqlite::Error> {
+        let tx = self.conn.transaction()?;
+        let prior: Option<(i64, String)> = tx
+            .query_row(
+                "SELECT revision, request_hash FROM project_operation_keys WHERE project_id = ?1 AND operation_id = ?2",
+                rusqlite::params![project_id, operation_id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .optional()?;
+        if let Some((_prior_revision, prior_hash)) = prior {
+            if prior_hash != request_hash {
+                return Err(rusqlite::Error::InvalidParameterName(
+                    "operation_id reused with different request content".to_owned(),
+                ));
+            }
+            let current: i64 = tx.query_row(
+                "SELECT revision FROM project_state WHERE project_id = ?1",
+                [project_id],
+                |row| row.get(0),
+            )?;
+            return Ok(Ok(current as u64));
+        }
+        let persisted: Option<(i64, String)> = tx
+            .query_row(
+                "SELECT revision, state_json FROM project_state WHERE project_id = ?1",
+                [project_id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .optional()?;
+        let Some((current, persisted_state)) = persisted else {
+            return Err(rusqlite::Error::QueryReturnedNoRows);
+        };
+        let current = current as u64;
+        if current != expected_revision {
+            return Ok(Err(current));
+        }
+        if persisted_state == state_json {
+            return Ok(Ok(current));
+        }
+        let next = current + 1;
+        tx.execute(
+            "UPDATE project_state SET revision = ?1, state_json = ?2 WHERE project_id = ?3",
+            rusqlite::params![next as i64, state_json, project_id],
+        )?;
+        tx.execute(
+            "INSERT INTO project_events (project_id, revision, op_type, payload, created_ms) VALUES (?1, ?2, ?3, ?4, ?5)",
+            rusqlite::params![project_id, next as i64, op_type, payload, chrono_ms()],
+        )?;
+        tx.execute(
+            "INSERT INTO project_operation_keys (project_id, operation_id, revision, request_hash) VALUES (?1, ?2, ?3, ?4)",
+            rusqlite::params![project_id, operation_id, next as i64, request_hash],
+        )?;
+        for (sha256, path, bytes) in artifacts {
+            tx.execute(
+                "INSERT INTO artifacts (sha256, path, bytes) VALUES (?1, ?2, ?3) ON CONFLICT(sha256) DO UPDATE SET path=excluded.path, bytes=excluded.bytes",
+                rusqlite::params![sha256, path, *bytes as i64],
+            )?;
+        }
+        tx.commit()?;
+        Ok(Ok(next))
+    }
+
+    /// Initialize a project and its canonical empty document exactly once.
+    pub fn ensure_project_state(
+        &mut self,
+        project_id: &str,
+        name: &str,
+        initial_state: &str,
+    ) -> Result<(), rusqlite::Error> {
+        let tx = self.conn.transaction()?;
+        tx.execute(
+            "INSERT OR IGNORE INTO projects (id, name, created_ms, updated_ms) VALUES (?1, ?2, ?3, ?3)",
+            rusqlite::params![project_id, name, chrono_ms()],
+        )?;
+        tx.execute(
+            "INSERT OR IGNORE INTO project_state (project_id, revision, state_json) VALUES (?1, 0, ?2)",
+            rusqlite::params![project_id, initial_state],
+        )?;
+        tx.commit()?;
+        Ok(())
+    }
 }
 
 fn chrono_ms() -> i64 {
@@ -233,7 +413,7 @@ mod tests {
     #[test]
     fn migration_creates_v2_and_persists() {
         let db = DbHandle::open_in_memory().expect("migrate ok");
-        assert_eq!(db.schema_version().unwrap(), 2);
+        assert_eq!(db.schema_version().unwrap(), 3);
         db.create_project("p-1", "demo").unwrap();
         db.append_op("p-1", 1, "add_object", r#"{"id":"o-1"}"#)
             .unwrap();
@@ -280,7 +460,7 @@ mod tests {
             .unwrap();
         }
         let db = DbHandle::open(&path).unwrap();
-        assert_eq!(db.schema_version().unwrap(), 2);
+        assert_eq!(db.schema_version().unwrap(), 3);
         assert_eq!(db.slicing_mode("legacy-1").unwrap(), "standard");
         // data survived
         let n: i64 = db

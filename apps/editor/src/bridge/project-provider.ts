@@ -1,4 +1,6 @@
 import type { BridgeHandle } from "./mock.ts";
+import { createRealProjectBridge, type ProjectInvoke } from "./real-project-bridge.ts";
+import type { ProjectSnapshot } from "./project-authority-types.ts";
 
 export type ProjectProviderMode = "demo" | "real" | "unavailable";
 
@@ -8,7 +10,10 @@ export interface ProjectProviderDescriptor {
   readonly available: boolean;
   readonly contractVersion: 1;
   readonly capabilities: readonly string[];
-  readonly reason?: "real-project-provider-not-connected" | "unknown-project-provider";
+  readonly reason?:
+    | "real-project-provider-not-connected"
+    | "project-authority-unavailable"
+    | "unknown-project-provider";
 }
 
 export interface ProjectBootstrap {
@@ -49,11 +54,33 @@ export function selectProjectProvider(input: {
   };
 }
 
-export async function bootstrapProject(input: {
-  readonly requested?: string | null;
-  readonly isTauri: boolean;
-}): Promise<ProjectBootstrap> {
+export async function bootstrapProject(
+  input: {
+    readonly requested?: string | null;
+    readonly isTauri: boolean;
+  },
+  invokeOverride?: ProjectInvoke,
+): Promise<ProjectBootstrap> {
   const provider = selectProjectProvider(input);
+  if (provider.mode === "real") {
+    if (!input.isTauri)
+      return { provider: { ...provider, reason: "project-authority-unavailable" } };
+    try {
+      const invoke = invokeOverride ?? (await tauriInvokeFunction());
+      const snapshot = (await invoke("project_authority_read", {})) as ProjectSnapshot;
+      return {
+        provider: {
+          ...provider,
+          available: true,
+          reason: undefined,
+          capabilities: ["project.read", "project.mutate", "project.recovery"],
+        },
+        scene: await createRealProjectBridge(invoke, snapshot),
+      };
+    } catch {
+      return { provider: { ...provider, reason: "project-authority-unavailable" } };
+    }
+  }
   if (!provider.available) return { provider };
   if (!demoScene) {
     demoScene = import("./mock.ts").then(({ fetchSceneSnapshot }) => fetchSceneSnapshot());
@@ -67,8 +94,23 @@ export function activeProjectRequest() {
   return { requested: requestedProjectProvider(), isTauri: isTauriRuntime() };
 }
 
-export function activeProjectProvider(): ProjectProviderDescriptor {
-  return selectProjectProvider(activeProjectRequest());
+export async function activeProjectProvider(): Promise<ProjectProviderDescriptor> {
+  const input = activeProjectRequest();
+  const selected = selectProjectProvider(input);
+  if (selected.mode !== "real") return selected;
+  if (!input.isTauri) return { ...selected, reason: "project-authority-unavailable" };
+  try {
+    const invoke = await tauriInvokeFunction();
+    await invoke("project_authority_read", {});
+    return {
+      ...selected,
+      available: true,
+      reason: undefined,
+      capabilities: ["project.read", "project.mutate", "project.recovery"],
+    };
+  } catch {
+    return { ...selected, reason: "project-authority-unavailable" };
+  }
 }
 
 export async function activeProjectScene(): Promise<BridgeHandle> {
@@ -86,4 +128,9 @@ export function requestedProjectProvider(): string | null {
 
 export function isTauriRuntime(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
+async function tauriInvokeFunction(): Promise<ProjectInvoke> {
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke;
 }

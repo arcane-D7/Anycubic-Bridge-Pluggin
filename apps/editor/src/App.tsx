@@ -97,14 +97,31 @@ export function App() {
   // F frame, Delete/Ctrl+D, Ctrl+Z/Y soft journal) — decisions in the pure
   // `shortcuts-core`, actions here against the stores + bridge mutation lane.
   useShortcuts(scene);
+  const objects = useScene((s) => s.objects);
 
   // S9.2-004: hydrate the scene store from the authoritative snapshot. The
   // ObjectTree/SceneObjectModel consume the store, so the snapshot must flow
-  // into it exactly once per fetch — selection is cleared on hydrate.
+  // into it exactly once per fetch — selection is remapped by stable object ID.
   const hydrate = useScene((s) => s.hydrate);
   useEffect(() => {
     if (!scene) return;
-    hydrate(scene.objects);
+    const { objects, selectedNames, anchorName } = useScene.getState();
+    const selectedIds = new Set(
+      objects
+        .filter((object) => selectedNames.includes(object.name))
+        .map((object) => object.objectId),
+    );
+    const nextSelectedNames = scene.objects
+      .filter((object) => object.objectId && selectedIds.has(object.objectId))
+      .map((object) => object.name);
+    const nextAnchor = objects.find((object) => object.name === anchorName)?.objectId;
+    const nextAnchorName = nextAnchor
+      ? scene.objects.find((object) => object.objectId === nextAnchor)?.name
+      : null;
+    hydrate(scene.objects, {
+      selectedNames: nextSelectedNames,
+      anchorName: nextAnchorName ?? null,
+    });
   }, [scene, hydrate]);
 
   const [operatorProfile, setOperatorProfile] = useOperatorProfile();
@@ -128,7 +145,6 @@ export function App() {
 
   // S9.4-003 — plate membership from the scene store (authoritative snapshot)
   // + active plate name from the plate store (drives per-plate filter label).
-  const objects = useScene((s) => s.objects);
   const activePlateName = usePlates((s) => activePlateOf(s).name);
   // S9.2-005: import dialog (footer Add entry point).
   const [importOpen, setImportOpen] = useState(false);
@@ -251,9 +267,11 @@ export function App() {
         <span className="app-sub" data-testid="bridge-state" data-provider={provider?.mode}>
           {sceneQuery.isFetching
             ? t("app.bridgeState.fetching")
-            : provider?.mode === "demo"
+            : provider?.available && provider.mode === "demo"
               ? t("app.bridgeState.demo")
-              : t("app.bridgeState.unavailable")}
+              : provider?.available && provider.mode === "real"
+                ? t("app.bridgeState.real")
+                : t("app.bridgeState.unavailable")}
           {provider?.reason ? ` · ${provider.reason}` : ""}
         </span>
         <DirtyChip />

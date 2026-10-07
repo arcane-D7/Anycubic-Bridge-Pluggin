@@ -39,6 +39,8 @@ export interface ObjectGeometry {
  * graph flags (S9.2-002 will lift these into the scene store).
  */
 export interface SceneObjectSnapshot extends ObjectMeshInfo {
+  /** Stable project identity; distinct from the editable display name. */
+  readonly objectId?: string;
   readonly geometry?: ObjectGeometry;
   readonly visible: boolean;
   readonly locked: boolean;

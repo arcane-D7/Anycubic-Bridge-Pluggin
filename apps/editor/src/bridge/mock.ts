@@ -767,7 +767,15 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
       return { ok: true as const };
     },
     // --- S9.2-001 object CRUD mutation lane --------------------------------
-    async mutateObject(mutation) {
+    async mutateObject(mutation, expectedRevision = currentRevision) {
+      if (expectedRevision !== currentRevision) {
+        return {
+          ok: false as const,
+          error: `project revision conflict: expected ${expectedRevision}, actual ${currentRevision}`,
+          code: "project_revision_conflict",
+          actualRevision: currentRevision,
+        };
+      }
       const apply = (): SceneObjectSnapshot | null => {
         switch (mutation.kind) {
           case "add": {
@@ -873,9 +881,19 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
             : mutation.kind === "rename"
               ? mutation.from
               : mutation.name;
-        return { ok: false as const, error: `unknown object "${badName}"` };
+        return {
+          ok: false as const,
+          error: `unknown object "${badName}"`,
+          code: "object_not_found",
+          actualRevision: currentRevision,
+        };
       }
-      return { ok: true as const, objects: sceneObjects.map((o) => ({ ...o })) };
+      return {
+        ok: true as const,
+        revision: currentRevision,
+        objects: sceneObjects.map((o) => ({ ...o })),
+        diagnostics: [],
+      };
     },
     // --- S9.4-004 auto-arrange lane --------------------------------------
     // Mirrors the server `/api/arrange` (scripts/cad-arrange.mjs): runs the
@@ -1371,7 +1389,11 @@ export interface BridgeContract {
   /** S9.2-001: object CRUD mutations behind the frozen snapshot shape. */
   mutateObject(
     mutation: ObjectMutation,
-  ): Promise<{ ok: true; objects: SceneObjectSnapshot[] } | { ok: false; error: string }>;
+    expectedRevision?: number,
+  ): Promise<
+    | { ok: true; revision: number; objects: SceneObjectSnapshot[]; diagnostics: readonly string[] }
+    | { ok: false; error: string; code: string; actualRevision: number }
+  >;
   /**
    * S9.4-004: auto-arrange lane. Deterministic shelf-packing layout over the
    * authoritative objects (port of `scripts/cad-arrange.mjs`); re-commits the
