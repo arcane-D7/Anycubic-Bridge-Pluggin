@@ -154,7 +154,11 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
           }}
         />
       </Canvas>
-      {!preview ? <ViewCube /> : null} {!preview ? <NonWatertightBadges bridge={scene} /> : null}{" "}
+      {!preview ? <ViewCube /> : null}{" "}
+      {/* S9.7-003 — repair trigger + popover (top-left of the frame — the zone
+          freed by the old corner chip removal; never overlaps the toolbar or
+          plate rail). */}
+      {!preview ? <NonWatertightBadges bridge={scene} /> : null}{" "}
       {/* S9.8-002 — chip overlay outside the Canvas (no three re-renders). */}
       {!preview ? <ObjectLabels objects={visibleObjects} /> : null}{" "}
       {/* S9.8-003 — measure readout overlay (mono, bottom-left) outside the canvas. */}

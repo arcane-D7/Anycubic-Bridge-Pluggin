@@ -519,65 +519,107 @@ body,
   border-color: var(--accent-warm);
 }
 
-/* S9.7-003 (G46) — viewport corner chip listing non-watertight objects.
-   NOTE (2026-10-02 UX fix): was bottom-center, colliding with .plate-tabs
-   (both bottom:12px; z-index 6 wins because .viewport-frame isolation:isolate
-   pins this z:40 to level 0 in the root context). Moved to TOP-LEFT — the
-   only viewport corner free of controls (toolbar top-center, snap top-right,
-   plate-tabs bottom-center, view-cube bottom-right, measure bottom-left).
-   S9.13 (2026-10-06): the toolbar top-center reaches far left (~110px from the
-   frame edge), so the badges must stay in the corner — tight max-width +
-   container pointer-events:none (only the chips are clickable). Without this
-   the chip strip swallowed clicks meant for the toolbar's Move/Rotate/etc. */
-.viewport-repair-badges {
+/* S9.7-003 (G46) — viewport repair affordance.
+   2026-10-02: corner chip collision with plate-tabs → moved top-left.
+   2026-10-07 layout fix: chip replaced by a compact trigger + popover pinned
+   to the TOP-LEFT of the frame (the zone freed by removing the old truncated
+   strip). It floats OUTSIDE the toolbar because the centered bar's right edge
+   slides under the top-right plate rail — inside-bar placement was
+   unclickable there. Never overlaps the toolbar (x:348..411 slot) or the
+   plate rail (top-right). */
+.repair-control-wrap {
   position: absolute;
   left: 12px;
   top: 12px;
   z-index: 40;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 88px;
-  padding: 5px 8px;
-  pointer-events: none; /* never block canvas/toolbar clicks */
-  background: color-mix(in srgb, var(--glass-fill-2) 88%, transparent);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(6px);
-  overflow-x: auto;
-}
-
-.viewport-repair-label {
-  color: var(--text-tertiary);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-}
-
-.viewport-repair-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 22px;
-  padding: 0 8px;
-  pointer-events: auto; /* only the chip is clickable (container is none) */
-  border: 1px solid var(--accent-warm);
-  border-radius: 11px;
-  background: color-mix(in srgb, var(--accent-warm) 12%, transparent);
-  color: var(--text-primary);
-  font-size: 11px;
+}
+
+.repair-control-wrap > summary {
+  list-style: none;
   cursor: pointer;
-  white-space: nowrap;
+  position: relative;
+  pointer-events: auto;
 }
 
-.viewport-repair-badge svg {
+.repair-control-wrap > summary::-webkit-details-marker {
+  display: none;
+}
+
+.repair-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--sema-warning, #d6a24d);
+  color: #fff;
+  font: 700 9px/16px var(--font-mono, ui-monospace, monospace);
+  text-align: center;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.repair-popover {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  width: min(280px, calc(100vw - 24px));
+  max-height: min(40vh, 320px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: var(--bg-panel-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg, 12px);
+  box-shadow: 0 12px 32px rgba(16, 24, 20, 0.18);
+  z-index: 60;
+}
+
+.repair-popover-head {
+  padding: 2px 4px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.repair-popover-title {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.repair-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.repair-item svg {
   color: var(--accent-warm);
+  flex: 0 0 auto;
 }
 
-.viewport-repair-badge:hover {
-  background: color-mix(in srgb, var(--accent-warm) 24%, transparent);
+.repair-item:hover,
+.repair-item:focus-visible {
+  background: color-mix(in srgb, var(--accent-warm) 14%, transparent);
+  outline: none;
 }
 
 /* S9.8-002 (G45) — viewport object label chips (hover + always-on).
