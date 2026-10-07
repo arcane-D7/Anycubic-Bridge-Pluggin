@@ -26,20 +26,59 @@ export function ContextMenu() {
   const state = useContextMenuStore((s) => s.state);
   const close = useContextMenuStore((s) => s.close);
   const [focusIndex, setFocusIndex] = useState(0);
+  const [position, setPosition] = useState({ x: state?.x ?? 0, y: state?.y ?? 0 });
   const listRef = useRef<HTMLDivElement | null>(null);
+  const focusTargetRef = useRef<ContextMenuState["focusTarget"]>(undefined);
 
   // Reset the keyboard cursor whenever the menu (re)opens.
   const items = state?.items ?? [];
   useEffect(() => {
-    if (state) setFocusIndex(0);
+    if (state) {
+      setFocusIndex(0);
+      focusTargetRef.current = state.focusTarget;
+      setPosition({ x: state.x, y: state.y });
+    } else {
+      const target = focusTargetRef.current;
+      if (target?.isConnected !== false) target?.focus();
+      focusTargetRef.current = undefined;
+    }
   }, [state]);
 
   useLayoutEffect(() => {
     if (!state || !listRef.current) return;
+    const menu = listRef.current;
+    const measureAndClamp = () => {
+      const rect = menu.getBoundingClientRect();
+      const viewportWidth = document.documentElement.clientWidth;
+      const viewportHeight = document.documentElement.clientHeight;
+      const margin = 8;
+      const x = Math.min(
+        Math.max(margin, state.x),
+        Math.max(margin, viewportWidth - rect.width - margin),
+      );
+      const y = Math.min(
+        Math.max(margin, state.y),
+        Math.max(margin, viewportHeight - rect.height - margin),
+      );
+      setPosition((previous) => (previous.x === x && previous.y === y ? previous : { x, y }));
+    };
+    measureAndClamp();
     const els = [...listRef.current.querySelectorAll<HTMLElement>("[data-menu-index]")];
     const first = els.find((el) => !el.hasAttribute("aria-disabled")) ?? els[0];
     first?.focus();
-  }, [state]);
+
+    const observer = new ResizeObserver(measureAndClamp);
+    observer.observe(menu);
+    window.addEventListener("resize", measureAndClamp);
+    window.visualViewport?.addEventListener("resize", measureAndClamp);
+    window.visualViewport?.addEventListener("scroll", measureAndClamp);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measureAndClamp);
+      window.visualViewport?.removeEventListener("resize", measureAndClamp);
+      window.visualViewport?.removeEventListener("scroll", measureAndClamp);
+    };
+  }, [state, position]);
 
   if (!state) return null;
 
@@ -80,7 +119,7 @@ export function ContextMenu() {
         aria-label={t("contextMenu.aria")}
         data-testid="context-menu"
         className="context-menu"
-        style={{ left: state.x, top: state.y }}
+        style={{ left: position.x, top: position.y }}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === "ArrowDown") {

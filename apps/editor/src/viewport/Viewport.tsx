@@ -369,6 +369,7 @@ function ViewportFrame({
   return (
     <section
       className={`viewport-frame${dragActive ? " import-dragging" : ""}`}
+      tabIndex={0}
       onDragEnter={onDragEnter}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}

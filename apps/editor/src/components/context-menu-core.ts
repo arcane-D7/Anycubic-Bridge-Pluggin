@@ -26,6 +26,13 @@ export interface ContextMenuState {
   readonly x: number;
   readonly y: number;
   readonly items: readonly ContextMenuItem[];
+  readonly focusTarget?: { focus(): void; readonly isConnected?: boolean };
+}
+
+export interface ContextMenuAnchorTarget {
+  getBoundingClientRect(): { readonly left: number; readonly bottom: number };
+  focus?: () => void;
+  readonly isConnected?: boolean;
 }
 
 /** Menu sizing constants for the clamp (matches the CSS + viewport margins). */
@@ -37,6 +44,8 @@ export const CONTEXT_MENU_EST_HEIGHT = 32; // per item, conservative (row + gap)
 export interface PointerLike {
   readonly clientX: number;
   readonly clientY: number;
+  readonly detail?: number;
+  readonly currentTarget?: ContextMenuAnchorTarget;
 }
 
 /** Open the menu at a pointer event, clamped to the window viewport. */
@@ -45,15 +54,29 @@ export function openContextMenuAt(
   items: readonly ContextMenuItem[],
   viewport?: { readonly width: number; readonly height: number },
 ): ContextMenuState {
-  const vw = viewport?.width ?? 0;
-  const vh = viewport?.height ?? 0;
+  const vw = viewport?.width ?? globalThis.document?.documentElement.clientWidth ?? 0;
+  const vh = viewport?.height ?? globalThis.document?.documentElement.clientHeight ?? 0;
   const estH = items.length * CONTEXT_MENU_EST_HEIGHT + CONTEXT_MENU_MARGIN;
+  const keyboardAnchor =
+    e.detail === 0 && e.clientX === 0 && e.clientY === 0
+      ? e.currentTarget?.getBoundingClientRect()
+      : undefined;
+  const x = keyboardAnchor?.left ?? e.clientX;
+  const y = keyboardAnchor?.bottom ?? e.clientY;
+  const focusTarget = e.currentTarget?.focus
+    ? (e.currentTarget as Required<Pick<ContextMenuAnchorTarget, "focus">> &
+        Pick<ContextMenuAnchorTarget, "isConnected">)
+    : undefined;
+  if (vw <= 0 || vh <= 0) {
+    return { x, y, items, focusTarget };
+  }
   const maxX = Math.max(CONTEXT_MENU_MARGIN, vw - CONTEXT_MENU_EST_WIDTH - CONTEXT_MENU_MARGIN);
   const maxY = Math.max(CONTEXT_MENU_MARGIN, vh - estH - CONTEXT_MENU_MARGIN);
   return {
-    x: Math.min(Math.max(CONTEXT_MENU_MARGIN, e.clientX), maxX),
-    y: Math.min(Math.max(CONTEXT_MENU_MARGIN, e.clientY), maxY),
+    x: Math.min(Math.max(CONTEXT_MENU_MARGIN, x), maxX),
+    y: Math.min(Math.max(CONTEXT_MENU_MARGIN, y), maxY),
     items,
+    focusTarget,
   };
 }
 

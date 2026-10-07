@@ -167,6 +167,159 @@ try {
   await page.goto(URL, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForSelector(".app-shell", { timeout: 30000 });
 
+  // S9.14-001 — exercise the shared menu through real browser input. The
+  // central viewport point avoids the frame's toolbar and plate controls.
+  await page.waitForSelector('[data-testid="viewport-frame"]', { timeout: 15000 });
+  const canvasAnchor = await page.$eval('[data-testid="viewport-frame"]', (frame) => {
+    const rect = frame.getBoundingClientRect();
+    const visibleLeft = Math.max(0, rect.left);
+    const visibleRight = Math.min(document.documentElement.clientWidth, rect.right);
+    const visibleTop = Math.max(0, rect.top);
+    const visibleBottom = Math.min(document.documentElement.clientHeight, rect.bottom);
+    return {
+      x: visibleLeft + (visibleRight - visibleLeft) * 0.5,
+      y: visibleTop + (visibleBottom - visibleTop) * 0.48,
+    };
+  });
+  await page.mouse.click(canvasAnchor.x, canvasAnchor.y, { button: "right" });
+  await page.waitForSelector('[data-testid="context-menu"]', { timeout: 5000 });
+  const mouseMenuRect = await page.$eval('[data-testid="context-menu"]', (menu) => {
+    const rect = menu.getBoundingClientRect();
+    return { x: rect.left, y: rect.top, right: rect.right, bottom: rect.bottom };
+  });
+  assert.ok(
+    Math.abs(mouseMenuRect.x - canvasAnchor.x) <= 1 &&
+      Math.abs(mouseMenuRect.y - canvasAnchor.y) <= 1,
+    `central canvas menu should preserve the real click anchor: ${JSON.stringify({ canvasAnchor, mouseMenuRect })}`,
+  );
+  await page.keyboard.press("Escape");
+  await page.waitForSelector('[data-testid="context-menu"]', { hidden: true, timeout: 5000 });
+
+  const edgePoints = await page.$eval('[data-testid="viewport-frame"]', (frame) => {
+    const rect = frame.getBoundingClientRect();
+    const left = Math.max(0, rect.left);
+    const right = Math.min(document.documentElement.clientWidth, rect.right);
+    const top = Math.max(0, rect.top);
+    const bottom = Math.min(document.documentElement.clientHeight, rect.bottom);
+    const midX = left + (right - left) * 0.5;
+    const verticalPoints = [0.2, 0.35, 0.65, 0.8].map((ratio) => top + (bottom - top) * ratio);
+    return {
+      left: verticalPoints.map((y) => ({ x: left + 3, y })),
+      right: verticalPoints.map((y) => ({ x: right - 3, y })),
+      top: [0.2, 0.8].map((ratio) => ({ x: left + (right - left) * ratio, y: top + 3 })),
+      bottom: [0.2, 0.8].map((ratio) => ({ x: left + (right - left) * ratio, y: bottom - 3 })),
+    };
+  });
+  for (const [edge, candidates] of Object.entries(edgePoints)) {
+    let opened = false;
+    for (const point of candidates) {
+      await page.mouse.click(point.x, point.y, { button: "right" });
+      opened = await page
+        .waitForSelector('[data-testid="context-menu"]', { timeout: 400 })
+        .then(() => true)
+        .catch(() => false);
+      if (opened) break;
+    }
+    assert.ok(opened, `real right-click should open the menu at the ${edge} viewport edge`);
+    const rect = await page.$eval('[data-testid="context-menu"]', (menu) => {
+      const box = menu.getBoundingClientRect();
+      return {
+        left: box.left,
+        top: box.top,
+        right: box.right,
+        bottom: box.bottom,
+        width: document.documentElement.clientWidth,
+        height: document.documentElement.clientHeight,
+      };
+    });
+    assert.ok(
+      rect.left >= 0 && rect.top >= 0 && rect.right <= rect.width && rect.bottom <= rect.height,
+      `${edge} edge menu must remain within the measured viewport: ${JSON.stringify(rect)}`,
+    );
+    await page.keyboard.press("Escape");
+    await page.waitForSelector('[data-testid="context-menu"]', { hidden: true, timeout: 5000 });
+  }
+
+  await page.setViewport({ width: 800, height: 600, deviceScaleFactor: 2 });
+  const resizedAnchor = await page.$eval('[data-testid="viewport-frame"]', (frame) => {
+    const rect = frame.getBoundingClientRect();
+    const left = Math.max(0, rect.left);
+    const right = Math.min(document.documentElement.clientWidth, rect.right);
+    const top = Math.max(0, rect.top);
+    const bottom = Math.min(document.documentElement.clientHeight, rect.bottom);
+    return { x: left + (right - left) * 0.5, y: top + (bottom - top) * 0.45 };
+  });
+  await page.mouse.click(resizedAnchor.x, resizedAnchor.y, { button: "right" });
+  await page.waitForSelector('[data-testid="context-menu"]', { timeout: 5000 });
+  const highDpiRect = await page.$eval('[data-testid="context-menu"]', (menu) => {
+    const rect = menu.getBoundingClientRect();
+    return { x: rect.left, y: rect.top };
+  });
+  assert.ok(
+    Math.abs(highDpiRect.x - resizedAnchor.x) <= 1 &&
+      Math.abs(highDpiRect.y - resizedAnchor.y) <= 1,
+    `high-DPI input must remain in CSS pixels: ${JSON.stringify({ resizedAnchor, highDpiRect })}`,
+  );
+  await page.setViewport({ width: 640, height: 480, deviceScaleFactor: 2 });
+  await page.waitForFunction(
+    () => {
+      const menu = document.querySelector('[data-testid="context-menu"]');
+      if (!menu) return false;
+      const rect = menu.getBoundingClientRect();
+      return (
+        rect.right <= document.documentElement.clientWidth &&
+        rect.bottom <= document.documentElement.clientHeight
+      );
+    },
+    { timeout: 5000 },
+  );
+  const clampedAfterResize = await page.$eval('[data-testid="context-menu"]', (menu) => {
+    const rect = menu.getBoundingClientRect();
+    return {
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      width: document.documentElement.clientWidth,
+      height: document.documentElement.clientHeight,
+    };
+  });
+  assert.ok(
+    clampedAfterResize.left >= 0 &&
+      clampedAfterResize.top >= 0 &&
+      clampedAfterResize.right <= clampedAfterResize.width &&
+      clampedAfterResize.bottom <= clampedAfterResize.height,
+    `open menu must re-clamp after viewport resize: ${JSON.stringify(clampedAfterResize)}`,
+  );
+  await page.keyboard.press("Escape");
+  await page.waitForSelector('[data-testid="context-menu"]', { hidden: true, timeout: 5000 });
+
+  const frameFocused = await page.$eval('[data-testid="viewport-frame"]', (frame) => {
+    frame.focus();
+    return document.activeElement === frame;
+  });
+  assert.equal(frameFocused, true, "viewport frame should accept keyboard context-menu focus");
+  await page.keyboard.down("Shift");
+  await page.keyboard.press("F10");
+  await page.keyboard.up("Shift");
+  await page.waitForSelector('[data-testid="context-menu"]', { timeout: 5000 });
+  const keyboardMenuRect = await page.$eval('[data-testid="context-menu"]', (menu) => {
+    const rect = menu.getBoundingClientRect();
+    return { x: rect.left, y: rect.top };
+  });
+  assert.ok(
+    Math.abs(keyboardMenuRect.x - canvasAnchor.x) > 1 ||
+      Math.abs(keyboardMenuRect.y - canvasAnchor.y) > 1,
+    "keyboard invocation should anchor to the focused viewport frame, not the previous pointer",
+  );
+  await page.keyboard.press("Escape");
+  await page.waitForSelector('[data-testid="context-menu"]', { hidden: true, timeout: 5000 });
+  const frameRestored = await page.$eval(
+    '[data-testid="viewport-frame"]',
+    (frame) => document.activeElement === frame,
+  );
+  assert.equal(frameRestored, true, "Escape should restore focus to the keyboard anchor");
+
   // ---- 1b. UI REFACTOR (P1-4..P1-7) — direct browser coverage ----
 
   // P1-5 — plate identity + action rail (DOM, inside viewport frame).

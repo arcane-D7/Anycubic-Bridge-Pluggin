@@ -81,6 +81,31 @@ test("openContextMenuAt: center clicks stay put", async () => {
   assert.equal(s.y, 360);
 });
 
+test("openContextMenuAt: missing viewport does not collapse the anchor to the margin", async () => {
+  const core = await corePromise;
+  const items = [{ id: "a", label: "A", onSelect: () => {} }];
+  const s = core.openContextMenuAt({ clientX: 640, clientY: 360 }, items);
+  assert.equal(s.x, 640);
+  assert.equal(s.y, 360);
+});
+
+test("openContextMenuAt: keyboard invocation anchors below the focused target", async () => {
+  const core = await corePromise;
+  const focusTarget = {
+    focus() {},
+    isConnected: true,
+    getBoundingClientRect: () => ({ left: 120, bottom: 48 }),
+  };
+  const s = core.openContextMenuAt(
+    { clientX: 0, clientY: 0, detail: 0, currentTarget: focusTarget },
+    [{ id: "a", label: "A", onSelect: () => {} }],
+    { width: 800, height: 600 },
+  );
+  assert.equal(s.x, 120);
+  assert.equal(s.y, 48);
+  assert.equal(s.focusTarget, focusTarget);
+});
+
 test("buildObjectMenuItems: full action set + repair only when non-watertight", async () => {
   const items = await itemsPromise;
   const calls = { dup: 0, ren: 0, vis: 0, place: 0, rep: [], rem: 0 };

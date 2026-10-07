@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor                                                                                                                            |
 | **Source**            | [Editor workspace CAD/AI audit](../../docs/audit/editor-workspace-cad-ai-audit-2026-10-07.md), AUD-01–03/AUD-15; sections 8, 9, 16, 19 |
 | **Depends On**        | Sprint 9.13                                                                                                                            |
-| **Status**            | ⏳ Planned                                                                                                                             |
+| **Status**            | 🔄 In Progress (1/4)                                                                                                                   |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -43,7 +43,7 @@ For each ticket, run its focused unit/integration/browser-input check first, the
 | **Type**             | Fix + Accessibility                                             |
 | **Estimated Effort** | M                                                               |
 | **Source Finding**   | AUD-01; CTX-01–CTX-04                                           |
-| **Status**           | ⏳ Planned                                                      |
+| **Status**           | ✅ Delivered                                                    |
 
 #### Context
 
@@ -51,11 +51,18 @@ Menu callers can omit viewport dimensions, causing the pure positioning helper t
 
 #### Acceptance Criteria
 
-- [ ] **CTX-01:** Real central canvas click anchors the menu at the click when space permits.
-- [ ] **CTX-02:** Four corners/edges keep the menu visible through measured collision handling.
-- [ ] **CTX-03:** Resize, zoom and scroll preserve the declared CSS-pixel coordinate frame.
-- [ ] **CTX-04:** Keyboard anchor, Escape close and focus restoration work on a real rendered menu.
-- [ ] Run focused interaction tests, `pnpm run check`, and sanitizer dry-run successfully.
+- [x] **CTX-01:** Real central canvas click anchors the menu at the click when space permits.
+- [x] **CTX-02:** Four corners/edges keep the menu visible through measured collision handling.
+- [x] **CTX-03:** Resize, zoom and scroll preserve the declared CSS-pixel coordinate frame.
+- [x] **CTX-04:** Keyboard anchor, Escape close and focus restoration work on a real rendered menu.
+- [x] Run focused interaction tests, `pnpm run check`, and sanitizer dry-run successfully.
+
+#### Implementation Progress
+
+- The helper now uses document viewport dimensions in CSS pixels when callers omit bounds, and preserves the requested pointer coordinates when no DOM viewport exists.
+- The rendered menu is measured after mount, clamped by its real rectangle, constrained to viewport height, and re-measured on element/viewport changes. Keyboard-origin context events anchor to the focused element; Escape returns focus to that owner.
+- Focused validation: `node --test tests/context-menu.test.mjs` (11/11) and `node tests/e2e/editor-reload.e2e.mjs` (PASS). Browser E2E covers real central/edge right-clicks, viewport resize, DPR 2, Shift+F10, Escape, and focus restoration. Live browser verification at 90% zoom preserved the real click anchor within 1 CSS pixel; after real footer scrolling (scrollTop 0→119), a real canvas right-click remained client-coordinate anchored. Zoom and scroll were restored afterward.
+- Full gate: `pnpm run check` EXIT 0 — unit 722/722, integration 11/11, Rust workspace/editor shell OK (176 tests), build 255608 bytes, smoke 115 tools, both E2E suites PASS, licenses 59, architecture OK, sanitizer 0 files/0 substitutions. Separate `node scripts/sanitize-repo.mjs --dry-run` also reported 0 files/0 substitutions.
 
 ### S9.14-002 — Shared contextual target and action resolution
 

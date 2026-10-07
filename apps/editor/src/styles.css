@@ -4579,6 +4579,8 @@ input {
 .context-menu {
   position: fixed;
   min-width: 190px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 1px;
