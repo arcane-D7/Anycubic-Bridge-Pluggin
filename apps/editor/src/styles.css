@@ -3327,12 +3327,15 @@ input {
 }
 
 /* P1-8 — the Settings-configured machine is a real printer: when no LAN
-   printer was found, show its name here as a static chip. */
+   printer was found, show its name here as an ACTIVE row the user can arm
+   (click injects the synthetic printer entry + selects it — pure store
+   write, never a hardware command). */
 .device-empty-profile {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   margin-top: 6px;
-  padding: 3px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--bg-panel-solid);
@@ -3340,6 +3343,28 @@ input {
   font-size: 12px;
   font-weight: 600;
   align-self: flex-start;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+.device-empty-profile:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: var(--sel-hover);
+}
+.device-empty-profile:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.device-empty-profile-chevron {
+  margin-left: 2px;
+  transform: rotate(-90deg);
+  color: var(--text-tertiary);
+}
+.device-empty-profile:hover .device-empty-profile-chevron {
+  color: var(--accent-primary);
 }
 
 /* P1-2 — Device empty state embeds the shared PrinterList (no popover

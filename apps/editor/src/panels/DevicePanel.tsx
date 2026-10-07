@@ -8,6 +8,7 @@ import { useDock } from "@/state/dock";
 import { useOperatorProfile } from "@/profile/useOperatorProfile";
 import { cloudLaneConfigured, cloudFetchSnapshot } from "@/bridge/cloud";
 import { PrinterList } from "@/components/printer-list";
+import { Icon } from "@/components/icons";
 import { printerEnvRaw } from "@/lib/printer-env";
 import {
   editOriginKey,
@@ -693,6 +694,11 @@ function BindSlotModal({
  * P1-2 — Device empty state now doubles as a printer list when discovery
  * found candidates but none is armed. Selecting here is a pure store write
  * (`usePrinters.select`) — it never sends a hardware command.
+ *
+ * P1-8 — when no LAN/cloud printer is discovered at all, the operator profile
+ * machine (Slicer Settings → Printer) is still a real printer worth arming:
+ * it renders as a CLICKABLE row that calls `armProfile` (injects the
+ * synthetic entry + selects it), so the panel is never a dead end.
  */
 function DevicePickerEmpty() {
   const t = useI18n((s) => s.t);
@@ -703,6 +709,7 @@ function DevicePickerEmpty() {
   const lastProbedAt = usePrinters((s) => s.lastProbedAt);
   const refresh = usePrinters((s) => s.refresh);
   const select = usePrinters((s) => s.select);
+  const armProfile = usePrinters((s) => s.armProfile);
   // P1-8 — when no LAN printer exists, the operator profile machine name
   // (Slicer Settings → Printer) is still a real printer worth showing.
   const [profile] = useOperatorProfile();
@@ -734,9 +741,17 @@ function DevicePickerEmpty() {
         <>
           <span className="device-empty-msg">{t("device.empty.msg")}</span>
           {profile.displayName ? (
-            <span className="device-empty-profile" data-testid="device-empty-profile">
-              {profile.displayName}
-            </span>
+            <button
+              type="button"
+              className="device-empty-profile"
+              data-testid="device-empty-profile"
+              onClick={() => armProfile(profile.displayName)}
+              title={t("device.empty.arm", { device: profile.displayName })}
+            >
+              <Icon name="printer" size={13} />
+              <span>{profile.displayName}</span>
+              <Icon name="chevron-down" size={12} className="device-empty-profile-chevron" />
+            </button>
           ) : null}
         </>
       )}

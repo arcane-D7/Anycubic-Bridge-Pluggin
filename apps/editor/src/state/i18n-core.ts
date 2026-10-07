@@ -211,6 +211,7 @@ export type MsgKey =
   | "device.empty.title"
   | "device.empty.msg"
   | "device.empty.pick"
+  | "device.empty.arm"
   | "device.offline.banner"
   | "device.stale.banner"
   | "device.temp.nozzle"
@@ -959,6 +960,7 @@ export const EN: Record<MsgKey, string> = {
   "device.empty.title": "No printer selected",
   "device.empty.msg": "Pick a printer in the header to see live data.",
   "device.empty.pick": "Pick a discovered printer to start monitoring:",
+  "device.empty.arm": "Monitor {device} (profile machine)",
   "device.offline.banner": "Printer unreachable — showing last known data",
   "device.stale.banner": "Data is stale — reconnecting…",
   "device.temp.nozzle": "Nozzle",
@@ -1687,6 +1689,7 @@ export const PT_BR: Record<MsgKey, string> = {
   "device.empty.title": "Nenhuma impressora selecionada",
   "device.empty.msg": "Escolha uma impressora no cabeçalho para ver dados ao vivo.",
   "device.empty.pick": "Escolha uma impressora descoberta para começar a monitorizar:",
+  "device.empty.arm": "Monitorizar {device} (máquina do perfil)",
   "device.offline.banner": "Impressora inacessível — a mostrar últimos dados conhecidos",
   "device.stale.banner": "Dados desatualizados — a reconectar…",
   "device.temp.nozzle": "Bico",

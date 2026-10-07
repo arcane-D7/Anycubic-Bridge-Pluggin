@@ -114,6 +114,23 @@ test("printers-core: probe-done during idle is rejected (no stale merge)", async
   assert.deepEqual(out.state.printers, []);
 });
 
+test("printers-core: profilePrinter synthesizes a stable, selectable entry (P1-8)", async () => {
+  const core = await corePromise;
+  const p = core.profilePrinter("Anycubic Kobra S1");
+  assert.equal(p.name, "Anycubic Kobra S1");
+  assert.equal(p.ip, ""); // no fake LAN address
+  assert.equal(p.reachable, null); // no probe target — status honestly unknown
+  const pid = core.profilePrinterId("Anycubic Kobra S1");
+  assert.ok(pid.startsWith("profile-"));
+  assert.ok(pid.includes("kobra"));
+  // deterministic (same display → same id, no collision with env ids)
+  assert.equal(core.profilePrinterId("Anycubic Kobra S1"), pid);
+  // selectable through the reducer (must resolve to a known entry)
+  const s = core.initialPrintersState("");
+  const armed = core.reducePrinters({ ...s, printers: [p] }, { kind: "select", id: pid });
+  assert.equal(armed.state.selectedId, pid);
+});
+
 test("printers core lane: discoverPrinters lists env printers without hardcoding", async () => {
   const mock = await mockPromise;
   const handle = await mock.fetchSceneSnapshot();

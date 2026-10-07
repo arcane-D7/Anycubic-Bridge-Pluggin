@@ -17,6 +17,7 @@ import {
   cloudPrintersState,
   initialPrintersState,
   printerId,
+  profilePrinter,
   reducePrinters,
   type PrintersState,
 } from "./printers-core";
@@ -85,6 +86,10 @@ interface PrintersStore extends PrintersState {
   readonly refreshCloud: () => Promise<void>;
   /** Arm the send target by printer id (null clears the selection). */
   readonly select: (id: string | null) => void;
+  /** P1-8 — arm the operator-profile machine when no LAN/cloud printer is
+   * discovered yet: injects a synthetic entry (if absent) and selects it so
+   * the Device panel can start streaming (mock lane) immediately. */
+  readonly armProfile: (displayName: string) => void;
 }
 
 /**
@@ -124,6 +129,16 @@ export const usePrinters = create<PrintersStore>()((set, get) => {
 
     select(id) {
       const { state } = reducePrinters(get(), { kind: "select", id });
+      set(state);
+    },
+
+    armProfile(displayName) {
+      const profile = profilePrinter(displayName);
+      const existing = get().printers.some((p) => p.id === profile.id);
+      const printers = existing
+        ? get().printers
+        : [profile, ...get().printers.filter((p) => !p.id.startsWith("profile-"))];
+      const { state } = reducePrinters({ ...get(), printers }, { kind: "select", id: profile.id });
       set(state);
     },
 

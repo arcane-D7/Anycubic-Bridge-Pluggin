@@ -67,7 +67,31 @@ export function printerId(ip: string): string {
 export function printerName(ip: string): string {
   return `Printer @ ${ip}`;
 }
+/** Stable synthetic id for the operator-profile machine (P1-8). Uses the
+ * display name so it is deterministic and never collides with env/cloud ids
+ * (which are IP- or device-derived). */
+export function profilePrinterId(displayName: string): string {
+  return `profile-${displayName.replace(/[^a-zA-Z0-9_]/g, "-").toLowerCase()}`;
+}
 
+/**
+ * P1-8 — synthesize a `PrinterInfo` row from the operator profile machine
+ * (Slicer Settings → Printer). This is NOT a discovered printer: it carries a
+ * machine label and an `ip: ""` placeholder, so the send/control lanes report
+ * it honestly (no fake address). The mock fetcher still produces a snapshot
+ * for it, so the Device panel Monitor can stream mock data before any LAN
+ * printer is found. `reachable` stays null (unknown — no probe target).
+ */
+export function profilePrinter(displayName: string): PrinterInfo {
+  return {
+    id: profilePrinterId(displayName),
+    name: displayName,
+    ip: "",
+    machineType: displayName,
+    reachable: null,
+    lastSeenAt: null,
+  };
+}
 /** Printer list + selection state driven by the LAN probe results. */
 export interface PrintersState {
   readonly printers: readonly PrinterInfo[];
