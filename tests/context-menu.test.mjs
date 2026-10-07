@@ -39,6 +39,15 @@ async function loadItems() {
 const corePromise = loadCore();
 const itemsPromise = loadItems();
 
+async function loadActionCore() {
+  const url = pathToFileURL(
+    path.join(root, "apps", "editor", "src", "state", "context-action-core.ts"),
+  );
+  return import(`${url.href}?key=${Date.now()}`);
+}
+
+const actionCorePromise = loadActionCore();
+
 test("openContextMenuAt: clamps near the right/bottom edge", async () => {
   const core = await corePromise;
   // Menu ≈8 items × 32px + margin = 264px tall, 220px wide; viewport 400×300.
@@ -104,6 +113,50 @@ test("openContextMenuAt: keyboard invocation anchors below the focused target", 
   assert.equal(s.x, 120);
   assert.equal(s.y, 48);
   assert.equal(s.focusTarget, focusTarget);
+});
+
+test("object action context preserves selected targets and revalidates revision and locks", async () => {
+  const core = await actionCorePromise;
+  const object = (name, locked = false) => ({
+    name,
+    vertices: 3,
+    triangles: 1,
+    bounds: { min: [0, 0, 0], max: [1, 1, 1] },
+    sizeMm: [1, 1, 1],
+    volumeMm3: 1,
+    surfaceAreaMm2: 1,
+    watertight: true,
+    visible: true,
+    locked,
+  });
+  const context = core.createObjectActionContext({
+    surface: "canvas",
+    targetName: "selected-b",
+    selectionNames: ["selected-a", "selected-b"],
+    projectRevision: 7,
+  });
+
+  assert.deepEqual(context.selectionNames, ["selected-a", "selected-b"]);
+  assert.deepEqual(
+    core.resolveObjectActionContext(context, [object("selected-a"), object("selected-b")], 7),
+    { ok: true, targets: [object("selected-a"), object("selected-b")] },
+  );
+  assert.deepEqual(core.resolveObjectActionContext(context, [], 8), {
+    ok: false,
+    reason: "stale-context",
+  });
+  assert.deepEqual(
+    core.resolveObjectActionContext(context, [object("selected-a"), object("selected-b", true)], 7),
+    { ok: false, reason: "locked-target" },
+  );
+  assert.deepEqual(
+    core.resolveObjectActionContext({ ...context, targetKind: "part" }, [object("selected-b")], 7),
+    { ok: false, reason: "unsupported-role" },
+  );
+  assert.deepEqual(
+    core.resolveObjectActionContext({ ...context, editMode: "vertex" }, [object("selected-b")], 7),
+    { ok: false, reason: "unsupported-edit-mode" },
+  );
 });
 
 test("buildObjectMenuItems: full action set + repair only when non-watertight", async () => {

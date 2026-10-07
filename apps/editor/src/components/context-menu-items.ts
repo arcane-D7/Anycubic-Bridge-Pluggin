@@ -10,7 +10,7 @@ import type { ContextMenuItem } from "./context-menu-core";
 /** Actions the object-tree row menu can dispatch. */
 export interface ObjectMenuHandlers {
   readonly onDuplicate: () => void;
-  readonly onRename: () => void;
+  readonly onRename?: () => void;
   readonly onToggleVisible: () => void;
   readonly onPlaceOnPlate: () => void;
   readonly onRepair: (mode: "replace" | "copy") => void;
@@ -40,13 +40,10 @@ export function buildObjectMenuItems(
       icon: "duplicate",
       onSelect: handlers.onDuplicate,
     },
-    {
-      id: "rename",
-      label: "Rename",
-      icon: "fit",
-      onSelect: handlers.onRename,
-    },
   ];
+  if (handlers.onRename) {
+    items.push({ id: "rename", label: "Rename", icon: "fit", onSelect: handlers.onRename });
+  }
   // P1-7 — "More info" right-click entry (opens the same metrics popover as
   // the row (i) button).
   if (handlers.onMoreInfo) {

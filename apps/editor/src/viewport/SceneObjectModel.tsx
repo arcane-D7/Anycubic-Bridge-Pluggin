@@ -21,6 +21,7 @@ import { registerAnchorProbe } from "./Labels";
 
 interface SceneObjectModelProps {
   readonly info: SceneObjectSnapshot;
+  readonly onObjectContextMenu: ObjectContextMenuOpener;
 }
 
 import { resolveModelRenderState } from "./scene-model-render.ts";
@@ -32,6 +33,7 @@ import { usePrinterDevice } from "../state/printer-device";
 import { FILAMENT_PRESETS } from "../presets/catalog";
 import { resolveFilamentColor, materialClassFor } from "../state/material-assign-core";
 import { filamentMaterial } from "./filament-material";
+import type { ObjectContextMenuOpener } from "../hooks/use-object-context-menu";
 
 /** Re-exported pure helpers (headless-tested in tests/scene-object-model.test.mjs). */
 export { geometryExists } from "./scene-model-render.ts";
@@ -63,7 +65,10 @@ function boundsBox(info: ObjectMeshInfo): THREE.Box3 | null {
   );
 }
 
-export const SceneObjectModel = memo(function SceneObjectModel({ info }: SceneObjectModelProps) {
+export const SceneObjectModel = memo(function SceneObjectModel({
+  info,
+  onObjectContextMenu,
+}: SceneObjectModelProps) {
   const selected = useScene((s) => (s.selected?.name === info.name ? s.selected : null));
   // Selection highlight derives from the AUTHORITATIVE snapshot selection_state
   // (S7-004): object-mode selection is a name in `selection.objectModeNames`;
@@ -177,6 +182,7 @@ export const SceneObjectModel = memo(function SceneObjectModel({ info }: SceneOb
           }}
           onContextMenu={(e) => {
             e.stopPropagation();
+            onObjectContextMenu("canvas", info, { clientX: e.clientX, clientY: e.clientY });
           }}
           onPointerOver={(e) => {
             e.stopPropagation();
@@ -208,6 +214,7 @@ export const SceneObjectModel = memo(function SceneObjectModel({ info }: SceneOb
           }}
           onContextMenu={(e) => {
             e.stopPropagation();
+            onObjectContextMenu("canvas", info, { clientX: e.clientX, clientY: e.clientY });
           }}
           onPointerOver={(e) => {
             e.stopPropagation();

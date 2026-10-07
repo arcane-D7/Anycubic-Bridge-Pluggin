@@ -415,6 +415,36 @@ try {
     0,
     "object rows must NOT render permanent XYZ/footprint/volume cells (P1-7)",
   );
+
+  // S9.14-002 — real pointer tree selection + object context parity. Right-
+  // clicking a selected member must preserve the multi-selection; canvas and
+  // tree expose the same executable object actions.
+  const coneName = page.locator('.object-item[data-name="cone"] .object-name');
+  const cubeName = page.locator('.object-item[data-name="cube"] .object-name');
+  await coneName.click();
+  await page.keyboard.down("Shift");
+  await cubeName.click();
+  await page.keyboard.up("Shift");
+  const selectedBeforeContext = await page.$$eval('.object-item[aria-selected="true"]', (rows) =>
+    rows.map((row) => row.getAttribute("data-name")).sort(),
+  );
+  assert.deepEqual(selectedBeforeContext, ["cone", "cube"]);
+  await cubeName.click({ button: "right" });
+  await page.waitForSelector('[data-testid="context-menu"]', { timeout: 5000 });
+  const treeObjectActions = await page.$$eval(
+    '[data-testid="context-menu"] [role="menuitem"]',
+    (items) => items.map((item) => item.getAttribute("data-testid")),
+  );
+  assert.ok(treeObjectActions.includes("context-item-duplicate"));
+  assert.ok(treeObjectActions.includes("context-item-toggle-visible"));
+  assert.ok(treeObjectActions.includes("context-item-place-on-plate"));
+  assert.ok(treeObjectActions.includes("context-item-delete"));
+  const selectedAfterContext = await page.$$eval('.object-item[aria-selected="true"]', (rows) =>
+    rows.map((row) => row.getAttribute("data-name")).sort(),
+  );
+  assert.deepEqual(selectedAfterContext, ["cone", "cube"]);
+  await page.keyboard.press("Escape");
+
   // info popover opens with mesh stats + placement metrics.
   const infoBtn = await page.$('[data-testid^="obj-info-"]');
   assert.ok(infoBtn, "each row should have a More info button");

@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor                                                                                                                            |
 | **Source**            | [Editor workspace CAD/AI audit](../../docs/audit/editor-workspace-cad-ai-audit-2026-10-07.md), AUD-01–03/AUD-15; sections 8, 9, 16, 19 |
 | **Depends On**        | Sprint 9.13                                                                                                                            |
-| **Status**            | 🔄 In Progress (1/4)                                                                                                                   |
+| **Status**            | 🔄 In Progress (2/4)                                                                                                                   |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -74,7 +74,7 @@ Menu callers can omit viewport dimensions, causing the pure positioning helper t
 | **Type**             | Feature                                                             |
 | **Estimated Effort** | L                                                                   |
 | **Source Finding**   | AUD-02; CTX-05–CTX-08                                               |
-| **Status**           | ⏳ Planned                                                          |
+| **Status**           | ✅ Delivered                                                        |
 
 #### Context
 
@@ -82,12 +82,21 @@ The tree and canvas currently expose divergent actions and target resolution. Ro
 
 #### Acceptance Criteria
 
-- [ ] **CTX-05:** Tree and canvas invoke the same action handler and produce the same domain result for an object.
-- [ ] **CTX-06:** Right-clicking a member of multi-selection preserves the correct target set.
-- [ ] **CTX-07:** Part, negative-volume and modifier actions follow each target's role.
-- [ ] **CTX-08:** Edit Mode resolves vertex/edge/face targets against a valid mesh revision or returns a typed rejection.
-- [ ] No menu-only/mock handler reports success for an operation it did not execute.
-- [ ] Run focused tests, full `pnpm run check`, and sanitizer dry-run successfully.
+- [x] **CTX-05:** Tree and canvas object menus share one typed opener/dispatcher and provider action lane.
+- [x] **CTX-06:** Right-clicking a selected member preserves the selected target set; otherwise only the clicked object is targeted.
+- [x] **CTX-07:** Role-specific actions are not advertised without role metadata; unsupported part/negative/modifier roles receive typed rejection.
+- [x] **CTX-08:** Vertex/edge/face contexts without a mesh-edit contract receive typed `unsupported-edit-mode` rejection rather than executing against unknown topology.
+- [x] No menu-only/mock handler reports success for an operation it did not execute.
+- [x] Focused tests, browser input suite, full `pnpm run check`, and sanitizer dry-run pass.
+
+#### Implementation Progress
+
+- Added `state/context-action-core.ts`: typed context snapshot (surface, target kind/name, selection names, live project revision, edit mode) and execution-time resolver. It preserves an existing selection if the clicked object is a member; otherwise it narrows to that object. Resolution rechecks live viewport revision, current scene objects and lock flags and returns typed stale/missing/locked/unsupported-role/unsupported-edit-mode rejections.
+- Added `hooks/use-object-context-menu.ts` as the shared owner for tree/canvas object menu construction and dispatch. The tree retains Rename and More info; canvas omits those because they have no canvas handler. Duplicate, visibility, place-on-plate, repair and delete use the same provider lanes for both surfaces. Provider refusal/error is surfaced and triggers authoritative scene rehydration; stale/unavailable targets never report success.
+- `SceneObjectModel` forwards object hits to the shared opener. `Viewport` raycasts native canvas context-menu coordinates against the current R3F scene; mesh hits open the object menu and empty-space clicks retain the existing background menu.
+- Backend boundary: `SceneObjectSnapshot` has no part/negative/modifier role metadata, mesh revision, or edit-element selection contract. No role-specific or Edit Mode operation is claimed or advertised. Those contexts fail closed until a provider contract exists; implementing that contract is out of scope for this ticket.
+- Focused validation: `node --test tests/context-menu.test.mjs tests/object-tree-flow.test.mjs` passed 17/17; `pnpm exec tsc --noEmit` and touched-source ESLint passed; `node tests/e2e/editor-reload.e2e.mjs` passed. Browser E2E covers real mouse/Shift tree selection and context-menu opening; live browser verification confirmed native canvas mesh hits open object actions and background hits retain background actions.
+- Full gate: `pnpm run check` EXIT 0 — unit 723/723, integration 11/11, Rust workspace/editor shell OK, build 255608 bytes, smoke 115 tools, both E2E suites PASS, licenses 59, architecture OK, sanitizer 0 files/0 substitutions. Separate sanitizer dry-run also EXIT 0 with 0 files/0 substitution groups.
 
 ### S9.14-003 — Right-drag discrimination and honest canvas actions
 

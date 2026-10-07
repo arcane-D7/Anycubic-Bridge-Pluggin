@@ -4,11 +4,8 @@ import * as PopoverPrimitive from "@radix-ui/react-popover";
 import type { BridgeHandle } from "../bridge/mock";
 import type { SceneObjectSnapshot } from "../bridge/types";
 import { Icon } from "../components/icons";
-import { centerOnPlateTransform } from "../state/arrange-core";
 import { comparePlacement, placementMetrics, type PlacementSortKey } from "../state/object-metrics";
-import { openContextMenuAt } from "../components/context-menu-core";
-import { buildObjectMenuItems } from "../components/context-menu-items";
-import { useContextMenuStore } from "../state/context-menu";
+import { useObjectContextMenu } from "../hooks/use-object-context-menu";
 import { useScene } from "../state/scene";
 import { useUi } from "../state/ui";
 import { useI18n } from "../state/i18n";
@@ -92,7 +89,6 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
   const duplicate = useScene((s) => s.duplicate);
   const toggleVisible = useScene((s) => s.toggleVisible);
   const toggleLock = useScene((s) => s.toggleLock);
-  const setTransform = useScene((s) => s.setTransform);
 
   // S9.6-003 — column sort state (header click toggles asc/desc per key).
   const [sortKey, setSortKey] = useState<PlacementSortKey>("name");
@@ -128,7 +124,7 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement | null>(null);
   // S9.8-001 — shared context menu (single store; one menu for all surfaces).
-  const openMenu = useContextMenuStore((s) => s.open);
+  const openObjectMenu = useObjectContextMenu(scene);
   // P1-7 — the info popover is keyed per row; right-click "More info" opens
   // the same popover. A single `infoOpenFor` name + per-row controlled
   // Popover keeps both entries point to the same content.
@@ -186,27 +182,13 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
     o: SceneObjectSnapshot,
     e: { readonly clientX: number; readonly clientY: number },
   ) => {
-    select(o.name, o.watertight);
-    openMenu(
-      openContextMenuAt(
-        e,
-        buildObjectMenuItems(
-          { name: o.name, visible: o.visible, watertight: o.watertight },
-          {
-            onDuplicate: () => onDuplicate(o),
-            onRename: () => {
-              setEditing(o.name);
-              setDraft(o.name);
-            },
-            onToggleVisible: () => onToggleVisible(o),
-            onPlaceOnPlate: () => onPlaceOnPlate(o),
-            onRepair: (mode) => void onRepair(o, mode),
-            onRemove: () => onRemove(o),
-            onMoreInfo: () => openInfo(o),
-          },
-        ),
-      ),
-    );
+    openObjectMenu("tree", o, e, {
+      onRename: () => {
+        setEditing(o.name);
+        setDraft(o.name);
+      },
+      onMoreInfo: () => openInfo(o),
+    });
   };
 
   const commitRename = (o: SceneObjectSnapshot) => {
@@ -267,13 +249,6 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
   const onToggleLock = (o: SceneObjectSnapshot) => {
     toggleLock(o.name);
     void persist({ kind: "toggleLock", name: o.name });
-  };
-
-  /** S9.4-004 per-object "place on plate": centers X/Y + drops minZ to 0. */
-  const onPlaceOnPlate = (o: SceneObjectSnapshot) => {
-    const t = centerOnPlateTransform(o);
-    setTransform(o.name, t);
-    void persist({ kind: "setTransform", name: o.name, transform: t });
   };
 
   /** S9.4-004 auto-arrange (same lane as the toolbar Arrange). */

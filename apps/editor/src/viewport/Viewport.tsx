@@ -3,7 +3,7 @@ import { OrbitControls } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { BridgeHandle } from "../bridge/mock";
-import type { BuildVolume } from "../bridge/types";
+import type { BuildVolume, SceneObjectSnapshot } from "../bridge/types";
 import { useImportCommit } from "../bridge/import-actions";
 import { classifyFile } from "../bridge/import-core";
 import { useScene } from "../state/scene";
@@ -16,6 +16,7 @@ import { effectiveViewMode, useViewMode } from "../state/view-mode";
 import { openContextMenuAt } from "../components/context-menu-core";
 import { useContextMenuStore } from "../state/context-menu";
 import type { ContextMenuItem } from "../components/context-menu-core";
+import { useObjectContextMenu } from "../hooks/use-object-context-menu";
 import { BuildPlate } from "./BuildPlate";
 import { ContextLossGuard } from "./ContextLossGuard";
 import { FrameSelectedCamera } from "./FrameSelectedCamera";
@@ -44,6 +45,7 @@ interface ViewportProps {
 
 export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
   const t = useI18n((s) => s.t);
+  const openObjectMenu = useObjectContextMenu(scene);
   const volume = buildVolume ?? scene?.buildVolume;
   const sceneObjects = scene?.objects ?? [];
   // S9.4-003 per-plate filter: only the ACTIVE plate's objects render. The
@@ -109,6 +111,9 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
         gl={{ preserveDrawingBuffer: true }}
       >
         <color attach="background" args={[viewportBg]} />
+        {!preview ? (
+          <ObjectContextMenuPicker objects={visibleObjects} onOpen={openObjectMenu} />
+        ) : null}
         <ambientLight intensity={0.55} />
         <directionalLight position={[80, 160, 120]} intensity={1} />
         <directionalLight position={[-100, 60, -60]} intensity={0.35} color="#9fb4ff" />
@@ -129,7 +134,9 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
             showInfill={showInfill}
           />
         ) : (
-          visibleObjects.map((o) => <SceneObjectModel key={o.name} info={o} />)
+          visibleObjects.map((o) => (
+            <SceneObjectModel key={o.name} info={o} onObjectContextMenu={openObjectMenu} />
+          ))
         )}
         {/* S9.8-002 — in-canvas label projector (writes NDC to the bus). */}
         {!preview ? <LabelProjector objects={visibleObjects} /> : null}
@@ -211,6 +218,47 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
       ) : null}
     </ViewportFrame>
   );
+}
+
+function ObjectContextMenuPicker({
+  objects,
+  onOpen,
+}: {
+  readonly objects: readonly SceneObjectSnapshot[];
+  readonly onOpen: ReturnType<typeof useObjectContextMenu>;
+}) {
+  const { camera, gl, scene } = useThree();
+  const raycaster = useMemo(() => new THREE.Raycaster(), []);
+  const pointer = useMemo(() => new THREE.Vector2(), []);
+
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const onContextMenu = (event: MouseEvent) => {
+      const bounds = canvas.getBoundingClientRect();
+      if (bounds.width <= 0 || bounds.height <= 0) return;
+      pointer.set(
+        ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
+        -((event.clientY - bounds.top) / bounds.height) * 2 + 1,
+      );
+      raycaster.setFromCamera(pointer, camera);
+      const objectNames = new Set(objects.map((object) => object.name));
+      for (const hit of raycaster.intersectObjects(scene.children, true)) {
+        let owner: THREE.Object3D | null = hit.object;
+        while (owner && !objectNames.has(owner.name)) owner = owner.parent;
+        if (!owner) continue;
+        const target = objects.find((object) => object.name === owner?.name);
+        if (!target) continue;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        onOpen("canvas", target, { clientX: event.clientX, clientY: event.clientY });
+        return;
+      }
+    };
+    canvas.addEventListener("contextmenu", onContextMenu, true);
+    return () => canvas.removeEventListener("contextmenu", onContextMenu, true);
+  }, [camera, gl, objects, onOpen, pointer, raycaster, scene]);
+
+  return null;
 }
 
 function PreviewScene({
