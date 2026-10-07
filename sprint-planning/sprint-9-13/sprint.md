@@ -15,7 +15,7 @@
 | 1   | S9.13-001 | cloud-bridge loopback (Node → MCP stdio)               | ✅ Done + verified |
 | 2   | S9.13-002 | editor cloud provider + picker cloud badge             | ✅ Done            |
 | 3   | S9.13-003 | Device panel cloud snapshot + adaptive polling         | ✅ Done            |
-| 4   | S9.13-004 | i18n keys (EN/PT) + agnosticism audit + gate + commits | 🔄 In progress     |
+| 4   | S9.13-004 | i18n keys (EN/PT) + agnosticism audit + gate + commits | ✅ Done            |
 
 ## Context (verified)
 
