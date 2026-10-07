@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { fetchSceneSnapshot } from "./bridge/mock";
+import { activeProjectProvider, activeProjectScene } from "./bridge/project-provider";
 import type { IrDocument } from "./bridge/ir";
 import { parseIrDocument } from "./bridge/ir";
 import type { SlicingMode } from "./contract";
@@ -56,6 +56,7 @@ import { activePlate as activePlateOf } from "./state/plates-core";
  */
 
 const QUERY_KEY = ["bridge", "scene"] as const;
+const PROVIDER_QUERY_KEY = ["project", "provider"] as const;
 const MAX_IR_FILE_BYTES = 20 * 1024 * 1024;
 
 /** Single demo toast on boot so the bus is visibly alive (S9.1-005 AC). */
@@ -77,9 +78,16 @@ function useDemoToast() {
 export function App() {
   useDemoToast();
   const t = useI18n((s) => s.t);
+  const providerQuery = useQuery({
+    queryKey: PROVIDER_QUERY_KEY,
+    queryFn: activeProjectProvider,
+    staleTime: 30_000,
+  });
+  const provider = providerQuery.data;
   const sceneQuery = useQuery({
     queryKey: QUERY_KEY,
-    queryFn: fetchSceneSnapshot,
+    queryFn: activeProjectScene,
+    enabled: provider?.available === true,
     staleTime: 30_000,
   });
   const scene = sceneQuery.data;
@@ -240,12 +248,13 @@ export function App() {
         >
           {t("app.sidebarToggle")}
         </button>
-        <span className="app-sub" data-testid="bridge-state">
+        <span className="app-sub" data-testid="bridge-state" data-provider={provider?.mode}>
           {sceneQuery.isFetching
             ? t("app.bridgeState.fetching")
-            : scene
+            : provider?.mode === "demo"
               ? t("app.bridgeState.demo")
               : t("app.bridgeState.unavailable")}
+          {provider?.reason ? ` · ${provider.reason}` : ""}
         </span>
         <DirtyChip />
         <ToastViewport />

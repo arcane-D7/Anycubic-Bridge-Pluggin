@@ -5,6 +5,7 @@ import { useI18n } from "@/state/i18n";
 import { objectsOnPlate } from "@/state/plates-core";
 import type { SceneObjectSnapshot } from "@/bridge/types";
 import { useActivePlate } from "@/state/plates";
+import { activeProjectScene } from "@/bridge/project-provider";
 
 /**
  * Slice button (S9.5-002) — primary accent action in the workspace header.
@@ -70,8 +71,7 @@ export function SliceButton({ objects, onSliced }: SliceButtonProps) {
           advanceStage(i, stages.length, stages[i]!);
           await new Promise((r) => setTimeout(r, 260));
         }
-        const lane = await import("@/bridge/mock");
-        const handle = await lane.fetchSceneSnapshot();
+        const handle = await activeProjectScene();
         const result = await handle.slice({ plateId: active.id });
         if (!result.ok) {
           finish({

@@ -6,6 +6,7 @@ import { useI18n } from "@/state/i18n";
 import { usePrinterDevice } from "@/state/printer-device";
 import { printReady } from "@/state/printer-print-guard-core";
 import type { MsgKey } from "@/state/i18n-core";
+import { activeProjectScene } from "@/bridge/project-provider";
 
 /**
  * Send-to-print dialog (S9.5-004, G25) — reuses the S9-006 approval-card
@@ -138,8 +139,7 @@ export function PrintJobDialog() {
     setRanSend(true);
     sendStart();
     try {
-      const lane = await import("@/bridge/mock");
-      const handle = await lane.fetchSceneSnapshot();
+      const handle = await activeProjectScene();
       for (let i = 0; i < SEND_STAGES.length; i += 1) {
         const { stage } = SEND_STAGES[i]!;
         reportSendStage((i + 1) / SEND_STAGES.length, stage);

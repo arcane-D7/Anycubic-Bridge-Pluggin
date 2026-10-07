@@ -12,7 +12,7 @@
 | **Primary Owner**     | Project authority, geometry IPC and worker adapters                                                                                         |
 | **Source**            | [Editor workspace CAD/AI audit](../../docs/audit/editor-workspace-cad-ai-audit-2026-10-07.md), AUD-07/AUD-08/AUD-13; sections 6, 13, 18, 19 |
 | **Depends On**        | Sprint 9.14                                                                                                                                 |
-| **Status**            | ⏳ Planned                                                                                                                                  |
+| **Status**            | 🔄 In progress (S9.15-001)                                                                                                                  |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -43,7 +43,7 @@ Run the relevant project/worker corpus or IPC integration test before the full g
 | **Type**             | Feature                                                                |
 | **Estimated Effort** | L                                                                      |
 | **Source Finding**   | AUD-07/AUD-08; audit sections 6.1–6.3                                  |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | 🔄 In progress                                                         |
 
 #### Context
 
@@ -56,6 +56,25 @@ UI imports of mock behavior can imply product execution, while snapshots/refetch
 - [ ] Unsupported provider operations return unavailable with a stable reason and cannot mutate mock state as a fallback.
 - [ ] Migration/compatibility for existing project data is tested and rollback behavior documented.
 - [ ] Run focused provider/contract checks, full gate and sanitizer dry-run successfully.
+
+#### Implementation Notes (S9.15-001)
+
+- Provider selection is resolved at bootstrap. Demo is explicitly identified as
+  `demo-fixture`; real selection reports `tauri-project-store` as unavailable with
+  `real-project-provider-not-connected` until a project authority is connected.
+- Provider metadata is queried separately from `['bridge', 'scene']`. The scene
+  query continues to return the canonical `BridgeHandle`, preserving context-menu,
+  slice, print, and other existing consumers across refetch/invalidation.
+- Demo bootstraps share one session handle so its mutation/revision closures remain
+  authoritative across scene refetches. Provider selection is checked before the
+  Demo handle cache; a prior Demo bootstrap cannot satisfy a later Real request.
+  No production project backend,
+  persistent revisions, migration, or real geometry operations are claimed here;
+  those remain for S9.15-002/003. Existing project data is unchanged, so this
+  ticket introduces no migration or rollback operation.
+- Focused tests cover provider origin/capabilities, fixture mutation surviving a
+  later handle bootstrap, real/unknown fail-closed selection, and no Demo fallback.
+  The full gate and sanitizer result will be recorded after validation.
 
 ### S9.15-002 — Persistent monotonic revisions and recovery journal
 

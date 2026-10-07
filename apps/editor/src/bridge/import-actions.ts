@@ -56,11 +56,10 @@ export function useImportCommit(scene: BridgeHandle | undefined) {
           i += 1;
         }
         const payload = toSceneObject({ ...prepared, name });
-        // 1) store graph first (UI reacts immediately), 2) persist authoritative copy.
-        add(payload);
         if (scene) {
           const res = await scene.mutateObject({ kind: "add", object: payload });
           if (!res.ok) return { ok: false, error: res.error };
+          add(payload);
           await queryClient.invalidateQueries({ queryKey: ["bridge", "scene"] });
         } else {
           return { ok: false, error: "Bridge not connected — cannot persist the import." };
