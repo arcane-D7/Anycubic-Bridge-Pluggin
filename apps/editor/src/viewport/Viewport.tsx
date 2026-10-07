@@ -1,5 +1,6 @@
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { BridgeHandle } from "../bridge/mock";
@@ -36,6 +37,13 @@ import { ViewCube } from "./ViewCube";
 import { ViewportCamera } from "./ViewportCamera";
 import { LiveOverlay } from "./LiveOverlay";
 import type { PreviewModel } from "./preview-model";
+import {
+  beginRightGesture,
+  cancelRightGesture,
+  consumeRightGestureMenu,
+  moveRightGesture,
+  type RightGesture,
+} from "./context-gesture-core";
 
 interface ViewportProps {
   readonly scene: BridgeHandle | undefined;
@@ -230,10 +238,43 @@ function ObjectContextMenuPicker({
   const { camera, gl, scene } = useThree();
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const pointer = useMemo(() => new THREE.Vector2(), []);
+  const rightGesture = useRef<RightGesture | null>(null);
 
   useEffect(() => {
     const canvas = gl.domElement;
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button === 2) {
+        rightGesture.current = beginRightGesture(event.pointerId, event.clientX, event.clientY);
+      }
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      rightGesture.current = moveRightGesture(
+        rightGesture.current,
+        event.pointerId,
+        event.clientX,
+        event.clientY,
+      );
+    };
+    const onPointerCancel = (event: PointerEvent) => {
+      if (rightGesture.current?.pointerId === event.pointerId) {
+        rightGesture.current = cancelRightGesture(rightGesture.current);
+      }
+    };
+    const onLostPointerCapture = (event: PointerEvent) => {
+      if (rightGesture.current?.pointerId === event.pointerId) {
+        rightGesture.current = cancelRightGesture(rightGesture.current);
+      }
+    };
     const onContextMenu = (event: MouseEvent) => {
+      if (event.button === 2) {
+        const decision = consumeRightGestureMenu(rightGesture.current);
+        rightGesture.current = decision.next;
+        if (!decision.openMenu) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          return;
+        }
+      }
       const bounds = canvas.getBoundingClientRect();
       if (bounds.width <= 0 || bounds.height <= 0) return;
       pointer.set(
@@ -254,8 +295,18 @@ function ObjectContextMenuPicker({
         return;
       }
     };
+    canvas.addEventListener("pointerdown", onPointerDown, true);
+    canvas.addEventListener("pointermove", onPointerMove, true);
+    canvas.addEventListener("pointercancel", onPointerCancel, true);
+    canvas.addEventListener("lostpointercapture", onLostPointerCapture, true);
     canvas.addEventListener("contextmenu", onContextMenu, true);
-    return () => canvas.removeEventListener("contextmenu", onContextMenu, true);
+    return () => {
+      canvas.removeEventListener("pointerdown", onPointerDown, true);
+      canvas.removeEventListener("pointermove", onPointerMove, true);
+      canvas.removeEventListener("pointercancel", onPointerCancel, true);
+      canvas.removeEventListener("lostpointercapture", onLostPointerCapture, true);
+      canvas.removeEventListener("contextmenu", onContextMenu, true);
+    };
   }, [camera, gl, objects, onOpen, pointer, raycaster, scene]);
 
   return null;
@@ -321,6 +372,7 @@ function ViewportFrame({
   readonly children: React.ReactNode;
 }) {
   const t = useI18n((s) => s.t);
+  const queryClient = useQueryClient();
   const { commitFile } = useImportCommit(bridge);
   const openMenu = useContextMenuStore((s) => s.open);
   const pushToast = useUi((s) => s.pushToast);
@@ -349,11 +401,65 @@ function ViewportFrame({
         label: t("viewport.menu.arrange"),
         icon: "arrange",
         onSelect: () => {
-          pushToast({
-            kind: "info",
-            title: t("viewport.toast.arrange.title"),
-            message: t("viewport.toast.arrange.message"),
-          });
+          if (!bridge?.arrange) {
+            pushToast({
+              kind: "warning",
+              title: t("viewport.toast.arrange.title"),
+              message: t("toolbar.arrange.bridgeUnavailable"),
+            });
+            return;
+          }
+          const allObjects = useScene.getState().objects;
+          const targets = objectsOnPlate(allObjects, usePlates.getState().activeId);
+          if (targets.length === 0) {
+            pushToast({
+              kind: "info",
+              title: t("viewport.toast.arrange.title"),
+              message: t("toolbar.arrange.noObjects"),
+            });
+            return;
+          }
+          if (targets.length !== allObjects.length) {
+            pushToast({
+              kind: "warning",
+              title: t("viewport.toast.arrange.title"),
+              message: t("viewport.toast.arrange.scopeUnavailable"),
+            });
+            return;
+          }
+          void bridge
+            .arrange({
+              plateW: bridge.buildVolume?.widthMm,
+              plateD: bridge.buildVolume?.depthMm,
+              gap: 2,
+              center: true,
+            })
+            .then(async (result) => {
+              if (!result.ok) {
+                pushToast({
+                  kind: "error",
+                  title: t("viewport.toast.arrange.title"),
+                  message: result.error,
+                });
+                return;
+              }
+              await queryClient.invalidateQueries({ queryKey: ["bridge", "scene"] });
+              pushToast({
+                kind: "success",
+                title: t("viewport.toast.arrange.title"),
+                message: t("toolbar.arrange.successMsg", {
+                  n: String(result.placed.length),
+                  s: result.placed.length === 1 ? "" : "s",
+                }),
+              });
+            })
+            .catch(() =>
+              pushToast({
+                kind: "error",
+                title: t("viewport.toast.arrange.title"),
+                message: t("toolbar.arrange.failed"),
+              }),
+            );
         },
       },
       {
@@ -361,11 +467,7 @@ function ViewportFrame({
         label: t("viewport.menu.measure"),
         icon: "measure",
         onSelect: () => {
-          pushToast({
-            kind: "info",
-            title: t("viewport.toast.measure.title"),
-            message: t("viewport.toast.measure.message"),
-          });
+          useUi.getState().setTool("measure");
         },
       },
       {

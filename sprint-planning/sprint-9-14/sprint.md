@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor                                                                                                                            |
 | **Source**            | [Editor workspace CAD/AI audit](../../docs/audit/editor-workspace-cad-ai-audit-2026-10-07.md), AUD-01–03/AUD-15; sections 8, 9, 16, 19 |
 | **Depends On**        | Sprint 9.13                                                                                                                            |
-| **Status**            | 🔄 In Progress (2/4)                                                                                                                   |
+| **Status**            | 🔄 In Progress (3/4)                                                                                                                   |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -116,10 +116,17 @@ Right-button panning must not open a menu after the pointer crosses the drag thr
 
 #### Acceptance Criteria
 
-- [ ] **CTX-09:** Real right-button drag beyond the threshold pans and does not open a context menu on release.
-- [ ] **CTX-10:** Arrange and Measure execute their real handler or return an honest unavailable result.
-- [ ] Click, short movement, cancel and pointer-capture-loss cases are covered.
-- [ ] Run focused real-input tests, full gate and sanitizer dry-run successfully.
+- [x] **CTX-09:** Real right-button drag beyond the threshold pans and does not open a context menu on release.
+- [x] **CTX-10:** Arrange and Measure execute their real handler or return an honest unavailable result.
+- [x] Click, short movement, cancel and pointer-capture-loss cases are covered.
+- [x] Run focused real-input tests, full gate and sanitizer dry-run successfully.
+
+#### Implementation Progress
+
+- Added `viewport/context-gesture-core.ts` with a 6 CSS-pixel right-drag threshold, pointer identity checks, latched drag suppression and explicit cancel/lost-capture suppression. The R3F canvas picker applies the same discriminator before either mesh or background context menus; it does not capture the pointer, leaving OrbitControls' right-button pan intact. Keyboard context-menu invocation remains unaffected.
+- Replaced the background Measure notification with the existing `useUi.setTool("measure")` mode. Background Arrange invokes the existing `scene.arrange` lane and refreshes the authoritative scene; it refuses with localized warning when the active plate is not the complete lane target because the current bridge contract cannot scope Arrange to one plate.
+- Focused validation: `node --test tests/context-gesture.test.mjs tests/context-menu.test.mjs tests/object-tree-flow.test.mjs` passed 22/22; `pnpm exec tsc --noEmit` passed; `node tests/e2e/editor-reload.e2e.mjs` passed with real right-click/short-move, drag suppression, Arrange revision advance, Measure activation, and existing Shift+F10 coverage.
+- Full gate: `pnpm run check` EXIT 0 — unit 728/728, integration 11/11, Rust workspace/editor shell OK (176 tests), build 255608 bytes, smoke 115 tools, both E2E suites PASS, licenses 59, architecture OK, integrated sanitizer 0 files/0 substitutions. Standalone `node scripts/sanitize-repo.mjs --dry-run` also reported 0 files/0 substitution groups.
 
 ### S9.14-004 — Responsive toolbar/plate ownership and scroll policy
 

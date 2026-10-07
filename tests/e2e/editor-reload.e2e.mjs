@@ -195,6 +195,54 @@ try {
   await page.keyboard.press("Escape");
   await page.waitForSelector('[data-testid="context-menu"]', { hidden: true, timeout: 5000 });
 
+  // S9.14-003 — a right-button pan must not turn into a context menu, while
+  // short pointer movement remains a click. Drive native browser mouse input.
+  await page.mouse.move(canvasAnchor.x, canvasAnchor.y);
+  await page.mouse.down({ button: "right" });
+  await page.mouse.move(canvasAnchor.x + 3, canvasAnchor.y + 2, { steps: 2 });
+  await page.mouse.up({ button: "right" });
+  await page.waitForSelector('[data-testid="context-menu"]', { timeout: 5000 });
+  await page.keyboard.press("Escape");
+  await page.waitForSelector('[data-testid="context-menu"]', { hidden: true, timeout: 5000 });
+
+  await page.mouse.move(canvasAnchor.x, canvasAnchor.y);
+  await page.mouse.down({ button: "right" });
+  await page.mouse.move(canvasAnchor.x + 20, canvasAnchor.y + 3, { steps: 4 });
+  await page.mouse.up({ button: "right" });
+  await page.waitForFunction(() => !document.querySelector('[data-testid="context-menu"]'), {
+    timeout: 1000,
+  });
+
+  await page.mouse.click(canvasAnchor.x, canvasAnchor.y, { button: "right" });
+  await page.waitForSelector('[data-testid="context-item-arrange"]', { timeout: 5000 });
+  const revisionBeforeArrange = await page.$eval('[data-testid="status-revision"]', (el) =>
+    Number(el.textContent?.replace(/\D/g, "")),
+  );
+  await page.click('[data-testid="context-item-arrange"]');
+  await page.waitForFunction(
+    (previous) => {
+      const value = document.querySelector('[data-testid="status-revision"]')?.textContent ?? "";
+      return Number(value.replace(/\D/g, "")) > previous;
+    },
+    { timeout: 5000 },
+    revisionBeforeArrange,
+  );
+
+  await page.mouse.click(canvasAnchor.x, canvasAnchor.y, { button: "right" });
+  await page.waitForSelector('[data-testid="context-item-measure"]', { timeout: 5000 });
+  await page.click('[data-testid="context-item-measure"]');
+  await page.waitForSelector('[data-testid="measure-readout"]', { timeout: 5000 });
+  const measureMode = await page.$eval('[data-testid="tool-measure"]', (button) =>
+    button.getAttribute("aria-pressed"),
+  );
+  assert.equal(
+    measureMode,
+    "true",
+    "background Measure action should activate the real measurement tool",
+  );
+  await page.click('[data-testid="tool-measure"]');
+  await page.waitForSelector('[data-testid="measure-readout"]', { hidden: true, timeout: 5000 });
+
   const edgePoints = await page.$eval('[data-testid="viewport-frame"]', (frame) => {
     const rect = frame.getBoundingClientRect();
     const left = Math.max(0, rect.left);

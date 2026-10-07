@@ -712,6 +712,7 @@ export type MsgKey =
   | "viewport.menu.import"
   | "viewport.toast.arrange.title"
   | "viewport.toast.arrange.message"
+  | "viewport.toast.arrange.scopeUnavailable"
   | "viewport.toast.measure.title"
   | "viewport.toast.measure.message"
   // view cube -------------------------------------------------------------------
@@ -1448,6 +1449,8 @@ export const EN: Record<MsgKey, string> = {
   "viewport.menu.import": "Import…",
   "viewport.toast.arrange.title": "Arrange",
   "viewport.toast.arrange.message": "Use the toolbar Arrange for shelf packing.",
+  "viewport.toast.arrange.scopeUnavailable":
+    "Arrange cannot target only the active plate with the available handler.",
   "viewport.toast.measure.title": "Measure",
   "viewport.toast.measure.message": "Measure tool lands in a later sprint.",
   "viewCube.aria": "View cube",
@@ -2182,6 +2185,8 @@ export const PT_BR: Record<MsgKey, string> = {
   "viewport.toast.arrange.title": "Arrumar",
   "viewport.toast.arrange.message":
     "Use a barra de ferramentas Arrumar para empacotamento de prateleira.",
+  "viewport.toast.arrange.scopeUnavailable":
+    "A organização não pode visar apenas a placa ativa com o handler disponível.",
   "viewport.toast.measure.title": "Medir",
   "viewport.toast.measure.message": "A ferramenta Medir chega numa sprint posterior.",
   "viewCube.aria": "Cubo de vista",
