@@ -34,7 +34,7 @@ import { useDock } from "./state/dock";
 import { PrinterPicker } from "./components/PrinterPicker";
 import { PrintJobDialog } from "./dialogs/PrintJobDialog";
 import { useShortcuts } from "./hooks/useShortcuts";
-import { OverlayRoot } from "./components/dock/overlay-root";
+import { DockLayer } from "./components/dock/dock-layer";
 import { DockPanel } from "./components/dock/dock-panel";
 import { useScene } from "./state/scene";
 import { useUi } from "./state/ui";
@@ -248,6 +248,7 @@ export function App() {
               : t("app.bridgeState.unavailable")}
         </span>
         <DirtyChip />
+        <ToastViewport />
         <details className="shortcut-help-popover" data-testid="shortcut-help-toggle">
           <summary aria-label={t("app.shortcutHelp.aria")} title={t("app.shortcutHelp.title")}>
             ?
@@ -399,13 +400,12 @@ export function App() {
           modeLockReason={modeLockReason}
         />
       </footer>
-      <ToastViewport />
       <ContextMenu />
-      <OverlayRoot>
+      <DockLayer>
         <DockPanel />
         <DevicePanelHost />
         <TransformPanelHost scene={scene} />
-      </OverlayRoot>
+      </DockLayer>
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} scene={scene} />
     </div>
   );

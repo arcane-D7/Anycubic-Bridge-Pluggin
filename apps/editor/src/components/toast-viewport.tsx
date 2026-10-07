@@ -5,13 +5,14 @@ import { cn } from "@/lib/utils";
 import { Icon } from "./icons";
 
 /**
- * Notification bus renderer (S9.1-005, P1-8). Compact bell button pinned to
- * the BOTTOM-LEFT corner (out of the way of the header/printer UI and the
- * viewport footer): shows a count badge, opens an upward popover with the
+ * Notification bus renderer (S9.1-005, P1-8). A compact ghost bell in the
+ * HEADER right cluster (before "? Help"), opening a downward popover with the
  * stacked toasts. Each toast keeps the semantic LED + dismiss button.
  *
- * User feedback (2026-10-06): toasts stacked top-right squeezed against the
- * header — a minimized bottom-left bell with an on-demand popup is cleaner.
+ * Layout fix (2026-10-06, Consultor): the old bell was `position:fixed`
+ * bottom-left of the WINDOW — it overlapped the footer/status bar info and
+ * escaped the canvas reference frame. Now it lives in the header chrome
+ * (relative, flowing layout) with the popover anchored right below the bell.
  */
 
 const LED: Record<ToastKind, string> = {
@@ -55,7 +56,7 @@ export function ToastViewport() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
-  // Close the popover on outside click / Escape (no portal — positioned fixed).
+  // Close the popover on outside click / Escape (header-relative wrapper).
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
@@ -78,7 +79,6 @@ export function ToastViewport() {
         type="button"
         className={cn("toast-bell-button", open && "is-open")}
         aria-label={t("toast.bell.aria", { count: String(toasts.length) })}
-        aria-expanded={open}
         data-testid="toast-bell"
         onClick={() => setOpen((v) => !v)}
       >

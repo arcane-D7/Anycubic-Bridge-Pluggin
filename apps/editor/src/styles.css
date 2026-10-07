@@ -1157,11 +1157,13 @@ body,
   padding: 0 4px;
 }
 
-/* S9.8-003 — measure readout overlay (mono, bottom-left) + kind switcher */
+/* S9.8-003 — measure readout overlay (mono, bottom-left) + kind switcher.
+   2026-10-06 layout fix: lifted above the new canvas dock rail (bottom-left),
+   keeping the bottom-left slot for collapsed pills. */
 .measure-readout {
   position: absolute;
   left: 12px;
-  bottom: 12px;
+  bottom: 52px;
   z-index: 20;
   display: flex;
   align-items: center;
@@ -2499,6 +2501,9 @@ input {
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
+  /* 2026-10-06 layout fix: this debug strip is bottom-left; when shown
+     alongside the dock rail it must not overlap the pills. Keep at 12px —
+     the strip is dev-only (gated behind debugStrip) and rare. */
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 4px;

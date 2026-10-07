@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import {
   useCallback,
   useState,
@@ -8,6 +9,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useDock, type PanelId } from "../../state/dock";
 import { useI18n } from "../../state/i18n";
 import { useDockDrag } from "./use-dock";
+import { useDockRail, useViewportDockRoot } from "./dock-layer";
 
 /**
  * FloatingPanelHost (S9.1a-002/004) — renders a floating panel's content.
@@ -56,6 +58,11 @@ export function FloatingPanelHost({
   const { onPointerDown, bindElement } = useDockDrag(id);
   const [inlineRect, setInlineRect] = useState<{ w: number; h: number } | null>(null);
 
+  // 2026-10-06 layout fix (Consultor): panels portal into the CANVAS-local
+  // dock root (inside .viewport-frame) — so rect fractions are canvas-relative.
+  const dockRoot = useViewportDockRoot();
+  const portalTarget = typeof document !== "undefined" && dockRoot ? dockRoot : undefined;
+
   const isFloating = panel.mode === "floating";
 
   const handleResize = useCallback(
@@ -64,14 +71,22 @@ export function FloatingPanelHost({
         const startX = e.clientX;
         const startY = e.clientY;
         const startRect = panel.rect;
+        // Canvas-relative base (2026-10-06 layout fix): the frame box, not the
+        // window — same reference frame as the drag commit.
+        const frame = e.currentTarget.ownerDocument
+          ? e.currentTarget.ownerDocument.querySelector<HTMLElement>(".viewport-frame")
+          : null;
+        const base = frame?.getBoundingClientRect() ?? document.body.getBoundingClientRect();
+        const vw = Math.max(1, base.width);
+        const vh = Math.max(1, base.height);
         // Track the resized rect in a closure so `up` commits the final
         // (not the stale store) value.
         let cur = { ...startRect };
         setInlineRect({ w: startRect.w, h: startRect.h });
 
         const move = (ev: PointerEvent) => {
-          const dw = (ev.clientX - startX) / window.innerWidth;
-          const dh = (ev.clientY - startY) / window.innerHeight;
+          const dw = (ev.clientX - startX) / vw;
+          const dh = (ev.clientY - startY) / vh;
           cur = { ...startRect, w: startRect.w + dw, h: startRect.h + dh };
           setInlineRect({ w: cur.w, h: cur.h });
         };
@@ -145,83 +160,88 @@ export function FloatingPanelHost({
   );
 
   return (
-    <DialogPrimitive.Content
-      ref={bindElement}
-      className="floating-panel-host data-[state=open]:animate-in data-[state=open]:fade-in-0 duration-200"
-      data-panel={id}
-      data-testid={`floating-panel-${id}`}
-      style={{
-        position: "fixed",
-        left: `${panel.rect.x * 100}%`,
-        top: `${panel.rect.y * 100}%`,
-        width: `${(inlineRect?.w ?? panel.rect.w) * 100}%`,
-        height: `${(inlineRect?.h ?? panel.rect.h) * 100}%`,
-        // Ladder: baseline --z-panel (40) + focus-bumps keep us in the panel band (< dialog 50 / toast 60).
-        zIndex: `calc(var(--z-panel) + ${panel.z - 1})`,
-      }}
-      // Drag uses setPointerCapture: Radix modal={false} fires pointerdown-
-      // outside as soon as the pointer is captured, which would collapse the
-      // panel the moment you grab the header. Pointer-based interaction is
-      // owned by the drag/resize handlers, so dismiss stays Esc/API-only.
-      onPointerDownOutside={(e) => e.preventDefault()}
-      onInteractOutside={(e) => e.preventDefault()}
-      onPointerDown={onPointerDown}
-      onFocusCapture={() => focusPanel(id)}
-      onKeyDown={handleKeyDown}
-    >
-      <div className="floating-header" data-drag>
-        <DialogPrimitive.Title className="floating-title" title={title}>
-          {title}
-        </DialogPrimitive.Title>
-        {headerExtra}
-        <button
-          type="button"
-          className="floating-icon-btn"
-          title={t("dock.dockTitle")}
-          data-testid={`dock-${id}`}
-          onClick={onDock}
-        >
-          ⇲
-        </button>
-        <button
-          type="button"
-          className="floating-icon-btn"
-          title={t("dock.collapseTitle")}
-          data-testid={`collapse-${id}`}
-          onClick={onCollapse}
-        >
-          –
-        </button>
-      </div>
-      <div className="floating-body">
-        {children}
-        <DialogPrimitive.Description className="sr-only">
-          {t("dock.floatingDesc", { title })}
-        </DialogPrimitive.Description>
-      </div>
-      {isFloating && (
-        <>
+    <DialogPrimitive.Portal container={portalTarget}>
+      <DialogPrimitive.Content
+        ref={bindElement}
+        className="floating-panel-host data-[state=open]:animate-in data-[state=open]:fade-in-0 duration-200"
+        data-panel={id}
+        data-testid={`floating-panel-${id}`}
+        style={{
+          position: "absolute",
+          left: `${panel.rect.x * 100}%`,
+          top: `${panel.rect.y * 100}%`,
+          width: `${(inlineRect?.w ?? panel.rect.w) * 100}%`,
+          height: `${(inlineRect?.h ?? panel.rect.h) * 100}%`,
+          // Ladder: baseline --z-panel (40) + focus-bumps keep us in the panel band (< dialog 50 / toast 60).
+          zIndex: `calc(var(--z-panel) + ${panel.z - 1})`,
+          pointerEvents: "auto",
+        }}
+        // Drag uses setPointerCapture: Radix modal={false} fires pointerdown-
+        // outside as soon as the pointer is captured, which would collapse the
+        // panel the moment you grab the header. Pointer-based interaction is
+        // owned by the drag/resize handlers, so dismiss stays Esc/API-only.
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onPointerDown={onPointerDown}
+        onFocusCapture={() => focusPanel(id)}
+        onKeyDown={handleKeyDown}
+      >
+        <div className="floating-header" data-drag>
+          <DialogPrimitive.Title className="floating-title" title={title}>
+            {title}
+          </DialogPrimitive.Title>
+          {headerExtra}
           <button
             type="button"
-            className="resize-handle resize-handle-se"
-            aria-label={t("dock.resizeTitle", { title })}
-            data-resize="se"
-            onPointerDown={(e) => handleResize(e, "se")}
-          />
-          <div className="resize-handle resize-handle-n" data-resize="n" />
-          <div className="resize-handle resize-handle-s" data-resize="s" />
-          <div className="resize-handle resize-handle-e" data-resize="e" />
-          <div className="resize-handle resize-handle-w" data-resize="w" />
-          <div className="resize-handle resize-handle-ne" data-resize="ne" />
-          <div className="resize-handle resize-handle-nw" data-resize="nw" />
-          <div className="resize-handle resize-handle-sw" data-resize="sw" />
-        </>
-      )}
-    </DialogPrimitive.Content>
+            className="floating-icon-btn"
+            title={t("dock.dockTitle")}
+            data-testid={`dock-${id}`}
+            onClick={onDock}
+          >
+            ⇲
+          </button>
+          <button
+            type="button"
+            className="floating-icon-btn"
+            title={t("dock.collapseTitle")}
+            data-testid={`collapse-${id}`}
+            onClick={onCollapse}
+          >
+            –
+          </button>
+        </div>
+        <div className="floating-body">
+          {children}
+          <DialogPrimitive.Description className="sr-only">
+            {t("dock.floatingDesc", { title })}
+          </DialogPrimitive.Description>
+        </div>
+        {isFloating && (
+          <>
+            <button
+              type="button"
+              className="resize-handle resize-handle-se"
+              aria-label={t("dock.resizeTitle", { title })}
+              data-resize="se"
+              onPointerDown={(e) => handleResize(e, "se")}
+            />
+            <div className="resize-handle resize-handle-n" data-resize="n" />
+            <div className="resize-handle resize-handle-s" data-resize="s" />
+            <div className="resize-handle resize-handle-e" data-resize="e" />
+            <div className="resize-handle resize-handle-w" data-resize="w" />
+            <div className="resize-handle resize-handle-ne" data-resize="ne" />
+            <div className="resize-handle resize-handle-nw" data-resize="nw" />
+            <div className="resize-handle resize-handle-sw" data-resize="sw" />
+          </>
+        )}
+      </DialogPrimitive.Content>
+    </DialogPrimitive.Portal>
   );
 }
 
-/** Pill shown when a panel is collapsed (S9.1a-002 AC-2). */
+/** Pill shown when a panel is collapsed (S9.1a-002 AC-2). Since 2026-10-06,
+ *  the pill portals into the CANVAS rail (.dock-rail, bottom-left of the
+ *  frame) — no more window-anchored pills over the header/footer. */
 export function CollapsedPill({
   id,
   title,
@@ -232,7 +252,8 @@ export function CollapsedPill({
   readonly onExpand: () => void;
 }) {
   const t = useI18n((s) => s.t);
-  return (
+  const rail = useDockRail();
+  const pill = (
     <button
       type="button"
       className="dock-pill"
@@ -244,4 +265,7 @@ export function CollapsedPill({
       {title}
     </button>
   );
+  // When the rail isn't ready (first paint / tests), fall back to rendering
+  // inline so the pill still works as the overlay fallback.
+  return rail ? createPortal(pill, rail) : pill;
 }

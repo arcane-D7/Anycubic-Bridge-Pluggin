@@ -30,7 +30,7 @@ try {
   dock = { clampRect: (r) => r };
 }
 
-test("clampRect keeps valid viewport-fraction rects", () => {
+test("clampRect keeps valid canvas-relative rects", () => {
   assert.deepEqual(dock.clampRect({ x: 0.5, y: 0.22, w: 0.34, h: 0.5 }), {
     x: 0.5,
     y: 0.22,
@@ -39,38 +39,41 @@ test("clampRect keeps valid viewport-fraction rects", () => {
   });
 });
 
-test("clampRect bounds out-of-range values to [0,0.9]/[0.2,0.9]", () => {
-  assert.deepEqual(dock.clampRect({ x: -2, y: 5, w: 3, h: 0.05 }), {
-    x: 0,
-    y: 0.8,
-    w: 0.9,
-    h: 0.2,
-  });
+test("clampRect bounds out-of-range values into the canvas band", () => {
+  const got = dock.clampRect({ x: -2, y: 5, w: 3, h: 0.05 });
+  // w/h are clamped to the [0.2,0.9]/[0.3,0.9] band first, then x/y to the
+  // visible band [INSET, 1-w-INSET] (INSET = 0.012).
+  assert.deepEqual(got.w, 0.9);
+  assert.deepEqual(got.h, 0.3);
+  assert.ok(got.x >= 0.012 - 1e-9);
+  assert.ok(got.y <= 1 - 0.3 - 0.012 + 1e-9);
 });
 
 test("clampRect rounds tiny widths/heights up to the minimum", () => {
   const got = dock.clampRect({ x: 0.1, y: 0.1, w: 0.01, h: 0.15 });
   assert.ok(got.w >= 0.2);
-  assert.ok(got.h >= 0.2);
+  assert.ok(got.h >= 0.3);
 });
 
-// S9.1a-004 — Alt+Shift+arrows move the panel by MOVE_STEP (0.05) viewport
+// S9.1a-004 — Alt+Shift+arrows move the panel by MOVE_STEP (0.05) canvas
 // fractions; clampRect keeps the moved rect inside the visible band.
 const MOVE_STEP = 0.05;
 
-test("a11y move step keeps the rect inside the clampable viewport", () => {
-  // Panel near the bottom-right edge, moved down-right once more.
-  const near = { x: 0.85, y: 0.75, w: 0.3, h: 0.3 };
+test("a11y move step keeps the rect inside the clampable canvas", () => {
+  // Panel at the right edge (max legal x for w=0.3 is 1-0.3-INSET), moved
+  // right once more — clamp keeps it inside the visible band.
+  const near = { x: 1 - 0.3 - 0.012, y: 1 - 0.3 - 0.012, w: 0.3, h: 0.3 };
   const moved = dock.clampRect({
     x: near.x + MOVE_STEP,
     y: near.y + MOVE_STEP,
     w: near.w,
     h: near.h,
   });
-  assert.ok(moved.x <= 0.9);
-  assert.ok(moved.y <= 0.8);
-  assert.ok(moved.x >= 0.85);
-  assert.ok(moved.y >= 0.75);
+  // 0.3-wide panel → x ∈ [0.012, 0.688]; y ∈ [0.012, 0.688].
+  assert.ok(moved.x <= 1 - 0.3 - 0.012 + 1e-9);
+  assert.ok(moved.y <= 1 - 0.3 - 0.012 + 1e-9);
+  assert.ok(moved.x >= 0.012 - 1e-9);
+  assert.ok(moved.y >= 0.012 - 1e-9);
 });
 
 test("a11y move step from origin stays strictly positive", () => {
@@ -81,5 +84,6 @@ test("a11y move step from origin stays strictly positive", () => {
     w: origin.w,
     h: origin.h,
   });
-  assert.deepEqual({ x: moved.x, y: moved.y }, { x: 0, y: 0 });
+  assert.ok(moved.x >= 0.012 - 1e-9);
+  assert.ok(moved.y >= 0.012 - 1e-9);
 });

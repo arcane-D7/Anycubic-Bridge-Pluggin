@@ -68,7 +68,11 @@ export function useDockDrag(id: PanelId) {
       const start = startRef.current;
       const el = elRef.current;
       if (!start || !el) return;
-      const viewport = el.closest(".viewport-host");
+      // 2026-10-06 layout fix (Consultor): the drag commits CANVAS-relative
+      // fractions — the base box is `.viewport-frame` (or `.viewport-dock-root`,
+      // which fills the frame), NOT the window. This keeps panels anchored to
+      // the canvas when the sidebar/left panel resizes.
+      const viewport = el.closest(".viewport-frame");
       const base = viewport?.getBoundingClientRect() ?? document.body.getBoundingClientRect();
       const vw = Math.max(1, base.width);
       const vh = Math.max(1, base.height);

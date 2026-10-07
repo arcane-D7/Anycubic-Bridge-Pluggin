@@ -411,30 +411,23 @@
  * ============================================================ */
 @layer components {
   .toast-bell {
-    position: fixed;
-    left: 12px;
-    bottom: 12px;
-    z-index: 58;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    position: relative;
+    flex: 0 0 auto;
+    display: inline-flex;
   }
 
   .toast-bell-button {
     position: relative;
-    width: 36px;
-    height: 36px;
-    border-radius: var(--r-full, 999px);
-    border: 1px solid var(--glass-stroke);
-    background: var(--glass-fill-2);
-    -webkit-backdrop-filter: blur(var(--blur-2)) saturate(1.15);
-    backdrop-filter: blur(var(--blur-2)) saturate(1.15);
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-md, 6px);
+    border: 1px solid var(--border);
+    background: var(--bg-panel, var(--glass-fill));
     color: var(--text-secondary);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: var(--shadow-2);
     transition:
       color 0.15s ease,
       border-color 0.15s ease,
@@ -444,7 +437,7 @@
   .toast-bell-button.is-open {
     color: var(--accent-primary);
     border-color: var(--accent-primary);
-    background: var(--glass-fill-3);
+    background: var(--bg-panel, var(--glass-fill));
   }
 
   .toast-bell-badge {
@@ -467,9 +460,9 @@
 
   .toast-popover {
     position: absolute;
-    left: 0;
-    bottom: calc(100% + 8px);
-    width: min(340px, calc(100vw - 24px));
+    right: 0;
+    top: calc(100% + 8px);
+    width: min(360px, calc(100vw - 24px));
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -480,6 +473,7 @@
     border: 1px solid var(--glass-stroke);
     border-radius: var(--r-lg, 12px);
     box-shadow: var(--shadow-inset-hi), var(--shadow-3);
+    z-index: var(--z-toast, 60);
     animation: toast-pop-in var(--transition-fast, 120ms) var(--ease-out);
   }
   .toast-popover.empty {
@@ -973,7 +967,6 @@
   }
 
   .dock-pill {
-    position: fixed;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -987,7 +980,7 @@
     color: var(--text-primary);
     font-size: var(--t-md);
     cursor: pointer;
-    /* Also inside the overlay wrapper — opts back into the input path. */
+    /* Inside the dock rail (canvas-local) — opts back into the input path. */
     pointer-events: auto;
   }
   .dock-pill:hover {
@@ -998,6 +991,29 @@
     height: 8px;
     border-radius: var(--r-pill);
     background: var(--accent-primary);
+  }
+
+  /* 2026-10-06 layout fix (Consultor) — canvas-local dock chrome.
+   * #viewport-dock-root is rendered inside .viewport-frame (stable across
+   * Prepare/Preview); the layer fills the frame with pointer-events:none and
+   * the rail is a bottom-left pill column. Panels/pills opt back in. */
+  .viewport-dock-root,
+  .viewport-dock-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: clip;
+  }
+
+  .dock-rail {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    pointer-events: none; /* container never blocks; pills opt back in */
   }
 
   /* S9.1a-004 — visible focus ring on floating chrome (both themes).

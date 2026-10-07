@@ -382,6 +382,14 @@ function ViewportFrame({
         className="visually-hidden"
         onChange={onImportFile}
       />
+      {/* 2026-10-06 layout fix (Consultor): canvas-local dock root — the ONLY
+          anchor for floating panels + collapsed pills, so dock chrome is
+          frame-relative (never window-anchored over the header/footer). */}
+      <div
+        id="viewport-dock-root"
+        className="viewport-dock-root"
+        data-testid="viewport-dock-root"
+      />
       {dragActive ? (
         <div className="viewport-drop-hint" data-testid="viewport-drop-hint" role="status">
           {t("viewport.dropHint")}
