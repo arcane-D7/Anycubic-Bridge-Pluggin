@@ -17,7 +17,12 @@ import {
   type AceBox,
   type AceSlot,
 } from "@/state/printer-filament-core";
-import type { PrinterSnapshot, SpeedMode } from "@/bridge/types";
+import type {
+  PrinterFileEntry,
+  PrinterFileListResult,
+  PrinterSnapshot,
+  SpeedMode,
+} from "@/bridge/types";
 import type { MsgKey } from "@/state/i18n-core";
 
 /**
@@ -360,6 +365,249 @@ function FilamentTab({
 }
 
 /**
+ * S9.12-001 — Files tab: printer storage browser (local + USB).
+ *
+ * Lists files through the deterministic `listFiles` bridge lane, renders
+ * Local/USB sub-tabs with metadata (name, size, modified) and a colour
+ * swatch for thumbnails (the device has no image URLs — S9.12 never renders
+ * a broken <img>). `refresh` re-runs the lane; a `stale` result surfaces the
+ * honest refresh hint. Send/Print on a file goes through the SAME approval
+ * card as the sliced-job send (S9.5-004): nothing leaves the panel until the
+ * user approves; the storage preflight (used/total) is shown before send.
+ */
+function FilesTab({ storage }: { storage: PrinterSnapshot["storage"] | null }) {
+  const t = useI18n((s) => s.t);
+  const [sub, setSub] = useState<"local" | "usb">("local");
+  const [local, setLocal] = useState<PrinterFileListResult | null>(null);
+  const [usb, setUsb] = useState<PrinterFileListResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [rowBusy, setRowBusy] = useState(false);
+  const [pending, setPending] = useState<PrinterFileEntry | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const pushToast = useUi((s) => s.pushToast);
+  const selectedId = usePrinters((s) => s.selectedId);
+  const printers = usePrinters((s) => s.printers);
+  const usedBytes = storage?.usedBytes ?? null;
+  const totalBytes = storage?.totalBytes ?? null;
+
+  const load = useCallback(
+    async (kinds: readonly ("local" | "usb")[], silent = false) => {
+      if (!selectedId || kinds.length === 0) return;
+      const lane = await import("@/bridge/mock");
+      const handle = await lane.fetchSceneSnapshot();
+      if (!silent) setLoading(true);
+      try {
+        for (const kind of kinds) {
+          const result = await handle.listFiles(kind);
+          if (kind === "local") setLocal(result);
+          else setUsb(result);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [selectedId],
+  );
+
+  // First mount: list both storages once (loading state, no refresh loop —
+  // the panel is already refreshed by the monitor poll; the files tab owns
+  // its own refresh button + stale hint).
+  useEffect(() => {
+    if (!selectedId) return;
+    const kinds = ["local", "usb"] as const;
+    void (async () => {
+      const lane = await import("@/bridge/mock");
+      const handle = await lane.fetchSceneSnapshot();
+      for (const kind of kinds) {
+        const result = await handle.listFiles(kind);
+        if (kind === "local") setLocal(result);
+        else setUsb(result);
+      }
+    })();
+  }, [selectedId]);
+
+  const active = sub === "local" ? local : usb;
+  const files = active?.files ?? [];
+  const viewBusy = loading || rowBusy;
+
+  const onConfirm = useCallback(async () => {
+    if (!pending || !selectedId) return;
+    setConfirmOpen(false);
+    const printer = printers.find((p) => p.id === selectedId) ?? {
+      id: selectedId,
+      name: selectedId,
+      ip: "",
+      machineType: null,
+      reachable: null,
+      lastSeenAt: null,
+    };
+    setRowBusy(true);
+    try {
+      const lane = await import("@/bridge/mock");
+      const handle = await lane.fetchSceneSnapshot();
+      const result = await handle.sendFile({
+        printerId: selectedId,
+        ip: printer.ip ?? "",
+        fileId: pending.id,
+        name: pending.name,
+        source: pending.kind,
+        storage: {
+          usedBytes,
+          totalBytes,
+        },
+      });
+      if (result.ok) {
+        pushToast({
+          kind: "success",
+          title: t("device.files.sentTo"),
+          message: `${printer.name ?? ""} — ${pending.name}`,
+        });
+        void load([sub], true);
+      } else {
+        pushToast({
+          kind: "warning",
+          title:
+            result.kind === "offline"
+              ? t("device.files.sendOffline")
+              : result.kind === "region"
+                ? t("device.files.sendRegion")
+                : t("device.files.sendUnknown"),
+          message: result.error ?? undefined,
+        });
+      }
+    } finally {
+      setRowBusy(false);
+      setPending(null);
+    }
+  }, [pending, selectedId, printers, local, usb, sub, pushToast, t, load]);
+
+  return (
+    <div className="device-panel" data-testid="device-files-tab">
+      <section className="device-section" data-testid="device-section-files">
+        <header className="device-section-title">
+          {t("device.files.title")}
+          <button
+            type="button"
+            className="device-files-refresh"
+            data-testid="device-files-refresh"
+            disabled={viewBusy}
+            onClick={() => void load([sub], false)}
+          >
+            {t("device.files.refresh")}
+          </button>
+        </header>
+
+        <div className="device-files-subtabs" role="tablist" aria-label={t("device.tab.files")}>
+          {(["local", "usb"] as const).map((kind) => (
+            <button
+              key={kind}
+              type="button"
+              role="tab"
+              aria-selected={sub === kind}
+              className={`device-files-subtab${sub === kind ? " is-active" : ""}`}
+              data-testid={`device-files-subtab-${kind}`}
+              onClick={() => setSub(kind)}
+            >
+              {kind === "local" ? t("device.files.local") : t("device.files.usb")}
+            </button>
+          ))}
+        </div>
+
+        {active?.stale ? (
+          <div className="device-banner device-banner-stale" data-testid="device-files-stale">
+            {t("device.files.stale")}
+          </div>
+        ) : null}
+
+        {files.length === 0 && !viewBusy ? (
+          <div className="device-empty" data-testid="device-files-empty">
+            <span className="device-empty-title">{t("device.files.title")}</span>
+            <span className="device-empty-msg">
+              {sub === "local" ? t("device.files.emptyLocal") : t("device.files.emptyUsb")}
+            </span>
+          </div>
+        ) : (
+          <ul className="device-files-list" data-testid="device-files-list">
+            {files.map((entry) => (
+              <li key={entry.id} className="device-files-row" data-testid="device-files-row">
+                <span
+                  className="device-files-swatch"
+                  style={{ background: entry.thumbHint ?? "transparent" }}
+                  aria-hidden="true"
+                />
+                <span className="device-files-name mono-num" title={entry.name}>
+                  {entry.name}
+                </span>
+                <span className="device-files-meta mono-num">
+                  {entry.sizeBytes !== null ? `${mb(entry.sizeBytes)} MB` : "—"}
+                  {entry.modifiedAt !== null
+                    ? ` · ${new Date(entry.modifiedAt).toLocaleDateString()}`
+                    : ""}
+                </span>
+                <button
+                  type="button"
+                  className="device-files-send"
+                  data-testid="device-files-send"
+                  disabled={viewBusy}
+                  onClick={() => {
+                    setPending(entry);
+                    setConfirmOpen(true);
+                  }}
+                >
+                  {t("device.files.print")}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      {confirmOpen && pending ? (
+        <div
+          className="device-modal"
+          data-testid="device-files-confirm"
+          onClick={() => setConfirmOpen(false)}
+        >
+          <div
+            className="device-modal-card"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("device.files.confirmTitle")}
+          >
+            <header className="device-modal-title">{t("device.files.confirmTitle")}</header>
+            <p className="device-files-confirm-msg">{t("device.files.confirmMsg")}</p>
+            <div className="device-files-preflight mono-num" data-testid="device-files-preflight">
+              {t("device.files.storagePreflight")}: {t("device.files.storageUsed")}{" "}
+              {usedBytes !== null ? mb(usedBytes) : "—"} MB · {t("device.files.storageFree")}{" "}
+              {usedBytes !== null && totalBytes !== null ? mb(totalBytes - usedBytes) : "—"} MB
+            </div>
+            <div className="device-bind-actions">
+              <button
+                type="button"
+                className="device-bind-cancel"
+                data-testid="device-files-confirm-cancel"
+                onClick={() => setConfirmOpen(false)}
+              >
+                {t("device.files.confirmCancel")}
+              </button>
+              <button
+                type="button"
+                className="device-bind-submit"
+                data-testid="device-files-confirm-send"
+                disabled={rowBusy}
+                onClick={() => void onConfirm()}
+              >
+                {rowBusy ? t("device.files.sendBusy") : t("device.files.confirmSend")}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
  * S9.10-003 — manual ACE slot bind form. Collects material + color and sends
  * `ace_set_slot` via the manual path (edit_status stays 1 — we never forge an
  * RFID tag; consumables stay in the local spool registry, spool_bind).
@@ -500,7 +748,7 @@ export function DevicePanelMonitor() {
   const selectedId = usePrinters((s) => s.selectedId);
   const { printerId, snapshot, pollingStatus } = usePrinterDevice();
   const [cameraOn, setCameraOn] = useState(false);
-  const [tab, setTab] = useState<"monitor" | "filament">("monitor");
+  const [tab, setTab] = useState<"monitor" | "filament" | "files">("monitor");
 
   // S9.9-006 — status-bar chips navigate here: focus flips the tab and, when
   // a section id is given, scrolls the panel to that section after render.
@@ -636,6 +884,16 @@ export function DevicePanelMonitor() {
         >
           {t("device.tab.filament")}
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "files"}
+          className={`device-tab${tab === "files" ? " is-active" : ""}`}
+          data-testid="device-tab-files"
+          onClick={() => setTab("files")}
+        >
+          {t("device.tab.files")}
+        </button>
       </div>
       {tab === "filament" ? (
         <FilamentTab
@@ -645,6 +903,8 @@ export function DevicePanelMonitor() {
           onBind={(boxId, slotIndex) => setBindTarget({ boxId, slotIndex })}
           busy={busy}
         />
+      ) : tab === "files" ? (
+        <FilesTab storage={snap?.storage ?? null} />
       ) : (
         <>
           {statusBanner}

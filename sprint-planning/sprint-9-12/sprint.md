@@ -51,7 +51,7 @@ node scripts/sanitize-repo.mjs --dry-run
 | **Priority**         | P1                                                            |
 | **Type**             | Feature                                                       |
 | **Estimated Effort** | L                                                             |
-| **Status**           | ⏳ Planned                                                    |
+| **Status**           | ✅ Done                                                       |
 
 #### Context
 

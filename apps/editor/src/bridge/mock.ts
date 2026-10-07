@@ -7,12 +7,15 @@ import type {
   ObjectMutation,
   PrinterControlRequest,
   PrinterControlResult,
+  PrinterFileListResult,
   PrinterInfo,
   PrinterListResult,
   PrinterSnapshot,
   RepairRequest,
   RepairResult,
   SceneObjectSnapshot,
+  SendFileRequest,
+  SendFileResult,
   SendRequest,
   SendResult,
   SliceRequest,
@@ -26,6 +29,7 @@ import { DEFAULT_PLATE_ID } from "../state/plates-core.ts";
 import { parsePrinterIps, printerId, printerName } from "../state/printers-core.ts";
 import { booleanProvenance } from "../state/toolbar-core.ts";
 import { copyNameFor, repairResultNote } from "../state/repair.ts";
+import { mockFileEntries, normaliseFileListing } from "../state/printer-files-core.ts";
 import { mapPrinterPayload } from "../state/printer-path-map.ts";
 
 export { StaleCommitError };
@@ -1151,6 +1155,48 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
       // but the snapshots are immutable anyway; the real lane re-fetches).
       return { ok: true as const, command: envelope.command };
     },
+    // --- S9.12-001 file listing lane (G-local_list) ----------------------
+    // Deterministic mock of the printer storage listing (cloud `local_files`
+    // order 103 / `usb_files` order 101, LAN `listLocal`/`listUdisk`).
+    // `kind` selects local vs USB storage; test seams force loadedAt age /
+    // emptiness so the staleness + empty-state paths are headless-testable.
+    async listFiles(kind) {
+      if (mockFileListNeverLoaded.has(kind)) {
+        return { ok: true, source: kind, files: [], loadedAt: null, stale: false };
+      }
+      const files = normaliseFileListing(mockFileListPayload(kind) ?? [], kind);
+      const loadedAt = mockFileListLoadedAt.get(kind) ?? Date.now();
+      return {
+        ok: true,
+        source: kind,
+        files,
+        loadedAt,
+        // `stale` mirrors the snapshot honesty rule: the UI keeps a poll
+        // window and flags a list that is expected-but-older.
+        stale: mockFileListStale.get(kind) === true,
+      };
+    },
+    // --- S9.12-001 send-file lane (G25 parity) ---------------------------
+    // Same deterministic seams as sendJob: offline/region abort; success mints
+    // a mock task id. The UI calls this ONLY after the approval card.
+    async sendFile(req) {
+      const offline = mockOfflinePrinterIds.has(req.printerId);
+      const region = mockRegionBlocked;
+      if (offline || region) {
+        return {
+          ok: false as const,
+          error: offline
+            ? `printer ${req.ip} is offline`
+            : "print blocked: cloud region not available",
+          kind: offline ? "offline" : "region",
+        };
+      }
+      return {
+        ok: true as const,
+        taskId: `mock-task-${currentRevision}-${req.fileId}`,
+        fileId: req.fileId,
+      };
+    },
   };
   return handle;
 }
@@ -1201,6 +1247,53 @@ export function setMockControlRefused(refused: boolean): void {
 /** Test seam: force every control to time out (S9.10-002). */
 export function setMockControlTimeout(timeout: boolean): void {
   mockControlTimeout = timeout;
+}
+
+/**
+ * S9.12-001 test seams — deterministic file-list seeds. The React layer never
+ * sets these; unit tests do. `setMockFileListNeverLoaded` forces the
+ * never-loaded path (files: [], loadedAt: null); `setMockFileListStale`
+ * forces the stale flag regardless of age; `setMockFileListLoadedAt` pins the
+ * loadedAt epoch so staleness is deterministic.
+ */
+let mockFileListNeverLoaded: ReadonlySet<"local" | "usb"> = new Set();
+let mockFileListStale: ReadonlyMap<"local" | "usb", boolean> = new Map();
+let mockFileListLoadedAt: ReadonlyMap<"local" | "usb", number> = new Map();
+
+/** Test seam: simulate a storage that has never been listed (S9.12-001). */
+export function setMockFileListNeverLoaded(kinds: readonly ("local" | "usb")[]): void {
+  mockFileListNeverLoaded = new Set(kinds);
+}
+
+/** Test seam: force the stale flag for a storage kind (S9.12-001). */
+export function setMockFileListStale(kinds: readonly ("local" | "usb")[]): void {
+  mockFileListStale = new Map(kinds.map((kind) => [kind, true]));
+}
+
+/** Test seam: pin the loadedAt epoch for a storage kind (S9.12-001). */
+export function setMockFileListLoadedAt(kind: "local" | "usb", epochMs: number): void {
+  mockFileListLoadedAt = new Map([...mockFileListLoadedAt, [kind, epochMs]]);
+}
+
+/** Payload shape the mock lane returns for a storage kind — same source
+ * shapes as the discovery probes (array of entries for local, `files: []`
+ * wrapper for usb) so the normaliser is exercised over BOTH spellings. */
+function mockFileListPayload(kind: "local" | "usb"): unknown {
+  return kind === "local"
+    ? (mockFileEntries("local").map((entry) => ({
+        id: entry.id,
+        name: entry.name,
+        size: entry.sizeBytes,
+        modified: entry.modifiedAt,
+      })) as object[])
+    : {
+        files: mockFileEntries("usb").map((entry) => ({
+          fileId: entry.id,
+          file_name: entry.name,
+          file_size: entry.sizeBytes,
+          uploadTime: entry.modifiedAt,
+        })),
+      };
 }
 
 const EMPTY_COMMIT_SELECTION: CommitSinkPayload["selection"] = {
@@ -1305,6 +1398,19 @@ export interface BridgeContract {
    * (accepted / refused / timeout / invalid) so the UI toasts distinctly.
    */
   printerControl(req: PrinterControlRequest): Promise<PrinterControlResult>;
+  /**
+   * S9.12-001: printer file listing lane (G-local_list). Lists the printer's
+   * local or USB storage (cloud `local_files` 103 / `usb_files` 101, LAN
+   * `listLocal`/`listUdisk`) normalised to the shared `PrinterFileEntry`
+   * shape. Deterministic mock: fixture file names, no real device ids.
+   */
+  listFiles(kind: "local" | "usb"): Promise<PrinterFileListResult>;
+  /**
+   * S9.12-001: send-file lane (G25 parity). Called ONLY after the approval
+   * card; same semantic union as `sendJob` — offline/region abort, success
+   * mints a deterministic mock task id.
+   */
+  sendFile(req: SendFileRequest): Promise<SendFileResult>;
 }
 
 /** Live bridge handle: the fetched profile+scene snapshot PLUS the commit sink

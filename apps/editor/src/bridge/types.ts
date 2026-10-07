@@ -509,3 +509,78 @@ export type PrinterControlResult =
       readonly error: string;
       readonly kind: "invalid" | "refused" | "timeout";
     };
+
+/**
+ * S9.12-001 — a single file entry from the printer's storage (local/USB).
+ * `name` is the display name (basename — the device reports a path),
+ * `sizeBytes`/`modifiedAt` come from the device and are nullable; only the
+ * name is required (an empty file list is legitimate). `path` is the
+ * device-side path used as a stable key — never a host path. No account
+ * identifiers ever appear here (AGENTS.md §6 — real ids only in fixtures).
+ */
+export interface PrinterFileEntry {
+  readonly kind: "local" | "usb";
+  /** Stable device-side key (the raw path the device reports). */
+  readonly id: string;
+  /** Display name (basename, no directory). */
+  readonly name: string;
+  /** Size in bytes, when the device reports it. */
+  readonly sizeBytes: number | null;
+  /** Last-modified epoch ms, when the device reports it. */
+  readonly modifiedAt: number | null;
+  /** Thumbnail colors/palette hint — the device has no image URLs; the UI
+   * renders a deterministic swatch from this (or a neutral one). */
+  readonly thumbHint: string | null;
+}
+
+/**
+ * S9.12-001 — file listing result from a printer storage lane. `source`
+ * names the storage backing (local vs usb); `stale` is set when a refresh
+ * is expected but the latest listing is older than the printer's poll
+ * window (same honesty rule as `PrinterSnapshot` staleness — never claim a
+ * fresh list that is not).
+ */
+export interface PrinterFileListResult {
+  readonly ok: boolean;
+  readonly source: "local" | "usb";
+  readonly files: readonly PrinterFileEntry[];
+  /** Epoch ms of the LAST successful listing (null = never listed). */
+  readonly loadedAt: number | null;
+  /** True when the list is expected to refresh but has not. */
+  readonly stale: boolean;
+}
+
+/**
+ * S9.12-001 — send/print of a file from the Files tab. Goes through the
+ * SAME confirm-before-send flow as the sliced-job send (S9.5-004 approval
+ * card) — `printerId` is the armed target, `fileId`/`name` the selected
+ * entry. The lane re-validates the printer is reachable and mints a mock
+ * task id on success (same seam as `sendJob`).
+ */
+export interface SendFileRequest {
+  readonly printerId: string;
+  /** Printer IP (display/transport hint — the lane validates it). */
+  readonly ip: string;
+  /** Device-side file key (`PrinterFileEntry.id`). */
+  readonly fileId: string;
+  /** Human display name (for summary + post-send toast). */
+  readonly name: string;
+  /** Storage backing the file came from. */
+  readonly source: "local" | "usb";
+  /** Storage preflight shown before send (bytes used/total). */
+  readonly storage: Readonly<{
+    readonly usedBytes: number | null;
+    readonly totalBytes: number | null;
+  }>;
+}
+
+/** Result of the file send lane (S9.12-001) — same semantic union as
+ * `SendResult`: ok carries a mock task id; failure surfaces a semantic
+ * kind for distinct toasts. */
+export type SendFileResult =
+  | { readonly ok: true; readonly taskId: string; readonly fileId: string }
+  | {
+      readonly ok: false;
+      readonly error: string;
+      readonly kind: "offline" | "region" | "unknown";
+    };

@@ -290,6 +290,32 @@ export type MsgKey =
   | "device.fil.cancel"
   | "device.fil.bind"
   | "device.fil.capabilities.none"
+  // S9.12-001 — Files browser (local/USB storage listing + send/print) ------
+  | "device.tab.files"
+  | "device.files.title"
+  | "device.files.local"
+  | "device.files.usb"
+  | "device.files.empty"
+  | "device.files.emptyLocal"
+  | "device.files.emptyUsb"
+  | "device.files.stale"
+  | "device.files.refresh"
+  | "device.files.size"
+  | "device.files.modified"
+  | "device.files.storagePreflight"
+  | "device.files.storageUsed"
+  | "device.files.storageFree"
+  | "device.files.send"
+  | "device.files.print"
+  | "device.files.confirmTitle"
+  | "device.files.confirmMsg"
+  | "device.files.confirmCancel"
+  | "device.files.confirmSend"
+  | "device.files.sentTo"
+  | "device.files.sendOffline"
+  | "device.files.sendRegion"
+  | "device.files.sendUnknown"
+  | "device.files.sendBusy"
   // status bar printer chips (S9.9-006) -----------------------------------
   | "status.printer.nozzle"
   | "status.printer.bed"
@@ -975,6 +1001,33 @@ export const EN: Record<MsgKey, string> = {
   "device.fil.cancel": "Cancel",
   "device.fil.bind": "Bind",
   "device.fil.capabilities.none": "No ACE data",
+  // S9.12-001 — Files browser (local/USB)
+  "device.tab.files": "Files",
+  "device.files.title": "Printer storage",
+  "device.files.local": "Local",
+  "device.files.usb": "USB",
+  "device.files.empty": "No files on this storage.",
+  "device.files.emptyLocal": "No files on local storage.",
+  "device.files.emptyUsb": "No files on the USB drive.",
+  "device.files.stale": "Listing is stale — refresh to see the latest files.",
+  "device.files.refresh": "Refresh",
+  "device.files.size": "Size",
+  "device.files.modified": "Modified",
+  "device.files.storagePreflight": "Storage before send",
+  "device.files.storageUsed": "Used",
+  "device.files.storageFree": "Free",
+  "device.files.send": "Send",
+  "device.files.print": "Print",
+  "device.files.confirmTitle": "Send file to printer?",
+  "device.files.confirmMsg":
+    "This starts a print job on the selected printer. It requires approval before it is sent.",
+  "device.files.confirmCancel": "Cancel",
+  "device.files.confirmSend": "Approve & send",
+  "device.files.sentTo": "Sent to printer",
+  "device.files.sendOffline": "Printer is offline",
+  "device.files.sendRegion": "Cloud region unavailable",
+  "device.files.sendUnknown": "Send failed",
+  "device.files.sendBusy": "Sending…",
   "status.printer.nozzle": "Nozzle",
   "status.printer.bed": "Bed",
   "status.printer.layer": "Layer",
@@ -1640,6 +1693,33 @@ export const PT_BR: Record<MsgKey, string> = {
   "device.fil.cancel": "Cancelar",
   "device.fil.bind": "Vincular",
   "device.fil.capabilities.none": "Sem dados ACE",
+  // S9.12-001 — Files browser (local/USB, pt-BR)
+  "device.tab.files": "Ficheiros",
+  "device.files.title": "Armazenamento da impressora",
+  "device.files.local": "Local",
+  "device.files.usb": "USB",
+  "device.files.empty": "Sem ficheiros neste armazenamento.",
+  "device.files.emptyLocal": "Sem ficheiros no armazenamento local.",
+  "device.files.emptyUsb": "Sem ficheiros na pen USB.",
+  "device.files.stale": "Listagem desatualizada — atualize para ver os ficheiros mais recentes.",
+  "device.files.refresh": "Atualizar",
+  "device.files.size": "Tamanho",
+  "device.files.modified": "Modificado",
+  "device.files.storagePreflight": "Armazenamento antes do envio",
+  "device.files.storageUsed": "Em uso",
+  "device.files.storageFree": "Livre",
+  "device.files.send": "Enviar",
+  "device.files.print": "Imprimir",
+  "device.files.confirmTitle": "Enviar ficheiro para a impressora?",
+  "device.files.confirmMsg":
+    "Isto inicia um trabalho de impressão na impressora selecionada. Requer aprovação antes de ser enviado.",
+  "device.files.confirmCancel": "Cancelar",
+  "device.files.confirmSend": "Aprovar e enviar",
+  "device.files.sentTo": "Enviado para a impressora",
+  "device.files.sendOffline": "Impressora offline",
+  "device.files.sendRegion": "Região cloud indisponível",
+  "device.files.sendUnknown": "Falha no envio",
+  "device.files.sendBusy": "A enviar…",
   "status.printer.nozzle": "Bico",
   "status.printer.bed": "Mesa",
   "status.printer.layer": "Camada",
