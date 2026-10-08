@@ -122,8 +122,48 @@ try {
           window.__homeInvokeCalls.push({ command, args });
           if (command === "project_authority_read") return window.__homeInitialSnapshot;
           if (command === "project_list") return window.__homeProjects;
-          if (command === "project_slice_history")
-            throw new Error("synthetic history read failure");
+          if (command === "project_slice_history") {
+            return args.projectId === "home-project-a"
+              ? [
+                  {
+                    job_id: "synthetic-job-a",
+                    status: "completed",
+                    source_revision: 4,
+                    artifact_status: "present",
+                    artifact_id: "synthetic-artifact-a",
+                  },
+                ]
+              : [
+                  {
+                    job_id: "synthetic-job-b",
+                    status: "completed",
+                    source_revision: 12,
+                    artifact_status: "present",
+                    artifact_id: "synthetic-artifact-b",
+                  },
+                ];
+          }
+          if (command === "project_reprint_preflight") {
+            if (args.sourceJobId === "synthetic-job-a")
+              return {
+                status: "proposed",
+                proposalId: args.intentId,
+                sourceJobId: args.sourceJobId,
+                artifactId: "synthetic-artifact-a",
+                artifactDigest: "synthetic-digest-a",
+                profileFingerprint: "synthetic-profile-a",
+                mode: "standard",
+                toolBinding: "synthetic-tool-a",
+                sourceRevision: 4,
+                printerId: "synthetic-printer-a",
+                qualification: "qualified",
+              };
+            return {
+              status: "blocked",
+              reason: "printer-mismatch",
+              sourceJobId: args.sourceJobId,
+            };
+          }
           if (command === "project_authority_recover") {
             if (args.projectId === "home-project-b" && !window.__homeFailRecover)
               return window.__homeRecoveredSnapshot;
@@ -144,18 +184,74 @@ try {
   await page.goto(`${url}?provider=real`, { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.waitForSelector('[data-testid="home-page"]', { timeout: 30000 });
   await page.waitForSelector(`[data-testid="home-project-${projects[1].id}"]`, { timeout: 15000 });
-  await page.waitForFunction(
-    () =>
-      document
-        .querySelector('[data-testid="home-page"]')
-        ?.textContent?.includes("Local project history is unavailable."),
-    { timeout: 10000 },
+  await page.waitForSelector('[data-testid="home-reprint-synthetic-job-a"]', { timeout: 10000 });
+  const proposedButton = '[data-testid="home-reprint-synthetic-job-a"]';
+  assert.equal(await page.$eval(proposedButton, (button) => button.disabled), false);
+  await page.click(proposedButton);
+  await page.waitForFunction(() =>
+    window.__homeInvokeCalls.some(({ command }) => command === "project_reprint_preflight"),
   );
-  const historyErrorVisible = await page.$eval('[role="alert"]', (element) => element.textContent);
-  assert.match(historyErrorVisible, /Local project history is unavailable\./);
-  assert.doesNotMatch(historyErrorVisible, /No slice jobs recorded/);
+  const preflightCall = await page.evaluate(() =>
+    window.__homeInvokeCalls.find(({ command }) => command === "project_reprint_preflight"),
+  );
+  assert.equal(preflightCall.args.sourceJobId, "synthetic-job-a");
+  assert.match(preflightCall.args.intentId, /^reprint-intent-/);
+  await page.waitForFunction(() =>
+    document
+      .querySelector('[data-testid="home-reprint-status-synthetic-job-a"]')
+      ?.textContent?.includes("Proposed intent"),
+  );
+  const proposedText = await page.$eval(
+    '[data-testid="home-reprint-status-synthetic-job-a"]',
+    (element) => element.textContent,
+  );
+  assert.match(proposedText, /synthetic-job-a/);
+  assert.match(proposedText, /reprint-intent-[\w-]+/);
+  assert.notEqual(proposedText.match(/reprint-intent-[\w-]+/)?.[0], "synthetic-job-a");
+  assert.equal(
+    await page.evaluate(
+      () =>
+        window.__homeInvokeCalls.filter(
+          ({ command }) =>
+            command !== "project_reprint_preflight" &&
+            /upload|send|start|control|print/i.test(command),
+        ).length,
+    ),
+    0,
+  );
 
   await page.click(`[data-testid="home-project-${projects[1].id}"] .home-project-copy button`);
+  await page.waitForSelector('[data-testid="home-reprint-synthetic-job-b"]', { timeout: 10000 });
+  assert.equal(
+    await page.$eval('[data-testid="home-reprint-synthetic-job-b"]', (button) => button.disabled),
+    false,
+  );
+  await page.click('[data-testid="home-reprint-synthetic-job-b"]');
+  await page.waitForFunction(() =>
+    window.__homeInvokeCalls.some(
+      ({ command, args }) =>
+        command === "project_reprint_preflight" && args.sourceJobId === "synthetic-job-b",
+    ),
+  );
+  const blockedText = await page.$eval(
+    '[data-testid="home-reprint-status-synthetic-job-b"]',
+    (element) => element.textContent,
+  );
+  assert.match(blockedText, /Blocked/);
+  assert.match(blockedText, /printer-mismatch/);
+  assert.equal(
+    await page.evaluate(
+      () =>
+        window.__homeInvokeCalls.filter(
+          ({ command }) =>
+            command !== "project_reprint_preflight" &&
+            /upload|send|start|control|print/i.test(command),
+        ).length,
+    ),
+    0,
+  );
+
+  assert.equal(await page.$('[data-testid="home-reprint-synthetic-job-a"]'), null);
   await page.waitForFunction(
     (projectId) => {
       const row = document.querySelector(`[data-testid="home-project-${projectId}"]`);
@@ -241,7 +337,7 @@ try {
   );
   assert.match(failedRecoveryState.error, /synthetic recovery failure/);
   console.log(
-    "PASS Home UI: selected-project recovery, hydrated snapshot, failed recovery preservation, and history error state",
+    "PASS Home UI (6 cases): proposed intent IDs, source-job distinction, destination-change blocked result, zero side effects, selected-project recovery, and failed-recovery preservation",
   );
 } finally {
   if (browser) await browser.close().catch(() => {});

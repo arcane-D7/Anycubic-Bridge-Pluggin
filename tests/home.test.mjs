@@ -11,8 +11,30 @@ const {
   listLocalSliceJobs,
   openLocalProject,
   recoverLocalProject,
+  buildReprintProposal,
   resolveSliceArtifactStatus,
 } = await import(homeUrl.href);
+
+const eligibleReprintCandidate = () => ({
+  sourceJobId: "historical-job",
+  artifactStatus: "present",
+  artifactId: "artifact-current",
+  artifactDigest: "sha256:fixture-current",
+  expectedArtifactDigest: "sha256:fixture-current",
+  profileFingerprint: "profile-fixture-v1",
+  expectedProfileFingerprint: "profile-fixture-v1",
+  mode: "standard",
+  expectedMode: "standard",
+  toolBinding: "tool-fixture-v1",
+  expectedToolBinding: "tool-fixture-v1",
+  sourceRevision: 7,
+  currentSourceRevision: 7,
+  currentPrinterId: "printer-current",
+  targetPrinterId: "printer-current",
+  printerReachable: true,
+  compatibility: "qualified",
+  printQualified: true,
+});
 
 test("local slice history propagates read failures", async () => {
   const failure = new Error("history unavailable");
@@ -117,4 +139,40 @@ test("slice artifact availability follows backend status rather than artifact id
     "unavailable",
   );
   assert.equal(resolveSliceArtifactStatus({ artifact_id: "artifact-4" }), "unavailable");
+});
+
+test("reprint proposal blocks absent, stale, mismatched, offline, and unqualified inputs", () => {
+  const cases = [
+    [{ artifactStatus: "missing" }, "artifact-missing"],
+    [{ artifactStatus: "present", artifactId: null }, "artifact-unavailable"],
+    [{ artifactDigest: "sha256:old" }, "artifact-digest-mismatch"],
+    [{ sourceRevision: 6 }, "source-revision-stale"],
+    [{ profileFingerprint: "other-profile" }, "profile-mismatch"],
+    [{ mode: "nonplanar" }, "mode-mismatch"],
+    [{ toolBinding: "other-tool" }, "tool-binding-mismatch"],
+    [{ currentPrinterId: "printer-other" }, "printer-mismatch"],
+    [{ printerReachable: false }, "printer-offline"],
+    [{ compatibility: "preview-only" }, "preview-only"],
+    [{ compatibility: "unqualified", printQualified: false }, "qualification-missing"],
+  ];
+
+  for (const [changes, reason] of cases) {
+    const result = buildReprintProposal({ ...eligibleReprintCandidate(), ...changes });
+    assert.deepEqual(result, { status: "blocked", reason, sourceJobId: "historical-job" });
+  }
+});
+
+test("qualified current artifact produces a new proposal only, never a print order", () => {
+  const result = buildReprintProposal(eligibleReprintCandidate());
+
+  assert.equal(result.status, "proposed");
+  assert.notEqual(result.proposalId, "historical-job");
+  assert.match(result.proposalId, /^reprint-proposal-/);
+  assert.equal(result.sourceJobId, "historical-job");
+  assert.equal(result.artifactId, "artifact-current");
+  assert.equal(result.artifactDigest, "sha256:fixture-current");
+  assert.equal(result.printerId, "printer-current");
+  assert.equal("command" in result, false);
+  assert.equal("confirm" in result, false);
+  assert.equal("upload" in result, false);
 });

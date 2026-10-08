@@ -23,7 +23,7 @@ use planar_core::infill::InfillPattern;
 use planar_core::slice::{slice_with_progress, JobMode, PlanarProfile, Pt3, SliceMesh, Triangle};
 use project_store::{
     AuthorityError, ProjectAuthority, ProjectDocument, ProjectOperation, ProjectSnapshot,
-    ProjectSummary,
+    ProjectSummary, ReprintDestination, ReprintDestinationProvider, ReprintIntentResult,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -1200,6 +1200,39 @@ fn project_slice_history(
     .map_err(|error| error.to_string())
 }
 
+struct UnavailableReprintDestination;
+
+impl ReprintDestinationProvider for UnavailableReprintDestination {
+    fn current_destination(&self) -> Option<ReprintDestination> {
+        None
+    }
+}
+
+#[tauri::command]
+fn project_reprint_preflight(
+    source_job_id: String,
+    intent_id: String,
+) -> Result<ReprintIntentResult, String> {
+    if source_job_id.trim().is_empty() || intent_id.trim().is_empty() {
+        return Err("source job id and new intent id are required".into());
+    }
+    let db = DbHandle::open(workspace_db_path()?).map_err(|error| error.to_string())?;
+    let project_id = ProjectAuthority::list(&db)
+        .map_err(|error| error.to_string())?
+    .into_iter()
+    .find(|project| project.id == "local-project")
+    .map(|project| project.id)
+    .ok_or_else(|| "active project is unavailable".to_owned())?;
+    let authority = reopen_project_authority(&project_id)?;
+    authority
+        .preflight_reprint(
+            &source_job_id,
+            &intent_id,
+            &UnavailableReprintDestination,
+        )
+        .map_err(|error| error.to_string())
+}
+
 #[tauri::command]
 fn project_create(
     state: State<'_, ProjectAuthorityState>,
@@ -1368,6 +1401,7 @@ pub fn run() {
             project_authority_commit,
             project_list,
             project_slice_history,
+            project_reprint_preflight,
             project_create,
             project_open,
             project_geometry_execute,

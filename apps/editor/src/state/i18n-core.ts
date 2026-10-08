@@ -109,6 +109,11 @@ export type MsgKey =
   | "home.artifact.present"
   | "home.artifact.missing"
   | "home.artifact.unavailable"
+  | "home.reprint.propose"
+  | "home.reprint.blocked"
+  | "home.reprint.unavailable"
+  | "home.reprint.proposed"
+  | "home.reprint.blockedReason"
   | "home.recovery.geometryMissing"
   | "home.newProjectPrompt"
   | "home.untitledProject"
@@ -961,6 +966,13 @@ export const EN: Record<MsgKey, string> = {
   "home.artifact.present": "Local artifact present",
   "home.artifact.missing": "Local artifact missing",
   "home.artifact.unavailable": "Artifact availability unavailable",
+  "home.reprint.propose": "Propose reprint",
+  "home.reprint.blocked": "Blocked · qualification unavailable",
+  "home.reprint.unavailable":
+    "Reprint blocked: trusted artifact, profile, mode, tool binding, printer reachability, and qualification metadata are unavailable.",
+  "home.reprint.proposed":
+    "Proposed intent {intentId} from source job {sourceJobId}; no print was started.",
+  "home.reprint.blockedReason": "Blocked · {reason}",
   "home.recovery.geometryMissing":
     "Some object geometry is missing. Object metadata was kept; missing geometry was not recreated.",
   "home.newProjectPrompt": "Project name",
@@ -1787,6 +1799,13 @@ export const PT_BR: Record<MsgKey, string> = {
   "home.artifact.present": "Artefato local presente",
   "home.artifact.missing": "Artefato local ausente",
   "home.artifact.unavailable": "Disponibilidade do artefato indisponível",
+  "home.reprint.propose": "Propor reimpressão",
+  "home.reprint.blocked": "Bloqueada · qualificação indisponível",
+  "home.reprint.unavailable":
+    "Reimpressão bloqueada: metadados confiáveis do artefato, perfil, modo, vínculo da ferramenta, alcance da impressora e qualificação indisponíveis.",
+  "home.reprint.proposed":
+    "Intenção {intentId} proposta a partir do trabalho {sourceJobId}; nenhuma impressão iniciada.",
+  "home.reprint.blockedReason": "Bloqueada · {reason}",
   "home.recovery.geometryMissing":
     "Falta a geometria de alguns objetos. Os metadados foram mantidos; a geometria em falta não foi recriada.",
   "home.newProjectPrompt": "Nome do projeto",

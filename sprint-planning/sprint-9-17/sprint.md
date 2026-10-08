@@ -43,7 +43,7 @@ Use controlled transport stubs for command-path integration. Do not issue real h
 | **Type**             | Feature                                                                |
 | **Estimated Effort** | L                                                                      |
 | **Source Finding**   | NAV-01; HIS-01–HIS-04; AUD-15                                          |
-| **Status**           | 🔄 In progress — focused checks passed; formal full gate pending       |
+| **Status**           | ✅ Done — implementation and full health gate verified (2026-10-08)    |
 
 #### Context
 
@@ -54,10 +54,17 @@ Projects, slice jobs and physical print history have distinct owners, identifier
 - [x] **NAV-01:** Home opens/creates/recovers local projects without cloud authentication; controlled Home E2E verifies selected-project recovery and failed-recovery preservation.
 - [x] **HIS-01:** Project and slice-job histories remain distinct; slice-job rows identify local origin. Physical print history is a separate cloud-owned, explicitly unavailable section.
 - [x] **HIS-02:** Missing artifacts are reported as missing; recovery removes unavailable geometry and reports diagnostics without fabricating geometry.
-- [ ] **HIS-03:** Reprint proposal and current destination/artifact validation are not implemented; future ticket scope.
+- [x] **HIS-03:** Reprint intent invokes backend preflight, which validates artifact digest/provenance, source revision, destination profile/mode/tool binding and qualification; it records an intent only and never uploads or prints. Controlled E2E covers proposed/blocked replies and zero print-side effects. The runtime destination provider is explicitly unavailable, so no real printer qualification or hardware validation is claimed.
 - [x] **HIS-04:** Local project and slice history remains independent of cloud print history; history read failure is shown explicitly.
-- [x] Focused checks passed: Home unit 8/8, Home E2E, project-store Rust 11/11, Tauri slice-history test 1/1, TypeScript typecheck.
-- [ ] Formal `pnpm run check` exit code and sanitizer dry-run are pending; ticket completion is not claimed.
+- [x] Focused checks passed: Home unit 8/8, Home E2E (including reprint proposed/blocked paths and zero print-side effects), project-store Rust 14/14, Tauri slice-history test 1/1, TypeScript typecheck.
+- [x] Full `pnpm run check` and sanitizer dry-run passed; see S9.17-001 Implementation Notes for recorded results.
+
+#### Implementation Notes
+
+- `home.ts` defines typed reprint-intent requests/replies and a pure proposal guard; Home calls the Tauri preflight command, not a printer command.
+- Tauri delegates validation and intent persistence to `project-store`. The current destination adapter returns unavailable; controlled provider fixtures validate backend decisions without hardware access.
+- Home E2E verifies proposed and blocked intent responses and asserts there are no upload/send/start/control/print calls. This is controlled UI/backend-contract evidence, not printer validation; no native Preview artifact or hardware outcome is claimed.
+- Validation: Home unit 8/8; project-store 14/14; Tauri slice-history 1/1; Home E2E passed; TypeScript typecheck passed. Full-gate and sanitizer evidence is recorded in the task closeout.
 
 ### S9.17-002 — Persistent Prepare and empty Preview navigation
 

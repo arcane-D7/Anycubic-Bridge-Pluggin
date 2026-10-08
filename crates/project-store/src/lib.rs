@@ -66,6 +66,42 @@ pub enum ArtifactStatus {
     Unavailable,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "status", rename_all = "snake_case")]
+pub enum ReprintIntentResult {
+    Proposed {
+        intent_id: String,
+        source_job_id: String,
+        artifact_id: String,
+        source_revision: u64,
+        current_revision: u64,
+        artifact_digest: String,
+        profile_fingerprint: String,
+        mode: String,
+        tool_binding: String,
+        destination_id: String,
+        qualification: String,
+    },
+    Blocked {
+        source_job_id: String,
+        reason: String,
+        current_revision: Option<u64>,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ReprintDestination {
+    pub destination_id: String,
+    pub profile_fingerprint: String,
+    pub mode: String,
+    pub tool_binding: String,
+    pub qualification: String,
+}
+
+pub trait ReprintDestinationProvider {
+    fn current_destination(&self) -> Option<ReprintDestination>;
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum ProjectOperationKind {
@@ -433,6 +469,120 @@ impl ProjectAuthority {
             .transpose()
     }
 
+    pub fn preflight_reprint(
+        &self,
+        source_job_id: &str,
+        intent_id: &str,
+        destination_provider: &impl ReprintDestinationProvider,
+    ) -> Result<ReprintIntentResult, AuthorityError> {
+        let blocked = |reason: &str, current_revision| ReprintIntentResult::Blocked {
+            source_job_id: source_job_id.to_owned(),
+            reason: reason.to_owned(),
+            current_revision,
+        };
+        let snapshot = self.snapshot()?;
+        let Some(job) = self.get_slice_job(source_job_id)? else {
+            return Ok(blocked("historical-job-missing", Some(snapshot.revision)));
+        };
+        let source_revision = job
+            .get("source_revision")
+            .and_then(Value::as_u64)
+            .ok_or(AuthorityError::ProjectNotFound)?;
+        if job.get("status").and_then(Value::as_str) != Some("ready") {
+            return Ok(blocked("historical-job-not-ready", Some(snapshot.revision)));
+        }
+        if source_revision != snapshot.revision {
+            return Ok(blocked("source-revision-stale", Some(snapshot.revision)));
+        }
+        let Some(artifact_id) = job.get("artifact_id").and_then(Value::as_str) else {
+            return Ok(blocked("artifact-unavailable", Some(snapshot.revision)));
+        };
+        let Some(bytes) = self.get_artifact(artifact_id)? else {
+            return Ok(blocked("artifact-missing", Some(snapshot.revision)));
+        };
+        let digest = hex::encode(Sha256::digest(&bytes));
+        if digest != artifact_id {
+            return Ok(blocked("artifact-digest-mismatch", Some(snapshot.revision)));
+        }
+        let artifact: Value = serde_json::from_slice(&bytes)?;
+        if artifact.get("source_revision").and_then(Value::as_u64) != Some(source_revision)
+            || artifact.get("input_digest") != job.get("input_digest")
+        {
+            return Ok(blocked("artifact-provenance-mismatch", Some(snapshot.revision)));
+        }
+        let mode = artifact
+            .pointer("/ir/mode")
+            .and_then(Value::as_str)
+            .unwrap_or("standard");
+        let profile_fingerprint = job
+            .get("profile_fingerprint")
+            .and_then(Value::as_str)
+            .or_else(|| artifact.get("profile_fingerprint").and_then(Value::as_str));
+        let tool_binding = job
+            .get("tool_binding")
+            .and_then(Value::as_str)
+            .or_else(|| artifact.get("tool_binding").and_then(Value::as_str));
+        let Some(destination) = destination_provider.current_destination() else {
+            return Ok(blocked("destination-capability-unavailable", Some(snapshot.revision)));
+        };
+        let Some(profile_fingerprint) = profile_fingerprint else {
+            return Ok(blocked("profile-provenance-unavailable", Some(snapshot.revision)));
+        };
+        let Some(tool_binding) = tool_binding else {
+            return Ok(blocked("tool-binding-provenance-unavailable", Some(snapshot.revision)));
+        };
+        if mode != destination.mode {
+            return Ok(blocked("mode-mismatch", Some(snapshot.revision)));
+        }
+        if profile_fingerprint != destination.profile_fingerprint {
+            return Ok(blocked("profile-mismatch", Some(snapshot.revision)));
+        }
+        if tool_binding != destination.tool_binding {
+            return Ok(blocked("tool-binding-mismatch", Some(snapshot.revision)));
+        }
+        if artifact.get("provider").and_then(Value::as_str) == Some("planar-core-section-v2") {
+            return Ok(blocked("preview-only", Some(snapshot.revision)));
+        }
+        if destination.qualification == "preview-only" {
+            return Ok(blocked("preview-only", Some(snapshot.revision)));
+        }
+        if destination.qualification != "qualified" {
+            return Ok(blocked("qualification-missing", Some(snapshot.revision)));
+        }
+        let intent = serde_json::json!({
+            "intent_id": intent_id,
+            "source_job_id": source_job_id,
+            "artifact_id": artifact_id,
+            "source_revision": source_revision,
+            "current_revision": snapshot.revision,
+            "artifact_digest": digest,
+            "profile_fingerprint": profile_fingerprint,
+            "mode": mode,
+            "tool_binding": tool_binding,
+            "destination_id": destination.destination_id,
+            "qualification": destination.qualification,
+            "status": "proposed",
+        });
+        if self.get_slice_job(intent_id)?.is_some() {
+            return Ok(blocked("intent-id-already-exists", Some(snapshot.revision)));
+        }
+        let intent_digest = hex::encode(Sha256::digest(serde_json::to_vec(&intent)?));
+        self.put_slice_job(intent_id, snapshot.revision, &intent_digest, "reprint_intent", &intent)?;
+        Ok(ReprintIntentResult::Proposed {
+            intent_id: intent_id.to_owned(),
+            source_job_id: source_job_id.to_owned(),
+            artifact_id: artifact_id.to_owned(),
+            source_revision,
+            current_revision: snapshot.revision,
+            artifact_digest: digest,
+            profile_fingerprint: profile_fingerprint.to_owned(),
+            mode: mode.to_owned(),
+            tool_binding: tool_binding.to_owned(),
+            destination_id: destination.destination_id,
+            qualification: destination.qualification,
+        })
+    }
+
     pub fn cached_slice_job(
         &self,
         source_revision: u64,
@@ -644,6 +794,109 @@ impl Journal {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct FixtureDestination(Option<ReprintDestination>);
+
+    impl ReprintDestinationProvider for FixtureDestination {
+        fn current_destination(&self) -> Option<ReprintDestination> {
+            self.0.clone()
+        }
+    }
+
+    fn fixture_destination(qualification: &str) -> FixtureDestination {
+        FixtureDestination(Some(ReprintDestination {
+            destination_id: "fixture-destination".into(),
+            profile_fingerprint: "profile-fingerprint".into(),
+            mode: "standard".into(),
+            tool_binding: "tool-binding".into(),
+            qualification: qualification.into(),
+        }))
+    }
+
+    fn reprint_fixture(provider: &str, source_revision: u64) -> (PathBuf, ProjectAuthority) {
+        let root = std::env::temp_dir().join(format!(
+            "project-reprint-test-{}-{}",
+            std::process::id(),
+            ARTIFACT_TEMP_SEQ.fetch_add(1, Ordering::Relaxed)
+        ));
+        let blobs = root.join("blobs");
+        fs::create_dir_all(&blobs).unwrap();
+        let authority = ProjectAuthority::open_with_artifact_dir(
+            DbHandle::open(root.join("workspace.db")).unwrap(),
+            "project-reprint",
+            "Reprint fixture",
+            Some(blobs),
+        )
+        .unwrap();
+        let artifact = serde_json::json!({
+            "source_revision": source_revision,
+            "input_digest": "source-input-digest",
+            "provider": provider,
+            "profile_fingerprint": "profile-fingerprint",
+            "tool_binding": "tool-binding",
+            "ir": {"mode": "standard"},
+            "mode": "standard",
+        });
+        let bytes = serde_json::to_vec(&artifact).unwrap();
+        let artifact_id = authority.put_artifact(&bytes).unwrap();
+        authority
+            .put_slice_job(
+                "historical-job",
+                source_revision,
+                "source-input-digest",
+                "ready",
+                &serde_json::json!({
+                    "job_id": "historical-job",
+                    "status": "ready",
+                    "source_revision": source_revision,
+                    "input_digest": "source-input-digest",
+                    "artifact_id": artifact_id
+                }),
+            )
+            .unwrap();
+        (root, authority)
+    }
+
+    #[test]
+    fn qualified_fixture_persists_a_new_intent_without_reusing_source_job_id() {
+        let (root, authority) = reprint_fixture("validated-provider-fixture", 0);
+        let result = authority
+            .preflight_reprint("historical-job", "new-intent", &fixture_destination("qualified"))
+            .unwrap();
+        assert!(matches!(result, ReprintIntentResult::Proposed { ref intent_id, ref source_job_id, .. }
+            if intent_id == "new-intent" && source_job_id == "historical-job"));
+        assert!(authority.get_slice_job("new-intent").unwrap().is_some());
+        let duplicate = authority
+            .preflight_reprint("historical-job", "historical-job", &fixture_destination("qualified"))
+            .unwrap();
+        assert!(matches!(duplicate, ReprintIntentResult::Blocked { ref reason, .. } if reason == "intent-id-already-exists"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn native_preview_artifact_is_blocked_even_with_qualified_fixture() {
+        let (root, authority) = reprint_fixture("planar-core-section-v2", 0);
+        let result = authority
+            .preflight_reprint("historical-job", "new-intent", &fixture_destination("qualified"))
+            .unwrap();
+        assert!(matches!(result, ReprintIntentResult::Blocked { ref reason, .. } if reason == "preview-only"));
+        assert!(authority.get_slice_job("new-intent").unwrap().is_none());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn stale_job_and_unavailable_destination_fail_closed() {
+        let (root, stale_authority) = reprint_fixture("validated-provider-fixture", 4);
+        let stale = stale_authority
+            .preflight_reprint("historical-job", "new-intent", &fixture_destination("qualified"))
+            .unwrap();
+        assert!(matches!(stale, ReprintIntentResult::Blocked { ref reason, .. } if reason == "source-revision-stale"));
+        let unavailable = stale_authority
+            .preflight_reprint("missing-job", "another-intent", &FixtureDestination(None))
+            .unwrap();
+        assert!(matches!(unavailable, ReprintIntentResult::Blocked { ref reason, .. } if reason == "historical-job-missing"));
+        let _ = fs::remove_dir_all(root);
+    }
 
     fn operation(
         operation_id: &str,

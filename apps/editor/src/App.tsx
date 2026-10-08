@@ -51,6 +51,7 @@ import {
   listLocalProjects,
   listLocalSliceJobs,
   openLocalProject,
+  preflightLocalReprintIntent,
   recoverLocalProject,
   resolveSliceArtifactStatus,
   type LocalProjectSummary,
@@ -178,6 +179,7 @@ export function App() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [homeError, setHomeError] = useState<string | null>(null);
   const [homeBusy, setHomeBusy] = useState(false);
+  const [reprintResults, setReprintResults] = useState<Record<string, string>>({});
 
   const refreshHome = useCallback(async () => {
     if (!isTauriRuntime()) return;
@@ -195,6 +197,35 @@ export function App() {
       setHomeError(t("home.localUnavailable"));
     }
   }, [selectedProjectId, t]);
+
+  const preflightReprint = useCallback(
+    async (sourceJobId: string) => {
+      setReprintResults((current) => ({ ...current, [sourceJobId]: "checking" }));
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const result = await preflightLocalReprintIntent(invoke, {
+          sourceJobId,
+          intentId: `reprint-intent-${crypto.randomUUID()}`,
+        });
+        setReprintResults((current) => ({
+          ...current,
+          [sourceJobId]:
+            result.status === "proposed"
+              ? t("home.reprint.proposed", {
+                  intentId: result.proposalId,
+                  sourceJobId: result.sourceJobId,
+                })
+              : t("home.reprint.blockedReason", { reason: result.reason }),
+        }));
+      } catch {
+        setReprintResults((current) => ({
+          ...current,
+          [sourceJobId]: t("home.reprint.blockedReason", { reason: "preflight-unavailable" }),
+        }));
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     void refreshHome();
@@ -539,6 +570,27 @@ export function App() {
                           {job.status ?? "unknown"} · rev {job.source_revision ?? "unknown"}
                         </span>
                         <span>{t(`home.artifact.${resolveSliceArtifactStatus(job)}`)}</span>
+                        <span data-testid={`home-reprint-status-${job.job_id ?? index}`}>
+                          {reprintResults[job.job_id ?? ""] ?? t("home.reprint.blocked")}
+                        </span>
+                        <button
+                          type="button"
+                          data-testid={`home-reprint-${job.job_id ?? index}`}
+                          disabled={
+                            !localBackendAvailable ||
+                            homeBusy ||
+                            !job.job_id ||
+                            reprintResults[job.job_id] === "checking"
+                          }
+                          title={t("home.reprint.unavailable")}
+                          onClick={() => job.job_id && void preflightReprint(job.job_id)}
+                        >
+                          {t("home.reprint.propose")}
+                        </button>
+                        {!reprintResults[job.job_id ?? ""] ||
+                        reprintResults[job.job_id ?? ""] === "checking" ? (
+                          <span>{t("home.reprint.unavailable")}</span>
+                        ) : null}
                       </li>
                     ))}
                   </ul>
