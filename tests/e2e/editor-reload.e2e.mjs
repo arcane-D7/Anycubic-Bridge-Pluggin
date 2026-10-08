@@ -167,12 +167,17 @@ try {
   });
 
   // ---- 1. initial load — shell renders ----
+  await page.setViewport({ width: 1024, height: 768, deviceScaleFactor: 1 });
   await page.goto(URL, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForSelector(".app-shell", { timeout: 30000 });
   await page.waitForFunction(
     () => document.querySelector('[data-testid="bridge-state"]')?.textContent === "Demo geometry",
     { timeout: 15000 },
   );
+  await page.click(".workspace-tabs button:nth-of-type(2)");
+  await page.waitForFunction(() => !document.querySelector(".editor-workspace")?.hidden, {
+    timeout: 5000,
+  });
   await page.click(".sidebar-nav button:nth-of-type(2)");
   await page.waitForSelector(".object-name", { timeout: 15000 });
   await page.click(".sidebar-nav button:nth-of-type(1)");
@@ -180,6 +185,15 @@ try {
   // S9.14-001 — exercise the shared background menu through real browser
   // input without selecting a mesh before later no-selection assertions.
   await page.waitForSelector('[data-testid="viewport-frame"]', { timeout: 15000 });
+  await page.waitForFunction(
+    () => {
+      const rect = document
+        .querySelector('[data-testid="viewport-frame"]')
+        ?.getBoundingClientRect();
+      return rect && rect.width > 16 && rect.height > 16;
+    },
+    { timeout: 10000 },
+  );
   await page.$eval('[data-testid="viewport-frame"]', (frame) =>
     frame.scrollIntoView({ block: "center", inline: "center" }),
   );

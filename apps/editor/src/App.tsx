@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { activeProjectProvider, activeProjectScene } from "./bridge/project-provider";
 import type { IrDocument } from "./bridge/ir";
@@ -44,6 +44,18 @@ import { usePrinters } from "./state/printers";
 import { activePlate as activePlateOf } from "./state/plates-core";
 import { CATALOG_MACHINES } from "./profile/operatorProfile";
 import { useViewport } from "./state/viewport";
+import { isTauriRuntime } from "./bridge/project-provider";
+import {
+  createLocalProject,
+  continueLocalProject,
+  listLocalProjects,
+  listLocalSliceJobs,
+  openLocalProject,
+  recoverLocalProject,
+  resolveSliceArtifactStatus,
+  type LocalProjectSummary,
+  type LocalSliceJob,
+} from "./bridge/home";
 
 /**
  * Editor shell — single-window, resizable panels per §7.2:
@@ -79,6 +91,7 @@ function useDemoToast() {
 
 export function App() {
   useDemoToast();
+  const queryClient = useQueryClient();
   const t = useI18n((s) => s.t);
   const providerQuery = useQuery({
     queryKey: PROVIDER_QUERY_KEY,
@@ -143,7 +156,7 @@ export function App() {
   const [leftSize, setLeftSize] = useState(330);
   const [bottomSize, setBottomSize] = useState(116);
   const [sidebarView, setSidebarView] = useState<"settings" | "objects" | "chat">("settings");
-  const [workspaceView, setWorkspaceView] = useState<"prepare" | "preview">("prepare");
+  const [workspaceView, setWorkspaceView] = useState<"home" | "prepare" | "preview">("home");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // S9.4-003 — plate membership from the scene store (authoritative snapshot)
@@ -160,6 +173,100 @@ export function App() {
     (machine) => machine.displayName === operatorProfile.displayName,
   );
   const previewStale = previewSourceRevision !== null && projectRevision !== previewSourceRevision;
+  const [localProjects, setLocalProjects] = useState<LocalProjectSummary[]>([]);
+  const [localJobs, setLocalJobs] = useState<LocalSliceJob[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [homeError, setHomeError] = useState<string | null>(null);
+  const [homeBusy, setHomeBusy] = useState(false);
+
+  const refreshHome = useCallback(async () => {
+    if (!isTauriRuntime()) return;
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const projects = await listLocalProjects(invoke);
+      setLocalProjects(projects);
+      const selectedId = projects.some((project) => project.id === selectedProjectId)
+        ? selectedProjectId
+        : (projects[0]?.id ?? null);
+      setSelectedProjectId(selectedId);
+      setLocalJobs(selectedId ? await listLocalSliceJobs(invoke, selectedId) : []);
+      setHomeError(null);
+    } catch {
+      setHomeError(t("home.localUnavailable"));
+    }
+  }, [selectedProjectId, t]);
+
+  useEffect(() => {
+    void refreshHome();
+  }, [refreshHome]);
+
+  const activateProject = useCallback(
+    async (action: "create" | "open" | "continue" | "recover", project?: LocalProjectSummary) => {
+      if (!isTauriRuntime()) return;
+      const projectId = project?.id ?? selectedProjectId;
+      if (
+        action !== "create" &&
+        (!projectId || !localProjects.some((item) => item.id === projectId))
+      ) {
+        setHomeError(t("home.selectProject"));
+        return;
+      }
+      setHomeBusy(true);
+      setHomeError(null);
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const name =
+          action === "create"
+            ? window.prompt(t("home.newProjectPrompt"), t("home.untitledProject"))
+            : null;
+        if (action === "create" && name === null) return;
+        const projectName = name?.trim() ?? "";
+        if (action === "create" && !projectName) {
+          setHomeError(t("home.nameRequired"));
+          return;
+        }
+        const snapshot =
+          action === "create"
+            ? await createLocalProject(invoke, `project-${crypto.randomUUID()}`, projectName)
+            : action === "continue"
+              ? await continueLocalProject(invoke, projectId!)
+              : action === "recover"
+                ? await recoverLocalProject(invoke, projectId!)
+                : await openLocalProject(invoke, projectId!);
+        setSelectedProjectId(snapshot.project.id);
+        useScene.getState().hydrate(snapshot.project.objects as never[]);
+        useViewport.setState({ revision: snapshot.revision });
+        if (
+          action === "recover" &&
+          (snapshot.diagnostics ?? []).some((diagnostic) => diagnostic.code.startsWith("ARTIFACT_"))
+        ) {
+          useUi.getState().pushToast({
+            kind: "warning",
+            title: t("home.recoverProject"),
+            message: t("home.recovery.geometryMissing"),
+          });
+        }
+        if (action !== "recover") {
+          await queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+        }
+        setWorkspaceView("prepare");
+        await refreshHome();
+      } catch (error) {
+        setHomeError(error instanceof Error ? error.message : String(error));
+      } finally {
+        setHomeBusy(false);
+      }
+    },
+    [localProjects, refreshHome, selectedProjectId, t],
+  );
+
+  const localBackendAvailable = isTauriRuntime() && provider?.mode === "real" && provider.available;
+  const backendUnavailableReason =
+    provider?.reason === "real-project-provider-not-connected"
+      ? t("home.backendReason.notConnected")
+      : provider?.reason === "project-authority-unavailable"
+        ? t("home.backendReason.authorityUnavailable")
+        : t("home.backendReason.unknown");
 
   const preview = useMemo<PreviewModel | null>(
     () => (previewIr ? buildPreviewModel(previewIr) : null),
@@ -242,6 +349,16 @@ export function App() {
         <nav className="workspace-tabs" aria-label={t("app.workspaceView.aria")}>
           <button
             type="button"
+            aria-pressed={workspaceView === "home"}
+            onClick={() => {
+              setWorkspaceView("home");
+              void refreshHome();
+            }}
+          >
+            {t("app.tab.home")}
+          </button>
+          <button
+            type="button"
             aria-pressed={workspaceView === "prepare"}
             onClick={() => setWorkspaceView("prepare")}
           >
@@ -250,7 +367,6 @@ export function App() {
           <button
             type="button"
             aria-pressed={workspaceView === "preview"}
-            disabled={!preview}
             onClick={() => setWorkspaceView("preview")}
           >
             {t("app.tab.preview")}
@@ -319,123 +435,246 @@ export function App() {
       </header>
 
       <main className="app-main">
-        <aside className="panel-left">
-          <nav className="sidebar-nav" aria-label={t("app.sidebarNav.aria")}>
-            {(
-              [
-                ["settings", "app.view.settings"],
-                ["objects", "app.view.objects"],
-                ["chat", "app.view.chat"],
-              ] as const
-            ).map(([view, key]) => (
-              <button
-                type="button"
-                key={view}
-                aria-pressed={sidebarView === view}
-                onClick={() => setSidebarView(view)}
-              >
-                {t(key)}
-              </button>
-            ))}
+        <section
+          className="home-page"
+          data-testid="home-page"
+          aria-label={t("home.title")}
+          hidden={workspaceView !== "home"}
+        >
+          <header className="home-heading">
+            <div>
+              <h1>{t("home.title")}</h1>
+              <p>{t("home.subtitle")}</p>
+            </div>
             <button
               type="button"
-              className="sidebar-detach"
-              title={t("app.chat.detachTitle")}
-              aria-label={t("app.chat.detachAria")}
-              data-testid="chat-detach"
-              onClick={() => {
-                useDock.getState().focusPanel("chat");
-                useDock.getState().setPanelMode("chat", "floating");
-              }}
+              className="home-primary"
+              data-testid="home-new-project"
+              disabled={!localBackendAvailable || homeBusy}
+              onClick={() => void activateProject("create")}
             >
-              ⇱
+              {t("home.newProject")}
             </button>
-          </nav>
-          <div hidden={sidebarView !== "settings"}>
-            <SettingsPanel profile={operatorProfile} onProfileChange={setOperatorProfile} />
+          </header>
+          {!isTauriRuntime() ? <p className="home-empty">{t("home.demoMode")}</p> : null}
+          {isTauriRuntime() && provider && !localBackendAvailable ? (
+            <p className="home-error" role="status">
+              {t("home.backendUnavailable", { reason: backendUnavailableReason })}
+            </p>
+          ) : null}
+          {homeError ? (
+            <p className="home-error" role="alert">
+              {homeError}
+            </p>
+          ) : null}
+          <div className="home-columns">
+            <section className="home-section" aria-labelledby="home-projects-title">
+              <header className="home-section-heading">
+                <h2 id="home-projects-title">{t("home.projects")}</h2>
+                <span>{isTauriRuntime() ? t("home.localSource") : t("home.demoMode")}</span>
+              </header>
+              <div className="home-project-actions">
+                <button
+                  type="button"
+                  data-testid="home-continue"
+                  disabled={!localBackendAvailable || !selectedProjectId || homeBusy}
+                  onClick={() => void activateProject("continue")}
+                >
+                  {t("home.continueProject")}
+                </button>
+                <button
+                  type="button"
+                  data-testid="home-recover"
+                  disabled={!localBackendAvailable || !selectedProjectId || homeBusy}
+                  onClick={() => void activateProject("recover")}
+                >
+                  {t("home.recoverProject")}
+                </button>
+              </div>
+              {localProjects.length ? (
+                <ul className="home-project-list">
+                  {localProjects.map((project) => (
+                    <li key={project.id} data-testid={`home-project-${project.id}`}>
+                      <div className="home-project-copy">
+                        <button
+                          type="button"
+                          aria-pressed={selectedProjectId === project.id}
+                          disabled={!localBackendAvailable || homeBusy}
+                          onClick={() => setSelectedProjectId(project.id)}
+                        >
+                          <strong>{project.name}</strong>
+                        </button>
+                        <span>
+                          {project.id} · {t("home.localSource")}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={!localBackendAvailable || homeBusy}
+                        onClick={() => void activateProject("open", project)}
+                      >
+                        {t("home.openProject")}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="home-empty">
+                  {isTauriRuntime() ? t("home.noProjects") : t("home.localUnavailable")}
+                </p>
+              )}
+            </section>
+            <div className="home-history-column">
+              <section className="home-section" aria-labelledby="home-jobs-title">
+                <header className="home-section-heading">
+                  <h2 id="home-jobs-title">{t("home.sliceJobs")}</h2>
+                  <span>{selectedProjectId ?? t("home.noProjects")}</span>
+                </header>
+                {localJobs.length ? (
+                  <ul className="home-history-list">
+                    {localJobs.map((job, index) => (
+                      <li key={job.job_id ?? index}>
+                        <strong>{job.job_id ?? "Slice job"}</strong>
+                        <span>
+                          {job.status ?? "unknown"} · rev {job.source_revision ?? "unknown"}
+                        </span>
+                        <span>{t(`home.artifact.${resolveSliceArtifactStatus(job)}`)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="home-empty">{t("home.noSliceJobs")}</p>
+                )}
+              </section>
+              <section className="home-section" aria-labelledby="home-print-history-title">
+                <header className="home-section-heading">
+                  <h2 id="home-print-history-title">{t("home.printHistory")}</h2>
+                  <span>{t("home.cloudHistoryUnavailable")}</span>
+                </header>
+                <p className="home-empty">{t("home.cloudHistoryUnavailable")}</p>
+              </section>
+            </div>
           </div>
-          {sidebarView === "objects" ? (
-            <>
-              <ObjectTree scene={scene} onOpenImport={() => setImportOpen(true)} />
-              <ObjectSettingsPanel scene={scene} />
-              <BooleanToolPanel scene={scene} />
-            </>
-          ) : null}{" "}
-          {sidebarView === "chat" ? <ChatPanelLazy /> : null}
-          <section className="panel-section" aria-label={t("app.ir.aria")}>
-            <header className="panel-title">{t("app.ir.title")}</header>
-            <div className="panel-body">
-              <label className="ir-file-label" htmlFor="ir-file-input">
-                {t("app.ir.fileLabel")}
-              </label>
-              <input
-                id="ir-file-input"
-                data-testid="ir-file-input"
-                className="ir-file-input"
-                type="file"
-                accept=".json,application/json"
-                onChange={(e) => {
-                  const file = e.currentTarget.files?.[0];
-                  e.currentTarget.value = "";
-                  if (file) void onIrFile(file);
-                }}
-              />
+        </section>
+        <div className="editor-workspace" hidden={workspaceView === "home"}>
+          <aside className="panel-left">
+            <nav className="sidebar-nav" aria-label={t("app.sidebarNav.aria")}>
+              {(
+                [
+                  ["settings", "app.view.settings"],
+                  ["objects", "app.view.objects"],
+                  ["chat", "app.view.chat"],
+                ] as const
+              ).map(([view, key]) => (
+                <button
+                  type="button"
+                  key={view}
+                  aria-pressed={sidebarView === view}
+                  onClick={() => setSidebarView(view)}
+                >
+                  {t(key)}
+                </button>
+              ))}
               <button
                 type="button"
-                data-testid="ir-clear"
-                onClick={onIrClear}
-                disabled={!previewIr && !irError}
+                className="sidebar-detach"
+                title={t("app.chat.detachTitle")}
+                aria-label={t("app.chat.detachAria")}
+                data-testid="chat-detach"
+                onClick={() => {
+                  useDock.getState().focusPanel("chat");
+                  useDock.getState().setPanelMode("chat", "floating");
+                }}
               >
-                {t("app.ir.clear")}
+                ⇱
               </button>
-              <p
-                data-testid="ir-status"
-                role="status"
-                aria-live="polite"
-                className={irError ? "ir-status ir-status-error" : "ir-status"}
-              >
-                {irError
-                  ? irError
-                  : preview
-                    ? t("app.ir.loaded", {
-                        n: String(preview.layerCount),
-                        s: preview.layerCount === 1 ? "" : "s",
-                        mode: preview.mode,
-                      })
-                    : t("app.ir.empty")}
-              </p>
+            </nav>
+            <div hidden={sidebarView !== "settings"}>
+              <SettingsPanel profile={operatorProfile} onProfileChange={setOperatorProfile} />
             </div>
-          </section>
-        </aside>
-        <PanelDivider
-          axis="vertical"
-          ariaLabel={t("app.divider.ariaVertical")}
-          size={leftSize}
-          minSize={180}
-          maxSize={520}
-          onSizeChange={setLeftSize}
-        />
-        <section className="viewport-host" aria-label={t("app.viewport.aria")}>
-          <PlateTabs scene={scene} objects={objects} />
-          <div className="plate-heading">
-            <strong data-testid="plate-heading-name">{activePlateName}</strong>
-            <span>{operatorProfile.displayName || t("app.plate.operatorFallback")}</span>
-            <span data-testid="viewport-volume">
-              {operatorProfile.buildVolume
-                ? t("app.plate.volume", {
-                    w: String(operatorProfile.buildVolume.widthMm),
-                    d: String(operatorProfile.buildVolume.depthMm),
-                    h: String(operatorProfile.buildVolume.heightMm),
-                  })
-                : t("app.plate.volumeFallback")}
-            </span>
-          </div>
-          <Viewport
-            scene={scene}
-            preview={workspaceView === "preview" ? preview : null}
-            buildVolume={operatorProfile.buildVolume ?? undefined}
+            {sidebarView === "objects" ? (
+              <>
+                <ObjectTree scene={scene} onOpenImport={() => setImportOpen(true)} />
+                <ObjectSettingsPanel scene={scene} />
+                <BooleanToolPanel scene={scene} />
+              </>
+            ) : null}{" "}
+            {sidebarView === "chat" ? <ChatPanelLazy /> : null}
+            <section className="panel-section" aria-label={t("app.ir.aria")}>
+              <header className="panel-title">{t("app.ir.title")}</header>
+              <div className="panel-body">
+                <label className="ir-file-label" htmlFor="ir-file-input">
+                  {t("app.ir.fileLabel")}
+                </label>
+                <input
+                  id="ir-file-input"
+                  data-testid="ir-file-input"
+                  className="ir-file-input"
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={(e) => {
+                    const file = e.currentTarget.files?.[0];
+                    e.currentTarget.value = "";
+                    if (file) void onIrFile(file);
+                  }}
+                />
+                <button
+                  type="button"
+                  data-testid="ir-clear"
+                  onClick={onIrClear}
+                  disabled={!previewIr && !irError}
+                >
+                  {t("app.ir.clear")}
+                </button>
+                <p
+                  data-testid="ir-status"
+                  role="status"
+                  aria-live="polite"
+                  className={irError ? "ir-status ir-status-error" : "ir-status"}
+                >
+                  {irError
+                    ? irError
+                    : preview
+                      ? t("app.ir.loaded", {
+                          n: String(preview.layerCount),
+                          s: preview.layerCount === 1 ? "" : "s",
+                          mode: preview.mode,
+                        })
+                      : t("app.ir.empty")}
+                </p>
+              </div>
+            </section>
+          </aside>
+          <PanelDivider
+            axis="vertical"
+            ariaLabel={t("app.divider.ariaVertical")}
+            size={leftSize}
+            minSize={180}
+            maxSize={520}
+            onSizeChange={setLeftSize}
           />
-        </section>
+          <section className="viewport-host" aria-label={t("app.viewport.aria")}>
+            <PlateTabs scene={scene} objects={objects} />
+            <div className="plate-heading">
+              <strong data-testid="plate-heading-name">{activePlateName}</strong>
+              <span>{operatorProfile.displayName || t("app.plate.operatorFallback")}</span>
+              <span data-testid="viewport-volume">
+                {operatorProfile.buildVolume
+                  ? t("app.plate.volume", {
+                      w: String(operatorProfile.buildVolume.widthMm),
+                      d: String(operatorProfile.buildVolume.depthMm),
+                      h: String(operatorProfile.buildVolume.heightMm),
+                    })
+                  : t("app.plate.volumeFallback")}
+              </span>
+            </div>
+            <Viewport
+              scene={scene}
+              preview={workspaceView === "preview" ? preview : null}
+              buildVolume={operatorProfile.buildVolume ?? undefined}
+            />
+          </section>
+        </div>
       </main>
 
       <PanelDivider

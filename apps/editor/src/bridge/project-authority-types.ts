@@ -37,6 +37,11 @@ export interface ProjectOperation {
 export interface ProjectSnapshot {
   readonly project: ProjectDocument;
   readonly revision: number;
+  readonly diagnostics?: readonly {
+    readonly code: "ARTIFACT_REFERENCE_MISSING" | "ARTIFACT_FILE_MISSING" | string;
+    readonly object_id: string;
+    readonly artifact_sha256: string;
+  }[];
 }
 
 export interface ProjectCommitReply {

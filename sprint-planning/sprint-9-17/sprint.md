@@ -12,7 +12,7 @@
 | **Primary Owner**     | apps/editor workspace and device providers                                                                                                                    |
 | **Source**            | [Editor workspace CAD/AI audit](../../docs/audit/editor-workspace-cad-ai-audit-2026-10-07.md), AUD-11/AUD-13; sections 7, 14, 19                              |
 | **Depends On**        | Sprint 9.16                                                                                                                                                   |
-| **Status**            | ⏳ Planned                                                                                                                                                    |
+| **Status**            | 🔄 In progress — S9.17-001 focused checks pass; full gate pending                                                                                             |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -43,7 +43,7 @@ Use controlled transport stubs for command-path integration. Do not issue real h
 | **Type**             | Feature                                                                |
 | **Estimated Effort** | L                                                                      |
 | **Source Finding**   | NAV-01; HIS-01–HIS-04; AUD-15                                          |
-| **Status**           | ⏳ Planned                                                             |
+| **Status**           | 🔄 In progress — focused checks passed; formal full gate pending       |
 
 #### Context
 
@@ -51,12 +51,13 @@ Projects, slice jobs and physical print history have distinct owners, identifier
 
 #### Acceptance Criteria
 
-- [ ] **NAV-01:** Home opens/creates/recovers local projects without cloud authentication.
-- [ ] **HIS-01:** Project, slice-job and print-history records remain distinct with explicit origin.
-- [ ] **HIS-02:** Missing artifacts are shown as missing, not reconstructed or implied available.
-- [ ] **HIS-03:** Reprint creates a new proposal and validates current destination/artifact contract.
-- [ ] **HIS-04:** Local history remains usable when cloud is unavailable.
-- [ ] Run focused persistence/navigation tests, full gate and sanitizer dry-run successfully.
+- [x] **NAV-01:** Home opens/creates/recovers local projects without cloud authentication; controlled Home E2E verifies selected-project recovery and failed-recovery preservation.
+- [x] **HIS-01:** Project and slice-job histories remain distinct; slice-job rows identify local origin. Physical print history is a separate cloud-owned, explicitly unavailable section.
+- [x] **HIS-02:** Missing artifacts are reported as missing; recovery removes unavailable geometry and reports diagnostics without fabricating geometry.
+- [ ] **HIS-03:** Reprint proposal and current destination/artifact validation are not implemented; future ticket scope.
+- [x] **HIS-04:** Local project and slice history remains independent of cloud print history; history read failure is shown explicitly.
+- [x] Focused checks passed: Home unit 8/8, Home E2E, project-store Rust 11/11, Tauri slice-history test 1/1, TypeScript typecheck.
+- [ ] Formal `pnpm run check` exit code and sanitizer dry-run are pending; ticket completion is not claimed.
 
 ### S9.17-002 — Persistent Prepare and empty Preview navigation
 

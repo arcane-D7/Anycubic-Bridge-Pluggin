@@ -51,6 +51,7 @@ export function isLocale(value: unknown): value is Locale {
 export type MsgKey =
   // app shell -----------------------------------------------------------
   | "app.brand"
+  | "app.tab.home"
   | "app.tab.prepare"
   | "app.tab.preview"
   | "app.sidebarToggle"
@@ -85,6 +86,33 @@ export type MsgKey =
   | "app.divider.ariaVertical"
   | "app.toast.demo.title"
   | "app.toast.demo.message"
+  | "home.title"
+  | "home.subtitle"
+  | "home.newProject"
+  | "home.openProject"
+  | "home.continueProject"
+  | "home.recoverProject"
+  | "home.projects"
+  | "home.sliceJobs"
+  | "home.printHistory"
+  | "home.localSource"
+  | "home.noProjects"
+  | "home.noSliceJobs"
+  | "home.cloudHistoryUnavailable"
+  | "home.localUnavailable"
+  | "home.demoMode"
+  | "home.backendUnavailable"
+  | "home.backendReason.notConnected"
+  | "home.backendReason.authorityUnavailable"
+  | "home.backendReason.unknown"
+  | "home.selectProject"
+  | "home.artifact.present"
+  | "home.artifact.missing"
+  | "home.artifact.unavailable"
+  | "home.recovery.geometryMissing"
+  | "home.newProjectPrompt"
+  | "home.untitledProject"
+  | "home.nameRequired"
   | "app.toast.dismissAria"
   | "toast.bell.aria"
   | "toast.bell.empty"
@@ -875,6 +903,7 @@ export type MsgKey =
 /** Canonical EN strings (UI copy as it reads today). */
 export const EN: Record<MsgKey, string> = {
   "app.brand": "Anycubic Bridge Editor",
+  "app.tab.home": "Home",
   "app.tab.prepare": "Prepare",
   "app.tab.preview": "Preview",
   "app.sidebarToggle": "Settings",
@@ -908,6 +937,35 @@ export const EN: Record<MsgKey, string> = {
   "app.divider.ariaVertical": "Resize settings panel",
   "app.toast.demo.title": "Ready",
   "app.toast.demo.message": "Liquid-glass shell initialized.",
+  "home.title": "Local workspace",
+  "home.subtitle": "Projects and slice artifacts stored on this device.",
+  "home.newProject": "New project",
+  "home.openProject": "Open",
+  "home.continueProject": "Continue",
+  "home.recoverProject": "Recover latest revision",
+  "home.projects": "Recent projects",
+  "home.sliceJobs": "Slice jobs",
+  "home.printHistory": "Print history",
+  "home.localSource": "Local project store",
+  "home.noProjects": "No local projects yet.",
+  "home.noSliceJobs": "No slice jobs recorded for this project.",
+  "home.cloudHistoryUnavailable":
+    "Cloud print history is unavailable here; no print records are stored locally.",
+  "home.localUnavailable": "Local project history is unavailable.",
+  "home.demoMode": "Demo workspace · local project actions are unavailable.",
+  "home.backendUnavailable": "Local project actions are disabled: {reason}.",
+  "home.backendReason.notConnected": "the real project provider is not connected",
+  "home.backendReason.authorityUnavailable": "the local project authority could not be reached",
+  "home.backendReason.unknown": "the selected project provider is unsupported",
+  "home.selectProject": "Select an available local project first.",
+  "home.artifact.present": "Local artifact present",
+  "home.artifact.missing": "Local artifact missing",
+  "home.artifact.unavailable": "Artifact availability unavailable",
+  "home.recovery.geometryMissing":
+    "Some object geometry is missing. Object metadata was kept; missing geometry was not recreated.",
+  "home.newProjectPrompt": "Project name",
+  "home.untitledProject": "Untitled project",
+  "home.nameRequired": "A project name is required.",
   "app.toast.dismissAria": "Dismiss notification",
   "toast.bell.aria": "Notifications ({count})",
   "toast.bell.empty": "No notifications",
@@ -1669,6 +1727,7 @@ export const EN: Record<MsgKey, string> = {
 /** PT-BR strings (full parity — same keys as EN). */
 export const PT_BR: Record<MsgKey, string> = {
   "app.brand": "Anycubic Bridge Editor",
+  "app.tab.home": "Início",
   "app.tab.prepare": "Preparar",
   "app.tab.preview": "Pré-visualizar",
   "app.sidebarToggle": "Definições",
@@ -1703,6 +1762,36 @@ export const PT_BR: Record<MsgKey, string> = {
   "app.divider.ariaVertical": "Redimensionar painel de definições",
   "app.toast.demo.title": "Pronto",
   "app.toast.demo.message": "Casca de vidro líquido inicializada.",
+  "home.title": "Espaço de trabalho local",
+  "home.subtitle": "Projetos e artefatos de fatiamento armazenados neste dispositivo.",
+  "home.newProject": "Novo projeto",
+  "home.openProject": "Abrir",
+  "home.continueProject": "Continuar",
+  "home.recoverProject": "Recuperar revisão mais recente",
+  "home.projects": "Projetos recentes",
+  "home.sliceJobs": "Trabalhos de fatiamento",
+  "home.printHistory": "Histórico de impressão",
+  "home.localSource": "Armazenamento local de projetos",
+  "home.noProjects": "Ainda não há projetos locais.",
+  "home.noSliceJobs": "Não há trabalhos de fatiamento registrados neste projeto.",
+  "home.cloudHistoryUnavailable":
+    "O histórico de impressão na nuvem não está disponível aqui; não há registros locais.",
+  "home.localUnavailable": "O histórico local de projetos está indisponível.",
+  "home.demoMode": "Espaço de demonstração · ações de projetos locais indisponíveis.",
+  "home.backendUnavailable": "As ações de projetos locais foram desativadas: {reason}.",
+  "home.backendReason.notConnected": "o provedor de projetos reais não está conectado",
+  "home.backendReason.authorityUnavailable":
+    "não foi possível acessar a autoridade local de projetos",
+  "home.backendReason.unknown": "o provedor de projetos selecionado não é compatível",
+  "home.selectProject": "Selecione primeiro um projeto local disponível.",
+  "home.artifact.present": "Artefato local presente",
+  "home.artifact.missing": "Artefato local ausente",
+  "home.artifact.unavailable": "Disponibilidade do artefato indisponível",
+  "home.recovery.geometryMissing":
+    "Falta a geometria de alguns objetos. Os metadados foram mantidos; a geometria em falta não foi recriada.",
+  "home.newProjectPrompt": "Nome do projeto",
+  "home.untitledProject": "Projeto sem título",
+  "home.nameRequired": "É necessário informar um nome para o projeto.",
   "app.toast.dismissAria": "Dispensar notificação",
   "toast.bell.aria": "Notificações ({count})",
   "toast.bell.empty": "Sem notificações",

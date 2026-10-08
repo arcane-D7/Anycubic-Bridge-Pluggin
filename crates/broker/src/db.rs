@@ -196,6 +196,28 @@ impl DbHandle {
         Ok(())
     }
 
+    pub fn list_projects(&self) -> Result<Vec<(String, String, i64)>, rusqlite::Error> {
+        let mut statement = self.conn.prepare(
+            "SELECT id, name, updated_ms FROM projects ORDER BY updated_ms DESC, id ASC",
+        )?;
+        let rows = statement.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?;
+        rows.collect()
+    }
+
+    pub fn list_slice_jobs(
+        &self,
+        project_id: &str,
+        limit: u32,
+    ) -> Result<Vec<String>, rusqlite::Error> {
+        let mut statement = self.conn.prepare(
+            "SELECT record_json FROM slice_jobs WHERE project_id = ?1 ORDER BY updated_ms DESC, job_id ASC LIMIT ?2",
+        )?;
+        let rows = statement.query_map(rusqlite::params![project_id, limit.min(100)], |row| {
+            row.get(0)
+        })?;
+        rows.collect()
+    }
+
     /// Append an op to the journal under `project_id` + `seq`.
     pub fn append_op(
         &self,

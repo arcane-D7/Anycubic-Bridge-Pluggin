@@ -40,6 +40,30 @@ pub struct LegacyProjectObject {
 pub struct ProjectSnapshot {
     pub project: ProjectDocument,
     pub revision: u64,
+    #[serde(default)]
+    pub diagnostics: Vec<SnapshotDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SnapshotDiagnostic {
+    pub code: String,
+    pub object_id: String,
+    pub artifact_sha256: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ProjectSummary {
+    pub id: String,
+    pub name: String,
+    pub updated_ms: i64,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ArtifactStatus {
+    Present,
+    Missing,
+    Unavailable,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -101,6 +125,8 @@ pub enum AuthorityError {
     Conflict { expected: u64, actual: u64 },
     #[error("project document id does not match the opened project")]
     ProjectIdMismatch,
+    #[error("project not found")]
+    ProjectNotFound,
 }
 
 /// Durable authority for project identity, object state, revision and journal.
@@ -111,6 +137,62 @@ pub struct ProjectAuthority {
 }
 
 impl ProjectAuthority {
+    pub fn list(db: &DbHandle) -> Result<Vec<ProjectSummary>, AuthorityError> {
+        let projects = db.list_projects().map_err(ProjectError::from)?;
+        Ok(projects
+            .into_iter()
+            .map(|(id, name, updated_ms)| ProjectSummary {
+                id,
+                name,
+                updated_ms,
+            })
+            .collect())
+    }
+
+    pub fn list_slice_jobs(
+        db: &DbHandle,
+        project_id: &str,
+        limit: u32,
+    ) -> Result<Vec<Value>, AuthorityError> {
+        db.list_slice_jobs(project_id, limit)
+            .map_err(ProjectError::from)?
+            .into_iter()
+            .map(|record| serde_json::from_str(&record).map_err(AuthorityError::from))
+            .collect()
+    }
+
+    pub fn list_slice_jobs_with_artifact_status(
+        db: &DbHandle,
+        project_id: &str,
+        limit: u32,
+        blobs_dir: Option<&Path>,
+    ) -> Result<Vec<Value>, AuthorityError> {
+        Self::list_slice_jobs(db, project_id, limit)?
+            .into_iter()
+            .map(|mut record| {
+                let artifact_id = record.get("artifact_id").and_then(Value::as_str);
+                let status = artifact_status(db, artifact_id, blobs_dir)?;
+                if let Value::Object(fields) = &mut record {
+                    fields.insert("artifact_status".to_owned(), serde_json::to_value(status)?);
+                    fields.insert(
+                        "artifact_origin".to_owned(),
+                        Value::String("local".to_owned()),
+                    );
+                }
+                Ok(record)
+            })
+            .collect()
+    }
+
+    pub fn create(
+        db: DbHandle,
+        project_id: impl Into<String>,
+        project_name: &str,
+        blobs_dir: Option<PathBuf>,
+    ) -> Result<Self, AuthorityError> {
+        Self::open_with_artifact_dir(db, project_id, project_name, blobs_dir)
+    }
+
     pub fn open(
         db: DbHandle,
         project_id: impl Into<String>,
@@ -154,6 +236,27 @@ impl ProjectAuthority {
         })
     }
 
+    pub fn reopen_existing(
+        db: DbHandle,
+        project_id: impl Into<String>,
+        blobs_dir: Option<PathBuf>,
+    ) -> Result<Self, AuthorityError> {
+        let project_id = project_id.into();
+        let (_, encoded) = db
+            .project_state(&project_id)
+            .map_err(ProjectError::from)?
+            .ok_or(AuthorityError::ProjectNotFound)?;
+        let project: ProjectDocument = serde_json::from_str(&encoded)?;
+        if project.id != project_id {
+            return Err(AuthorityError::ProjectIdMismatch);
+        }
+        Ok(Self {
+            db,
+            project_id,
+            blobs_dir,
+        })
+    }
+
     pub fn snapshot(&self) -> Result<ProjectSnapshot, AuthorityError> {
         let (revision, encoded) = self
             .db
@@ -161,25 +264,58 @@ impl ProjectAuthority {
             .map_err(ProjectError::from)?
             .ok_or_else(|| ProjectError::Db(rusqlite::Error::QueryReturnedNoRows))?;
         let mut project: ProjectDocument = serde_json::from_str(&encoded)?;
+        let mut diagnostics = Vec::new();
         if let Some(blobs_dir) = &self.blobs_dir {
             for object in &mut project.objects {
-                let Some(hash) = object.get("artifactSha256").and_then(Value::as_str) else {
-                    continue;
-                };
-                let Some(relative_path) =
-                    self.db.artifact_path(hash).map_err(ProjectError::from)?
+                let Some(hash) = object
+                    .get("artifactSha256")
+                    .and_then(Value::as_str)
+                    .map(str::to_owned)
                 else {
                     continue;
                 };
+                let object_id = object
+                    .get("id")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_owned();
+                let Some(relative_path) =
+                    self.db.artifact_path(&hash).map_err(ProjectError::from)?
+                else {
+                    object
+                        .as_object_mut()
+                        .expect("project objects are JSON objects")
+                        .remove("geometry");
+                    diagnostics.push(SnapshotDiagnostic {
+                        code: "ARTIFACT_REFERENCE_MISSING".to_owned(),
+                        object_id,
+                        artifact_sha256: hash.clone(),
+                    });
+                    continue;
+                };
                 let path = blobs_dir.join(relative_path);
-                if path.is_file() {
-                    let bytes = fs::read(path).map_err(ProjectError::from)?;
-                    let geometry: Value = serde_json::from_slice(&bytes)?;
-                    object["geometry"] = geometry;
+                if !path.is_file() {
+                    object
+                        .as_object_mut()
+                        .expect("project objects are JSON objects")
+                        .remove("geometry");
+                    diagnostics.push(SnapshotDiagnostic {
+                        code: "ARTIFACT_FILE_MISSING".to_owned(),
+                        object_id,
+                        artifact_sha256: hash.clone(),
+                    });
+                    continue;
                 }
+                let bytes = fs::read(path).map_err(ProjectError::from)?;
+                let geometry: Value = serde_json::from_slice(&bytes)?;
+                object["geometry"] = geometry;
             }
         }
-        Ok(ProjectSnapshot { project, revision })
+        Ok(ProjectSnapshot {
+            project,
+            revision,
+            diagnostics,
+        })
     }
 
     pub fn commit(
@@ -308,6 +444,38 @@ impl ProjectAuthority {
             .map(|encoded| serde_json::from_str(&encoded).map_err(AuthorityError::from))
             .transpose()
     }
+}
+
+fn artifact_status(
+    db: &DbHandle,
+    artifact_id: Option<&str>,
+    blobs_dir: Option<&Path>,
+) -> Result<ArtifactStatus, AuthorityError> {
+    let Some(artifact_id) = artifact_id else {
+        return Ok(ArtifactStatus::Unavailable);
+    };
+    let Some(blobs_dir) = blobs_dir else {
+        return Ok(ArtifactStatus::Unavailable);
+    };
+    if artifact_id.len() != 64
+        || !artifact_id
+            .bytes()
+            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+    {
+        return Ok(ArtifactStatus::Missing);
+    }
+    let Some(relative_path) = db.artifact_path(artifact_id).map_err(ProjectError::from)? else {
+        return Ok(ArtifactStatus::Missing);
+    };
+    let expected_path = format!("{artifact_id}.mesh");
+    if relative_path != expected_path {
+        return Ok(ArtifactStatus::Missing);
+    }
+    Ok(if blobs_dir.join(relative_path).is_file() {
+        ArtifactStatus::Present
+    } else {
+        ArtifactStatus::Missing
+    })
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -728,6 +896,181 @@ mod tests {
         let recovered = reopened.snapshot().unwrap();
         assert_eq!(recovered.revision, 1);
         assert_eq!(recovered.project.objects[0]["geometry"]["indices"][0], 0);
+    }
+
+    #[test]
+    fn snapshot_reports_missing_artifact_reference_without_fabricating_geometry() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_path = dir.path().join("workspace.db");
+        let blobs_dir = dir.path().join("project-blobs");
+        let db = DbHandle::open(&db_path).unwrap();
+        let mut authority = ProjectAuthority::open_with_artifact_dir(
+            db,
+            "missing-artifact-project",
+            "Missing Artifact Project",
+            Some(blobs_dir.clone()),
+        )
+        .unwrap();
+        let object = serde_json::json!({
+            "id": "stable-object-id",
+            "name": "retained-object",
+            "sourceIds": ["source-object-id"],
+            "geometry": {"positions": [0.0, 0.0, 0.0]}
+        });
+        let artifact_sha256 = "a".repeat(64);
+        let mut project = authority.snapshot().unwrap().project;
+        let mut object = object;
+        object["artifactSha256"] = Value::String(artifact_sha256.clone());
+        object.as_object_mut().unwrap().remove("geometry");
+        project.objects.push(object);
+        authority
+            .db
+            .commit_project_state(
+                "missing-artifact-project",
+                0,
+                "missing-reference-fixture",
+                "missing-reference-fixture-hash",
+                "add_object",
+                "{}",
+                &serde_json::to_string(&project).unwrap(),
+                &[],
+            )
+            .unwrap()
+            .unwrap();
+        let snapshot = authority.snapshot().unwrap();
+        let recovered = &snapshot.project.objects[0];
+        assert_eq!(recovered["id"], "stable-object-id");
+        assert_eq!(recovered["sourceIds"][0], "source-object-id");
+        assert_eq!(recovered["name"], "retained-object");
+        assert!(recovered.get("geometry").is_none());
+        assert_eq!(snapshot.diagnostics.len(), 1);
+        assert_eq!(snapshot.diagnostics[0].code, "ARTIFACT_REFERENCE_MISSING");
+        assert_eq!(snapshot.diagnostics[0].object_id, "stable-object-id");
+        assert_eq!(snapshot.diagnostics[0].artifact_sha256, artifact_sha256);
+    }
+
+    #[test]
+    fn snapshot_reports_deleted_artifact_file_and_keeps_valid_geometry_unchanged() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_path = dir.path().join("workspace.db");
+        let blobs_dir = dir.path().join("project-blobs");
+        let mut authority = ProjectAuthority::open_with_artifact_dir(
+            DbHandle::open(&db_path).unwrap(),
+            "deleted-artifact-project",
+            "Deleted Artifact Project",
+            Some(blobs_dir.clone()),
+        )
+        .unwrap();
+        let geometry = serde_json::json!({
+            "positions": [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+            "indices": [0, 1, 2]
+        });
+        let valid_object = serde_json::json!({"id": "valid-object", "geometry": geometry});
+        let mut project = authority.snapshot().unwrap().project;
+        project.objects.push(valid_object.clone());
+        authority
+            .commit(
+                0,
+                operation(
+                    "valid-add",
+                    "add_object",
+                    "valid-object",
+                    Value::Null,
+                    valid_object,
+                ),
+                project,
+            )
+            .unwrap();
+        let mut project = authority.snapshot().unwrap().project;
+        let missing_object = serde_json::json!({
+            "id": "deleted-object",
+            "name": "retained",
+            "sourceIds": ["source-object-id"],
+            "geometry": {"positions": [0.0, 0.0, 0.0]}
+        });
+        project.objects.push(missing_object.clone());
+        let committed = authority
+            .commit(
+                1,
+                operation(
+                    "deleted-add",
+                    "add_object",
+                    "deleted-object",
+                    Value::Null,
+                    missing_object,
+                ),
+                project,
+            )
+            .unwrap();
+        let missing_hash = committed.project.objects[1]["artifactSha256"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let relative_path = authority.db.artifact_path(&missing_hash).unwrap().unwrap();
+        fs::remove_file(blobs_dir.join(relative_path)).unwrap();
+
+        let snapshot = authority.snapshot().unwrap();
+        assert_eq!(snapshot.project.objects[0]["geometry"]["indices"][0], 0);
+        assert_eq!(snapshot.project.objects[1]["id"], "deleted-object");
+        assert_eq!(snapshot.project.objects[1]["name"], "retained");
+        assert_eq!(
+            snapshot.project.objects[1]["sourceIds"][0],
+            "source-object-id"
+        );
+        assert!(snapshot.project.objects[1].get("geometry").is_none());
+        assert_eq!(snapshot.diagnostics.len(), 1);
+        assert_eq!(snapshot.diagnostics[0].code, "ARTIFACT_FILE_MISSING");
+        assert_eq!(snapshot.diagnostics[0].object_id, "deleted-object");
+        assert_eq!(snapshot.diagnostics[0].artifact_sha256, missing_hash);
+    }
+
+    #[test]
+    fn reopen_existing_reads_persisted_state_and_rejects_missing_projects() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_path = dir.path().join("workspace.db");
+        let project_id = "recover-project";
+        {
+            let db = DbHandle::open(&db_path).unwrap();
+            let mut authority = ProjectAuthority::open(db, project_id, "Persisted Name").unwrap();
+            let mut project = authority.snapshot().unwrap().project;
+            let object = serde_json::json!({"id": "persisted-object", "materialId": "pla"});
+            project.objects.push(object.clone());
+            authority
+                .commit(
+                    0,
+                    operation(
+                        "recover-add",
+                        "add_object",
+                        "persisted-object",
+                        Value::Null,
+                        object,
+                    ),
+                    project,
+                )
+                .unwrap();
+        }
+
+        let reopened =
+            ProjectAuthority::reopen_existing(DbHandle::open(&db_path).unwrap(), project_id, None)
+                .unwrap();
+        let recovered = reopened.snapshot().unwrap();
+        assert_eq!(recovered.revision, 1);
+        assert_eq!(recovered.project.name, "Persisted Name");
+        assert_eq!(recovered.project.objects[0]["id"], "persisted-object");
+
+        assert!(matches!(
+            ProjectAuthority::reopen_existing(
+                DbHandle::open(&db_path).unwrap(),
+                "missing-project",
+                None
+            ),
+            Err(AuthorityError::ProjectNotFound)
+        ));
+        assert!(DbHandle::open(&db_path)
+            .unwrap()
+            .project_state("missing-project")
+            .unwrap()
+            .is_none());
     }
 
     #[test]

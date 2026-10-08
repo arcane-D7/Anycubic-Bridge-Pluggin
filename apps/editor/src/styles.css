@@ -126,9 +126,20 @@ body,
 
 .app-main {
   display: flex;
-  min-height: 0;
   min-width: 0;
   max-width: 100%;
+}
+
+.editor-workspace {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.editor-workspace[hidden] {
+  display: none;
 }
 
 .panel-left,

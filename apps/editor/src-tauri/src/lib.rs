@@ -23,6 +23,7 @@ use planar_core::infill::InfillPattern;
 use planar_core::slice::{slice_with_progress, JobMode, PlanarProfile, Pt3, SliceMesh, Triangle};
 use project_store::{
     AuthorityError, ProjectAuthority, ProjectDocument, ProjectOperation, ProjectSnapshot,
+    ProjectSummary,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -1146,19 +1147,94 @@ fn workspace_db_path() -> Result<PathBuf, String> {
     Ok(app_dir.join("workspace.db"))
 }
 
-fn open_project_authority() -> Result<ProjectAuthority, String> {
+fn workspace_data_dir() -> Result<PathBuf, String> {
     let db_path = workspace_db_path()?;
-    let data_dir = db_path
+    db_path
         .parent()
-        .ok_or_else(|| "workspace database directory is unavailable".to_owned())?;
+        .map(PathBuf::from)
+        .ok_or_else(|| "workspace database directory is unavailable".to_owned())
+}
+
+fn open_project_authority(
+    project_id: &str,
+    project_name: &str,
+) -> Result<ProjectAuthority, String> {
+    let data_dir = workspace_data_dir()?;
+    let db_path = workspace_db_path()?;
     let db = DbHandle::open(&db_path).map_err(|error| error.to_string())?;
     ProjectAuthority::open_with_artifact_dir(
         db,
-        "local-project",
-        "Local Project",
+        project_id,
+        project_name,
         Some(data_dir.join("project-blobs")),
     )
     .map_err(|error| error.to_string())
+}
+
+fn reopen_project_authority(project_id: &str) -> Result<ProjectAuthority, String> {
+    let data_dir = workspace_data_dir()?;
+    let db = DbHandle::open(workspace_db_path()?).map_err(|error| error.to_string())?;
+    ProjectAuthority::reopen_existing(db, project_id, Some(data_dir.join("project-blobs")))
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn project_list() -> Result<Vec<ProjectSummary>, String> {
+    let db = DbHandle::open(workspace_db_path()?).map_err(|error| error.to_string())?;
+    ProjectAuthority::list(&db).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn project_slice_history(
+    project_id: String,
+    limit: Option<u32>,
+) -> Result<Vec<serde_json::Value>, String> {
+    let db = DbHandle::open(workspace_db_path()?).map_err(|error| error.to_string())?;
+    let blobs_dir = workspace_data_dir()?.join("project-blobs");
+    ProjectAuthority::list_slice_jobs_with_artifact_status(
+        &db,
+        &project_id,
+        limit.unwrap_or(20).min(100),
+        Some(&blobs_dir),
+    )
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn project_create(
+    state: State<'_, ProjectAuthorityState>,
+    project_id: String,
+    name: String,
+) -> Result<ProjectSnapshot, String> {
+    let name = name.trim();
+    if project_id.trim().is_empty() || name.is_empty() || name.len() > 120 {
+        return Err("project id and a name of 1..=120 characters are required".into());
+    }
+    let data_dir = workspace_data_dir()?;
+    let db = DbHandle::open(workspace_db_path()?).map_err(|error| error.to_string())?;
+    let authority =
+        ProjectAuthority::create(db, project_id, name, Some(data_dir.join("project-blobs")))
+            .map_err(|error| error.to_string())?;
+    let snapshot = authority.snapshot().map_err(|error| error.to_string())?;
+    *state.0.lock().map_err(|error| error.to_string())? = Ok(authority);
+    Ok(snapshot)
+}
+
+#[tauri::command]
+fn project_open(
+    state: State<'_, ProjectAuthorityState>,
+    project_id: String,
+) -> Result<ProjectSnapshot, String> {
+    let db = DbHandle::open(workspace_db_path()?).map_err(|error| error.to_string())?;
+    let summary = ProjectAuthority::list(&db)
+        .map_err(|error| error.to_string())?
+        .into_iter()
+        .find(|project| project.id == project_id)
+        .ok_or_else(|| "project not found".to_owned())?;
+    let authority = open_project_authority(&summary.id, &summary.name)?;
+    let snapshot = authority.snapshot().map_err(|error| error.to_string())?;
+    *state.0.lock().map_err(|error| error.to_string())? = Ok(authority);
+    Ok(snapshot)
 }
 
 #[tauri::command]
@@ -1171,6 +1247,17 @@ fn project_authority_read(
         .map_err(Clone::clone)?
         .snapshot()
         .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn project_authority_recover(
+    state: State<'_, ProjectAuthorityState>,
+    project_id: String,
+) -> Result<ProjectSnapshot, String> {
+    let authority = reopen_project_authority(&project_id)?;
+    let snapshot = authority.snapshot().map_err(|error| error.to_string())?;
+    *state.0.lock().map_err(|error| error.to_string())? = Ok(authority);
+    Ok(snapshot)
 }
 
 #[tauri::command]
@@ -1261,7 +1348,10 @@ pub fn run() {
         .manage(ChatStoreState(Mutex::new(
             ChatStore::open_default().expect("chat store dir"),
         )))
-        .manage(ProjectAuthorityState(Mutex::new(open_project_authority())))
+        .manage(ProjectAuthorityState(Mutex::new(open_project_authority(
+            "local-project",
+            "Local Project",
+        ))))
         .manage(GeometryWorkerState(Mutex::new(())))
         .manage(SliceJobsState(Mutex::new(HashMap::new())))
         .invoke_handler(tauri::generate_handler![
@@ -1273,8 +1363,13 @@ pub fn run() {
             chat_store_list,
             chat_store_info,
             project_authority_read,
+            project_authority_recover,
             project_authority_journal,
             project_authority_commit,
+            project_list,
+            project_slice_history,
+            project_create,
+            project_open,
             project_geometry_execute,
             slice_job_run,
             slice_job_cancel,
@@ -1460,6 +1555,7 @@ mod slice_job_tests {
                 legacy_objects: Vec::new(),
             },
             revision: 4,
+            diagnostics: Vec::new(),
         }
     }
 
@@ -1480,6 +1576,97 @@ mod slice_job_tests {
             "transform": {"x": 0, "y": 0, "z": 0},
             "geometry": {"positions": [0, 0, 0, 1, 0, 0, 0, 1, 0], "indices": [0, 1, 2]}
         })
+    }
+
+    #[test]
+    fn slice_history_reports_artifact_availability_without_changing_job_metadata() {
+        let root = std::env::temp_dir().join(format!(
+            "editor-history-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let blobs = root.join("blobs");
+        std::fs::create_dir_all(&blobs).unwrap();
+        let db_path = root.join("workspace.db");
+        let authority = ProjectAuthority::open_with_artifact_dir(
+            DbHandle::open(&db_path).unwrap(),
+            "project-test",
+            "Test project",
+            Some(blobs.clone()),
+        )
+        .unwrap();
+        let present_id = authority.put_artifact(b"synthetic slice artifact").unwrap();
+        let missing_id = authority
+            .put_artifact(b"missing synthetic artifact")
+            .unwrap();
+        std::fs::remove_file(blobs.join(format!("{missing_id}.mesh"))).unwrap();
+        authority
+            .put_slice_job(
+                "job-present",
+                4,
+                "digest-a",
+                "ready",
+                &serde_json::json!({"job_id":"job-present", "status":"ready", "source_revision":4, "artifact_id":present_id}),
+            )
+            .unwrap();
+        authority
+            .put_slice_job(
+                "job-missing",
+                5,
+                "digest-b",
+                "failed",
+                &serde_json::json!({"job_id":"job-missing", "status":"failed", "source_revision":5, "artifact_id":missing_id}),
+            )
+            .unwrap();
+        authority
+            .put_slice_job(
+                "job-no-artifact",
+                6,
+                "digest-c",
+                "cancelled",
+                &serde_json::json!({"job_id":"job-no-artifact", "status":"cancelled", "source_revision":6}),
+            )
+            .unwrap();
+
+        drop(authority);
+        let db = DbHandle::open(&db_path).unwrap();
+        let baseline = ProjectAuthority::list_slice_jobs(&db, "project-test", 10).unwrap();
+        let history = ProjectAuthority::list_slice_jobs_with_artifact_status(
+            &db,
+            "project-test",
+            10,
+            Some(&blobs),
+        )
+        .unwrap();
+
+        assert_eq!(history.len(), 3);
+        assert_eq!(
+            history
+                .iter()
+                .map(|row| row["job_id"].clone())
+                .collect::<Vec<_>>(),
+            baseline
+                .iter()
+                .map(|row| row["job_id"].clone())
+                .collect::<Vec<_>>()
+        );
+        for (row, original) in history.iter().zip(&baseline) {
+            assert_eq!(row["status"], original["status"]);
+            assert_eq!(row["source_revision"], original["source_revision"]);
+            assert_eq!(row["artifact_id"], original["artifact_id"]);
+            assert_eq!(row["artifact_origin"], "local");
+            let expected_status = match row["job_id"].as_str().unwrap() {
+                "job-present" => "present",
+                "job-missing" => "missing",
+                "job-no-artifact" => "unavailable",
+                _ => panic!("unexpected synthetic job"),
+            };
+            assert_eq!(row["artifact_status"], expected_status);
+        }
+        let _ = std::fs::remove_dir_all(root);
     }
 
     #[test]
