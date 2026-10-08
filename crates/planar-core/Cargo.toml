@@ -9,6 +9,7 @@ serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 machine-profile = { path = "../machine-profile" }
+geo = "=0.33.1"
 
 [dev-dependencies]
 tempfile = "3"

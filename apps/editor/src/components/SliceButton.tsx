@@ -6,6 +6,12 @@ import { objectsOnPlate } from "@/state/plates-core";
 import type { SceneObjectSnapshot } from "@/bridge/types";
 import { useActivePlate } from "@/state/plates";
 import { activeProjectScene } from "@/bridge/project-provider";
+import { createNativeSliceRequest, runNativeSliceJob } from "@/bridge/slice-job";
+import { parseIrDocument } from "@/bridge/ir";
+import type { IrDocument } from "@/bridge/ir";
+import { usePresets } from "@/state/presets";
+import { CATALOG_MACHINES } from "@/profile/operatorProfile";
+import type { SlicingMode } from "@/contract";
 
 /**
  * Slice button (S9.5-002) — primary accent action in the workspace header.
@@ -19,11 +25,28 @@ import { activeProjectScene } from "@/bridge/project-provider";
 
 interface SliceButtonProps {
   readonly objects: readonly SceneObjectSnapshot[];
-  /** Callback so the parent can react to a successful slice (e.g. stats panel). */
-  readonly onSliced?: (() => void) | undefined;
+  readonly revision: number;
+  readonly slicingMode: SlicingMode;
+  readonly providerMode: "demo" | "real" | "unavailable";
+  readonly machineName: string;
+  readonly buildVolume: {
+    readonly widthMm: number;
+    readonly depthMm: number;
+    readonly heightMm: number;
+  } | null;
+  readonly onSliced?:
+    ((document: IrDocument, artifactId: string, sourceRevision: number) => void) | undefined;
 }
 
-export function SliceButton({ objects, onSliced }: SliceButtonProps) {
+export function SliceButton({
+  objects,
+  revision,
+  slicingMode,
+  providerMode,
+  machineName,
+  buildVolume,
+  onSliced,
+}: SliceButtonProps) {
   const t = useI18n((s) => s.t);
   const pushToast = useUi((s) => s.pushToast);
   const start = usePrintJob((s) => s.start);
@@ -35,10 +58,15 @@ export function SliceButton({ objects, onSliced }: SliceButtonProps) {
   const stageLabel = usePrintJob((s) => s.stageLabel);
   const blockedBy = usePrintJob((s) => s.blockedBy);
   const active = useActivePlate();
+  const settings = usePresets((s) => s.sliceSettings);
+  const supports = usePresets((s) => s.supports);
+  const brimWidthMm = usePresets((s) => s.brimWidthMm);
+  const filamentId = usePresets((s) => s.filamentId);
 
   // Plate objects → eligibility (preflight runs synchronously on the plate).
-  const plateObjects = objectsOnPlate(objects, active.id);
+  const plateObjects = objectsOnPlate(objects, active.id).filter((object) => object.visible);
   const eligible = sliceEligible(plateObjects);
+  const profile = CATALOG_MACHINES.find((machine) => machine.displayName === machineName);
 
   const busy = status === "slicing" || status === "sending";
 
@@ -61,12 +89,53 @@ export function SliceButton({ objects, onSliced }: SliceButtonProps) {
       });
       return;
     }
-    // Simulated G24 pipeline: the bridge lane is synchronous/read-only in the
-    // mock, so run the staged progress as a short deterministic sequence and
-    // finish with the real stats from the lane.
     const runStages = async () => {
-      const stages = ["prepare", "planar-core", "IR", "postprocess", "preview"] as const;
       try {
+        if (providerMode === "real") {
+          if (!buildVolume || !profile) {
+            throw new Error(
+              "slice preflight: select a machine profile with a declared build volume",
+            );
+          }
+          if (plateObjects.some((object) => !object.objectId)) {
+            throw new Error("slice preflight: a target is missing its stable project ID");
+          }
+          advanceStage(0, 0, "Native planar slice");
+          const request = createNativeSliceRequest({
+            revision,
+            slicingMode,
+            plateId: active.id,
+            profileId: profile.id,
+            buildVolume,
+            materialId: filamentId,
+            materialType: settings.material,
+            settings,
+            supports,
+            brimWidthMm,
+            targetIds: plateObjects.map((object) => object.objectId!),
+          });
+          const result = await runNativeSliceJob(request);
+          const document = parseIrDocument(result.ir);
+          finish({
+            layers: result.stats.layers,
+            estimatedMinutes: result.stats.estimated_minutes,
+            materialGrams: result.stats.material_grams,
+            volumeMm3: result.stats.volume_mm3,
+            perObjectMm3: result.stats.per_object_mm3,
+          });
+          pushToast({
+            kind: "success",
+            title: t("slice.ready.title"),
+            message: t("slice.ready.message", {
+              layers: String(result.stats.layers),
+              min: String(result.stats.estimated_minutes),
+            }),
+          });
+          onSliced?.(document, result.artifact_id, result.source_revision);
+          return;
+        }
+        if (providerMode !== "demo") throw new Error("slice provider is unavailable");
+        const stages = ["prepare", "planar-core", "IR", "postprocess", "preview"] as const;
         for (let i = 0; i < stages.length; i += 1) {
           advanceStage(i, stages.length, stages[i]!);
           await new Promise((r) => setTimeout(r, 260));
@@ -74,28 +143,18 @@ export function SliceButton({ objects, onSliced }: SliceButtonProps) {
         const handle = await activeProjectScene();
         const result = await handle.slice({ plateId: active.id });
         if (!result.ok) {
-          finish({
-            layers: 1,
-            estimatedMinutes: 1,
-            materialGrams: 0,
-            volumeMm3: 0,
-            perObjectMm3: {},
-          });
           fail(result.error);
           pushToast({ kind: "error", title: t("slice.failed.title"), message: result.error });
           return;
         }
         finish(result.stats);
         pushToast({
-          kind: "success",
-          title: t("slice.ready.title"),
-          message: t("slice.ready.message", {
-            layers: String(result.stats.layers),
-            min: String(result.stats.estimatedMinutes),
-          }),
+          kind: "info",
+          title: t("slice.demo.title"),
+          message: t("slice.demo.message"),
         });
-        onSliced?.();
       } catch (err) {
+        if (usePrintJob.getState().status === "cancelled") return;
         fail(err instanceof Error ? err.message : String(err));
         pushToast({ kind: "error", title: t("slice.failed.title"), message: String(err) });
       }
@@ -104,12 +163,22 @@ export function SliceButton({ objects, onSliced }: SliceButtonProps) {
   }, [
     active.id,
     advanceStage,
+    brimWidthMm,
+    buildVolume,
     fail,
+    filamentId,
     finish,
+    machineName,
     onSliced,
     plateObjects,
+    profile,
     preflight,
+    providerMode,
     pushToast,
+    revision,
+    slicingMode,
+    settings,
+    supports,
     start,
     t,
   ]);
@@ -125,7 +194,7 @@ export function SliceButton({ objects, onSliced }: SliceButtonProps) {
       className="slice-btn"
       data-testid="slice-btn"
       aria-label={eligible ? t("slice.button.aria.eligible") : t("slice.button.aria.blocked")}
-      disabled={!eligible || busy}
+      disabled={!eligible || busy || providerMode === "unavailable"}
       onClick={onSliceClick}
       title={blockHint ?? undefined}
     >

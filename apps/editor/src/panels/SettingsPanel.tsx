@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { usePresets } from "../state/presets";
+import type { SliceSettingsDraft } from "../state/presets";
 import { useI18n } from "../state/i18n";
 import { Swatch } from "../components/Swatch";
 import { FILAMENT_PRESETS, PRINTER_PRESETS, QUALITY_PRESETS } from "../presets/catalog";
@@ -12,26 +13,9 @@ import {
 } from "../profile/operatorProfile";
 import type { OperatorProfile } from "../profile/operatorProfile";
 
-const DEFAULT_DRAFT = {
-  layer_height_mm: 0.2,
-  line_width_mm: 0.45,
-  nozzle_diameter_mm: 0.4,
-  wall_loops: 2,
-  top_bottom_layers: 4,
-  infill_density_pct: 15,
-  infill_pattern: "Grid",
-  filament_diameter_mm: 1.75,
-  material: "PLA",
-  nozzle_temperature_c: 210,
-  bed_temperature_c: 60,
-  fan_pct: 100,
-  print_speed_mm_s: 30,
-  travel_speed_mm_s: 120,
-};
-
 type NumericKey = {
-  [Key in keyof typeof DEFAULT_DRAFT]: (typeof DEFAULT_DRAFT)[Key] extends number ? Key : never;
-}[keyof typeof DEFAULT_DRAFT];
+  [Key in keyof SliceSettingsDraft]: SliceSettingsDraft[Key] extends number ? Key : never;
+}[keyof SliceSettingsDraft];
 
 interface SettingsPanelProps {
   readonly profile: OperatorProfile;
@@ -43,10 +27,14 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
   const locale = useI18n((s) => s.locale);
   const setLocale = useI18n((s) => s.setLocale);
   const [tab, setTab] = useState<"Printer" | "Filament" | "Process">("Printer");
-  const [draft, setDraft] = useState(DEFAULT_DRAFT);
+  const draft = usePresets((state) => state.sliceSettings);
+  const updateSliceSettings = usePresets((state) => state.updateSliceSettings);
+  const supports = usePresets((state) => state.supports);
+  const setSupports = usePresets((state) => state.setSupports);
+  const brimWidthMm = usePresets((state) => state.brimWidthMm);
+  const setBrimWidth = usePresets((state) => state.setBrimWidth);
+  const brim = brimWidthMm > 0;
   const [exportStatus, setExportStatus] = useState("");
-  const [supports, setSupports] = useState(false);
-  const [brim, setBrim] = useState(false);
   const supportsEligible = true;
   const machine = CATALOG_MACHINES.find((entry) => entry.displayName === profile.displayName);
   const presetPrinterId = usePresets((state) => state.printerId);
@@ -69,15 +57,15 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
   function applyPresetDraft() {
     const values = presetSelection.draftValues;
     if (!values) return;
-    setDraft((current) => ({
-      ...current,
+    updateSliceSettings({
+      ...draft,
       nozzle_diameter_mm: values.nozzleDiameterMm,
       nozzle_temperature_c: values.nozzleTempC,
       bed_temperature_c: values.bedTempC,
       layer_height_mm: values.layerHeightMm,
       line_width_mm: values.lineWidthMm,
       material: values.material,
-    }));
+    });
     setExportStatus(t("settings.applyPresetToast"));
   }
 
@@ -103,7 +91,7 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
             onChange={(event) => {
               const value = event.currentTarget.valueAsNumber;
               if (event.currentTarget.validity.valid && Number.isFinite(value)) {
-                setDraft((current) => ({ ...current, [key]: value }));
+                updateSliceSettings({ ...draft, [key]: value });
                 setExportStatus("");
               }
             }}
@@ -352,7 +340,7 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
                 <select
                   value={draft.material}
                   onChange={(event) =>
-                    setDraft((current) => ({ ...current, material: event.currentTarget.value }))
+                    updateSliceSettings({ ...draft, material: event.currentTarget.value })
                   }
                 >
                   {["PLA", "PETG", "ABS", "ASA", "TPU"].map((material) => (
@@ -389,10 +377,10 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
                 <select
                   value={draft.infill_pattern}
                   onChange={(event) =>
-                    setDraft((current) => ({
-                      ...current,
+                    updateSliceSettings({
+                      ...draft,
                       infill_pattern: event.currentTarget.value,
-                    }))
+                    })
                   }
                 >
                   <option value="Grid">{t("settings.infill.grid")}</option>
@@ -423,7 +411,7 @@ export function SettingsPanel({ profile, onProfileChange }: SettingsPanelProps) 
                     type="checkbox"
                     data-testid="setting-brim"
                     checked={brim}
-                    onChange={(event) => setBrim(event.currentTarget.checked)}
+                    onChange={(event) => setBrimWidth(event.currentTarget.checked ? 5 : 0)}
                   />
                 </label>
               </fieldset>

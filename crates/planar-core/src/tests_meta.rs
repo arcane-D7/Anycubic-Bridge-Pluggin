@@ -29,6 +29,95 @@ fn base_profile() -> PlanarProfile {
     }
 }
 
+#[test]
+fn disjoint_mesh_components_do_not_emit_paths_across_the_gap() {
+    let mut mesh = cube_mesh(10.0);
+    let mut second = cube_mesh(10.0);
+    for triangle in &mut second.triangles {
+        for vertex in &mut triangle.v {
+            vertex.x += 20.0;
+        }
+    }
+    mesh.triangles.extend(second.triangles);
+
+    let mut profile = base_profile();
+    profile.layer_height_mm = 1.0;
+    profile.wall_loops = 1;
+    profile.top_bottom_layers = 0;
+    profile.infill_density_pct = 15.0;
+    let meta = slice(&mesh, &profile).expect("disjoint watertight components slice");
+    let layer = &meta.layers[4];
+
+    for segment in layer
+        .segments
+        .iter()
+        .filter(|segment| segment.kind == SegmentKind::Infill)
+    {
+        assert!(
+            segment.from.x <= 10.0 + 1e-6 && segment.to.x <= 10.0 + 1e-6
+                || segment.from.x >= 20.0 - 1e-6 && segment.to.x >= 20.0 - 1e-6,
+            "infill crossed the empty gap: {:?} -> {:?}",
+            segment.from,
+            segment.to
+        );
+    }
+}
+
+#[test]
+fn l_prism_infill_stays_outside_the_missing_quadrant() {
+    let mesh = cell_prism(&[(0, 0), (1, 0), (0, 1)], 10.0, 10.0);
+    let mut profile = base_profile();
+    profile.layer_height_mm = 1.0;
+    profile.wall_loops = 1;
+    profile.top_bottom_layers = 0;
+    profile.infill_density_pct = 15.0;
+    let meta = slice(&mesh, &profile).expect("L prism slice");
+
+    for segment in meta.layers[4]
+        .segments
+        .iter()
+        .filter(|segment| segment.kind == SegmentKind::Infill)
+    {
+        let midpoint = (
+            (segment.from.x + segment.to.x) / 2.0,
+            (segment.from.y + segment.to.y) / 2.0,
+        );
+        assert!(
+            midpoint.0 <= 10.0 + 1e-6 || midpoint.1 <= 10.0 + 1e-6,
+            "infill entered the missing L quadrant at {midpoint:?}"
+        );
+    }
+}
+
+#[test]
+fn hollow_prism_infill_stays_outside_the_cavity() {
+    let cells: Vec<_> = (0..3)
+        .flat_map(|y| (0..3).filter_map(move |x| ((x, y) != (1, 1)).then_some((x, y))))
+        .collect();
+    let mesh = cell_prism(&cells, 10.0, 10.0);
+    let mut profile = base_profile();
+    profile.layer_height_mm = 1.0;
+    profile.wall_loops = 1;
+    profile.top_bottom_layers = 0;
+    profile.infill_density_pct = 15.0;
+    let meta = slice(&mesh, &profile).expect("hollow prism slice");
+
+    for segment in meta.layers[4]
+        .segments
+        .iter()
+        .filter(|segment| segment.kind == SegmentKind::Infill)
+    {
+        let midpoint = (
+            (segment.from.x + segment.to.x) / 2.0,
+            (segment.from.y + segment.to.y) / 2.0,
+        );
+        assert!(
+            !(10.0 < midpoint.0 && midpoint.0 < 20.0 && 10.0 < midpoint.1 && midpoint.1 < 20.0),
+            "infill entered the hollow cavity at {midpoint:?}"
+        );
+    }
+}
+
 /// A 20×20×20 mm cube mesh: 12 triangles, watertight.
 fn cube_mesh(s: f64) -> SliceMesh {
     fn tri(verts: [(f64, f64, f64); 3], n: (f64, f64, f64)) -> Triangle {
@@ -61,6 +150,91 @@ fn cube_mesh(s: f64) -> SliceMesh {
         tri([(x1, y0, z0), (x1, y1, z1), (x1, y0, z1)], (1.0, 0.0, 0.0)),
     ];
     SliceMesh { triangles: t }
+}
+
+fn cell_prism(cells: &[(i32, i32)], cell: f64, height: f64) -> SliceMesh {
+    fn triangle(vertices: [[f64; 3]; 3]) -> Triangle {
+        let a = vertices[0];
+        let b = vertices[1];
+        let c = vertices[2];
+        let ab = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+        let ac = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+        Triangle {
+            v: vertices.map(|point| crate::slice::Pt3::new(point[0], point[1], point[2])),
+            n: crate::slice::Pt3::new(
+                ab[1] * ac[2] - ab[2] * ac[1],
+                ab[2] * ac[0] - ab[0] * ac[2],
+                ab[0] * ac[1] - ab[1] * ac[0],
+            ),
+        }
+    }
+    fn quad(out: &mut Vec<Triangle>, corners: [[f64; 3]; 4]) {
+        out.push(triangle([corners[0], corners[1], corners[2]]));
+        out.push(triangle([corners[0], corners[2], corners[3]]));
+    }
+
+    let occupied: std::collections::HashSet<_> = cells.iter().copied().collect();
+    let mut triangles = Vec::new();
+    for &(x, y) in cells {
+        let (x0, y0) = (f64::from(x) * cell, f64::from(y) * cell);
+        let (x1, y1) = (x0 + cell, y0 + cell);
+        quad(
+            &mut triangles,
+            [[x0, y0, 0.0], [x0, y1, 0.0], [x1, y1, 0.0], [x1, y0, 0.0]],
+        );
+        quad(
+            &mut triangles,
+            [
+                [x0, y0, height],
+                [x1, y0, height],
+                [x1, y1, height],
+                [x0, y1, height],
+            ],
+        );
+        for (neighbor, face) in [
+            (
+                (x - 1, y),
+                [
+                    [x0, y0, 0.0],
+                    [x0, y0, height],
+                    [x0, y1, height],
+                    [x0, y1, 0.0],
+                ],
+            ),
+            (
+                (x + 1, y),
+                [
+                    [x1, y0, 0.0],
+                    [x1, y1, 0.0],
+                    [x1, y1, height],
+                    [x1, y0, height],
+                ],
+            ),
+            (
+                (x, y - 1),
+                [
+                    [x0, y0, 0.0],
+                    [x1, y0, 0.0],
+                    [x1, y0, height],
+                    [x0, y0, height],
+                ],
+            ),
+            (
+                (x, y + 1),
+                [
+                    [x0, y1, 0.0],
+                    [x0, y1, height],
+                    [x1, y1, height],
+                    [x1, y1, 0.0],
+                ],
+            ),
+        ] {
+            if !occupied.contains(&neighbor) {
+                quad(&mut triangles, face);
+            }
+        }
+    }
+    SliceMesh { triangles }
 }
 
 // ---------------------------------------------------------------------------
@@ -432,9 +606,8 @@ fn solid_shells_heavier_than_sparse_infill() {
     let meta = slice(&mesh, &p).unwrap();
     assert!(meta.layers.len() >= 8);
     // A solid skin layer must deposit more material than a mid-layer.
-    let mid_extrude = |l: &crate::slice::Layer| -> f64 {
-        l.segments.iter().map(|s| s.volume_mm3).sum()
-    };
+    let mid_extrude =
+        |l: &crate::slice::Layer| -> f64 { l.segments.iter().map(|s| s.volume_mm3).sum() };
     let skin = mid_extrude(&meta.layers[0]);
     let mid = mid_extrude(&meta.layers[20]);
     assert!(

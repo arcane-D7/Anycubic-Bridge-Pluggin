@@ -38,19 +38,19 @@ export function SliceStatsPanel() {
         <div className="slice-stat">
           <span className="slice-stat-label">{t("slice.stats.time")}</span>
           <span className="slice-stat-value mono-num" data-testid="stat-time">
-            {stats.estimatedMinutes} min
+            {stats.estimatedMinutes === null ? "—" : `${stats.estimatedMinutes} min`}
           </span>
         </div>
         <div className="slice-stat">
           <span className="slice-stat-label">{t("slice.stats.material")}</span>
           <span className="slice-stat-value mono-num" data-testid="stat-material">
-            {stats.materialGrams.toFixed(1)} g
+            {stats.materialGrams === null ? "—" : `${stats.materialGrams.toFixed(1)} g`}
           </span>
         </div>
         <div className="slice-stat">
           <span className="slice-stat-label">{t("slice.stats.volume")}</span>
           <span className="slice-stat-value mono-num" data-testid="stat-volume">
-            {Math.round(stats.volumeMm3).toLocaleString()} mm³
+            {stats.volumeMm3 === null ? "—" : `${Math.round(stats.volumeMm3).toLocaleString()} mm³`}
           </span>
         </div>
       </div>

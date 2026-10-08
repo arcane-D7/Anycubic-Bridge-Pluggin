@@ -238,6 +238,76 @@ impl ProjectAuthority {
             .map(|payload| serde_json::from_str(&payload).map_err(AuthorityError::from))
             .collect()
     }
+
+    /// Persist an immutable job artifact in the same content-addressed blob
+    /// store used by project geometry. Returns its SHA-256 digest.
+    pub fn put_artifact(&self, bytes: &[u8]) -> Result<String, AuthorityError> {
+        let blobs_dir = self
+            .blobs_dir
+            .as_ref()
+            .ok_or_else(|| ProjectError::MissingArtifactDirectory)?;
+        let (digest, relative_path) = stage_mesh_blob(blobs_dir, bytes)?;
+        self.db
+            .put_artifact(&digest, &relative_path, bytes.len() as u64)
+            .map_err(ProjectError::from)?;
+        Ok(digest)
+    }
+
+    pub fn get_artifact(&self, digest: &str) -> Result<Option<Vec<u8>>, AuthorityError> {
+        let Some(blobs_dir) = &self.blobs_dir else {
+            return Err(ProjectError::MissingArtifactDirectory.into());
+        };
+        let Some(relative_path) = self.db.artifact_path(digest).map_err(ProjectError::from)? else {
+            return Ok(None);
+        };
+        let path = blobs_dir.join(relative_path);
+        if !path.is_file() {
+            return Ok(None);
+        }
+        Ok(Some(fs::read(path).map_err(ProjectError::from)?))
+    }
+
+    pub fn put_slice_job(
+        &self,
+        job_id: &str,
+        source_revision: u64,
+        input_digest: &str,
+        status: &str,
+        record: &Value,
+    ) -> Result<(), AuthorityError> {
+        let encoded = serde_json::to_string(record)?;
+        self.db
+            .put_slice_job(
+                job_id,
+                &self.project_id,
+                source_revision,
+                input_digest,
+                status,
+                &encoded,
+            )
+            .map_err(ProjectError::from)?;
+        Ok(())
+    }
+
+    pub fn get_slice_job(&self, job_id: &str) -> Result<Option<Value>, AuthorityError> {
+        self.db
+            .slice_job(&self.project_id, job_id)
+            .map_err(ProjectError::from)?
+            .map(|encoded| serde_json::from_str(&encoded).map_err(AuthorityError::from))
+            .transpose()
+    }
+
+    pub fn cached_slice_job(
+        &self,
+        source_revision: u64,
+        input_digest: &str,
+    ) -> Result<Option<Value>, AuthorityError> {
+        self.db
+            .cached_slice_job(&self.project_id, source_revision, input_digest)
+            .map_err(ProjectError::from)?
+            .map(|encoded| serde_json::from_str(&encoded).map_err(AuthorityError::from))
+            .transpose()
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -250,6 +320,8 @@ pub enum ProjectError {
     Db(#[from] rusqlite::Error),
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
+    #[error("project artifact directory is unavailable")]
+    MissingArtifactDirectory,
 }
 
 /// Content-addressed artifact store: write mesh bytes at `blobs/<sha256>.stl`,

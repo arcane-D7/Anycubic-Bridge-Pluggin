@@ -12,7 +12,7 @@
 | **Primary Owner**     | Editor project, slice engine and Preview                                                                                            |
 | **Source**            | [Editor workspace CAD/AI audit](../../docs/audit/editor-workspace-cad-ai-audit-2026-10-07.md), AUD-04–06/AUD-13; sections 10–12, 19 |
 | **Depends On**        | Sprint 9.15                                                                                                                         |
-| **Status**            | 🔄 In progress (1/4 delivered)                                                                                                      |
+| **Status**            | 🔄 In progress (2/4 delivered)                                                                                                      |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -76,7 +76,7 @@ Current slot matching can override an explicit project choice and confuse render
 | **Type**             | Feature + Security                                                               |
 | **Estimated Effort** | XL                                                                               |
 | **Source Finding**   | AUD-06; SLC-01–SLC-08                                                            |
-| **Status**           | ⏳ Planned                                                                       |
+| **Status**           | ✅ Delivered (2026-10-08; Preview-only native artifact provider)                 |
 
 #### Context
 
@@ -84,11 +84,19 @@ The simulated UI stages are not a slice result. A job must capture project revis
 
 #### Acceptance Criteria
 
-- [ ] **SLC-01–SLC-03:** Current placed model produces actual IR/program; Slice opens that output without manual JSON; Ready follows independent validation and compatibility checks.
-- [ ] **SLC-04–SLC-06:** Cancellation prevents late success; input edits mark captured output stale; target plates remain those captured at job start.
-- [ ] **SLC-07–SLC-08:** Cache covers every output-affecting input/provider version; missing/stale/incompatible artifact blocks send.
-- [ ] Unsupported modifiers/material/tool features fail preflight with named reasons; no silent engine fallback or invented statistics.
-- [ ] Run focused slice pipeline and concurrency tests, full gate and sanitizer dry-run successfully.
+- [x] **SLC-01–SLC-03:** The real Tauri provider captures the durable project revision, visible active-plate stable IDs, evaluated indexed meshes, transforms, machine volume, process settings, material ID, mode, frame, and provider version. Native planar-core sectioning produces actual IR 1.1 and a motion program; independent checks gate a content-addressed artifact before `ready`. Slice passes that IR directly to the strict loader and opens Preview without JSON import. Output is explicitly `preview-only`; send remains unavailable for this provider.
+- [x] **SLC-04–SLC-06:** Native cancellation and the final publication gate are serialized; controlled tests prove cancelled or stale jobs do not persist ready records. Each job uses its captured plate ID/target set. App compares artifact source revision with the live project and visibly marks Preview stale after edits.
+- [x] **SLC-07–SLC-08:** SHA-256 cache identity binds source revision, sorted stable IDs, full captured objects/transforms, all declared output settings, coordinate frame, slicing mode, machine/profile identity and version, material, and provider version; transient job ID is excluded. Missing artifact cannot satisfy a cache hit. Physical-send is not enabled by this preview-only provider.
+- [x] Unsupported supports, nonplanar mode, per-object settings, parent transforms, mixed/unknown material assignments, physical slot binding, unknown object/mesh/transform fields, and non-default unmodeled thermal/fan/speed settings fail preflight with named diagnostics. No slicer fallback or fabricated mass/per-object-volume statistics are used.
+- [x] Focused slice, geometry, capture, cache, frame, cancellation, stale-revision and emitted-program tests pass; full `pnpm run check` and standalone sanitizer dry-run pass.
+
+#### Implementation Notes (S9.16-002)
+
+- `crates/planar-core/src/slice.rs` sections actual triangle meshes at each layer, welds and validates closed contour graphs, classifies nested rings/holes, offsets polygon regions, and clips grid/gyroid paths against those regions. Invalid/open/non-manifold sections fail closed. Regression meshes cover an L-shaped prism, a hollow prism, and two disjoint prisms; their infill cannot enter the missing quadrant, cavity, or gap.
+- The Tauri `slice_job_run` command reads the authoritative project snapshot and artifact-backed evaluated geometry, pins revision/plate/target IDs and resolved inputs, evaluates object transforms, then applies the shared editor-world → slice-IR basis exactly once. Work runs without holding the project mutex. Before publication it locks against cancellation, re-reads the current project revision, independently validates IR fields/bounds/extrusion conservation and emitted command/coordinate/extrusion constraints, then persists the artifact and ready job in the project artifact store.
+- The UI Slice action calls this job for the real Tauri provider and sends the returned IR directly to Preview. Native progress is indeterminate rather than simulated; cancel reaches the native job. Demo retains its isolated mock estimate, labeled “Demo estimate only” and never treated as a validated artifact. Preview artifacts are visibly marked preview-only and stale after project edits. Print approval UI is not mounted for the real provider.
+- Native slice statistics include measured path volume and estimated path time only; unavailable material mass is `null` and rendered unavailable. No physical printer, upload, heat, or print command is invoked.
+- Focused evidence: `tests/slice-job.test.mjs` 3/3; `cargo test -p planar-core` 37/37; Tauri `slice_job_tests` 8/8, including controlled SQLite authority → blob hydration → concave native slice → IR/program/artifact, unknown-modifier rejection, cache identity, frame conversion, stale revision, and cancellation. Full gate and sanitizer status recorded after completion below.
 
 ### S9.16-003 — IR fidelity, preview mapping and declared units
 

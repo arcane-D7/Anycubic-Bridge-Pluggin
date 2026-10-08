@@ -28,7 +28,44 @@ export interface PresetDraftValues {
   readonly color: string;
 }
 
+export interface SliceSettingsDraft {
+  readonly layer_height_mm: number;
+  readonly line_width_mm: number;
+  readonly nozzle_diameter_mm: number;
+  readonly wall_loops: number;
+  readonly top_bottom_layers: number;
+  readonly infill_density_pct: number;
+  readonly infill_pattern: string;
+  readonly filament_diameter_mm: number;
+  readonly material: string;
+  readonly nozzle_temperature_c: number;
+  readonly bed_temperature_c: number;
+  readonly fan_pct: number;
+  readonly print_speed_mm_s: number;
+  readonly travel_speed_mm_s: number;
+}
+
+export const DEFAULT_SLICE_SETTINGS: SliceSettingsDraft = {
+  layer_height_mm: 0.2,
+  line_width_mm: 0.45,
+  nozzle_diameter_mm: 0.4,
+  wall_loops: 2,
+  top_bottom_layers: 4,
+  infill_density_pct: 15,
+  infill_pattern: "Grid",
+  filament_diameter_mm: 1.75,
+  material: "PLA",
+  nozzle_temperature_c: 210,
+  bed_temperature_c: 60,
+  fan_pct: 100,
+  print_speed_mm_s: 30,
+  travel_speed_mm_s: 120,
+};
+
 export interface PresetStore extends PresetSelection {
+  readonly sliceSettings: SliceSettingsDraft;
+  readonly supports: boolean;
+  readonly brimWidthMm: number;
   /**
    * Values a preset change implies — applied by the SettingsPanel into its
    * draft (the export path stays unchanged). `null` until a change happens
@@ -39,6 +76,9 @@ export interface PresetStore extends PresetSelection {
   readonly setFilament: (id: string) => void;
   readonly setQuality: (id: QualityPresetId) => void;
   readonly setCustomLayerHeight: (mm: number) => void;
+  readonly updateSliceSettings: (settings: SliceSettingsDraft) => void;
+  readonly setSupports: (enabled: boolean) => void;
+  readonly setBrimWidth: (widthMm: number) => void;
 }
 
 export function presetDraftValuesFor(selection: PresetSelection): PresetDraftValues {
@@ -59,6 +99,9 @@ export function presetDraftValuesFor(selection: PresetSelection): PresetDraftVal
 
 export const usePresets = create<PresetStore>((set) => ({
   ...DEFAULT_PRESET_SELECTION,
+  sliceSettings: DEFAULT_SLICE_SETTINGS,
+  supports: false,
+  brimWidthMm: 0,
   draftValues: null,
   setPrinter: (printerId) =>
     set((state) => {
@@ -87,4 +130,7 @@ export const usePresets = create<PresetStore>((set) => ({
         layerHeightMm: mm,
       },
     })),
+  updateSliceSettings: (sliceSettings) => set({ sliceSettings }),
+  setSupports: (supports) => set({ supports }),
+  setBrimWidth: (brimWidthMm) => set({ brimWidthMm }),
 }));

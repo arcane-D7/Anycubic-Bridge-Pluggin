@@ -112,7 +112,7 @@ export function PrintJobDialog() {
       return;
     }
     openSendApproval({
-      summary: `${stats.layers} layers · ${stats.estimatedMinutes} min · ${stats.materialGrams.toFixed(1)} g`,
+      summary: `${stats.layers} layers · ${stats.estimatedMinutes ?? "—"} min · ${stats.materialGrams === null ? "—" : stats.materialGrams.toFixed(1)} g`,
       printerIp: selected.ip,
       printerName: selected.name,
       stats,

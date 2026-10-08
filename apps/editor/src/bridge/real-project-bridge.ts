@@ -550,6 +550,7 @@ export async function createRealProjectBridge(
         const provenance = `+bool ${req.op === "add" ? "union" : req.op} ${sourceA.name}∩${sourceB.name}; worker=blender-bridge.geometry.v1; Blender ${reply.blender_version}; ${capability}; ${reply.transport}`;
         const result = {
           ...meshSnapshot(sourceA, resultName, reply.output, provenance),
+          geometrySpace: "editor-world",
           objectId: crypto.randomUUID(),
           visible: true,
           locked: false,

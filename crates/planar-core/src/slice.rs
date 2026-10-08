@@ -2,8 +2,12 @@
 //! brim/skirt basic. Extrusion from §3.3 closed-form (see `extrusion`).
 
 use std::collections::BTreeMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 
+use geo::{
+    BooleanOps, Buffer, Contains, Coord, LineString, MultiLineString, MultiPolygon, Point, Polygon,
+};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -112,6 +116,20 @@ pub enum JobError {
     ZeroWallLoops(u32),
     #[error("mesh has no valid triangles")]
     EmptyMesh,
+    #[error("mesh section at z={z} mm is not a closed 2-manifold contour: {reason}")]
+    InvalidSliceContour { z: f64, reason: String },
+    #[error("slice job cancelled")]
+    Cancelled,
+    #[error("slice job exceeds layer limit {0}")]
+    LayerLimit(u32),
+    #[error("mesh bounds exceed build volume: {axis} extent {min}..{max} mm, allowed {allowed_min}..{allowed_max} mm")]
+    OutOfBuildVolume {
+        axis: &'static str,
+        min: f64,
+        max: f64,
+        allowed_min: f64,
+        allowed_max: f64,
+    },
     #[error("triangle normal is degenerate at index {0}")]
     DegenerateTriangle(usize),
     #[error("polygon offset failed for wall loop {loop}: {source}")]
@@ -122,6 +140,21 @@ pub enum JobError {
     },
     #[error("infill spacing: {0}")]
     Infill(#[from] infill::InfillError),
+}
+
+#[derive(Debug, Error, PartialEq, Eq)]
+pub enum MeshValidationError {
+    #[error("mesh has no triangles")]
+    Empty,
+    #[error("mesh triangle {triangle} has a non-finite vertex")]
+    NonFiniteVertex { triangle: usize },
+    #[error("mesh triangle {triangle} is geometrically degenerate")]
+    DegenerateTriangle { triangle: usize },
+    #[error("mesh edge {edge:?} has incidence {incidence}, expected exactly 2")]
+    NonManifoldEdge {
+        edge: ((i64, i64, i64), (i64, i64, i64)),
+        incidence: usize,
+    },
 }
 
 /// A triangle from the input mesh (owned copy — the slicer never borrows
@@ -143,6 +176,69 @@ impl Pt3 {
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self { x, y, z }
     }
+}
+
+/// Independently check the indexed topology boundary used by native slice
+/// preflight. Vertices are welded at a scale-aware tolerance; every undirected
+/// edge must belong to exactly two non-degenerate triangles.
+pub fn validate_watertight_mesh(mesh: &SliceMesh) -> Result<(), MeshValidationError> {
+    if mesh.triangles.is_empty() {
+        return Err(MeshValidationError::Empty);
+    }
+    let mut bounds = BBox::new();
+    for (triangle_index, triangle) in mesh.triangles.iter().enumerate() {
+        for vertex in triangle.v {
+            if !vertex.x.is_finite() || !vertex.y.is_finite() || !vertex.z.is_finite() {
+                return Err(MeshValidationError::NonFiniteVertex {
+                    triangle: triangle_index,
+                });
+            }
+            bounds.extend(&vertex);
+        }
+        let [a, b, c] = triangle.v;
+        let ab = [b.x - a.x, b.y - a.y, b.z - a.z];
+        let ac = [c.x - a.x, c.y - a.y, c.z - a.z];
+        let cross = [
+            ab[1] * ac[2] - ab[2] * ac[1],
+            ab[2] * ac[0] - ab[0] * ac[2],
+            ab[0] * ac[1] - ab[1] * ac[0],
+        ];
+        if cross.iter().map(|value| value * value).sum::<f64>() <= 1e-24 {
+            return Err(MeshValidationError::DegenerateTriangle {
+                triangle: triangle_index,
+            });
+        }
+    }
+    let scale = (bounds.max_x - bounds.min_x)
+        .hypot((bounds.max_y - bounds.min_y).hypot(bounds.max_z - bounds.min_z))
+        .max(1.0);
+    let tolerance = scale * 1e-9;
+    let key = |point: Pt3| {
+        (
+            (point.x / tolerance).round() as i64,
+            (point.y / tolerance).round() as i64,
+            (point.z / tolerance).round() as i64,
+        )
+    };
+    let mut incidence = HashMap::new();
+    for triangle in &mesh.triangles {
+        let vertices = triangle.v.map(key);
+        for (a, b) in [
+            (vertices[0], vertices[1]),
+            (vertices[1], vertices[2]),
+            (vertices[2], vertices[0]),
+        ] {
+            let edge = if a < b { (a, b) } else { (b, a) };
+            *incidence.entry(edge).or_insert(0usize) += 1;
+        }
+    }
+    if let Some((edge, count)) = incidence.into_iter().find(|(_, count)| *count != 2) {
+        return Err(MeshValidationError::NonManifoldEdge {
+            edge,
+            incidence: count,
+        });
+    }
+    Ok(())
 }
 
 /// Input mesh: a triangle soup (convex, watertight for the subset we slice).
@@ -209,6 +305,19 @@ impl SliceMeta {
 /// build volume present, numeric sanity. Then uniform layers, wall insets,
 /// grid infill, brim/skirt.
 pub fn slice(mesh: &SliceMesh, profile: &PlanarProfile) -> Result<SliceMeta, JobError> {
+    slice_with_progress(mesh, profile, || false, |_, _| {})
+}
+
+pub fn slice_with_progress<C, P>(
+    mesh: &SliceMesh,
+    profile: &PlanarProfile,
+    mut cancelled: C,
+    mut progress: P,
+) -> Result<SliceMeta, JobError>
+where
+    C: FnMut() -> bool,
+    P: FnMut(u32, u32),
+{
     // ---- Pre-flight (fail-closed) ----
     if !SUPPORTED_DIALECTS.contains(&profile.dialect.as_str()) {
         return Err(JobError::UnsupportedDialect(
@@ -254,6 +363,21 @@ pub fn slice(mesh: &SliceMesh, profile: &PlanarProfile) -> Result<SliceMeta, Job
     if !bbox.valid() {
         return Err(JobError::EmptyMesh);
     }
+    for (axis, min, max, allowed_min, allowed_max) in [
+        ("x", bbox.min_x, bbox.max_x, -volume.x / 2.0, volume.x / 2.0),
+        ("y", bbox.min_y, bbox.max_y, -volume.y / 2.0, volume.y / 2.0),
+        ("z", bbox.min_z, bbox.max_z, 0.0, volume.z),
+    ] {
+        if min < allowed_min - 1e-9 || max > allowed_max + 1e-9 {
+            return Err(JobError::OutOfBuildVolume {
+                axis,
+                min,
+                max,
+                allowed_min,
+                allowed_max,
+            });
+        }
+    }
 
     // ---- Layer generation (uniform) ----
     // Layer count comes from the PART height (mesh bbox z), not the full
@@ -265,6 +389,9 @@ pub fn slice(mesh: &SliceMesh, profile: &PlanarProfile) -> Result<SliceMeta, Job
     }
     let layer_count = (part_height / profile.layer_height_mm).ceil() as u32;
     let layer_count = layer_count.clamp(1, (volume.z / profile.layer_height_mm).floor() as u32);
+    if layer_count > 5000 {
+        return Err(JobError::LayerLimit(5000));
+    }
     let bead = Bead {
         width_mm: profile.line_width_mm,
         height_mm: profile.layer_height_mm,
@@ -273,9 +400,14 @@ pub fn slice(mesh: &SliceMesh, profile: &PlanarProfile) -> Result<SliceMeta, Job
     let mut layers = Vec::with_capacity(layer_count as usize);
     let z0 = bbox.min_z;
     for i in 0..layer_count {
+        if cancelled() {
+            return Err(JobError::Cancelled);
+        }
+        progress(i, layer_count);
         let z = z0 + (i as f64 + 1.0) * profile.layer_height_mm;
         layers.push(build_layer(i, z, layer_count, &bbox, profile, &bead, mesh)?);
     }
+    progress(layer_count, layer_count);
 
     let profile_fingerprint = profile_fingerprint(profile);
 
@@ -332,14 +464,6 @@ impl BBox {
             && self.max_y > self.min_y
             && self.max_z >= self.min_z
     }
-    fn footprint(&self) -> [Pt; 4] {
-        [
-            Pt::new(self.min_x, self.min_y),
-            Pt::new(self.max_x, self.min_y),
-            Pt::new(self.max_x, self.max_y),
-            Pt::new(self.min_x, self.max_y),
-        ]
-    }
 }
 
 fn ultra_degenerate(n: &Pt3) -> bool {
@@ -347,8 +471,10 @@ fn ultra_degenerate(n: &Pt3) -> bool {
     !l2.is_finite() || l2 <= 1e-24
 }
 
-/// Build one layer: walls (inset loops) + infill (grid/gyroid, or a solid
-/// top/bottom shell) + brim/skirt on first layer. Extrusion per §3.3.
+/// Build one layer from the actual mesh section. Coplanar triangle edges use
+/// a half-open rule (z-min exclusive, z-max inclusive); section endpoints are
+/// welded within a scale-aware tolerance. Open or branching sections fail
+/// closed rather than being replaced by a bounding rectangle.
 fn build_layer(
     index: u32,
     z: f64,
@@ -356,61 +482,46 @@ fn build_layer(
     bbox: &BBox,
     profile: &PlanarProfile,
     bead: &Bead,
-    _mesh: &SliceMesh,
+    mesh: &SliceMesh,
 ) -> Result<Layer, JobError> {
-    let footprint = bbox.footprint();
+    let region = section_region(mesh, z, bbox)?;
     let mut segments: Vec<Segment> = Vec::new();
     let mut per_loop_wall: Vec<u32> = Vec::new();
 
     let speed_mm_s = 30.0; // conservative default tool speed (mm/s)
 
     // ---- Wall loops (inset) ----
-    let mut current: Vec<Pt> = footprint.to_vec();
     for loop_idx in 0..profile.wall_loops {
-        // Outer wall inset by half the line width; each inner wall an
-        // additional full line width (standard slicer semantics).
-        let inset = profile.line_width_mm * (loop_idx as f64 + 0.5);
-        let inner = offset::inset_ring(&current, inset).map_err(|source| JobError::Offset {
-            r#loop: loop_idx,
-            source,
-        })?;
-        for w in 0..inner.len() {
-            let a = inner[w];
-            let b = inner[(w + 1) % inner.len()];
-            let from = Pt3::new(a.x, a.y, z);
-            let to = Pt3::new(b.x, b.y, z);
-            let len = dist2(&from, &to);
-            if len > 0.0 {
-                let v = crate::extrusion::extrusion_volume(len, bead).unwrap_or(0.0);
-                segments.push(Segment {
-                    from,
-                    to,
-                    volume_mm3: v,
-                    delta_e_mm: v / profile.filament.area(),
-                    q_mm3_s: crate::extrusion::steady_state_q(speed_mm_s, bead),
-                    kind: SegmentKind::Wall,
-                });
-            }
+        let inset = region.buffer(-profile.line_width_mm * (loop_idx as f64 + 0.5));
+        if inset.0.is_empty() {
+            break;
         }
+        emit_region_boundaries(
+            &mut segments,
+            &inset,
+            z,
+            bead,
+            profile,
+            speed_mm_s,
+            SegmentKind::Wall,
+        );
         per_loop_wall.push(loop_idx);
-        current = inner;
     }
 
     // ---- Infill (grid or gyroid-subset), or a solid shell layer ----
     let shells = profile.top_bottom_layers.min(layer_count / 2);
     let is_solid = index < shells || index >= layer_count.saturating_sub(shells);
     if profile.infill_density_pct > 0.0 || is_solid {
-        // Infill is clipped to the interior of the innermost wall ring
-        // (standard slicer semantics — infill never crosses the walls).
-        // Falls back to the mesh bbox when there are no walls.
-        let (clip_min_x, clip_min_y, clip_max_x, clip_max_y) = if !current.is_empty() {
-            let mnx = current.iter().fold(f64::INFINITY, |a, p| a.min(p.x));
-            let mny = current.iter().fold(f64::INFINITY, |a, p| a.min(p.y));
-            let mxx = current.iter().fold(f64::NEG_INFINITY, |a, p| a.max(p.x));
-            let mxy = current.iter().fold(f64::NEG_INFINITY, |a, p| a.max(p.y));
-            (mnx, mny, mxx, mxy)
-        } else {
-            (bbox.min_x, bbox.min_y, bbox.max_x, bbox.max_y)
+        let inset_distance = profile.line_width_mm * (profile.wall_loops as f64 + 0.5);
+        let interior = region.buffer(-inset_distance);
+        let Some((clip_min_x, clip_min_y, clip_max_x, clip_max_y)) = region_bounds(&interior)
+        else {
+            return Ok(Layer {
+                index,
+                z,
+                segments,
+                per_loop_wall,
+            });
         };
         let size_x = clip_max_x - clip_min_x;
         let size_y = clip_max_y - clip_min_y;
@@ -435,48 +546,55 @@ fn build_layer(
                 // the two-orientation 2·w/s spacing.
                 let lines: GridLines =
                     infill::grid_lines(&gp, if is_solid { Some(bead.width_mm) } else { None })?;
+                let mut candidates = Vec::new();
                 if is_solid {
                     for x in &lines.vertical {
-                        let from = Pt3::new(*x, clip_min_y, z);
-                        let to = Pt3::new(*x, clip_max_y, z);
-                        push_segment(
-                            &mut segments,
-                            from,
-                            to,
-                            bead,
-                            profile,
-                            speed_mm_s,
-                            SegmentKind::Infill,
-                        );
+                        candidates.push(LineString::new(vec![
+                            Coord {
+                                x: *x,
+                                y: clip_min_y,
+                            },
+                            Coord {
+                                x: *x,
+                                y: clip_max_y,
+                            },
+                        ]));
                     }
                 } else {
                     for x in &lines.vertical {
-                        let from = Pt3::new(*x, clip_min_y, z);
-                        let to = Pt3::new(*x, clip_max_y, z);
-                        push_segment(
-                            &mut segments,
-                            from,
-                            to,
-                            bead,
-                            profile,
-                            speed_mm_s,
-                            SegmentKind::Infill,
-                        );
+                        candidates.push(LineString::new(vec![
+                            Coord {
+                                x: *x,
+                                y: clip_min_y,
+                            },
+                            Coord {
+                                x: *x,
+                                y: clip_max_y,
+                            },
+                        ]));
                     }
                     for y in &lines.horizontal {
-                        let from = Pt3::new(clip_min_x, *y, z);
-                        let to = Pt3::new(clip_max_x, *y, z);
-                        push_segment(
-                            &mut segments,
-                            from,
-                            to,
-                            bead,
-                            profile,
-                            speed_mm_s,
-                            SegmentKind::Infill,
-                        );
+                        candidates.push(LineString::new(vec![
+                            Coord {
+                                x: clip_min_x,
+                                y: *y,
+                            },
+                            Coord {
+                                x: clip_max_x,
+                                y: *y,
+                            },
+                        ]));
                     }
                 }
+                emit_clipped_lines(
+                    &mut segments,
+                    &interior,
+                    &candidates,
+                    z,
+                    bead,
+                    profile,
+                    speed_mm_s,
+                );
             }
             InfillPattern::GyroidSubset => {
                 // Gyroid period = spacing (one wavelength per inter-line gap).
@@ -492,23 +610,26 @@ fn build_layer(
                 )?;
                 if period.is_finite() {
                     let curves = infill::gyroid_lines(&gp, None, period)?;
-                    for line in &curves {
-                        for pair in line.pts.windows(2) {
-                            let (x0, y0) = pair[0];
-                            let (x1, y1) = pair[1];
-                            let from = Pt3::new(x0, y0, z);
-                            let to = Pt3::new(x1, y1, z);
-                            push_segment(
-                                &mut segments,
-                                from,
-                                to,
-                                bead,
-                                profile,
-                                speed_mm_s,
-                                SegmentKind::Infill,
-                            );
-                        }
-                    }
+                    let candidates: Vec<_> = curves
+                        .iter()
+                        .map(|line| {
+                            LineString::new(
+                                line.pts
+                                    .iter()
+                                    .map(|(x, y)| Coord { x: *x, y: *y })
+                                    .collect(),
+                            )
+                        })
+                        .collect();
+                    emit_clipped_lines(
+                        &mut segments,
+                        &interior,
+                        &candidates,
+                        z,
+                        bead,
+                        profile,
+                        speed_mm_s,
+                    );
                 }
             }
         }
@@ -530,29 +651,16 @@ fn build_layer(
                     SegmentKind::Brim
                 };
                 let dist = if w <= 0.5 { w } else { w / 2.0 };
-                let ring =
-                    offset::outset_ring(&footprint, dist).map_err(|source| JobError::Offset {
-                        r#loop: u32::MAX,
-                        source,
-                    })?;
-                for w_ in 0..ring.len() {
-                    let a = ring[w_];
-                    let b = ring[(w_ + 1) % ring.len()];
-                    let from = Pt3::new(a.x, a.y, z);
-                    let to = Pt3::new(b.x, b.y, z);
-                    let len = dist2(&from, &to);
-                    if len > 0.0 {
-                        let v = crate::extrusion::extrusion_volume(len, bead).unwrap_or(0.0);
-                        segments.push(Segment {
-                            from,
-                            to,
-                            volume_mm3: v,
-                            delta_e_mm: v / profile.filament.area(),
-                            q_mm3_s: crate::extrusion::steady_state_q(speed_mm_s, bead),
-                            kind,
-                        });
-                    }
-                }
+                let adhesion = region.buffer(dist);
+                emit_region_boundaries(
+                    &mut segments,
+                    &adhesion,
+                    z,
+                    bead,
+                    profile,
+                    speed_mm_s,
+                    kind,
+                );
             }
         }
     }
@@ -563,6 +671,271 @@ fn build_layer(
         segments,
         per_loop_wall,
     })
+}
+
+fn section_region(mesh: &SliceMesh, z: f64, bbox: &BBox) -> Result<MultiPolygon<f64>, JobError> {
+    let tolerance = ((bbox.max_x - bbox.min_x).hypot(bbox.max_y - bbox.min_y) * 1e-9).max(1e-8);
+    let mut points = Vec::new();
+    let mut raw_segments = Vec::new();
+    for triangle in &mesh.triangles {
+        let mut intersections = Vec::with_capacity(2);
+        for (a, b) in [(0, 1), (1, 2), (2, 0)] {
+            let start = triangle.v[a];
+            let end = triangle.v[b];
+            let start_side = if (start.z - z).abs() <= tolerance || start.z > z {
+                1
+            } else {
+                -1
+            };
+            let end_side = if (end.z - z).abs() <= tolerance || end.z > z {
+                1
+            } else {
+                -1
+            };
+            if start_side == end_side {
+                continue;
+            }
+            let t = ((z - start.z) / (end.z - start.z)).clamp(0.0, 1.0);
+            let point = Pt::new(
+                start.x + (end.x - start.x) * t,
+                start.y + (end.y - start.y) * t,
+            );
+            if intersections
+                .iter()
+                .all(|other: &Pt| distance(other, &point) > tolerance)
+            {
+                intersections.push(point);
+            }
+        }
+        if intersections.len() == 2 && distance(&intersections[0], &intersections[1]) > tolerance {
+            raw_segments.push((intersections[0], intersections[1]));
+        }
+    }
+    if raw_segments.is_empty() {
+        return Err(JobError::InvalidSliceContour {
+            z,
+            reason: "section contains no crossing edges".to_owned(),
+        });
+    }
+
+    let mut node_by_key = HashMap::new();
+    let mut edges = Vec::with_capacity(raw_segments.len());
+    let mut edge_set = HashSet::new();
+    for (a, b) in raw_segments {
+        let ai = contour_node(a, tolerance, &mut points, &mut node_by_key);
+        let bi = contour_node(b, tolerance, &mut points, &mut node_by_key);
+        if ai == bi {
+            continue;
+        }
+        let key = if ai < bi { (ai, bi) } else { (bi, ai) };
+        if !edge_set.insert(key) {
+            return Err(JobError::InvalidSliceContour {
+                z,
+                reason: "duplicate section edge".to_owned(),
+            });
+        }
+        edges.push((ai, bi));
+    }
+    let mut adjacency = vec![Vec::new(); points.len()];
+    for (edge_index, (a, b)) in edges.iter().copied().enumerate() {
+        adjacency[a].push((b, edge_index));
+        adjacency[b].push((a, edge_index));
+    }
+    if let Some((node, neighbors)) = adjacency
+        .iter()
+        .enumerate()
+        .find(|(_, neighbors)| neighbors.len() != 2)
+    {
+        return Err(JobError::InvalidSliceContour {
+            z,
+            reason: format!(
+                "welded contour vertex {node} has degree {}, expected 2",
+                neighbors.len()
+            ),
+        });
+    }
+
+    let mut used = vec![false; edges.len()];
+    let mut rings = Vec::new();
+    for start_edge in 0..edges.len() {
+        if used[start_edge] {
+            continue;
+        }
+        let (start, mut current) = edges[start_edge];
+        let mut previous_edge = start_edge;
+        let mut ring = vec![points[start]];
+        used[start_edge] = true;
+        let mut steps = 0usize;
+        while current != start {
+            ring.push(points[current]);
+            let Some((next, edge)) = adjacency[current]
+                .iter()
+                .copied()
+                .find(|(_, edge)| *edge != previous_edge)
+            else {
+                break;
+            };
+            if used[edge] {
+                return Err(JobError::InvalidSliceContour {
+                    z,
+                    reason: "contour revisited an edge before closure".to_owned(),
+                });
+            }
+            used[edge] = true;
+            previous_edge = edge;
+            current = next;
+            steps += 1;
+            if steps > edges.len() {
+                return Err(JobError::InvalidSliceContour {
+                    z,
+                    reason: "contour traversal exceeded section edge count".to_owned(),
+                });
+            }
+        }
+        if current != start || ring.len() < 3 {
+            return Err(JobError::InvalidSliceContour {
+                z,
+                reason: "open or degenerate contour".to_owned(),
+            });
+        }
+        ring.push(ring[0]);
+        rings.push(LineString::new(
+            ring.into_iter()
+                .map(|point| Coord {
+                    x: point.x,
+                    y: point.y,
+                })
+                .collect(),
+        ));
+    }
+
+    let ring_polygons: Vec<_> = rings
+        .iter()
+        .cloned()
+        .map(|ring| Polygon::new(ring, vec![]))
+        .collect();
+    let areas: Vec<_> = ring_polygons.iter().map(geo::Area::unsigned_area).collect();
+    let mut parents = vec![None; rings.len()];
+    let mut depths = vec![0usize; rings.len()];
+    for child in 0..rings.len() {
+        let point = ring_polygons[child].exterior().0[0];
+        let parent = (0..rings.len())
+            .filter(|candidate| *candidate != child && areas[*candidate] > areas[child])
+            .filter(|candidate| ring_polygons[*candidate].contains(&Point::new(point.x, point.y)))
+            .min_by(|a, b| areas[*a].total_cmp(&areas[*b]));
+        parents[child] = parent;
+        let mut ancestor = parent;
+        while let Some(index) = ancestor {
+            depths[child] += 1;
+            ancestor = parents[index];
+        }
+    }
+    let mut polygons = Vec::new();
+    for outer in 0..rings.len() {
+        if depths[outer] % 2 != 0 {
+            continue;
+        }
+        let holes = (0..rings.len())
+            .filter(|candidate| parents[*candidate] == Some(outer) && depths[*candidate] % 2 == 1)
+            .map(|candidate| rings[candidate].clone())
+            .collect();
+        polygons.push(Polygon::new(rings[outer].clone(), holes));
+    }
+    Ok(MultiPolygon(polygons))
+}
+
+fn contour_node(
+    point: Pt,
+    tolerance: f64,
+    points: &mut Vec<Pt>,
+    node_by_key: &mut HashMap<(i64, i64), usize>,
+) -> usize {
+    let key = (
+        (point.x / tolerance).round() as i64,
+        (point.y / tolerance).round() as i64,
+    );
+    *node_by_key.entry(key).or_insert_with(|| {
+        points.push(point);
+        points.len() - 1
+    })
+}
+
+fn distance(a: &Pt, b: &Pt) -> f64 {
+    (a.x - b.x).hypot(a.y - b.y)
+}
+
+fn region_bounds(region: &MultiPolygon<f64>) -> Option<(f64, f64, f64, f64)> {
+    let mut bounds: Option<(f64, f64, f64, f64)> = None;
+    for polygon in &region.0 {
+        for point in polygon
+            .exterior()
+            .0
+            .iter()
+            .chain(polygon.interiors().iter().flat_map(|ring| ring.0.iter()))
+        {
+            bounds = Some(match bounds {
+                Some((min_x, min_y, max_x, max_y)) => (
+                    min_x.min(point.x),
+                    min_y.min(point.y),
+                    max_x.max(point.x),
+                    max_y.max(point.y),
+                ),
+                None => (point.x, point.y, point.x, point.y),
+            });
+        }
+    }
+    bounds
+}
+
+fn emit_region_boundaries(
+    segments: &mut Vec<Segment>,
+    region: &MultiPolygon<f64>,
+    z: f64,
+    bead: &Bead,
+    profile: &PlanarProfile,
+    speed_mm_s: f64,
+    kind: SegmentKind,
+) {
+    for polygon in &region.0 {
+        for ring in std::iter::once(polygon.exterior()).chain(polygon.interiors()) {
+            for pair in ring.0.windows(2) {
+                push_segment(
+                    segments,
+                    Pt3::new(pair[0].x, pair[0].y, z),
+                    Pt3::new(pair[1].x, pair[1].y, z),
+                    bead,
+                    profile,
+                    speed_mm_s,
+                    kind,
+                );
+            }
+        }
+    }
+}
+
+fn emit_clipped_lines(
+    segments: &mut Vec<Segment>,
+    region: &MultiPolygon<f64>,
+    candidates: &[LineString<f64>],
+    z: f64,
+    bead: &Bead,
+    profile: &PlanarProfile,
+    speed_mm_s: f64,
+) {
+    let clipped = region.clip(&MultiLineString(candidates.to_vec()), false);
+    for line in &clipped.0 {
+        for pair in line.0.windows(2) {
+            push_segment(
+                segments,
+                Pt3::new(pair[0].x, pair[0].y, z),
+                Pt3::new(pair[1].x, pair[1].y, z),
+                bead,
+                profile,
+                speed_mm_s,
+                SegmentKind::Infill,
+            );
+        }
+    }
 }
 
 #[allow(clippy::too_many_arguments)]

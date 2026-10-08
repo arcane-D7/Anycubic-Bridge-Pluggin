@@ -42,6 +42,8 @@ import { useI18n } from "./state/i18n";
 import { usePlates } from "./state/plates";
 import { usePrinters } from "./state/printers";
 import { activePlate as activePlateOf } from "./state/plates-core";
+import { CATALOG_MACHINES } from "./profile/operatorProfile";
+import { useViewport } from "./state/viewport";
 
 /**
  * Editor shell — single-window, resizable panels per §7.2:
@@ -98,6 +100,7 @@ export function App() {
   // `shortcuts-core`, actions here against the stores + bridge mutation lane.
   useShortcuts(scene);
   const objects = useScene((s) => s.objects);
+  const projectRevision = useViewport((s) => s.revision);
 
   // S9.2-004: hydrate the scene store from the authoritative snapshot. The
   // ObjectTree/SceneObjectModel consume the store, so the snapshot must flow
@@ -149,8 +152,14 @@ export function App() {
   // S9.2-005: import dialog (footer Add entry point).
   const [importOpen, setImportOpen] = useState(false);
   const [previewIr, setPreviewIr] = useState<IrDocument | null>(null);
+  const [previewArtifactId, setPreviewArtifactId] = useState<string | null>(null);
+  const [previewSourceRevision, setPreviewSourceRevision] = useState<number | null>(null);
   const [irError, setIrError] = useState<string | null>(null);
   const loadSeq = useRef(0);
+  const selectedMachine = CATALOG_MACHINES.find(
+    (machine) => machine.displayName === operatorProfile.displayName,
+  );
+  const previewStale = previewSourceRevision !== null && projectRevision !== previewSourceRevision;
 
   const preview = useMemo<PreviewModel | null>(
     () => (previewIr ? buildPreviewModel(previewIr) : null),
@@ -171,6 +180,8 @@ export function App() {
       if (seq !== loadSeq.current) return;
       const document = parseIrDocument(parsed);
       setPreviewIr(document);
+      setPreviewArtifactId(null);
+      setPreviewSourceRevision(null);
       setMode(document.mode);
       setWorkspaceView("preview");
       setIrError(null);
@@ -181,9 +192,23 @@ export function App() {
     }
   }, []);
 
+  const onNativeSliced = useCallback(
+    (document: IrDocument, artifactId: string, sourceRevision: number) => {
+      setPreviewIr(document);
+      setPreviewArtifactId(artifactId);
+      setPreviewSourceRevision(sourceRevision);
+      setMode(document.mode);
+      setWorkspaceView("preview");
+      setIrError(null);
+    },
+    [],
+  );
+
   const onIrClear = useCallback(() => {
     loadSeq.current += 1;
     setPreviewIr(null);
+    setPreviewArtifactId(null);
+    setPreviewSourceRevision(null);
     setIrError(null);
   }, []);
 
@@ -231,7 +256,15 @@ export function App() {
             {t("app.tab.preview")}
           </button>
         </nav>
-        <SliceButton objects={objects} />
+        <SliceButton
+          objects={objects}
+          revision={Math.max(scene?.revision ?? 0, projectRevision)}
+          slicingMode={mode}
+          providerMode={provider?.mode ?? "unavailable"}
+          machineName={operatorProfile.displayName}
+          buildVolume={selectedMachine?.buildVolume ?? operatorProfile.buildVolume}
+          onSliced={onNativeSliced}
+        />
         <PrinterPicker />
         <button
           type="button"
@@ -415,9 +448,20 @@ export function App() {
       <footer className="app-footer">
         <PrinterStatusBar />
         <StatusBar scene={scene} buildVolume={operatorProfile.buildVolume ?? undefined} />
-        <SliceProgress />
+        {previewStale ? (
+          <div className="slice-stale" role="status" data-testid="slice-stale">
+            {t("slice.stale.message", { revision: String(previewSourceRevision) })}
+            {previewArtifactId ? <code>{previewArtifactId}</code> : null}
+          </div>
+        ) : null}
+        {previewArtifactId && !previewStale ? (
+          <div className="slice-artifact-status" role="status" data-testid="slice-preview-only">
+            {t("slice.previewOnly", { id: previewArtifactId })}
+          </div>
+        ) : null}
+        <SliceProgress nativeProvider={provider?.mode === "real"} />
         <SliceStatsPanel />
-        <PrintJobDialog />
+        {provider?.mode === "demo" ? <PrintJobDialog /> : null}
         <Timeline
           scene={scene}
           mode={mode}

@@ -432,6 +432,10 @@ export type MsgKey =
   | "slice.failed.title"
   | "slice.ready.title"
   | "slice.ready.message"
+  | "slice.demo.title"
+  | "slice.demo.message"
+  | "slice.stale.message"
+  | "slice.previewOnly"
   | "slice.stage.prepare"
   | "slice.stage.planarCore"
   | "slice.stage.ir"
@@ -1191,6 +1195,10 @@ export const EN: Record<MsgKey, string> = {
   "slice.failed.title": "Slice failed",
   "slice.ready.title": "Slice ready",
   "slice.ready.message": "{layers} layers · {min} min",
+  "slice.demo.title": "Demo estimate only",
+  "slice.demo.message": "No validated slice artifact was created.",
+  "slice.stale.message": "Preview is from project revision {revision}; slice again before export.",
+  "slice.previewOnly": "Preview-only artifact {id}; no printer-compatible output was produced.",
   "slice.stage.prepare": "prepare",
   "slice.stage.planarCore": "planar-core",
   "slice.stage.ir": "IR",
@@ -1940,6 +1948,11 @@ export const PT_BR: Record<MsgKey, string> = {
   "slice.failed.title": "Falha de corte",
   "slice.ready.title": "Corte pronto",
   "slice.ready.message": "{layers} camadas · {min} min",
+  "slice.demo.title": "Apenas estimativa de demonstração",
+  "slice.demo.message": "Nenhum artefato de corte validado foi criado.",
+  "slice.stale.message": "A prévia é da revisão {revision}; corte novamente antes de exportar.",
+  "slice.previewOnly":
+    "Artefato apenas para prévia {id}; nenhuma saída compatível com impressora foi produzida.",
   "slice.stage.prepare": "preparação",
   "slice.stage.planarCore": "núcleo planar",
   "slice.stage.ir": "IR",

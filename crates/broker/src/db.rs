@@ -7,7 +7,7 @@ use rusqlite::{Connection, OptionalExtension};
 use std::path::Path;
 
 /// Current schema version. Bump + add a migration arm when evolving.
-pub const SCHEMA_VERSION: i64 = 3;
+pub const SCHEMA_VERSION: i64 = 4;
 
 #[derive(Debug, thiserror::Error)]
 pub enum MigrationError {
@@ -60,6 +60,9 @@ impl DbHandle {
         }
         if current < 3 {
             self.apply_v3()?;
+        }
+        if current < 4 {
+            self.apply_v4()?;
         }
         Ok(())
     }
@@ -157,6 +160,27 @@ impl DbHandle {
         Ok(())
     }
 
+    fn apply_v4(&mut self) -> Result<(), MigrationError> {
+        let tx = self.conn.transaction()?;
+        tx.execute_batch(
+            "CREATE TABLE slice_jobs (
+                job_id TEXT PRIMARY KEY,
+                project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                source_revision INTEGER NOT NULL,
+                input_digest TEXT NOT NULL,
+                status TEXT NOT NULL,
+                record_json TEXT NOT NULL,
+                created_ms INTEGER NOT NULL,
+                updated_ms INTEGER NOT NULL
+            );
+            CREATE INDEX idx_slice_jobs_cache ON slice_jobs(project_id, source_revision, input_digest, status);",
+        )
+        .map_err(|source| MigrationError::Apply { version: 4, source })?;
+        tx.pragma_update(None, "user_version", 4)?;
+        tx.commit()?;
+        Ok(())
+    }
+
     /// Report the enforced schema version.
     pub fn schema_version(&self) -> Result<i64, rusqlite::Error> {
         self.conn.query_row("PRAGMA user_version", [], |r| r.get(0))
@@ -249,6 +273,54 @@ impl DbHandle {
                 rusqlite::Error::QueryReturnedNoRows => Ok(None),
                 other => Err(other),
             })
+    }
+
+    pub fn put_slice_job(
+        &self,
+        job_id: &str,
+        project_id: &str,
+        source_revision: u64,
+        input_digest: &str,
+        status: &str,
+        record_json: &str,
+    ) -> Result<(), rusqlite::Error> {
+        let now = chrono_ms();
+        self.conn.execute(
+            "INSERT INTO slice_jobs (job_id, project_id, source_revision, input_digest, status, record_json, created_ms, updated_ms)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)
+             ON CONFLICT(job_id) DO UPDATE SET project_id=excluded.project_id, source_revision=excluded.source_revision, input_digest=excluded.input_digest, status=excluded.status, record_json=excluded.record_json, updated_ms=excluded.updated_ms",
+            rusqlite::params![job_id, project_id, source_revision as i64, input_digest, status, record_json, now],
+        )?;
+        Ok(())
+    }
+
+    pub fn slice_job(
+        &self,
+        project_id: &str,
+        job_id: &str,
+    ) -> Result<Option<String>, rusqlite::Error> {
+        self.conn
+            .query_row(
+                "SELECT record_json FROM slice_jobs WHERE project_id = ?1 AND job_id = ?2",
+                rusqlite::params![project_id, job_id],
+                |row| row.get(0),
+            )
+            .optional()
+    }
+
+    pub fn cached_slice_job(
+        &self,
+        project_id: &str,
+        source_revision: u64,
+        input_digest: &str,
+    ) -> Result<Option<String>, rusqlite::Error> {
+        self.conn
+            .query_row(
+                "SELECT record_json FROM slice_jobs WHERE project_id = ?1 AND source_revision = ?2 AND input_digest = ?3 AND status = 'ready' ORDER BY updated_ms DESC LIMIT 1",
+                rusqlite::params![project_id, source_revision as i64, input_digest],
+                |row| row.get(0),
+            )
+            .optional()
     }
 
     /// Read the durable project document and its monotonic revision.
@@ -413,7 +485,7 @@ mod tests {
     #[test]
     fn migration_creates_v2_and_persists() {
         let db = DbHandle::open_in_memory().expect("migrate ok");
-        assert_eq!(db.schema_version().unwrap(), 3);
+        assert_eq!(db.schema_version().unwrap(), 4);
         db.create_project("p-1", "demo").unwrap();
         db.append_op("p-1", 1, "add_object", r#"{"id":"o-1"}"#)
             .unwrap();
@@ -460,7 +532,7 @@ mod tests {
             .unwrap();
         }
         let db = DbHandle::open(&path).unwrap();
-        assert_eq!(db.schema_version().unwrap(), 3);
+        assert_eq!(db.schema_version().unwrap(), 4);
         assert_eq!(db.slicing_mode("legacy-1").unwrap(), "standard");
         // data survived
         let n: i64 = db
@@ -478,5 +550,51 @@ mod tests {
         db.put_artifact(sha, "blobs/abc123.stl", 42).unwrap(); // dedupe idempotent
         assert_eq!(db.artifact_path(sha).unwrap().unwrap(), "blobs/abc123.stl");
         assert!(db.artifact_path("nope").unwrap().is_none());
+    }
+
+    #[test]
+    fn slice_jobs_persist_and_cache_only_ready_matching_inputs() {
+        let db = DbHandle::open_in_memory().unwrap();
+        db.create_project("project-1", "project").unwrap();
+        db.put_slice_job(
+            "job-1",
+            "project-1",
+            7,
+            "digest-a",
+            "running",
+            "{\"status\":\"running\"}",
+        )
+        .unwrap();
+        assert!(db
+            .cached_slice_job("project-1", 7, "digest-a")
+            .unwrap()
+            .is_none());
+        db.put_slice_job(
+            "job-1",
+            "project-1",
+            7,
+            "digest-a",
+            "ready",
+            "{\"status\":\"ready\"}",
+        )
+        .unwrap();
+        assert_eq!(
+            db.slice_job("project-1", "job-1").unwrap().as_deref(),
+            Some(r#"{"status":"ready"}"#)
+        );
+        assert_eq!(
+            db.cached_slice_job("project-1", 7, "digest-a")
+                .unwrap()
+                .as_deref(),
+            Some(r#"{"status":"ready"}"#)
+        );
+        assert!(db
+            .cached_slice_job("project-1", 8, "digest-a")
+            .unwrap()
+            .is_none());
+        assert!(db
+            .cached_slice_job("project-1", 7, "digest-b")
+            .unwrap()
+            .is_none());
     }
 }

@@ -42,6 +42,8 @@ export interface SceneObjectSnapshot extends ObjectMeshInfo {
   /** Stable project identity; distinct from the editable display name. */
   readonly objectId?: string;
   readonly geometry?: ObjectGeometry;
+  /** Geometry vertex coordinate space; absent means object-local. */
+  readonly geometrySpace?: "object-local" | "editor-world";
   readonly visible: boolean;
   readonly locked: boolean;
   readonly parentId?: string | null;
@@ -313,9 +315,9 @@ export interface PrinterSnapshot {
  */
 export interface SliceStats {
   readonly layers: number;
-  readonly estimatedMinutes: number;
-  readonly materialGrams: number;
-  readonly volumeMm3: number;
+  readonly estimatedMinutes: number | null;
+  readonly materialGrams: number | null;
+  readonly volumeMm3: number | null;
   readonly perObjectMm3: Readonly<Record<string, number>>;
 }
 

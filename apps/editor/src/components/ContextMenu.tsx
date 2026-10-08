@@ -26,7 +26,11 @@ export function ContextMenu() {
   const state = useContextMenuStore((s) => s.state);
   const close = useContextMenuStore((s) => s.close);
   const [focusIndex, setFocusIndex] = useState(0);
-  const [position, setPosition] = useState({ x: state?.x ?? 0, y: state?.y ?? 0 });
+  const [position, setPosition] = useState<{
+    readonly x: number;
+    readonly y: number;
+    readonly state: ContextMenuState | null;
+  }>({ x: state?.x ?? 0, y: state?.y ?? 0, state });
   const listRef = useRef<HTMLDivElement | null>(null);
   const focusTargetRef = useRef<ContextMenuState["focusTarget"]>(undefined);
 
@@ -36,7 +40,7 @@ export function ContextMenu() {
     if (state) {
       setFocusIndex(0);
       focusTargetRef.current = state.focusTarget;
-      setPosition({ x: state.x, y: state.y });
+      setPosition({ x: state.x, y: state.y, state });
     } else {
       const target = focusTargetRef.current;
       if (target?.isConnected !== false) target?.focus();
@@ -60,7 +64,11 @@ export function ContextMenu() {
         Math.max(margin, state.y),
         Math.max(margin, viewportHeight - rect.height - margin),
       );
-      setPosition((previous) => (previous.x === x && previous.y === y ? previous : { x, y }));
+      setPosition((previous) =>
+        previous.state === state && previous.x === x && previous.y === y
+          ? previous
+          : { x, y, state },
+      );
     };
     measureAndClamp();
     const els = [...listRef.current.querySelectorAll<HTMLElement>("[data-menu-index]")];
@@ -81,6 +89,8 @@ export function ContextMenu() {
   }, [state, position]);
 
   if (!state) return null;
+
+  const displayPosition = position.state === state ? position : { x: state.x, y: state.y, state };
 
   const enabled = items
     .map((it, i) => ({ it, i }))
@@ -119,7 +129,7 @@ export function ContextMenu() {
         aria-label={t("contextMenu.aria")}
         data-testid="context-menu"
         className="context-menu"
-        style={{ left: position.x, top: position.y }}
+        style={{ left: displayPosition.x, top: displayPosition.y }}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === "ArrowDown") {

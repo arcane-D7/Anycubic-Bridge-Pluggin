@@ -2797,6 +2797,28 @@ input {
   gap: 3px;
 }
 
+.slice-artifact-status,
+.slice-stale {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.slice-artifact-status code,
+.slice-stale code {
+  overflow: hidden;
+  max-width: 18ch;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-tertiary);
+}
+
+.slice-stale {
+  color: var(--sema-warning);
+}
+
 .slice-progress-step {
   height: 5px;
   border-radius: 3px;
