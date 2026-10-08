@@ -29,6 +29,7 @@ export type PreviewIrDocument = IrDocumentShape;
 /** One previewable toolpath (per-layer). */
 export interface PreviewToolpath {
   readonly kind: IrPathKind;
+  readonly layer: number;
   readonly segmentId: string | null;
   readonly executionOrder: number;
   readonly objectId: string | null;
@@ -84,6 +85,20 @@ export interface PreviewModel {
   readonly sourceRevision: number | null;
   readonly targetIds: readonly string[];
   readonly placementMm: readonly [number, number, number] | null;
+  readonly orderedSegments: readonly PreviewToolpath[];
+  readonly playbackPositions: ReadonlyMap<PreviewToolpath, PreviewPlaybackPosition>;
+  readonly executionOrderIndices: ReadonlyMap<number, number>;
+  readonly layerExecutionSegments: readonly (readonly PreviewToolpath[])[];
+}
+
+export interface PreviewPlaybackPosition {
+  readonly layerPosition: number;
+  readonly segmentPosition: number;
+  readonly accumulated: boolean;
+}
+
+export interface PreviewPathFilters {
+  readonly [kind: string]: boolean | undefined;
 }
 
 /** True when the segment is a Z-ramp (continuous Z change along the path). */
@@ -142,6 +157,7 @@ export function buildPreviewModel(ir: PreviewIrDocument): PreviewModel {
     if (ramp) hasRamps = true;
     const path: PreviewToolpath = {
       kind: seg.kind,
+      layer: seg.layer,
       segmentId: seg.segment_id ?? null,
       executionOrder: seg.execution_order ?? sourceIndex,
       objectId: seg.object_id ?? null,
@@ -190,6 +206,7 @@ export function buildPreviewModel(ir: PreviewIrDocument): PreviewModel {
 
   const layers: PreviewLayer[] = [];
   for (const [index, toolpaths] of byLayer) {
+    toolpaths.sort((left, right) => left.executionOrder - right.executionOrder);
     const zs = toolpaths.map((t) => t.from[2]).filter(isFinite);
     const zAvailable = zs.length > 0;
     const z = zAvailable ? Math.min(...zs) : Number.NaN;
@@ -209,6 +226,25 @@ export function buildPreviewModel(ir: PreviewIrDocument): PreviewModel {
     });
   }
   layers.sort((a, b) => a.index - b.index);
+  const orderedSegments = layers
+    .flatMap((layer) => layer.toolpaths)
+    .sort((left, right) => left.executionOrder - right.executionOrder);
+  const playbackPositions = new Map<PreviewToolpath, PreviewPlaybackPosition>();
+  const executionOrderIndices = new Map<number, number>();
+  const layerExecutionSegments = layers.map(() => [] as PreviewToolpath[]);
+  for (const [index, path] of orderedSegments.entries()) {
+    executionOrderIndices.set(path.executionOrder, index);
+  }
+  for (const [layerPosition, layer] of layers.entries()) {
+    for (const [segmentPosition, path] of layer.toolpaths.entries()) {
+      playbackPositions.set(path, { layerPosition, segmentPosition, accumulated: false });
+      layerExecutionSegments[layerPosition]!.push(path);
+    }
+  }
+  for (const paths of layerExecutionSegments) {
+    paths.sort((left, right) => left.executionOrder - right.executionOrder);
+    Object.freeze(paths);
+  }
 
   return {
     version: "1.0",
@@ -220,6 +256,10 @@ export function buildPreviewModel(ir: PreviewIrDocument): PreviewModel {
     sourceRevision: ir.source_revision ?? null,
     targetIds: Object.freeze([...(ir.target_ids ?? [])]),
     placementMm: ir.placement ? [ir.placement.x, ir.placement.y, ir.placement.z] : null,
+    orderedSegments: Object.freeze(orderedSegments),
+    playbackPositions,
+    executionOrderIndices,
+    layerExecutionSegments: Object.freeze(layerExecutionSegments),
   };
 }
 
@@ -238,17 +278,182 @@ export function buildPreviewModel(ir: PreviewIrDocument): PreviewModel {
  */
 export function previewLayerAt(
   model: PreviewModel,
-  layerIndex: number,
+  layerPosition: number,
 ): readonly PreviewToolpath[] {
-  const target = model.layers.find((l) => l.index === layerIndex);
+  const target = model.layers[layerPosition];
   if (!target) return [];
   if (!model.hasRamps) return target.toolpaths;
   // Nonplanar: gather the target layer's toolpaths plus any ramp toolpath that
   // spans the target's z band (continuous ramps are never a layer jump).
   const zBand = target.z;
-  return model.layers.flatMap((l) =>
-    l.index === layerIndex
+  return model.layers.flatMap((l, position) =>
+    position === layerPosition
       ? l.toolpaths
       : l.toolpaths.filter((t) => t.ramp && Math.abs(t.from[2] - zBand) < 0.5),
   );
+}
+
+export function previewLayerSegmentsAt(
+  model: PreviewModel,
+  layerPosition: number,
+): readonly PreviewToolpath[] {
+  return model.layers[layerPosition]?.toolpaths ?? [];
+}
+
+/** Return layer segments in known output order, optionally through one segment. */
+export function playbackSegmentsAt(
+  model: PreviewModel,
+  layerPosition: number,
+  segmentPosition = Number.MAX_SAFE_INTEGER,
+  accumulated = false,
+): readonly PreviewToolpath[] {
+  if (
+    !Number.isInteger(layerPosition) ||
+    layerPosition < 0 ||
+    layerPosition >= model.layers.length
+  ) {
+    return [];
+  }
+  const currentLayer = model.layers[layerPosition]!;
+  const currentSegment =
+    currentLayer.toolpaths[
+      Math.max(0, Math.min(currentLayer.toolpaths.length - 1, segmentPosition))
+    ];
+  if (!currentSegment) return [];
+  if (!accumulated) {
+    const layerPaths = model.layerExecutionSegments[layerPosition] ?? [];
+    let layerLow = 0;
+    let layerHigh = layerPaths.length;
+    while (layerLow < layerHigh) {
+      const middle = layerLow + Math.floor((layerHigh - layerLow) / 2);
+      if (layerPaths[middle]!.executionOrder <= currentSegment.executionOrder)
+        layerLow = middle + 1;
+      else layerHigh = middle;
+    }
+    return layerPaths.slice(0, layerLow);
+  }
+  let low = 0;
+  let high = model.orderedSegments.length;
+  while (low < high) {
+    const middle = low + Math.floor((high - low) / 2);
+    if (model.orderedSegments[middle]!.executionOrder <= currentSegment.executionOrder)
+      low = middle + 1;
+    else high = middle;
+  }
+  const throughOrder = model.orderedSegments.slice(0, low);
+  return throughOrder;
+}
+
+/** Move one segment in execution order, crossing layer boundaries deterministically. */
+export function previewPlaybackStep(
+  model: PreviewModel,
+  layerPosition: number,
+  segmentPosition: number,
+  delta: -1 | 1,
+): PreviewPlaybackPosition {
+  const layers = model.layers;
+  if (layers.length === 0) return { layerPosition: 0, segmentPosition: 0, accumulated: false };
+  let layer = Math.max(0, Math.min(layers.length - 1, layerPosition));
+  let segment = Math.max(0, Math.min(layers[layer]!.toolpaths.length - 1, segmentPosition));
+  const current = layers[layer]!.toolpaths[segment];
+  if (!current || model.orderedSegments.length === 0) {
+    return { layerPosition: layer, segmentPosition: segment, accumulated: false };
+  }
+  const currentOrderIndex = model.executionOrderIndices.get(current.executionOrder) ?? 0;
+  const nextOrderIndex = Math.max(
+    0,
+    Math.min(model.orderedSegments.length - 1, currentOrderIndex + delta),
+  );
+  const next = model.orderedSegments[nextOrderIndex];
+  if (next) {
+    const position = model.playbackPositions.get(next);
+    if (position) {
+      layer = position.layerPosition;
+      segment = position.segmentPosition;
+    }
+  }
+  return { layerPosition: layer, segmentPosition: segment, accumulated: false };
+}
+
+/** Visualization-only path filtering; does not alter the artifact or slice. */
+export function visiblePlaybackSegments(
+  model: PreviewModel,
+  position: PreviewPlaybackPosition,
+  filters: PreviewPathFilters,
+): readonly PreviewToolpath[] {
+  return playbackSegmentsAt(
+    model,
+    position.layerPosition,
+    position.segmentPosition,
+    position.accumulated,
+  ).filter((path) => {
+    return filters[path.kind] !== false;
+  });
+}
+
+export type PreviewAttribute =
+  "speed" | "flow" | "beadWidth" | "lineWidth" | "layerHeight" | "temperature";
+
+export interface PreviewAttributeSummary {
+  readonly unit: string;
+  readonly min: number;
+  readonly max: number;
+  readonly count: number;
+  readonly histogram: readonly number[];
+}
+
+export function previewAttributeSummary(
+  paths: readonly PreviewToolpath[],
+  attribute: PreviewAttribute,
+): PreviewAttributeSummary | null {
+  const valueFor = (path: PreviewToolpath): number | null => {
+    const value =
+      attribute === "speed"
+        ? path.speedMmS
+        : attribute === "flow"
+          ? path.flowMm3S
+          : attribute === "beadWidth"
+            ? path.beadAreaMm2
+            : attribute === "lineWidth"
+              ? path.lineWidthMm
+              : attribute === "layerHeight"
+                ? path.layerHeightMm
+                : path.nozzleTemperatureC;
+    return value !== null && Number.isFinite(value) ? value : null;
+  };
+  let min = Infinity;
+  let max = -Infinity;
+  let count = 0;
+  for (const path of paths) {
+    const value = valueFor(path);
+    if (value === null) continue;
+    min = Math.min(min, value);
+    max = Math.max(max, value);
+    count += 1;
+  }
+  if (count === 0) return null;
+  const histogram = Array.from({ length: 5 }, () => 0);
+  for (const path of paths) {
+    const value = valueFor(path);
+    if (value === null) continue;
+    const bin = max === min ? 0 : Math.min(4, Math.floor(((value - min) / (max - min)) * 5));
+    histogram[bin] = histogram[bin]! + 1;
+  }
+  const unit =
+    attribute === "speed"
+      ? "mm/s"
+      : attribute === "flow"
+        ? "mm3/s"
+        : attribute === "beadWidth"
+          ? "mm2"
+          : attribute === "temperature"
+            ? "C"
+            : "mm";
+  return Object.freeze({
+    unit,
+    min,
+    max,
+    count,
+    histogram: Object.freeze(histogram),
+  });
 }

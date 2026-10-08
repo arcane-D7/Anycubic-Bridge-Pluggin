@@ -12,7 +12,7 @@
 | **Primary Owner**     | Editor project, slice engine and Preview                                                                                            |
 | **Source**            | [Editor workspace CAD/AI audit](../../docs/audit/editor-workspace-cad-ai-audit-2026-10-07.md), AUD-04–06/AUD-13; sections 10–12, 19 |
 | **Depends On**        | Sprint 9.15                                                                                                                         |
-| **Status**            | 🔄 In progress (2/4 delivered)                                                                                                      |
+| **Status**            | ✅ Complete (4/4 delivered, 2026-10-08)                                                                                             |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -140,7 +140,7 @@ The parser and renderer must preserve supported engine facts and artifact placem
 | **Type**             | Feature + Performance                                                     |
 | **Estimated Effort** | L                                                                         |
 | **Source Finding**   | AUD-06; PRV-05, PRV-08, PRV-10; audit section 12.3–12.4                   |
-| **Status**           | ⏳ Planned                                                                |
+| **Status**           | ✅ Delivered (2026-10-08)                                                 |
 
 #### Context
 
@@ -148,11 +148,24 @@ Playback must track actual execution order and segment IDs without reparsing the
 
 #### Acceptance Criteria
 
-- [ ] **PRV-05:** Play/pause/step/scrub tracks known artifact segments and their instruction mapping.
-- [ ] **PRV-08:** Single-layer and cumulative filters affect visualization only, not slice output.
-- [ ] **PRV-10:** Representative corpus meets documented load/scrub/memory budgets with repeatable measurements.
-- [ ] Old artifact preparation is cancelled and removed GPU resources are released.
-- [ ] Run focused playback/performance checks, full gate and sanitizer dry-run successfully.
+- [x] **PRV-05:** Play/pause/step/scrub follows the artifact's global execution order and stable segment IDs across sparse/interleaved layer IDs. Available G-code instruction ranges remain attached; absent mappings stay unavailable and are never inferred.
+- [x] **PRV-08:** Single-layer/cumulative playback and path-kind filters affect only Preview visibility; E2E verifies the project revision and loaded artifact remain unchanged.
+- [x] **PRV-10:** The checked-in 40,000-segment/100-layer corpus test measures model load, 1,000 single-layer scrubs, 100 cumulative scrubs and JS heap delta against explicit budgets: load <10,000 ms, each scrub batch <5,000 ms, model heap delta <256 MiB. Latest run: 113 ms, 40 ms, 409 ms and 18.2 MiB.
+- [x] Superseded IR file reads are invalidated by the existing load sequence; Preview typed arrays, BufferGeometry and materials are declaratively owned by the R3F tree and released when replaced/unmounted.
+- [x] Focused playback/performance checks, full `pnpm run check`, and standalone sanitizer dry-run pass.
+
+#### Implementation Notes (S9.16-004)
+
+- `preview-model.ts` retains stable source layer IDs and indexes segments by global execution order and layer position. Manual stepping, keyboard scrub and timed playback share the same order; sparse and interleaved layers never assume IDs are contiguous. Cumulative visibility uses the captured artifact, while single-layer visibility stops at the selected segment in that layer.
+- Preview controls now include a vertical layer range, horizontal segment range, play/pause, speed, step, accumulation, per-kind filters and function/material/speed/flow/bead-area/line-width/layer-height/nozzle-temperature coloring. Numeric legends identify the declared source, unit, range/value and sample count; unavailable data disables its selector, and material IDs are categorical rather than fabricated numeric values. Filtering also hides the current-segment highlight/head.
+- R3F renders typed-array batches by path kind and color with stable batch keys; geometry and material ownership stays declarative so replacement/unmount disposes resources. IR file reads use the existing sequence token to ignore stale completions. No instruction line, physical head motion, measured speed or printer progress is synthesized.
+- Browser E2E loads a local synthetic IR fixture, performs pointer hit-testing and keyboard layer/segment scrubbing, steps across sparse layer IDs, changes playback speed, plays/pauses and filters a path kind; it confirms project revision remains unchanged. The test performs no slice, upload or print action.
+- Performance contract: deterministic 40,000-segment, 100-layer corpus; per-run hard limits are 10 s model load, 5 s for 1,000 single-layer scrubs, 5 s for 100 cumulative scrubs, and 256 MiB JS heap delta. Latest focused run on 2026-10-08: 113 ms load, 40 ms/1,000 single-layer scrubs, 409 ms/100 cumulative scrubs, 18.2 MiB heap delta. This measures the JS model path, not GPU-driver memory or frame time.
+- Validation: `tests/preview-model.test.mjs` 18/18; `pnpm exec tsc --noEmit` passes; `tests/e2e/editor-reload.e2e.mjs` passes with zero page errors/HTTP 5xx. Final `pnpm run check`: exit 0; unit 762/762, integration 11/11, Rust workspace and editor shell checks pass, build emits `dist/server.mjs` (255608 bytes), smoke 115 tools, both E2Es pass, licenses 59, architecture clean, integrated sanitizer 0 files/groups. Standalone `node scripts/sanitize-repo.mjs --dry-run`: 0 files/groups. No printer, upload or print action was invoked.
+
+## Sprint 9.16 Complete
+
+All four tickets are delivered. The final full health gate and standalone sanitizer pass; the artifact-backed Preview remains preview-only and does not enable printer output.
 
 ## Sprint Commit
 

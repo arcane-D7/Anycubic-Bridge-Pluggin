@@ -16,7 +16,13 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const modelUrl = pathToFileURL(
   path.join(root, "apps", "editor", "src", "viewport", "preview-model.ts"),
 );
-const { buildPreviewModel, previewLayerAt } = await import(modelUrl.href);
+const {
+  buildPreviewModel,
+  previewLayerAt,
+  playbackSegmentsAt,
+  previewPlaybackStep,
+  visiblePlaybackSegments,
+} = await import(modelUrl.href);
 
 const irUrl = pathToFileURL(path.join(root, "apps", "editor", "src", "bridge", "ir.ts"));
 const { parseIrDocument } = await import(irUrl.href);
@@ -323,5 +329,197 @@ test("parseIrDocument exposes stable structured diagnostics for invalid and over
   assert.throws(
     () => parseIrDocument(validDoc({ segments: Array(200_001).fill(parsedSegment()) })),
     (error) => error.code === "IR_LIMIT" && error.path === "segments",
+  );
+});
+
+test("preview playback uses execution order and positional layer selection for noncontiguous IDs", () => {
+  const ir = {
+    version: "1.1",
+    mode: "standard",
+    dialect: "anycubic",
+    coordinate_frame: "slice-ir",
+    units: "mm",
+    segments: [
+      {
+        ...parsedSegment({ layer: 12, kind: "BRIM", segment_id: "b", execution_order: 2 }),
+        provenance: undefined,
+      },
+      {
+        ...parsedSegment({ layer: 3, kind: "WALL", segment_id: "a", execution_order: 0 }),
+        provenance: undefined,
+      },
+      {
+        ...parsedSegment({ layer: 12, kind: "INFILL", segment_id: "c", execution_order: 1 }),
+        provenance: undefined,
+      },
+    ],
+  };
+  const model = buildPreviewModel(parseIrDocument(ir));
+  const layer0 = previewLayerAt(model, 0);
+  assert.equal(model.layers[0].index, 3);
+  assert.deepEqual(
+    layer0.map((path) => path.segmentId),
+    ["a"],
+  );
+  const layer1 = previewLayerAt(model, 1);
+  assert.deepEqual(
+    layer1.map((path) => path.segmentId),
+    ["c", "b"],
+  );
+  assert.deepEqual(
+    model.layers[1].toolpaths.map((path) => path.executionOrder),
+    [1, 2],
+  );
+});
+
+test("preview playback steps segments in execution order and filters only the view", () => {
+  const model = buildPreviewModel({
+    version: "1.1",
+    mode: "standard",
+    dialect: "anycubic",
+    segments: [
+      {
+        ...parsedSegment({ layer: 4, kind: "WALL", segment_id: "s1", execution_order: 0 }),
+        provenance: undefined,
+      },
+      {
+        ...parsedSegment({ layer: 4, kind: "TRAVEL", segment_id: "s2", execution_order: 1 }),
+        provenance: undefined,
+      },
+      {
+        ...parsedSegment({ layer: 9, kind: "INFILL", segment_id: "s3", execution_order: 2 }),
+        provenance: undefined,
+      },
+    ],
+  });
+  assert.deepEqual(
+    playbackSegmentsAt(model, 0).map((segment) => segment.segmentId),
+    ["s1", "s2"],
+  );
+  assert.deepEqual(
+    playbackSegmentsAt(model, 0, 1).map((segment) => segment.segmentId),
+    ["s1", "s2"],
+  );
+  assert.deepEqual(
+    playbackSegmentsAt(model, 1, 0, true).map((segment) => segment.segmentId),
+    ["s1", "s2", "s3"],
+  );
+  assert.deepEqual(previewPlaybackStep(model, 0, 0, 1), {
+    layerPosition: 0,
+    segmentPosition: 1,
+    accumulated: false,
+  });
+  assert.deepEqual(previewPlaybackStep(model, 0, 1, 1), {
+    layerPosition: 1,
+    segmentPosition: 0,
+    accumulated: false,
+  });
+  assert.deepEqual(
+    visiblePlaybackSegments(
+      model,
+      { layerPosition: 1, segmentPosition: 0, accumulated: true },
+      { WALL: false, TRAVEL: false },
+    ).map((segment) => segment.segmentId),
+    ["s3"],
+  );
+});
+
+test("preview playback follows global execution order when layer IDs are interleaved", () => {
+  const model = buildPreviewModel({
+    version: "1.1",
+    mode: "standard",
+    dialect: "anycubic",
+    coordinate_frame: "slice-ir",
+    units: "mm",
+    segments: [
+      {
+        ...parsedSegment({ layer: 12, kind: "INFILL", segment_id: "second", execution_order: 1 }),
+        provenance: undefined,
+      },
+      {
+        ...parsedSegment({ layer: 3, kind: "WALL", segment_id: "first", execution_order: 0 }),
+        provenance: undefined,
+      },
+      {
+        ...parsedSegment({ layer: 12, kind: "TRAVEL", segment_id: "third", execution_order: 2 }),
+        provenance: undefined,
+      },
+    ],
+  });
+
+  assert.deepEqual(
+    playbackSegmentsAt(model, 1, 0).map((segment) => segment.segmentId),
+    ["second"],
+  );
+  assert.deepEqual(
+    playbackSegmentsAt(model, 1, 1, true).map((segment) => segment.segmentId),
+    ["first", "second", "third"],
+  );
+  assert.deepEqual(previewPlaybackStep(model, 0, 0, 1), {
+    layerPosition: 1,
+    segmentPosition: 0,
+    accumulated: false,
+  });
+  assert.deepEqual(previewPlaybackStep(model, 1, 0, 1), {
+    layerPosition: 1,
+    segmentPosition: 1,
+    accumulated: false,
+  });
+});
+
+test("preview corpus meets declared 40k-segment load, scrub and heap budgets", () => {
+  const segmentCount = 40_000;
+  const segments = Array.from({ length: segmentCount }, (_, executionOrder) => ({
+    ...parsedSegment({
+      layer: Math.floor(executionOrder / 400) * 3 + 2,
+      kind: executionOrder % 4 === 0 ? "TRAVEL" : "WALL",
+      segment_id: `corpus-${executionOrder}`,
+      execution_order: executionOrder,
+      pose: {
+        from: { x: executionOrder % 200, y: 1, z: executionOrder / 1000 },
+        to: { x: (executionOrder % 200) + 0.5, y: 1.5, z: executionOrder / 1000 },
+      },
+    }),
+    provenance: undefined,
+  }));
+  const beforeHeap = process.memoryUsage().heapUsed;
+  const loadStart = performance.now();
+  const model = buildPreviewModel({
+    version: "1.1",
+    mode: "standard",
+    dialect: "anycubic",
+    segments,
+  });
+  const loadMs = performance.now() - loadStart;
+  const loadHeapBytes = Math.max(0, process.memoryUsage().heapUsed - beforeHeap);
+  assert.equal(model.orderedSegments.length, segmentCount);
+  assert.ok(loadMs < 10_000, `preview load ${loadMs.toFixed(1)}ms exceeded 10,000ms`);
+  assert.ok(
+    loadHeapBytes < 256 * 1024 * 1024,
+    `preview model heap delta ${loadHeapBytes} exceeded 256MiB`,
+  );
+
+  const lastLayer = model.layerCount - 1;
+  const lastLayerModel = model.layers[lastLayer];
+  assert.ok(lastLayerModel, "corpus must produce at least one layer");
+  const lastSegment = lastLayerModel.toolpaths.length - 1;
+  const scrubStart = performance.now();
+  for (let index = 0; index < 1000; index += 1) {
+    const next = previewPlaybackStep(model, lastLayer, lastSegment, index % 2 === 0 ? -1 : 1);
+    playbackSegmentsAt(model, next.layerPosition, next.segmentPosition, false);
+  }
+  const scrubMs = performance.now() - scrubStart;
+  assert.ok(scrubMs < 5_000, `1,000 single-layer scrubs ${scrubMs.toFixed(1)}ms exceeded 5,000ms`);
+  const cumulativeStart = performance.now();
+  for (let index = 0; index < 100; index += 1) {
+    playbackSegmentsAt(model, lastLayer, lastSegment, true);
+  }
+  const cumulativeMs = performance.now() - cumulativeStart;
+  assert.ok(
+    cumulativeMs < 5_000,
+    `100 cumulative scrubs ${cumulativeMs.toFixed(1)}ms exceeded 5,000ms`,
+  );
+  console.log(
+    `preview corpus: segments=${segmentCount}, layers=${model.layerCount}, load=${loadMs.toFixed(1)}ms, singleLayerScrub1000=${scrubMs.toFixed(1)}ms, cumulativeScrub100=${cumulativeMs.toFixed(1)}ms, heapDeltaMiB=${(loadHeapBytes / 1024 / 1024).toFixed(1)}; budgets load<10000ms singleLayerScrub1000<5000ms cumulativeScrub100<5000ms heap<256MiB`,
   );
 });

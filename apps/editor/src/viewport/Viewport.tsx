@@ -40,6 +40,14 @@ import { ViewportCamera } from "./ViewportCamera";
 import { LiveOverlay } from "./LiveOverlay";
 import type { PreviewModel } from "./preview-model";
 import {
+  previewLayerSegmentsAt,
+  previewPlaybackStep,
+  previewAttributeSummary,
+  visiblePlaybackSegments,
+  type PreviewAttribute,
+  type PreviewPathFilters,
+} from "./preview-model";
+import {
   beginRightGesture,
   cancelRightGesture,
   consumeRightGestureMenu,
@@ -88,8 +96,21 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
   }, []);
 
   const [layerIndex, setLayerIndex] = useState(0);
-  const [showWalls, setShowWalls] = useState(true);
-  const [showInfill, setShowInfill] = useState(true);
+  const [segmentIndex, setSegmentIndex] = useState(0);
+  const [accumulated, setAccumulated] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [colorMode, setColorMode] = useState<
+    | "function"
+    | "material"
+    | "speed"
+    | "flow"
+    | "beadWidth"
+    | "lineWidth"
+    | "layerHeight"
+    | "temperature"
+  >("function");
+  const [pathFilters, setPathFilters] = useState<PreviewPathFilters>({});
+  const [playing, setPlaying] = useState(false);
 
   // S9.11-001 view mode: live requires a reachable printer, otherwise the
   // effective mode falls back to slicer and a one-line banner shows why.
@@ -102,8 +123,78 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
   const layerCount = preview?.layerCount ?? 0;
   useEffect(() => {
     setLayerIndex(0);
+    setSegmentIndex(0);
+    setPlaying(false);
   }, [preview]);
   const clampedLayer = layerCount > 0 ? Math.min(layerIndex, layerCount - 1) : 0;
+  const currentLayerSegments = preview ? previewLayerSegmentsAt(preview, clampedLayer) : [];
+  const clampedSegment =
+    currentLayerSegments.length > 0 ? Math.min(segmentIndex, currentLayerSegments.length - 1) : 0;
+  const playbackPaths = preview
+    ? visiblePlaybackSegments(
+        preview,
+        {
+          layerPosition: clampedLayer,
+          segmentPosition: clampedSegment,
+          accumulated,
+        },
+        pathFilters,
+      )
+    : [];
+
+  useEffect(() => {
+    if (!playing || !preview) return;
+    const segment = currentLayerSegments[clampedSegment];
+    const delay = Math.max(16, 100 / playbackSpeed);
+    const timer = window.setTimeout(() => {
+      if (!segment) {
+        setPlaying(false);
+        return;
+      }
+      const next = previewPlaybackStep(preview, clampedLayer, clampedSegment, 1);
+      const samePosition =
+        next.layerPosition === clampedLayer && next.segmentPosition === clampedSegment;
+      if (samePosition) setPlaying(false);
+      else {
+        setLayerIndex(next.layerPosition);
+        setSegmentIndex(next.segmentPosition);
+      }
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [playing, preview, clampedLayer, clampedSegment, currentLayerSegments.length, playbackSpeed]);
+
+  const updatePathFilter = (key: string, checked: boolean) =>
+    setPathFilters((current) => ({ ...current, [key]: checked }));
+
+  const attributeForMode: Record<typeof colorMode, PreviewAttribute | null> = {
+    function: null,
+    material: null,
+    speed: "speed",
+    flow: "flow",
+    beadWidth: "beadWidth",
+    lineWidth: "lineWidth",
+    layerHeight: "layerHeight",
+    temperature: "temperature",
+  };
+  const attributeSummary =
+    preview && attributeForMode[colorMode]
+      ? previewAttributeSummary(playbackPaths, attributeForMode[colorMode]!)
+      : null;
+  const materialIds =
+    colorMode === "material"
+      ? [
+          ...new Set(
+            playbackPaths.map((path) => path.materialId).filter((id): id is string => id !== null),
+          ),
+        ]
+      : [];
+
+  const stepPlayback = (delta: -1 | 1) => {
+    if (!preview) return;
+    const next = previewPlaybackStep(preview, clampedLayer, clampedSegment, delta);
+    setLayerIndex(next.layerPosition);
+    setSegmentIndex(next.segmentPosition);
+  };
 
   return (
     <ViewportFrame bridge={scene}>
@@ -141,8 +232,14 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
           <PreviewScene
             model={preview}
             layerIndex={clampedLayer}
-            showWalls={showWalls}
-            showInfill={showInfill}
+            paths={playbackPaths}
+            colorMode={colorMode}
+            currentSegment={
+              currentLayerSegments[clampedSegment] &&
+              pathFilters[currentLayerSegments[clampedSegment]!.kind] !== false
+                ? currentLayerSegments[clampedSegment]!
+                : null
+            }
           />
         ) : (
           visibleObjects.map((o) => (
@@ -185,7 +282,14 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
           DOM must never mount inside the R3F tree (crash fix). */}
       {!preview ? <SnapReadout volume={volume} /> : null}{" "}
       {preview ? (
-        <div className="viewport-preview-controls" data-testid="preview-controls">
+        <div
+          className="viewport-preview-controls"
+          data-testid="preview-controls"
+          data-visible-segment-ids={playbackPaths
+            .map((path) => path.segmentId)
+            .filter(Boolean)
+            .join(",")}
+        >
           {" "}
           <span className="preview-mode" data-testid="preview-mode-label">
             {t("viewport.preview.mode", { mode: preview.mode })}
@@ -208,31 +312,200 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
             id="preview-layer-slider"
             data-testid="preview-layer-slider"
             type="range"
+            className="preview-layer-slider"
             min={0}
             max={Math.max(0, layerCount - 1)}
             step={1}
             value={clampedLayer}
             disabled={layerCount <= 1}
-            onChange={(e) => setLayerIndex(Number(e.currentTarget.value))}
+            onChange={(e) => {
+              setLayerIndex(Number(e.currentTarget.value));
+              setSegmentIndex(0);
+            }}
           />
+          <label htmlFor="preview-segment-slider">
+            {t("viewport.preview.segmentOf", {
+              n: String(currentLayerSegments.length ? clampedSegment + 1 : 0),
+              total: String(currentLayerSegments.length),
+            })}
+          </label>
+          <input
+            id="preview-segment-slider"
+            data-testid="preview-segment-slider"
+            data-current-segment-id={currentLayerSegments[clampedSegment]?.segmentId ?? ""}
+            type="range"
+            min={0}
+            max={Math.max(0, currentLayerSegments.length - 1)}
+            step={1}
+            value={clampedSegment}
+            disabled={currentLayerSegments.length <= 1}
+            onChange={(e) => setSegmentIndex(Number(e.currentTarget.value))}
+          />
+          <button
+            type="button"
+            data-testid="preview-step-back"
+            aria-label={t("viewport.preview.previousSegment")}
+            onClick={() => stepPlayback(-1)}
+          >
+            ◀
+          </button>
+          <button
+            type="button"
+            data-testid="preview-play-toggle"
+            aria-pressed={playing}
+            onClick={() => setPlaying((value) => !value)}
+          >
+            {playing ? t("viewport.preview.pause") : t("viewport.preview.play")}
+          </button>
+          <button
+            type="button"
+            data-testid="preview-step-forward"
+            aria-label={t("viewport.preview.nextSegment")}
+            onClick={() => stepPlayback(1)}
+          >
+            ▶
+          </button>
+          <label htmlFor="preview-play-speed">{t("viewport.preview.speed")}</label>
+          <select
+            id="preview-play-speed"
+            data-testid="preview-play-speed"
+            value={playbackSpeed}
+            onChange={(e) => setPlaybackSpeed(Number(e.currentTarget.value))}
+          >
+            {[0.5, 1, 2, 4].map((speed) => (
+              <option key={speed} value={speed}>
+                {speed}×
+              </option>
+            ))}
+          </select>
           <label>
             <input
               type="checkbox"
-              data-testid="preview-walls-toggle"
-              checked={showWalls}
-              onChange={(e) => setShowWalls(e.currentTarget.checked)}
+              data-testid="preview-accumulated-toggle"
+              checked={accumulated}
+              onChange={(e) => setAccumulated(e.currentTarget.checked)}
             />
-            Walls
+            {t("viewport.preview.accumulated")}
           </label>
-          <label>
-            <input
-              type="checkbox"
-              data-testid="preview-infill-toggle"
-              checked={showInfill}
-              onChange={(e) => setShowInfill(e.currentTarget.checked)}
-            />
-            Infill
-          </label>
+          <label htmlFor="preview-color-mode">{t("viewport.preview.colorBy")}</label>
+          <select
+            id="preview-color-mode"
+            data-testid="preview-color-mode"
+            value={colorMode}
+            onChange={(e) => setColorMode(e.currentTarget.value as typeof colorMode)}
+          >
+            <option value="function">{t("viewport.preview.function")}</option>
+            <option
+              value="material"
+              disabled={!playbackPaths.some((path) => path.materialId !== null)}
+            >
+              {t("viewport.preview.material")}
+            </option>
+            <option value="speed" disabled={!playbackPaths.some((path) => path.speedMmS !== null)}>
+              {t("viewport.preview.commandedSpeed")}
+            </option>
+            <option value="flow" disabled={!playbackPaths.some((path) => path.flowMm3S !== null)}>
+              {t("viewport.preview.flow")}
+            </option>
+            <option
+              value="beadWidth"
+              disabled={!playbackPaths.some((path) => path.beadAreaMm2 !== null)}
+            >
+              {t("viewport.preview.beadWidth")}
+            </option>
+            <option
+              value="lineWidth"
+              disabled={!playbackPaths.some((path) => path.lineWidthMm !== null)}
+            >
+              {t("viewport.preview.lineWidth")}
+            </option>
+            <option
+              value="layerHeight"
+              disabled={!playbackPaths.some((path) => path.layerHeightMm !== null)}
+            >
+              {t("viewport.preview.layerHeight")}
+            </option>
+            <option
+              value="temperature"
+              disabled={!playbackPaths.some((path) => path.nozzleTemperatureC !== null)}
+            >
+              {t("viewport.preview.temperature")}
+            </option>
+          </select>
+          {(
+            [
+              ["WALL", "viewport.preview.wall"],
+              ["OUTER_WALL", "viewport.preview.outerWall"],
+              ["INNER_WALL", "viewport.preview.innerWall"],
+              ["INFILL", "viewport.preview.infill"],
+              ["SOLID_INFILL", "viewport.preview.solidInfill"],
+              ["SUPPORT", "viewport.preview.support"],
+              ["SUPPORT_INTERFACE", "viewport.preview.supportInterface"],
+              ["BRIDGE", "viewport.preview.bridge"],
+              ["GAP_INFILL", "viewport.preview.gapInfill"],
+              ["BRIM", "viewport.preview.brim"],
+              ["SKIRT", "viewport.preview.skirt"],
+              ["TRAVEL", "viewport.preview.travel"],
+              ["RETRACTION", "viewport.preview.retraction"],
+              ["SEAM", "viewport.preview.seam"],
+              ["PRIME", "viewport.preview.prime"],
+              ["PURGE", "viewport.preview.purge"],
+              ["TOOL_CHANGE", "viewport.preview.toolChange"],
+            ] as const
+          ).map(([key, labelKey]) => (
+            <label key={key}>
+              <input
+                type="checkbox"
+                data-testid={`preview-filter-${key.toLowerCase()}`}
+                checked={pathFilters[key] !== false}
+                onChange={(e) => updatePathFilter(key, e.currentTarget.checked)}
+              />
+              {t(labelKey)}
+            </label>
+          ))}
+          <span className="preview-legend" data-testid="preview-attribute-legend">
+            {colorMode === "function"
+              ? t("viewport.preview.legendFunction")
+              : colorMode === "material"
+                ? materialIds.length > 0
+                  ? t("viewport.preview.legendMaterial", { value: materialIds.join(", ") })
+                  : t("viewport.preview.attributeUnavailable")
+                : attributeSummary
+                  ? t(
+                      colorMode === "speed"
+                        ? "viewport.preview.legendSpeed"
+                        : colorMode === "flow"
+                          ? "viewport.preview.legendFlow"
+                          : colorMode === "beadWidth"
+                            ? "viewport.preview.legendBeadWidth"
+                            : colorMode === "lineWidth"
+                              ? "viewport.preview.legendWidth"
+                              : colorMode === "layerHeight"
+                                ? "viewport.preview.legendHeight"
+                                : "viewport.preview.legendTemperature",
+                      {
+                        value:
+                          attributeSummary.min === attributeSummary.max
+                            ? attributeSummary.min.toFixed(2)
+                            : `${attributeSummary.min.toFixed(2)}–${attributeSummary.max.toFixed(2)} ${attributeSummary.unit}`,
+                      },
+                    )
+                  : t("viewport.preview.attributeUnavailable")}
+            {attributeSummary ? (
+              <span
+                className="preview-legend-distribution"
+                data-testid="preview-attribute-distribution"
+              >
+                {attributeSummary.histogram.map((count, index) => (
+                  <span
+                    key={index}
+                    title={`${count}`}
+                    style={{ height: `${Math.max(2, count * 2)}px` }}
+                  />
+                ))}
+              </span>
+            ) : null}
+          </span>
         </div>
       ) : null}
     </ViewportFrame>
@@ -326,23 +599,33 @@ function ObjectContextMenuPicker({
 function PreviewScene({
   model,
   layerIndex,
-  showWalls,
-  showInfill,
+  paths,
+  colorMode,
+  currentSegment,
 }: {
   readonly model: PreviewModel;
   readonly layerIndex: number;
-  readonly showWalls: boolean;
-  readonly showInfill: boolean;
+  readonly paths: typeof model.orderedSegments;
+  readonly colorMode:
+    | "function"
+    | "material"
+    | "speed"
+    | "flow"
+    | "beadWidth"
+    | "lineWidth"
+    | "layerHeight"
+    | "temperature";
+  readonly currentSegment: (typeof model.orderedSegments)[number] | null;
 }) {
   const fit = useMemo(() => previewFit(model), [model]);
   return (
     <>
       <group position={[-fit.center[0], -fit.center[1], -fit.center[2]]}>
         <LayerPreview
-          model={model}
           layerIndex={layerIndex}
-          showWalls={showWalls}
-          showInfill={showInfill}
+          paths={paths}
+          colorMode={colorMode}
+          currentSegment={currentSegment}
         />
       </group>
     </>

@@ -23,6 +23,7 @@ import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 
 const require = createRequire(import.meta.url);
 const puppeteer = require("puppeteer-core");
@@ -56,6 +57,7 @@ assert.ok(exe, "no Chromium/Edge executable — install Edge/Chrome or set CHROM
 
 let child = null;
 let browser = null;
+let previewFixturePath = "";
 
 const waitFor = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -861,6 +863,202 @@ try {
   );
   await page.waitForSelector('[data-testid^="obj-info-popover-"]', { hidden: true, timeout: 5000 });
 
+  // S9.16-004 — load a small artifact fixture and drive playback with real
+  // browser pointer/keyboard input. View changes must not mutate the project.
+  const previewRevisionBefore = await page.$eval(
+    '[data-testid="status-revision"]',
+    (el) => el.textContent,
+  );
+  const previewFixture = {
+    version: "1.1",
+    mode: "standard",
+    dialect: "anycubic",
+    coordinate_frame: "slice-ir",
+    units: "mm",
+    build_volume: { x: 220, y: 220, z: 250 },
+    segments: [
+      {
+        mode: "standard",
+        kind: "WALL",
+        layer: 7,
+        segment_id: "preview-a",
+        execution_order: 0,
+        orientation: [0, 0, 1],
+        pose: { from: { x: 10, y: 10, z: 0.2 }, to: { x: 20, y: 10, z: 0.2 } },
+        speed: { mm_s: 30 },
+        flow: { q_mm3_s: 2.5 },
+        layer_height_mm: 0.2,
+        line_width_mm: 0.45,
+        temperature: { nozzle_c: 210 },
+      },
+      {
+        mode: "standard",
+        kind: "TRAVEL",
+        layer: 12,
+        segment_id: "preview-b",
+        execution_order: 1,
+        orientation: [0, 0, 1],
+        pose: { from: { x: 20, y: 10, z: 0.4 }, to: { x: 20, y: 20, z: 0.4 } },
+        speed: { mm_s: 90 },
+      },
+      {
+        mode: "standard",
+        kind: "INFILL",
+        layer: 7,
+        segment_id: "preview-c",
+        execution_order: 2,
+        orientation: [0, 0, 1],
+        pose: { from: { x: 12, y: 12, z: 0.2 }, to: { x: 18, y: 12, z: 0.2 } },
+        material_id: "project-pla",
+        flow: { q_mm3_s: 1.8 },
+        layer_height_mm: 0.2,
+        line_width_mm: 0.42,
+        temperature: { nozzle_c: 205 },
+      },
+    ],
+  };
+  previewFixturePath = path.join(os.tmpdir(), `preview-playback-${process.pid}.json`);
+  fs.writeFileSync(previewFixturePath, JSON.stringify(previewFixture));
+  await page.$eval('[data-testid="ir-file-input"]', (input) => input.scrollIntoView());
+  await (await page.$('[data-testid="ir-file-input"]')).uploadFile(previewFixturePath);
+  await page.waitForFunction(
+    () => Boolean(document.querySelector('[data-testid="preview-layer-slider"]')),
+    { timeout: 10000 },
+  );
+  const layerTrack = await page.evaluate(() => {
+    const input = document.querySelector('[data-testid="preview-layer-slider"]');
+    if (!input) return null;
+    const rect = input.getBoundingClientRect();
+    return {
+      height: rect.height,
+      width: rect.width,
+      writingMode: getComputedStyle(input).writingMode,
+    };
+  });
+  if (!layerTrack) {
+    const previewDiag = await page.evaluate(() => ({
+      url: location.href,
+      title: document.title,
+      body: document.body.innerText.slice(0, 500),
+      status: document.querySelector('[data-testid="ir-status"]')?.textContent,
+      controls: document.querySelector('[data-testid="preview-controls"]')?.outerHTML,
+      errors: document.querySelector('[data-testid="ir-status"]')?.className,
+    }));
+    previewDiag.pageErrors = errors;
+    previewDiag.failedRequests = failedReqs.slice(-10);
+    throw new Error(`Preview layer selector disappeared: ${JSON.stringify(previewDiag)}`);
+  }
+  assert.ok(
+    layerTrack.height > layerTrack.width,
+    `layer selector should be vertical: ${JSON.stringify(layerTrack)}`,
+  );
+  assert.match(layerTrack.writingMode, /vertical/);
+  const layerSlider = await page.$('[data-testid="preview-layer-slider"]');
+  await layerSlider.focus();
+  await page.keyboard.press("ArrowRight");
+  await page.waitForFunction(
+    () =>
+      document.querySelector('[data-testid="preview-segment-slider"]')?.dataset.currentSegmentId ===
+      "preview-b",
+  );
+  await page.keyboard.press("ArrowLeft");
+  await page.waitForFunction(
+    () =>
+      document.querySelector('[data-testid="preview-segment-slider"]')?.dataset.currentSegmentId ===
+      "preview-a",
+  );
+  await page
+    .waitForSelector('[data-testid="preview-step-forward"]', { timeout: 5000 })
+    .catch(async () => {
+      const state = await page.evaluate(() => ({
+        url: location.href,
+        title: document.title,
+        body: document.body.innerText.slice(0, 1000),
+        inputIds: [...document.querySelectorAll("input")].map((input) => input.id),
+        previewMarkup: document.querySelector('[data-testid="preview-controls"]')?.outerHTML,
+      }));
+      state.pageErrors = errors;
+      state.failedRequests = failedReqs.slice(-10);
+      throw new Error(`Preview controls disappeared before playback: ${JSON.stringify(state)}`);
+    });
+  const forward = await page.$eval('[data-testid="preview-step-forward"]', (button) => {
+    const rect = button.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    return {
+      hitButton: hit === button || button.contains(hit),
+      hit: hit?.outerHTML.slice(0, 160),
+      rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+    };
+  });
+  assert.equal(
+    forward.hitButton,
+    true,
+    `step button must be the real pointer hit target: ${JSON.stringify(forward)}`,
+  );
+  await page.click('[data-testid="preview-step-forward"]');
+  await page.waitForFunction(
+    () =>
+      document.querySelector('[data-testid="preview-segment-slider"]')?.dataset.currentSegmentId ===
+      "preview-b",
+  );
+  assert.equal(
+    await page.$eval('[data-testid="preview-layer-slider"]', (input) => input.value),
+    "1",
+  );
+  await page.click('[data-testid="preview-step-back"]');
+  await page.waitForFunction(
+    () =>
+      document.querySelector('[data-testid="preview-segment-slider"]')?.dataset.currentSegmentId ===
+      "preview-a",
+  );
+  const segmentSlider = await page.$('[data-testid="preview-segment-slider"]');
+  await segmentSlider.focus();
+  await page.keyboard.press("ArrowRight");
+  await page.waitForFunction(
+    () =>
+      document.querySelector('[data-testid="preview-segment-slider"]')?.dataset.currentSegmentId ===
+      "preview-c",
+  );
+  await page.click('[data-testid="preview-play-speed"]');
+  await page.select('[data-testid="preview-play-speed"]', "0.5");
+  await page.click('[data-testid="preview-play-toggle"]');
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-testid="preview-play-toggle"]')
+        ?.getAttribute("aria-pressed") === "true",
+  );
+  await page.click('[data-testid="preview-play-toggle"]');
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-testid="preview-play-toggle"]')
+        ?.getAttribute("aria-pressed") === "false",
+  );
+  const visibleBeforeFilter = await page.$eval('[data-testid="preview-controls"]', (el) =>
+    el.getAttribute("data-visible-segment-ids"),
+  );
+  const visibleBeforeFilterIds = (visibleBeforeFilter ?? "").split(",").filter(Boolean);
+  await page.click('[data-testid="preview-filter-infill"]');
+  await page.waitForFunction(
+    (beforeIds) => {
+      const visible =
+        document
+          .querySelector('[data-testid="preview-controls"]')
+          ?.getAttribute("data-visible-segment-ids") ?? "";
+      return visible.split(",").filter(Boolean).length < beforeIds.length;
+    },
+    {},
+    visibleBeforeFilterIds,
+  );
+  assert.equal(await page.$('[data-testid="preview-layer-slider"]').then(Boolean), true);
+  assert.equal(
+    await page.$eval('[data-testid="status-revision"]', (el) => el.textContent),
+    previewRevisionBefore,
+  );
+  fs.rmSync(previewFixturePath, { force: true });
+  previewFixturePath = "";
+
   // ---- 2. mount ChatPanel (sidebar chat view) + overlay dock ----
   await page.evaluate(() => {
     const btn = [...document.querySelectorAll(".sidebar-nav button")].find(
@@ -899,6 +1097,7 @@ try {
     `e2e:editor-reload PASS — shell reloaded clean (0 page errors, 0 HTTP 5xx), ChatPanel + overlay mounted; UI refactor (plate-rail, floating transform, object-tree filament + info popover) verified.`,
   );
 } finally {
+  if (previewFixturePath) fs.rmSync(previewFixturePath, { force: true });
   if (browser) await browser.close().catch(() => {});
   if (child) {
     try {

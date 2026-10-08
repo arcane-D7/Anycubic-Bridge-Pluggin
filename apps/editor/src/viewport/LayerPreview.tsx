@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { sliceIrToEditorWorld } from "../state/coordinate-frames";
-import type { PreviewModel } from "./preview-model";
-import { previewLayerAt } from "./preview-model";
+import type { PreviewModel, PreviewToolpath } from "./preview-model";
 
 const WALL_COLOR = "#4f9cf7";
 const INFILL_COLOR = "#22c55e";
@@ -13,10 +12,18 @@ const AUXILIARY_COLOR = "#a56b9f";
 type ScenePoint = readonly [number, number, number];
 
 interface LayerPreviewProps {
-  readonly model: PreviewModel;
   readonly layerIndex: number;
-  readonly showWalls: boolean;
-  readonly showInfill: boolean;
+  readonly paths: readonly PreviewToolpath[];
+  readonly colorMode:
+    | "function"
+    | "material"
+    | "speed"
+    | "flow"
+    | "beadWidth"
+    | "lineWidth"
+    | "layerHeight"
+    | "temperature";
+  readonly currentSegment: PreviewToolpath | null;
 }
 
 export interface PreviewFit {
@@ -55,39 +62,54 @@ export function previewFit(model: PreviewModel): PreviewFit {
   return { center, radius };
 }
 
-export function LayerPreview({ model, layerIndex, showWalls, showInfill }: LayerPreviewProps) {
-  const paths = useMemo(() => previewLayerAt(model, layerIndex), [model, layerIndex]);
-
+export function LayerPreview({ layerIndex, paths, colorMode, currentSegment }: LayerPreviewProps) {
   const buffers = useMemo(() => {
-    const byKind = new Map<string, number[]>();
+    const byBatch = new Map<string, { kind: string; color: string; positions: number[] }>();
     for (const path of paths) {
       const from = toScene(path.from);
       const to = toScene(path.to);
-      const bucket = byKind.get(path.kind) ?? [];
-      bucket.push(from[0], from[1], from[2], to[0], to[1], to[2]);
-      byKind.set(path.kind, bucket);
+      const color = pathColor(path, colorMode);
+      const key = `${path.kind}|${color}`;
+      const batch = byBatch.get(key) ?? { kind: path.kind, color, positions: [] };
+      batch.positions.push(from[0], from[1], from[2], to[0], to[1], to[2]);
+      byBatch.set(key, batch);
     }
-    return [...byKind.entries()].map(([kind, positions]) => ({
+    return [...byBatch.values()].map(({ kind, color, positions }) => ({
       kind,
+      color,
       positions: new Float32Array(positions),
-      color: colorForKind(kind),
     }));
-  }, [paths]);
+  }, [paths, colorMode]);
+
+  const currentBuffer = useMemo(() => {
+    if (!currentSegment) return null;
+    const from = toScene(currentSegment.from);
+    const to = toScene(currentSegment.to);
+    return new Float32Array([...from, ...to]);
+  }, [currentSegment]);
+  const plannedHead = currentSegment ? toScene(currentSegment.to) : null;
 
   return (
-    <group data-testid="preview-lines">
+    <group>
       {buffers.map((buffer) => {
-        if (buffer.kind.includes("WALL") && !showWalls) return null;
-        if (buffer.kind.includes("INFILL") && !showInfill) return null;
         return (
           <PathLines
-            key={buffer.kind}
+            key={`${buffer.kind}|${buffer.color}`}
             positions={buffer.positions}
             color={buffer.color}
             layerKey={layerIndex}
           />
         );
       })}
+      {currentBuffer ? (
+        <PathLines positions={currentBuffer} color="#f4dc65" layerKey={layerIndex} width={3} />
+      ) : null}
+      {plannedHead ? (
+        <mesh position={plannedHead}>
+          <sphereGeometry args={[0.8, 8, 6]} />
+          <meshBasicMaterial color="#f4dc65" depthTest={false} />
+        </mesh>
+      ) : null}
     </group>
   );
 }
@@ -101,14 +123,58 @@ function colorForKind(kind: string): string {
   return TRAVEL_COLOR;
 }
 
+const ATTRIBUTE_COLORS = ["#267e78", "#5fa875", "#c6b74f", "#d77a4a", "#b64f55"] as const;
+
+function pathColor(path: PreviewToolpath, mode: LayerPreviewProps["colorMode"]): string {
+  if (mode === "function") return colorForKind(path.kind);
+  if (mode === "material") {
+    if (!path.materialId) return "#747b78";
+    let hash = 0;
+    for (const char of path.materialId) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+    return ATTRIBUTE_COLORS[hash % ATTRIBUTE_COLORS.length]!;
+  }
+  const value =
+    mode === "speed"
+      ? path.speedMmS
+      : mode === "flow"
+        ? path.flowMm3S
+        : mode === "beadWidth"
+          ? path.beadAreaMm2
+          : mode === "lineWidth"
+            ? path.lineWidthMm
+            : mode === "layerHeight"
+              ? path.layerHeightMm
+              : path.nozzleTemperatureC;
+  if (value === null || !Number.isFinite(value)) return "#747b78";
+  const scale =
+    mode === "speed"
+      ? 120
+      : mode === "flow"
+        ? 12
+        : mode === "beadWidth"
+          ? 0.6
+          : mode === "lineWidth"
+            ? 1.2
+            : mode === "layerHeight"
+              ? 0.5
+              : 300;
+  const index = Math.max(
+    0,
+    Math.min(ATTRIBUTE_COLORS.length - 1, Math.floor((value / scale) * ATTRIBUTE_COLORS.length)),
+  );
+  return ATTRIBUTE_COLORS[index]!;
+}
+
 function PathLines({
   positions,
   color,
   layerKey,
+  width = 1,
 }: {
   readonly positions: Float32Array;
   readonly color: string;
   readonly layerKey: number;
+  readonly width?: number;
 }) {
   if (positions.length === 0) return null;
   return (
@@ -116,7 +182,13 @@ function PathLines({
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <lineBasicMaterial color={color} transparent opacity={0.95} />
+      <lineBasicMaterial
+        color={color}
+        transparent
+        opacity={0.95}
+        linewidth={width}
+        depthTest={width === 1}
+      />
     </lineSegments>
   );
 }

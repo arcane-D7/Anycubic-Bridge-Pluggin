@@ -722,6 +722,53 @@ export type MsgKey =
   | "viewport.preview.artifact"
   | "viewport.preview.walls"
   | "viewport.preview.infill"
+  | "viewport.preview.segmentOf"
+  | "viewport.preview.previousSegment"
+  | "viewport.preview.nextSegment"
+  | "viewport.preview.play"
+  | "viewport.preview.pause"
+  | "viewport.preview.speed"
+  | "viewport.preview.accumulated"
+  | "viewport.preview.colorBy"
+  | "viewport.preview.function"
+  | "viewport.preview.material"
+  | "viewport.preview.commandedSpeed"
+  | "viewport.preview.flow"
+  | "viewport.preview.lineWidth"
+  | "viewport.preview.layerHeight"
+  | "viewport.preview.temperature"
+  | "viewport.preview.beadWidth"
+  | "viewport.preview.beadWidth"
+  | "viewport.preview.support"
+  | "viewport.preview.adhesion"
+  | "viewport.preview.travel"
+  | "viewport.preview.legendFunction"
+  | "viewport.preview.legendSpeed"
+  | "viewport.preview.legendFlow"
+  | "viewport.preview.legendWidth"
+  | "viewport.preview.legendHeight"
+  | "viewport.preview.legendTemperature"
+  | "viewport.preview.legendMaterial"
+  | "viewport.preview.legendBeadWidth"
+  | "viewport.preview.legendHeight"
+  | "viewport.preview.legendTemperature"
+  | "viewport.preview.legendMaterial"
+  | "viewport.preview.legendRange"
+  | "viewport.preview.attributeUnavailable"
+  | "viewport.preview.wall"
+  | "viewport.preview.outerWall"
+  | "viewport.preview.innerWall"
+  | "viewport.preview.solidInfill"
+  | "viewport.preview.supportInterface"
+  | "viewport.preview.bridge"
+  | "viewport.preview.gapInfill"
+  | "viewport.preview.brim"
+  | "viewport.preview.skirt"
+  | "viewport.preview.retraction"
+  | "viewport.preview.seam"
+  | "viewport.preview.prime"
+  | "viewport.preview.purge"
+  | "viewport.preview.toolChange"
   | "viewport.live.banner"
   | "viewport.live.frameUnavailable"
   | "viewport.repairLabel"
@@ -1479,6 +1526,49 @@ export const EN: Record<MsgKey, string> = {
   "viewport.preview.layerOf": "Layer {n} of {total}",
   "viewport.preview.walls": "Walls",
   "viewport.preview.infill": "Infill",
+  "viewport.preview.segmentOf": "Segment {n} of {total}",
+  "viewport.preview.previousSegment": "Previous segment",
+  "viewport.preview.nextSegment": "Next segment",
+  "viewport.preview.play": "Play",
+  "viewport.preview.pause": "Pause",
+  "viewport.preview.speed": "Playback speed",
+  "viewport.preview.accumulated": "Accumulate previous layers",
+  "viewport.preview.colorBy": "Color by",
+  "viewport.preview.function": "Function",
+  "viewport.preview.material": "Material",
+  "viewport.preview.commandedSpeed": "Commanded speed",
+  "viewport.preview.flow": "Flow",
+  "viewport.preview.lineWidth": "Line width",
+  "viewport.preview.layerHeight": "Layer height",
+  "viewport.preview.temperature": "Nozzle temperature",
+  "viewport.preview.beadWidth": "Declared bead width",
+  "viewport.preview.support": "Support",
+  "viewport.preview.adhesion": "Brim / skirt",
+  "viewport.preview.travel": "Travel",
+  "viewport.preview.legendFunction": "Color: path function",
+  "viewport.preview.legendSpeed": "Commanded speed: {value} mm/s (not measured)",
+  "viewport.preview.legendFlow": "Declared flow: {value} mm³/s",
+  "viewport.preview.legendWidth": "Declared line width: {value} mm",
+  "viewport.preview.legendHeight": "Declared layer height: {value} mm",
+  "viewport.preview.legendTemperature": "Declared nozzle temperature: {value} °C",
+  "viewport.preview.legendMaterial": "Project material ID: {value} (categorical)",
+  "viewport.preview.legendBeadWidth": "Declared bead cross-section: {value} mm²",
+  "viewport.preview.legendRange": "Range {min}–{max} {unit} · {count} segments",
+  "viewport.preview.attributeUnavailable": "Attribute unavailable in this artifact",
+  "viewport.preview.wall": "Wall",
+  "viewport.preview.outerWall": "Outer wall",
+  "viewport.preview.innerWall": "Inner wall",
+  "viewport.preview.solidInfill": "Solid infill",
+  "viewport.preview.supportInterface": "Support interface",
+  "viewport.preview.bridge": "Bridge",
+  "viewport.preview.gapInfill": "Gap infill",
+  "viewport.preview.brim": "Brim",
+  "viewport.preview.skirt": "Skirt",
+  "viewport.preview.retraction": "Retraction",
+  "viewport.preview.seam": "Seam",
+  "viewport.preview.prime": "Prime",
+  "viewport.preview.purge": "Purge",
+  "viewport.preview.toolChange": "Tool change",
   "viewport.live.banner": "Live mode needs a reachable printer — showing slicer style.",
   "viewport.live.frameUnavailable": "Machine frame or profile bounds unavailable",
   "viewport.repairLabel": "Needs repair:",
@@ -2237,6 +2327,49 @@ export const PT_BR: Record<MsgKey, string> = {
   "viewport.preview.layerOf": "Camada {n} de {total}",
   "viewport.preview.walls": "Paredes",
   "viewport.preview.infill": "Preenchimento",
+  "viewport.preview.segmentOf": "Segmento {n} de {total}",
+  "viewport.preview.previousSegment": "Segmento anterior",
+  "viewport.preview.nextSegment": "Próximo segmento",
+  "viewport.preview.play": "Reproduzir",
+  "viewport.preview.pause": "Pausar",
+  "viewport.preview.speed": "Velocidade de reprodução",
+  "viewport.preview.accumulated": "Acumular camadas anteriores",
+  "viewport.preview.colorBy": "Colorir por",
+  "viewport.preview.function": "Função",
+  "viewport.preview.material": "Material",
+  "viewport.preview.commandedSpeed": "Velocidade comandada",
+  "viewport.preview.flow": "Fluxo",
+  "viewport.preview.lineWidth": "Largura da linha",
+  "viewport.preview.layerHeight": "Altura da camada",
+  "viewport.preview.temperature": "Temperatura do bico",
+  "viewport.preview.beadWidth": "Largura declarada do cordão",
+  "viewport.preview.support": "Suportes",
+  "viewport.preview.adhesion": "Aba / saia",
+  "viewport.preview.travel": "Deslocamento",
+  "viewport.preview.legendFunction": "Cor: função do percurso",
+  "viewport.preview.legendSpeed": "Velocidade comandada: {value} mm/s (não medida)",
+  "viewport.preview.legendFlow": "Fluxo declarado: {value} mm³/s",
+  "viewport.preview.legendWidth": "Largura de linha declarada: {value} mm",
+  "viewport.preview.legendHeight": "Altura de camada declarada: {value} mm",
+  "viewport.preview.legendTemperature": "Temperatura do bico declarada: {value} °C",
+  "viewport.preview.legendMaterial": "Identificador do material do projeto: {value} (categórico)",
+  "viewport.preview.legendBeadWidth": "Secção transversal declarada do cordão: {value} mm²",
+  "viewport.preview.legendRange": "Intervalo {min}–{max} {unit} · {count} segmentos",
+  "viewport.preview.attributeUnavailable": "Atributo indisponível neste artefacto",
+  "viewport.preview.wall": "Parede",
+  "viewport.preview.outerWall": "Parede externa",
+  "viewport.preview.innerWall": "Parede interna",
+  "viewport.preview.solidInfill": "Preenchimento sólido",
+  "viewport.preview.supportInterface": "Interface de suporte",
+  "viewport.preview.bridge": "Ponte",
+  "viewport.preview.gapInfill": "Preenchimento de lacuna",
+  "viewport.preview.brim": "Aba",
+  "viewport.preview.skirt": "Saia",
+  "viewport.preview.retraction": "Retração",
+  "viewport.preview.seam": "Costura",
+  "viewport.preview.prime": "Preparação",
+  "viewport.preview.purge": "Purga",
+  "viewport.preview.toolChange": "Troca de ferramenta",
   "viewport.live.banner": "O modo ao vivo precisa de impressora alcançável — a mostrar slicer.",
   "viewport.live.frameUnavailable": "Referencial da máquina ou limites do perfil indisponíveis",
   "viewport.repairLabel": "Precisa de reparação:",
