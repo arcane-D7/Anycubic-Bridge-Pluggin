@@ -47,7 +47,8 @@ export interface SceneGraphEvent {
     | "toggleLock"
     | "setTransform"
     | "setPlate"
-    | "setObjectSettings";
+    | "setObjectSettings"
+    | "setMaterialBinding";
   readonly object?: SceneObjectSnapshot;
   readonly name?: string;
   readonly from?: string;
@@ -57,6 +58,8 @@ export interface SceneGraphEvent {
   /** Per-object fork payload (S9.6-002); `undefined` clears (reset-to-parent). */
   readonly settings?: Partial<ObjectPrintSettings>;
   readonly filamentId?: string;
+  readonly materialBinding?: SceneObjectSnapshot["materialBinding"] | null;
+  readonly binding?: SceneObjectSnapshot["materialBinding"] | null;
 }
 
 /** The S7-002 framed modal steps a destructive op must route through. */
@@ -245,8 +248,26 @@ export function reduceSceneGraph(
                 : event.settings === undefined
                   ? { filamentId: undefined }
                   : {}),
+              ...(event.materialBinding !== undefined
+                ? {
+                    materialBinding: event.materialBinding
+                      ? { ...event.materialBinding }
+                      : undefined,
+                  }
+                : {}),
             }
           : o,
+      );
+      return { state: { ...state, objects }, pipeline: null };
+    }
+
+    case "setMaterialBinding": {
+      const name = event.name;
+      if (!name) return { state, pipeline: null };
+      const objects = state.objects.map((object) =>
+        object.name === name
+          ? { ...object, materialBinding: event.binding ? { ...event.binding } : undefined }
+          : object,
       );
       return { state: { ...state, objects }, pipeline: null };
     }

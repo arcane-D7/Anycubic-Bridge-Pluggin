@@ -11,6 +11,9 @@ import { useUi } from "../state/ui";
 import { useI18n } from "../state/i18n";
 import type { MsgKey } from "../state/i18n-core";
 import { FILAMENT_PRESETS } from "../presets/catalog";
+import { usePrinterDevice } from "../state/printer-device";
+import { usePresets } from "../state/presets";
+import { materialBindingDiagnostics } from "../state/material-assign-core";
 
 /**
  * Left panel — object tree (S9.2-004 full rework).
@@ -89,6 +92,25 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
   const duplicate = useScene((s) => s.duplicate);
   const toggleVisible = useScene((s) => s.toggleVisible);
   const toggleLock = useScene((s) => s.toggleLock);
+  const printerSnapshot = usePrinterDevice((s) => s.snapshot);
+  const printerId = usePrinterDevice((s) => s.printerId);
+  const printerStatus = usePrinterDevice((s) => s.pollingStatus);
+  const globalFilamentId = usePresets((s) => s.filamentId);
+  const materialDiagnostics = useMemo(
+    () =>
+      materialBindingDiagnostics({
+        objects,
+        globalFilamentId,
+        boxes: printerSnapshot?.ace.boxes ?? [],
+        printerId: printerId ?? undefined,
+        snapshotStatus: printerStatus,
+        presets: FILAMENT_PRESETS,
+      }),
+    [objects, globalFilamentId, printerSnapshot, printerId, printerStatus],
+  );
+  const materialDiagnosticByObject = new Map(
+    materialDiagnostics.map(({ objectId, match }) => [objectId, match.bindingStatus]),
+  );
 
   // S9.6-003 — column sort state (header click toggles asc/desc per key).
   const [sortKey, setSortKey] = useState<PlacementSortKey>("name");
@@ -416,7 +438,7 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
               <span
                 className="obj-filament"
                 data-testid={`obj-filament-${o.name}`}
-                title={o.filamentId ? t("object.overridden") : t("object.inherited")}
+                title={`${o.filamentId ? t("object.overridden") : t("object.inherited")} · ${materialDiagnosticByObject.get(o.objectId ?? o.name) ?? "unassigned"}`}
               >
                 <span
                   className={`obj-filament-swatch${o.filamentId ? "" : " inherited"}`}

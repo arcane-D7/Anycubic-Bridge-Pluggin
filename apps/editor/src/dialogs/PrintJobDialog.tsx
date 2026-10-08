@@ -7,6 +7,10 @@ import { usePrinterDevice } from "@/state/printer-device";
 import { printReady } from "@/state/printer-print-guard-core";
 import type { MsgKey } from "@/state/i18n-core";
 import { activeProjectScene } from "@/bridge/project-provider";
+import { useScene } from "@/state/scene";
+import { usePresets } from "@/state/presets";
+import { materialBindingDiagnostics } from "@/state/material-assign-core";
+import { FILAMENT_PRESETS } from "@/presets/catalog";
 
 /**
  * Send-to-print dialog (S9.5-004, G25) — reuses the S9-006 approval-card
@@ -48,6 +52,10 @@ export function PrintJobDialog() {
   const printers = usePrinters((s) => s.printers);
   // S9.10-004 — live snapshot for the approval card (temps + ACE filament).
   const snapshot = usePrinterDevice((s) => s.snapshot);
+  const printerId = usePrinterDevice((s) => s.printerId);
+  const printerStatus = usePrinterDevice((s) => s.pollingStatus);
+  const objects = useScene((s) => s.objects);
+  const globalFilamentId = usePresets((s) => s.filamentId);
 
   const selected = printers.find((p) => p.id === selectedId) ?? null;
   const ready = status === "ready" && stats !== null;
@@ -64,6 +72,17 @@ export function PrintJobDialog() {
   // Local-spool printers pass-through (no ACE → honest unknown).
   const aceBoxes = snapshot?.ace.boxes ?? [];
   const readiness = printReady(aceBoxes);
+  const materialDiagnostics = materialBindingDiagnostics({
+    objects,
+    globalFilamentId,
+    boxes: aceBoxes,
+    printerId: printerId ?? undefined,
+    snapshotStatus: printerStatus,
+    presets: FILAMENT_PRESETS,
+  });
+  const unresolvedBindings = materialDiagnostics.filter(
+    ({ match }) => match.bindingStatus !== "available",
+  );
   // A hard block is switch-level: the physical printer has no usable
   // filament at all — Approve must not send.
   const filamentBlocked = !readiness.ready;
@@ -239,6 +258,11 @@ export function PrintJobDialog() {
         <div className="approval-target" data-testid="send-approval-target">
           → {approval.printerName} ({approval.printerIp})
         </div>
+        {unresolvedBindings.length > 0 ? (
+          <p className="panel-hint" data-testid="send-material-binding-diagnostic">
+            {t("send.materialBindingDiagnostic", { count: String(unresolvedBindings.length) })}
+          </p>
+        ) : null}
         {/* S9.10-004 — live snapshot in the card (temps + ACE filament). */}
         {snapshot ? (
           <div className="approval-live" data-testid="send-approval-live">

@@ -21,7 +21,7 @@
  *    Node (no React/zustand/three imports).
  */
 
-import type { AceBox, AceSlot } from "../bridge/types.ts";
+import type { AceBox, AceSlot, SceneObjectSnapshot } from "../bridge/types.ts";
 
 /** Neutral placeholder hex for an object with no resolvable filament. */
 export const NEUTRAL_FILAMENT_HEX = "#bdbdbd";
@@ -34,8 +34,9 @@ export const ACE_BOX_SLOTS_WINDOW = 10;
 
 export interface FilamentMatch {
   readonly color: string;
-  /** Which source won: `ace` | `preset` | `neutral`. */
-  readonly source: "ace" | "preset" | "neutral";
+  /** Which source won: explicit project binding, preset, or neutral. */
+  readonly source: "binding" | "preset" | "neutral";
+  readonly bindingStatus: "available" | "offline" | "stale" | "unassigned";
   /** Material label when known (preset or ACE slot) — null for neutral. */
   readonly material: string | null;
   /** ACE slot that won (when source === "ace"). */
@@ -46,6 +47,14 @@ export interface FilamentPresetLike {
   readonly id: string;
   readonly material: string;
   readonly color: string;
+}
+
+export interface PhysicalMaterialBinding {
+  readonly printerId: string;
+  readonly toolId: string;
+  readonly boxId: number;
+  readonly slotIndex: number;
+  readonly revision: number;
 }
 
 /** A slot is visible/loaded enough to drive color only when filled + known. */
@@ -98,17 +107,37 @@ export function resolveFilamentColor(args: {
   readonly filamentId: string | undefined;
   readonly materialLabel: string | undefined;
   readonly presets: readonly FilamentPresetLike[];
+  readonly binding?: PhysicalMaterialBinding;
+  readonly printerId?: string;
+  readonly snapshotStatus?: "polling" | "stale" | "offline" | "idle";
 }): FilamentMatch {
-  const { boxes, filamentId, materialLabel, presets } = args;
+  const { boxes, filamentId, materialLabel, presets, binding, printerId, snapshotStatus } = args;
 
-  // 1) ACE slot real color.
-  const aceSlot = matchAceSlot(boxes, filamentId, materialLabel);
-  if (aceSlot) {
+  const boundBox =
+    binding && binding.printerId === printerId
+      ? boxes.find((box) => box.index === binding.boxId)
+      : undefined;
+  const aceSlot = boundBox?.slots.find((slot) => slot.index === binding?.slotIndex);
+  const bindingStatus: FilamentMatch["bindingStatus"] = !binding
+    ? "unassigned"
+    : snapshotStatus === "offline" || snapshotStatus === "idle"
+      ? "offline"
+      : snapshotStatus === "stale" || binding.printerId !== printerId
+        ? "stale"
+        : "available";
+  const materialMatches =
+    !materialLabel ||
+    !aceSlot?.material ||
+    aceSlot.material.toLowerCase() === materialLabel.toLowerCase();
+  const effectiveBindingStatus =
+    bindingStatus === "available" && (!aceSlot || !materialMatches) ? "stale" : bindingStatus;
+  if (effectiveBindingStatus === "available" && aceSlot && slotIsColorUsable(aceSlot)) {
     const color = aceSlot.color;
     if (color) {
       return {
         color,
-        source: "ace",
+        source: "binding",
+        bindingStatus: effectiveBindingStatus,
         material: aceSlot.material ?? materialLabel ?? null,
         slot: aceSlot,
       };
@@ -116,20 +145,56 @@ export function resolveFilamentColor(args: {
   }
 
   // 2) local preset by filament id, else by material label.
-  const preset =
-    presets.find((p) => p.id === filamentId) ??
-    presets.find(
-      (p) =>
-        !!materialLabel &&
-        p.material.toLowerCase().replace(/[\s_-]+/g, "") ===
-          materialLabel.toLowerCase().replace(/[\s_-]+/g, ""),
-    );
+  const preset = filamentId
+    ? presets.find((p) => p.id === filamentId)
+    : presets.find(
+        (p) =>
+          !!materialLabel &&
+          p.material.toLowerCase().replace(/[\s_-]+/g, "") ===
+            materialLabel.toLowerCase().replace(/[\s_-]+/g, ""),
+      );
   if (preset) {
-    return { color: preset.color, source: "preset", material: preset.material };
+    return {
+      color: preset.color,
+      source: "preset",
+      bindingStatus: effectiveBindingStatus,
+      material: preset.material,
+    };
   }
 
   // 3) neutral placeholder (never guessed).
-  return { color: NEUTRAL_FILAMENT_HEX, source: "neutral", material: materialLabel ?? null };
+  return {
+    color: NEUTRAL_FILAMENT_HEX,
+    source: "neutral",
+    bindingStatus: effectiveBindingStatus,
+    material: materialLabel ?? null,
+  };
+}
+
+export function materialBindingDiagnostics(args: {
+  readonly objects: readonly SceneObjectSnapshot[];
+  readonly globalFilamentId: string;
+  readonly boxes: readonly AceBox[];
+  readonly printerId: string | undefined;
+  readonly snapshotStatus: "polling" | "stale" | "offline" | "idle";
+  readonly presets: readonly FilamentPresetLike[];
+}): readonly { readonly objectId: string; readonly match: FilamentMatch }[] {
+  return args.objects.map((object) => {
+    const filamentId = object.filamentId ?? args.globalFilamentId;
+    const materialLabel = args.presets.find((preset) => preset.id === filamentId)?.material;
+    return {
+      objectId: object.objectId ?? object.name,
+      match: resolveFilamentColor({
+        boxes: args.boxes,
+        filamentId,
+        materialLabel,
+        presets: args.presets,
+        binding: object.materialBinding,
+        printerId: args.printerId,
+        snapshotStatus: args.snapshotStatus,
+      }),
+    };
+  });
 }
 
 /** Procedural material class for a resolved match (roughness driver). */

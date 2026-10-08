@@ -32,11 +32,14 @@ const CLASS_BUMP: Record<MaterialClass, number> = {
  * created lazily and cached so every object in slicer mode reuses the same
  * GPU texture (memory-safe: one texture per class, not one per object).
  */
-const sharedNoise = new Map<MaterialClass, THREE.CanvasTexture>();
+const sharedNoise = new Map<
+  MaterialClass,
+  { readonly texture: THREE.CanvasTexture; refs: number }
+>();
 
 function noiseTexture(cls: MaterialClass): THREE.CanvasTexture {
   const existing = sharedNoise.get(cls);
-  if (existing) return existing;
+  if (existing) return existing.texture;
   const size = 64;
   const canvas = document.createElement("canvas");
   canvas.width = size;
@@ -59,8 +62,8 @@ function noiseTexture(cls: MaterialClass): THREE.CanvasTexture {
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
-  tex.colorSpace = THREE.SRGBColorSpace;
-  sharedNoise.set(cls, tex);
+  tex.colorSpace = THREE.NoColorSpace;
+  sharedNoise.set(cls, { texture: tex, refs: 0 });
   return tex;
 }
 
@@ -82,14 +85,29 @@ export function filamentMaterial(
     bumpScale: CLASS_BUMP[clsMaterial],
     roughnessMap: tex,
   });
+  const entry = sharedNoise.get(clsMaterial);
+  if (entry) entry.refs += 1;
+  material.addEventListener("dispose", () => {
+    if (!entry) return;
+    entry.refs -= 1;
+    if (entry.refs === 0) {
+      entry.texture.dispose();
+      sharedNoise.delete(clsMaterial);
+    }
+  });
   material.needsUpdate = true;
   return material;
 }
 
-/** Cleanup for tests/unit teardown (never used in prod render loop). */
+/** Current cache size, exposed for focused resource-lifecycle checks. */
+export function filamentTextureCacheSize(): number {
+  return sharedNoise.size;
+}
+
+/** Force cleanup for tests/unit teardown. */
 export function disposeFilamentTextures(): void {
-  for (const tex of sharedNoise.values()) {
-    tex.dispose();
+  for (const entry of sharedNoise.values()) {
+    entry.texture.dispose();
   }
   sharedNoise.clear();
 }

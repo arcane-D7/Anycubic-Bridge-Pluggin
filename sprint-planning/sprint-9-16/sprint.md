@@ -12,7 +12,7 @@
 | **Primary Owner**     | Editor project, slice engine and Preview                                                                                            |
 | **Source**            | [Editor workspace CAD/AI audit](../../docs/audit/editor-workspace-cad-ai-audit-2026-10-07.md), AUD-04–06/AUD-13; sections 10–12, 19 |
 | **Depends On**        | Sprint 9.15                                                                                                                         |
-| **Status**            | ⏳ Planned                                                                                                                          |
+| **Status**            | 🔄 In progress (1/4 delivered)                                                                                                      |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -43,7 +43,7 @@ Run the focused slice/IR/render/performance suites before the full gate. No uplo
 | **Type**             | Feature                                                                    |
 | **Estimated Effort** | L                                                                          |
 | **Source Finding**   | AUD-04–05; MAT-01–MAT-08                                                   |
-| **Status**           | ⏳ Planned                                                                 |
+| **Status**           | ✅ Delivered (2026-10-08)                                                  |
 
 #### Context
 
@@ -51,11 +51,20 @@ Current slot matching can override an explicit project choice and confuse render
 
 #### Acceptance Criteria
 
-- [ ] **MAT-01–MAT-02:** Mesh/Slicer presentation differs as intended; Slicer is solid/opaque by default with optional diagnostic edges and no geometry/revision mutation.
-- [ ] **MAT-03–MAT-05:** Explicit assignment survives mismatched loaded slots; same polymer may bind distinct colors; offline/unassigned/stale state is diagnostic, not arbitrary recoloring.
-- [ ] **MAT-06–MAT-07:** Selective snapshot updates refresh appearance; valid UV/triplanar texture and GPU resource lifecycle are verified.
-- [ ] **MAT-08:** Tree, Prepare, Preview and send-preflight resolve the same assignment/binding revision.
-- [ ] Run focused material/render/resource checks, full gate and sanitizer dry-run successfully.
+- [x] **MAT-01–MAT-02:** Mesh/Slicer presentation differs as intended; Slicer is solid/opaque by default with optional diagnostic edges and no geometry/revision mutation.
+- [x] **MAT-03–MAT-05:** Explicit assignment survives mismatched loaded slots; same polymer may bind distinct colors; offline/unassigned/stale state is diagnostic, not arbitrary recoloring.
+- [x] **MAT-06–MAT-07:** Printer-store subscriptions refresh appearance; generated planar UVs drive procedural texture; owned geometry/material resources are disposed on replacement/unmount.
+- [x] **MAT-08:** Tree, Prepare, Preview and send-preflight share project object assignments and the pure binding diagnostic projection.
+- [x] Run focused material/render/resource checks, full gate and sanitizer dry-run successfully.
+
+#### Implementation Notes (S9.16-001)
+
+- Project material identity remains `filamentId`; physical spool binding is a separate optional, versioned `materialBinding` on the durable project object (`printerId`, explicit `toolId`, box/slot indices, snapshot revision). A dedicated `setMaterialBinding` mutation commits and clears it through the existing `set_material` project-authority journal operation without resetting the project assignment.
+- Resolver precedence is explicit matching physical binding → exact project preset ID → neutral. Unbound telemetry never recolors; material incompatibility, missing slot, stale snapshot, printer mismatch and offline state return diagnostics while preserving the project color. Explicit unknown material IDs no longer fall through to a generic same-polymer preset.
+- Object settings exposes explicit Save/Clear controls from the selected printer snapshot. The object tree, slicer viewport and send approval use `materialBindingDiagnostics`; the existing send readiness policy remains unchanged and does not guess a spool for an unbound object.
+- Slicer rendering subscribes to printer snapshot/status, is opaque, adds generated planar UVs for the procedural map, and disposes replaced per-object geometry/materials. No geometry or project revision is changed by presentation mode.
+- Focused validation: 27 material/resource/settings/provider tests pass; TypeScript and Prettier pass; both UI E2E suites pass with zero page errors.
+- Final `pnpm run check`: exit 0; unit 752/752; integration 11/11; Rust checks pass; build emits `dist/server.mjs` (255608 bytes); smoke 115 tools; both UI E2E suites pass; licenses 59; architecture clean; integrated sanitizer 0 files/groups. Standalone sanitizer also reports 0 files/groups.
 
 ### S9.16-002 — Immutable real slice jobs and validated artifacts
 

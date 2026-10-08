@@ -73,6 +73,14 @@ export interface SceneObjectSnapshot extends ObjectMeshInfo {
   readonly printSettings?: Partial<ObjectPrintSettings>;
   /** Per-object filament assignment (S9.6-002). Absent = global filament. */
   readonly filamentId?: string;
+  /** Explicit project-authoritative physical slot binding; never inferred from telemetry. */
+  readonly materialBinding?: {
+    readonly printerId: string;
+    readonly toolId: string;
+    readonly boxId: number;
+    readonly slotIndex: number;
+    readonly revision: number;
+  };
   /**
    * Non-destructive lineage note (S9.7-001). The boolean lane stamps the
    * result object with `+bool <op> A∩B` so the object tree/tooltip can show
@@ -143,6 +151,12 @@ export type ObjectMutation =
       /** Per-object fork; `undefined` clears it (reset-to-parent → global). */
       readonly settings?: Partial<ObjectPrintSettings>;
       readonly filamentId?: string;
+      readonly materialBinding?: SceneObjectSnapshot["materialBinding"] | null;
+    }
+  | {
+      readonly kind: "setMaterialBinding";
+      readonly name: string;
+      readonly binding: SceneObjectSnapshot["materialBinding"] | null;
     };
 
 /** Build plate footprint (mm) driven by the machine profile, never hardcoded. */

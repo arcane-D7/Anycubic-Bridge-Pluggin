@@ -140,9 +140,40 @@ test("real provider is available only after the authority responds and persists 
   assert.equal(project.objects[0].filamentId, "petg-blue");
   assert.equal(calls.at(-1).args.operation.kind, "set_material");
 
+  const binding = {
+    printerId: "printer-fixture",
+    toolId: "tool-0",
+    boxId: 1,
+    slotIndex: 2,
+    revision: 17,
+  };
+  const bound = await handle.mutateObject({
+    kind: "setMaterialBinding",
+    name: "renamed",
+    binding,
+  });
+  assert.equal(bound.ok, true);
+  assert.equal(bound.revision, 3);
+  assert.deepEqual(project.objects[0].materialBinding, binding);
+  assert.equal(project.objects[0].filamentId, "petg-blue");
+  assert.equal(calls.at(-1).args.operation.kind, "set_material");
+
+  const reopened = await provider.bootstrapProject({ requested: "real", isTauri: true }, invoke);
+  assert.deepEqual(reopened.scene.objects[0].materialBinding, binding);
+  assert.equal(reopened.scene.objects[0].filamentId, "petg-blue");
+
+  const unbound = await handle.mutateObject({
+    kind: "setMaterialBinding",
+    name: "renamed",
+    binding: null,
+  });
+  assert.equal(unbound.ok, true);
+  assert.equal(project.objects[0].materialBinding, undefined);
+  assert.equal(project.objects[0].filamentId, "petg-blue");
+
   const cloned = await handle.mutateObject({ kind: "duplicate", name: "renamed" });
   assert.equal(cloned.ok, true);
-  assert.equal(cloned.revision, 3);
+  assert.equal(cloned.revision, 5);
   assert.notEqual(handle.objects[1].objectId, oldId);
   assert.equal(calls.at(-1).args.operation.kind, "clone_object");
 
@@ -152,21 +183,21 @@ test("real provider is available only after the authority responds and persists 
     transform: { x: 8, y: 0, z: -4 },
   });
   assert.equal(placed.ok, true);
-  assert.equal(placed.revision, 4);
+  assert.equal(placed.revision, 6);
   assert.deepEqual(handle.objects[0].transform, { x: 8, y: 0, z: -4 });
 
   const removed = await handle.mutateObject({ kind: "remove", name: "renamed-copy" });
   assert.equal(removed.ok, true);
-  assert.equal(removed.revision, 5);
+  assert.equal(removed.revision, 7);
   assert.equal(calls.at(-1).args.operation.kind, "remove_object");
 
   const callsBeforeStale = calls.length;
-  const stale = await handle.mutateObject({ kind: "remove", name: "renamed" }, 4);
+  const stale = await handle.mutateObject({ kind: "remove", name: "renamed" }, 6);
   assert.equal(stale.ok, false);
   assert.equal(stale.code, "project_revision_conflict");
-  assert.equal(stale.actualRevision, 5);
+  assert.equal(stale.actualRevision, 7);
   assert.equal(calls.length, callsBeforeStale + 1);
-  assert.equal(writes, 5);
+  assert.equal(writes, 7);
 
   const beforeNoop = calls.length;
   const noOp = await handle.mutateObject({ kind: "commitObject", name: "renamed" });

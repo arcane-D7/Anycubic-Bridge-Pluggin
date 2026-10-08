@@ -53,6 +53,21 @@ function geometryFromBuffers(info: ObjectMeshInfo): THREE.BufferGeometry | null 
   geo.setAttribute("normal", new THREE.BufferAttribute(g.normals, 3));
   geo.setIndex(new THREE.BufferAttribute(g.indices, 1));
   geo.computeBoundingBox();
+  const bounds = geo.boundingBox;
+  if (bounds) {
+    const size = bounds.getSize(new THREE.Vector3());
+    const positions = geo.getAttribute("position");
+    const uvs = new Float32Array(positions.count * 2);
+    for (let index = 0; index < positions.count; index += 1) {
+      const x = positions.getX(index);
+      const y = positions.getY(index);
+      const z = positions.getZ(index);
+      uvs[index * 2] = size.x > 0 ? (x - bounds.min.x) / size.x : 0;
+      uvs[index * 2 + 1] =
+        size.z > 0 ? (z - bounds.min.z) / size.z : size.y > 0 ? (y - bounds.min.y) / size.y : 0;
+    }
+    geo.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+  }
   return geo;
 }
 
@@ -86,6 +101,7 @@ export const SceneObjectModel = memo(function SceneObjectModel({
 
   const geometry = useMemo(() => geometryFromBuffers(info), [info]);
   const box = useMemo(() => boundsBox(info), [info]);
+  useEffect(() => () => geometry?.dispose(), [geometry]);
 
   // S9.8-002 — hover from meshes also drives the label chips (a hovered
   // object shows its chip even when labels are not always-on).
@@ -138,12 +154,22 @@ export const SceneObjectModel = memo(function SceneObjectModel({
   const viewMode = useViewMode((s) => s.mode);
   const selectedMode = viewMode === "slicer" ? "slicer" : null;
   const globalFilamentId = usePresets((s) => s.filamentId);
+  const printerSnapshot = usePrinterDevice((s) => s.snapshot);
+  const printerId = usePrinterDevice((s) => s.printerId);
+  const printerStatus = usePrinterDevice((s) => s.pollingStatus);
+  const assignedFilamentId = info.filamentId ?? globalFilamentId;
+  const assignedMaterial = FILAMENT_PRESETS.find(
+    (preset) => preset.id === assignedFilamentId,
+  )?.material;
   const slicerMatch = selectedMode
     ? resolveFilamentColor({
-        boxes: usePrinterDevice.getState().snapshot?.ace.boxes ?? [],
-        filamentId: info.filamentId ?? globalFilamentId,
-        materialLabel: undefined,
+        boxes: printerSnapshot?.ace.boxes ?? [],
+        filamentId: assignedFilamentId,
+        materialLabel: assignedMaterial,
         presets: FILAMENT_PRESETS,
+        binding: info.materialBinding,
+        printerId: printerId ?? undefined,
+        snapshotStatus: printerStatus,
       })
     : null;
 
@@ -161,6 +187,7 @@ export const SceneObjectModel = memo(function SceneObjectModel({
         : null,
     [useFilamentMaterial, filamentColor, slicerMatch],
   );
+  useEffect(() => () => material?.dispose(), [material]);
 
   if (!visible) return null;
 
@@ -199,8 +226,8 @@ export const SceneObjectModel = memo(function SceneObjectModel({
               color={effectiveBaseColor}
               roughness={0.55}
               metalness={0.08}
-              transparent
-              opacity={0.92}
+              transparent={selectedMode !== "slicer"}
+              opacity={selectedMode === "slicer" ? 1 : 0.92}
             />
           )}
         </mesh>

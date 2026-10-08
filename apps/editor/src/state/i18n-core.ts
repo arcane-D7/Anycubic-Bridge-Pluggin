@@ -803,6 +803,7 @@ export type MsgKey =
   // S9.10-004 — live filament guard on the send approval card
   | "send.blockedTitle"
   | "send.filamentBlocked"
+  | "send.materialBindingDiagnostic"
   | "send.live.temps"
   | "send.live.ace"
   | "send.sendTitle"
@@ -1547,6 +1548,8 @@ export const EN: Record<MsgKey, string> = {
   "send.jobSent.message": "{name} · {taskId}",
   "send.blockedTitle": "No usable filament",
   "send.filamentBlocked": "Filament blocked",
+  "send.materialBindingDiagnostic":
+    "{count} material binding(s) are unassigned, stale, or offline.",
   "send.live.temps": "Live temps",
   "send.live.ace": "ACE slots",
   "send.sendTitle": "Send to print",
@@ -2297,6 +2300,8 @@ export const PT_BR: Record<MsgKey, string> = {
   "send.jobSent.message": "{name} · {taskId}",
   "send.blockedTitle": "Sem filamento utilizável",
   "send.filamentBlocked": "Filamento bloqueado",
+  "send.materialBindingDiagnostic":
+    "{count} vínculo(s) de material sem atribuição, desatualizado(s) ou offline.",
   "send.live.temps": "Temps ao vivo",
   "send.live.ace": "Ranhuras ACE",
   "send.sendTitle": "Enviar para impressão",

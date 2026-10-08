@@ -197,6 +197,8 @@ function operationKind(mutation: ObjectMutation): ProjectOperation["kind"] {
       return "set_plate";
     case "setObjectSettings":
       return mutation.filamentId !== undefined ? "set_material" : "set_object_settings";
+    case "setMaterialBinding":
+      return "set_material";
     case "commitObject":
       return "checkpoint";
   }
@@ -279,12 +281,37 @@ function applyMutation(
                 : mutation.settings === undefined
                   ? { filamentId: undefined }
                   : {}),
+              ...(mutation.materialBinding !== undefined
+                ? {
+                    materialBinding: mutation.materialBinding
+                      ? { ...mutation.materialBinding }
+                      : undefined,
+                  }
+                : {}),
             };
           case "commitObject":
             return identified;
         }
       });
       return { objects: objectsNext, targetIds: [targetId], operationId };
+    }
+    case "setMaterialBinding": {
+      const target = current.find((item) => item.name === mutation.name);
+      if (!target) return null;
+      targetId = target.objectId ?? stableLegacyId(projectId, target.name);
+      return {
+        objects: current.map((item) =>
+          item === target
+            ? {
+                ...item,
+                objectId: targetId,
+                materialBinding: mutation.binding ? { ...mutation.binding } : undefined,
+              }
+            : item,
+        ),
+        targetIds: [targetId],
+        operationId,
+      };
     }
   }
   return { objects: current, targetIds: [targetId], operationId };

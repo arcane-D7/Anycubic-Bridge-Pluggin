@@ -69,6 +69,11 @@ export interface SceneStore extends SceneGraphState {
     name: string,
     settings?: Partial<ObjectPrintSettings>,
     filamentId?: string,
+    materialBinding?: SceneObjectSnapshot["materialBinding"] | null,
+  ) => void;
+  readonly setMaterialBinding: (
+    name: string,
+    binding: SceneObjectSnapshot["materialBinding"] | null,
   ) => void;
 }
 
@@ -206,15 +211,20 @@ export const useScene = create<SceneStore>()((set, get) => ({
     });
   },
 
-  setObjectSettings: (name, settings, filamentId) => {
+  setObjectSettings: (name, settings, filamentId, materialBinding) => {
     set((s) => {
       const out = reduceSceneGraph(s, {
         kind: "setObjectSettings",
         name,
         ...(settings !== undefined ? { settings } : {}),
         ...(filamentId !== undefined ? { filamentId } : {}),
+        ...(materialBinding !== undefined ? { materialBinding } : {}),
       });
       return out.state;
     });
+  },
+
+  setMaterialBinding: (name, binding) => {
+    set((s) => reduceSceneGraph(s, { kind: "setMaterialBinding", name, binding }).state);
   },
 }));

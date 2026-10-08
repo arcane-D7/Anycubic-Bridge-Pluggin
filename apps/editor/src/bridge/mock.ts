@@ -867,6 +867,19 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
             );
             return sceneObjects.find((o) => o.name === mutation.name) ?? null;
           }
+          case "setMaterialBinding": {
+            const target = sceneObjects.find((o) => o.name === mutation.name);
+            if (!target) return null;
+            sceneObjects = sceneObjects.map((o) =>
+              o.name === mutation.name
+                ? {
+                    ...o,
+                    materialBinding: mutation.binding ? { ...mutation.binding } : undefined,
+                  }
+                : o,
+            );
+            return sceneObjects.find((o) => o.name === mutation.name) ?? null;
+          }
           case "commitObject": {
             const target = sceneObjects.find((o) => o.name === mutation.name);
             return target ?? null;
