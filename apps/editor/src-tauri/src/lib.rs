@@ -11,6 +11,9 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+use blender_bridge::geometry::{execute, GeometryInput, GeometryOperation, GeometryOutput};
+use blender_bridge::spawn::transport_for;
+use blender_bridge::BlenderInstall;
 use broker::chat_store::ChatStore;
 use broker::DbHandle;
 use project_store::{
@@ -23,6 +26,8 @@ use tauri::{Manager, State};
 struct ChatStoreState(Mutex<ChatStore>);
 
 struct ProjectAuthorityState(Mutex<Result<ProjectAuthority, String>>);
+
+struct GeometryWorkerState(Mutex<()>);
 
 #[tauri::command]
 fn app_info() -> serde_json::Value {
@@ -182,6 +187,30 @@ fn project_authority_commit(
 }
 
 #[derive(Serialize)]
+struct GeometryExecutionReply {
+    output: GeometryOutput,
+    blender_version: String,
+    transport: String,
+}
+
+#[tauri::command]
+fn project_geometry_execute(
+    state: State<'_, GeometryWorkerState>,
+    operation: GeometryOperation,
+    inputs: Vec<GeometryInput>,
+) -> Result<GeometryExecutionReply, String> {
+    let _guard = state.0.lock().map_err(|error| error.to_string())?;
+    let (output, install): (GeometryOutput, BlenderInstall) =
+        execute(operation, inputs).map_err(|error| error.to_string())?;
+    let transport = format!("{:?}", transport_for(&install)).to_lowercase();
+    Ok(GeometryExecutionReply {
+        output,
+        blender_version: install.version,
+        transport,
+    })
+}
+
+#[derive(Serialize)]
 struct ProjectCommitReply {
     status: String,
     actual_revision: u64,
@@ -195,6 +224,7 @@ pub fn run() {
             ChatStore::open_default().expect("chat store dir"),
         )))
         .manage(ProjectAuthorityState(Mutex::new(open_project_authority())))
+        .manage(GeometryWorkerState(Mutex::new(())))
         .invoke_handler(tauri::generate_handler![
             app_info,
             chat_store_dir,
@@ -206,6 +236,7 @@ pub fn run() {
             project_authority_read,
             project_authority_journal,
             project_authority_commit,
+            project_geometry_execute,
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").expect("main window");

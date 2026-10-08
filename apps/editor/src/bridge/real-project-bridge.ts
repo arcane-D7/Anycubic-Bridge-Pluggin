@@ -5,7 +5,15 @@ import type {
   ProjectSnapshot,
 } from "./project-authority-types.ts";
 import { StaleCommitError, type BridgeHandle, type CommitSinkPayload } from "./mock.ts";
-import type { ObjectMutation, SceneObjectSnapshot } from "./types.ts";
+import type {
+  BooleanRequest,
+  BooleanResult,
+  ObjectGeometry,
+  ObjectMutation,
+  RepairRequest,
+  RepairResult,
+  SceneObjectSnapshot,
+} from "./types.ts";
 
 export type ProjectInvoke = (command: string, args: Record<string, unknown>) => Promise<unknown>;
 
@@ -51,6 +59,122 @@ function persistedObject(object: SceneObjectSnapshot): SceneObjectSnapshot {
         }
       : {}),
   };
+}
+
+function transformArray(object: SceneObjectSnapshot): number[] {
+  const transform = object.transform;
+  return [
+    transform?.x ?? 0,
+    transform?.y ?? 0,
+    transform?.z ?? 0,
+    transform?.rx ?? 0,
+    transform?.ry ?? 0,
+    transform?.rz ?? 0,
+    transform?.sx ?? 1,
+    transform?.sy ?? 1,
+    transform?.sz ?? 1,
+  ];
+}
+
+function geometryFromWorker(output: {
+  positions: number[];
+  triangles: number[][];
+}): ObjectGeometry {
+  const positions = Float32Array.from(output.positions);
+  const indices = Uint32Array.from(output.triangles.flat());
+  const normals = new Float32Array(positions.length);
+  for (let offset = 0; offset < indices.length; offset += 3) {
+    const a = indices[offset] ?? 0;
+    const b = indices[offset + 1] ?? 0;
+    const c = indices[offset + 2] ?? 0;
+    const ax = positions[a * 3] ?? 0;
+    const ay = positions[a * 3 + 1] ?? 0;
+    const az = positions[a * 3 + 2] ?? 0;
+    const abx = (positions[b * 3] ?? 0) - ax;
+    const aby = (positions[b * 3 + 1] ?? 0) - ay;
+    const abz = (positions[b * 3 + 2] ?? 0) - az;
+    const acx = (positions[c * 3] ?? 0) - ax;
+    const acy = (positions[c * 3 + 1] ?? 0) - ay;
+    const acz = (positions[c * 3 + 2] ?? 0) - az;
+    const nx = aby * acz - abz * acy;
+    const ny = abz * acx - abx * acz;
+    const nz = abx * acy - aby * acx;
+    for (const index of [a, b, c]) {
+      normals[index * 3] = (normals[index * 3] ?? 0) + nx;
+      normals[index * 3 + 1] = (normals[index * 3 + 1] ?? 0) + ny;
+      normals[index * 3 + 2] = (normals[index * 3 + 2] ?? 0) + nz;
+    }
+  }
+  for (let offset = 0; offset < normals.length; offset += 3) {
+    const length = Math.hypot(
+      normals[offset] ?? 0,
+      normals[offset + 1] ?? 0,
+      normals[offset + 2] ?? 0,
+    );
+    if (length > 0) {
+      normals[offset] = (normals[offset] ?? 0) / length;
+      normals[offset + 1] = (normals[offset + 1] ?? 0) / length;
+      normals[offset + 2] = (normals[offset + 2] ?? 0) / length;
+    }
+  }
+  return { positions, normals, indices };
+}
+
+function meshSnapshot(
+  source: SceneObjectSnapshot,
+  name: string,
+  output: { positions: number[]; triangles: number[][]; volume_mm3: number },
+  provenance: string,
+): SceneObjectSnapshot {
+  const geometry = geometryFromWorker(output);
+  const min: [number, number, number] = [Infinity, Infinity, Infinity];
+  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
+  for (let offset = 0; offset < output.positions.length; offset += 3) {
+    for (let axis = 0; axis < 3; axis += 1) {
+      const value = output.positions[offset + axis] ?? 0;
+      min[axis] = Math.min(min[axis] ?? Infinity, value);
+      max[axis] = Math.max(max[axis] ?? -Infinity, value);
+    }
+  }
+  let surfaceAreaMm2 = 0;
+  for (let offset = 0; offset < geometry.indices.length; offset += 3) {
+    const a = geometry.indices[offset] ?? 0;
+    const b = geometry.indices[offset + 1] ?? 0;
+    const c = geometry.indices[offset + 2] ?? 0;
+    const ab = [0, 1, 2].map(
+      (axis) => (geometry.positions[b * 3 + axis] ?? 0) - (geometry.positions[a * 3 + axis] ?? 0),
+    );
+    const ac = [0, 1, 2].map(
+      (axis) => (geometry.positions[c * 3 + axis] ?? 0) - (geometry.positions[a * 3 + axis] ?? 0),
+    );
+    const cross = [
+      (ab[1] ?? 0) * (ac[2] ?? 0) - (ab[2] ?? 0) * (ac[1] ?? 0),
+      (ab[2] ?? 0) * (ac[0] ?? 0) - (ab[0] ?? 0) * (ac[2] ?? 0),
+      (ab[0] ?? 0) * (ac[1] ?? 0) - (ab[1] ?? 0) * (ac[0] ?? 0),
+    ];
+    surfaceAreaMm2 += Math.hypot(...cross) / 2;
+  }
+  return {
+    ...source,
+    name,
+    vertices: output.positions.length / 3,
+    triangles: output.triangles.length,
+    bounds: { min, max },
+    sizeMm: [max[0] - min[0], max[1] - min[1], max[2] - min[2]],
+    volumeMm3: output.volume_mm3,
+    surfaceAreaMm2,
+    watertight: true,
+    geometry,
+    provenance,
+  };
+}
+
+function uniqueObjectName(base: string, current: readonly SceneObjectSnapshot[]): string {
+  const used = new Set(current.map((object) => object.name));
+  if (!used.has(base)) return base;
+  let suffix = 2;
+  while (used.has(`${base}-${suffix}`)) suffix += 1;
+  return `${base}-${suffix}`;
 }
 
 function operationKind(mutation: ObjectMutation): ProjectOperation["kind"] {
@@ -353,8 +477,167 @@ export async function createRealProjectBridge(
     slice: () => unavailable("slice"),
     discoverPrinters: () => unavailable("printer-discovery"),
     sendJob: () => unavailable("send-job"),
-    boolean: () => unavailable("boolean"),
-    repair: () => unavailable("repair"),
+    async boolean(req: BooleanRequest): Promise<BooleanResult | { ok: false; error: string }> {
+      const sourceA = objects.find((object) => object.name === req.name_a);
+      const sourceB = objects.find((object) => object.name === req.name_b);
+      if (!sourceA || !sourceB) {
+        return { ok: false, error: `unknown object "${!sourceA ? req.name_a : req.name_b}"` };
+      }
+      if (sourceA.name === sourceB.name) {
+        return { ok: false, error: "boolean needs two distinct source objects" };
+      }
+      if (!sourceA.watertight || !sourceB.watertight) {
+        return { ok: false, error: "boolean requires watertight source objects" };
+      }
+      if (!sourceA.geometry || !sourceB.geometry) {
+        return { ok: false, error: "boolean source geometry is unavailable" };
+      }
+      const expectedRevision = revision;
+      try {
+        const reply = (await invoke("project_geometry_execute", {
+          operation: `boolean_${req.op === "add" ? "union" : req.op}`,
+          inputs: [sourceA, sourceB].map((source) => ({
+            positions: Array.from(source.geometry!.positions),
+            indices: Array.from(source.geometry!.indices),
+            transform: transformArray(source),
+          })),
+        })) as {
+          output: {
+            positions: number[];
+            triangles: number[][];
+            watertight: boolean;
+            volume_mm3: number;
+          };
+          blender_version: string;
+          transport: string;
+        };
+        if (!reply.output.watertight) {
+          return {
+            ok: false,
+            error: "geometry worker result failed its pinned validation contract",
+          };
+        }
+        const baseName = req.result_name?.trim() || `${sourceA.name}-bool`;
+        const resultName = uniqueObjectName(baseName, objects);
+        const capability = `geometry.boolean.${req.op === "add" ? "union" : req.op}`;
+        const provenance = `+bool ${req.op === "add" ? "union" : req.op} ${sourceA.name}∩${sourceB.name}; worker=blender-bridge.geometry.v1; Blender ${reply.blender_version}; ${capability}; ${reply.transport}`;
+        const result = {
+          ...meshSnapshot(sourceA, resultName, reply.output, provenance),
+          objectId: crypto.randomUUID(),
+          visible: true,
+          locked: false,
+          transform: { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, sx: 1, sy: 1, sz: 1 },
+          plateId: sourceA.plateId ?? sourceB.plateId,
+          printSettings: undefined,
+          filamentId: undefined,
+        } satisfies SceneObjectSnapshot;
+        const after = objects.map((object) =>
+          req.hide_sources && (object.name === sourceA.name || object.name === sourceB.name)
+            ? { ...object, visible: false }
+            : object,
+        );
+        after.push(result);
+        const operation: ProjectOperation = {
+          operation_id: crypto.randomUUID(),
+          kind: "boolean",
+          target_ids: [
+            sourceA.objectId ?? stableLegacyId(projectId, sourceA.name),
+            sourceB.objectId ?? stableLegacyId(projectId, sourceB.name),
+            result.objectId!,
+          ],
+          before: objects,
+          after,
+        };
+        await persist(expectedRevision, after, operation);
+        handle.onCommitEvent?.({
+          revision,
+          selection: { ...EMPTY_SELECTION, objectModeNames: objects.map((object) => object.name) },
+        });
+        const committed = objects.find((object) => object.objectId === result.objectId) ?? result;
+        return {
+          ok: true,
+          object: resultName,
+          revision,
+          vertices: committed.vertices,
+          triangles: committed.triangles,
+          watertight: true,
+          op: req.op,
+          objectSnapshot: committed,
+        };
+      } catch (error) {
+        return { ok: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    },
+    async repair(req: RepairRequest): Promise<RepairResult | { ok: false; error: string }> {
+      const source = objects.find((object) => object.name === req.name);
+      if (!source) return { ok: false, error: `unknown object "${req.name}"` };
+      if (source.watertight)
+        return { ok: false, error: `object "${req.name}" is already watertight` };
+      if (!source.geometry) return { ok: false, error: "repair source geometry is unavailable" };
+      const expectedRevision = revision;
+      try {
+        const reply = (await invoke("project_geometry_execute", {
+          operation: "repair",
+          inputs: [
+            {
+              positions: Array.from(source.geometry.positions),
+              indices: Array.from(source.geometry.indices),
+              transform: transformArray(source),
+            },
+          ],
+        })) as {
+          output: {
+            positions: number[];
+            triangles: number[][];
+            watertight: boolean;
+            volume_mm3: number;
+          };
+          blender_version: string;
+          transport: string;
+        };
+        if (!reply.output.watertight) {
+          return { ok: false, error: "repair did not produce validated pinned-worker geometry" };
+        }
+        const mode = req.mode === "copy" ? "copy" : "replace";
+        const provenance = `+repair ${mode}; worker=blender-bridge.geometry.v1; Blender ${reply.blender_version}; geometry.repair; ${reply.transport}`;
+        const name =
+          mode === "copy" ? uniqueObjectName(`${source.name}-repair`, objects) : source.name;
+        const repaired = {
+          ...meshSnapshot(source, name, reply.output, provenance),
+          objectId: mode === "copy" ? crypto.randomUUID() : source.objectId,
+          visible: mode === "copy" ? true : source.visible,
+          locked: mode === "copy" ? false : source.locked,
+          transform: source.transform,
+        } satisfies SceneObjectSnapshot;
+        const after =
+          mode === "copy"
+            ? [...objects, repaired]
+            : objects.map((object) => (object.objectId === source.objectId ? repaired : object));
+        const operation: ProjectOperation = {
+          operation_id: crypto.randomUUID(),
+          kind: "repair",
+          target_ids:
+            mode === "copy"
+              ? [
+                  source.objectId ?? stableLegacyId(projectId, source.name),
+                  repaired.objectId ?? stableLegacyId(projectId, repaired.name),
+                ]
+              : [source.objectId ?? stableLegacyId(projectId, source.name)],
+          before: objects,
+          after,
+        };
+        await persist(expectedRevision, after, operation);
+        handle.onCommitEvent?.({
+          revision,
+          selection: { ...EMPTY_SELECTION, objectModeNames: objects.map((object) => object.name) },
+        });
+        const committed = objects.find((object) => object.name === name);
+        if (!committed) return { ok: false, error: "committed repair result is missing" };
+        return { ok: true, object: name, revision, mode, objectSnapshot: committed };
+      } catch (error) {
+        return { ok: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    },
     printerControl: () => unavailable("printer-control"),
     listFiles: () => unavailable("printer-files"),
     sendFile: () => unavailable("send-file"),

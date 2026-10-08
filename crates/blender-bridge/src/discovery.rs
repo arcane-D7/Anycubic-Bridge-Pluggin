@@ -36,6 +36,10 @@ pub enum DiscoveryError {
         found: String,
         expected: String,
     },
+    #[error(
+        "Blender `{bin}` did not produce a version artifact; pinned identity cannot be verified"
+    )]
+    VersionUnavailable { bin: String },
     #[error("cannot stat candidate `{path}`: {source}")]
     Stat {
         path: String,
@@ -245,12 +249,8 @@ pub fn resolve(required_version: Option<&str>) -> Result<BlenderInstall, Discove
         // is authoritative for both.
         let version = query_version(&cand)?;
         if version.is_empty() {
-            // Alias swallowed everything (older alias edge case) — trust
-            // presence but record empty and let the version check decide.
-            return Ok(BlenderInstall {
-                exe: cand,
-                kind,
-                version: expected.clone(),
+            return Err(DiscoveryError::VersionUnavailable {
+                bin: cand.display().to_string(),
             });
         }
         if numeric_core(&version) != numeric_core(&expected) {

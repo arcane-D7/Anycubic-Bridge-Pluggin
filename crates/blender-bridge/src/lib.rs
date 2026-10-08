@@ -18,6 +18,7 @@
 //!   write boundary and an explicit glTF coverage stub. (S7-006)
 
 pub mod discovery;
+pub mod geometry;
 pub mod io;
 pub mod ipc;
 pub mod journal;

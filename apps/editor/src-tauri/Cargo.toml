@@ -28,4 +28,5 @@ tauri = { version = "2", features = [] }
 serde = "1"
 serde_json = "1"
 broker = { path = "../../../crates/broker" }
+blender-bridge = { path = "../../../crates/blender-bridge" }
 project-store = { path = "../../../crates/project-store" }

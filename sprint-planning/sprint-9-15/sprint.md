@@ -12,7 +12,7 @@
 | **Primary Owner**     | Project authority, geometry IPC and worker adapters                                                                                         |
 | **Source**            | [Editor workspace CAD/AI audit](../../docs/audit/editor-workspace-cad-ai-audit-2026-10-07.md), AUD-07/AUD-08/AUD-13; sections 6, 13, 18, 19 |
 | **Depends On**        | Sprint 9.14                                                                                                                                 |
-| **Status**            | 🔄 In progress (2/4 delivered; S9.15-003 next)                                                                                              |
+| **Status**            | 🔄 In progress (3/4 delivered; S9.15-004 next)                                                                                              |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -147,7 +147,7 @@ Fixed snapshot revisions and recreated journals make stale artifacts, undo and c
 | **Type**             | Feature + Validation                                                        |
 | **Estimated Effort** | XL                                                                          |
 | **Source Finding**   | AUD-07; CAD-05–CAD-06; audit sections 6.2, 13.7–13.8                        |
-| **Status**           | ⏳ Planned                                                                  |
+| **Status**           | ✅ Delivered                                                                |
 
 #### Context
 
@@ -155,12 +155,45 @@ Changing `watertight` or returning fixture geometry is not repair/boolean. Conne
 
 #### Acceptance Criteria
 
-- [ ] **CAD-05:** A defective mesh is measurably repaired or refused/partial with diagnostics; no flag-only success.
-- [ ] **CAD-06:** Boolean output is new validated geometry with provenance, source handling and undo information.
-- [ ] Worker identity/version/capability, limits, cancellation and unavailable state are explicit; no raw model-provided scripts/handles.
-- [ ] Seeded worker failure, timeout, oversized input, source visibility and rollback are tested.
-- [ ] Demo results remain labeled and cannot pass real-backend acceptance.
-- [ ] Run worker corpus/integration checks, full gate and sanitizer dry-run successfully.
+- [x] **CAD-05:** A defective mesh is measurably repaired or refused/partial with diagnostics; no flag-only success.
+- [x] **CAD-06:** Boolean output is new validated geometry with provenance, source handling and undo information.
+- [x] Worker identity/version/capability, limits, cancellation and unavailable state are explicit; no raw model-provided scripts/handles.
+- [x] Seeded worker failure, timeout, oversized input, source visibility and rollback are tested.
+- [x] Demo results remain labeled and cannot pass real-backend acceptance.
+- [x] Run worker corpus/integration checks, full gate and sanitizer dry-run successfully.
+
+#### Implementation Notes (S9.15-003)
+
+- `blender-bridge::geometry` discovers only the configured pinned Blender version
+  (`ANYCUBIC_BLENDER_VERSION`, default `5.2.2`) and dispatches a closed enum of
+  repair/union/subtract/intersect operations to an embedded, fixed Python worker.
+  No user/model-provided Python or Blender handles cross the boundary.
+- Worker input is bounded to 64 MiB, 250,000 vertices and 500,000 triangles;
+  output is bounded to 128 MiB and the same mesh limits. A 120-second wall-clock
+  kill and 30-second external heartbeat watchdog terminate stalled workers. Boolean
+  inputs must be consistently oriented closed two-manifolds; repair can refuse
+  geometry it cannot close.
+- Rust independently validates finite coordinates, index ranges, non-degenerate
+  triangles, oriented edge incidence, closed two-manifold topology and signed
+  volume before returning an artifact. Geometry is staged in scratch and removed
+  after parse/validation. Boolean results bake source transforms into new geometry;
+  repair preserves local geometry and object placement. The project authority
+  commits validated meshes with expected-revision checks, content-addressed storage,
+  typed before/after journal entries and operation provenance. Boolean sources are
+  retained or hidden per request; repair supports replace or copy.
+- Persisted provenance records the named capability, `blender-bridge.geometry.v1`,
+  Blender version and transport. Worker failure, timeout, stale post-worker commit,
+  source visibility, rollback, input bounds and independently rejected malformed
+  output have focused coverage. Demo remains isolated from this real-provider path.
+- Focused checks completed: `cargo test -p blender-bridge` (40 unit, 3 I/O, 2
+  journal, 3 watchdog passed; pinned-worker test is intentionally opt-in) and
+  `cargo test -p blender-bridge --test geometry_worker -- --ignored --nocapture`
+  (real Blender repair plus union/subtract/intersect and transformed operand checks,
+  passed). `node --test tests/project-provider.test.mjs` passed 9/9. Full
+  `pnpm run check` passed: unit and 11 integration tests, Rust workspace plus
+  editor shell, build 255608 bytes, 115-tool smoke, both E2E suites, 59 license
+  checks, architecture check, and integrated sanitizer (0 files/groups). Standalone
+  sanitizer dry-run also passed with 0 files/groups.
 
 ### S9.15-004 — Frame, unit and selection revision contracts
 

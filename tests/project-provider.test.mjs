@@ -263,3 +263,168 @@ test("real transform conflict rebases to the authority snapshot and discards pro
   assert.equal(racedHandle.revision, 5);
   assert.deepEqual(racedHandle.objects[0].transform, { x: 2, y: 0, z: 0 });
 });
+
+test("real geometry lanes persist worker meshes and preserve boolean source policy", async () => {
+  const { createRealProjectBridge } = await import(
+    pathToFileURL(path.join(root, "apps/editor/src/bridge/real-project-bridge.ts")).href
+  );
+  const positions = [0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1];
+  const indices = [
+    0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7, 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0,
+    4, 3, 4, 7,
+  ];
+  const object = (name, x, watertight) => ({
+    name,
+    objectId: `id-${name}`,
+    vertices: 8,
+    triangles: watertight ? 12 : 10,
+    bounds: { min: [0, 0, 0], max: [1, 1, 1] },
+    sizeMm: [1, 1, 1],
+    volumeMm3: 1,
+    surfaceAreaMm2: 6,
+    watertight,
+    geometry: {
+      positions,
+      normals: Array(24).fill(0),
+      indices: watertight ? indices : indices.slice(0, 30),
+    },
+    visible: true,
+    locked: false,
+    transform: { x, y: 0, z: 0 },
+  });
+  let revision = 0;
+  let project = {
+    id: "p",
+    name: "P",
+    objects: [object("a", 0, true), object("b", 0.5, true), object("open", 2, false)],
+  };
+  const calls = [];
+  const workerOutput = {
+    positions,
+    triangles: Array.from({ length: 12 }, (_, index) => indices.slice(index * 3, index * 3 + 3)),
+    watertight: true,
+    volume_mm3: 1,
+  };
+  const invoke = async (command, args) => {
+    calls.push({ command, args });
+    if (command === "project_geometry_execute") {
+      return { output: workerOutput, blender_version: "5.2.2 LTS", transport: "filechannel" };
+    }
+    if (command !== "project_authority_commit") throw new Error(`unexpected ${command}`);
+    if (args.expectedRevision !== revision) {
+      return {
+        status: "conflict",
+        actual_revision: revision,
+        snapshot: { project, revision },
+        diagnostics: ["conflict"],
+      };
+    }
+    project = args.project;
+    revision += 1;
+    return {
+      status: "committed",
+      actual_revision: revision,
+      snapshot: { project, revision },
+      diagnostics: [],
+    };
+  };
+  const bridge = await createRealProjectBridge(invoke, { project, revision });
+
+  const boolean = await bridge.boolean({ name_a: "a", name_b: "b", op: "add", hide_sources: true });
+  assert.equal(boolean.ok, true);
+  assert.equal(boolean.revision, 1);
+  assert.equal(calls[0].args.operation, "boolean_union");
+  assert.equal(project.objects.find((entry) => entry.name === "a").visible, false);
+  assert.equal(project.objects.find((entry) => entry.name === "b").visible, false);
+  assert.deepEqual(
+    project.objects.find((entry) => entry.name === "a-bool").geometry.indices,
+    indices,
+  );
+  assert.match(
+    project.objects.find((entry) => entry.name === "a-bool").provenance,
+    /worker=blender-bridge\.geometry\.v1; Blender 5\.2\.2 LTS; geometry\.boolean\.union; filechannel/,
+  );
+  assert.equal(calls[1].args.operation.kind, "boolean");
+
+  const copied = await bridge.repair({ name: "open", mode: "copy" });
+  assert.equal(copied.ok, true);
+  assert.equal(copied.revision, 2);
+  assert.equal(copied.objectSnapshot.name, "open-repair");
+  assert.equal(project.objects.find((entry) => entry.name === "open").watertight, false);
+  assert.equal(project.objects.find((entry) => entry.name === "open").visible, true);
+  assert.equal(project.objects.find((entry) => entry.name === "open-repair").watertight, true);
+  assert.match(
+    project.objects.find((entry) => entry.name === "open-repair").provenance,
+    /worker=blender-bridge\.geometry\.v1; Blender 5\.2\.2 LTS; geometry\.repair; filechannel/,
+  );
+  assert.equal(calls.at(-1).args.operation.kind, "repair");
+
+  const repaired = await bridge.repair({ name: "open", mode: "replace" });
+  assert.equal(repaired.ok, true);
+  assert.equal(repaired.revision, 3);
+  assert.equal(repaired.objectSnapshot.name, "open");
+  assert.equal(project.objects.find((entry) => entry.name === "open").watertight, true);
+  assert.equal(calls.at(-1).args.operation.kind, "repair");
+});
+
+test("real geometry failures and stale worker results never commit partial state", async () => {
+  const { createRealProjectBridge } = await import(
+    pathToFileURL(path.join(root, "apps/editor/src/bridge/real-project-bridge.ts")).href
+  );
+  const geometry = { positions: [0, 0, 0], normals: [0, 0, 0], indices: [0, 0, 0] };
+  const part = {
+    name: "part",
+    objectId: "part-id",
+    vertices: 1,
+    triangles: 1,
+    bounds: { min: [0, 0, 0], max: [1, 1, 1] },
+    sizeMm: [1, 1, 1],
+    volumeMm3: 1,
+    surfaceAreaMm2: 1,
+    watertight: false,
+    geometry,
+    visible: true,
+    locked: false,
+  };
+  let revision = 4;
+  const project = { id: "p", name: "P", objects: [part] };
+  let commits = 0;
+  const invoke = async (command, args) => {
+    if (command === "project_geometry_execute") {
+      return {
+        output: { positions: [0, 0, 0], triangles: [[0, 0, 0]], watertight: true, volume_mm3: 1 },
+        blender_version: "5.2.2 LTS",
+      };
+    }
+    if (command === "project_authority_commit") {
+      commits += 1;
+      assert.equal(args.expectedRevision, 4);
+      revision = 5;
+      return {
+        status: "conflict",
+        actual_revision: 5,
+        snapshot: { project, revision },
+        diagnostics: ["conflict"],
+      };
+    }
+    throw new Error(`unexpected ${command}`);
+  };
+  const bridge = await createRealProjectBridge(invoke, { project, revision: 4 });
+  const result = await bridge.repair({ name: "part", mode: "replace" });
+  assert.equal(result.ok, false);
+  assert.match(result.error, /stale commit: expected 4, actual 5/);
+  assert.equal(commits, 1);
+  assert.equal(bridge.objects[0].watertight, false);
+
+  const refusing = await createRealProjectBridge(
+    async (command) => {
+      if (command === "project_geometry_execute") throw new Error("worker timed out");
+      throw new Error("commit must not be called");
+    },
+    { project, revision: 4 },
+  );
+  const failed = await refusing.repair({ name: "part", mode: "copy" });
+  assert.equal(failed.ok, false);
+  assert.match(failed.error, /worker timed out/);
+  assert.equal(refusing.objects.length, 1);
+});
