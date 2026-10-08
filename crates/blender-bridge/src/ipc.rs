@@ -55,8 +55,14 @@ impl fmt::Display for SessionId {
 }
 
 /// Monotonic revision counter (per project/session).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Revision(pub u64);
+
+impl fmt::Display for Revision {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 impl Revision {
     pub fn next(self) -> Self {
@@ -71,20 +77,146 @@ impl Revision {
 /// onto the authoritative post-op indices. Never mutated by the UI.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct RemapTable {
+    /// Mesh revision that produced the local indices in this table.
+    pub source_revision: Revision,
+    /// Mesh revision represented by the returned local indices.
+    pub target_revision: Revision,
     /// `stable_id → Vec<local_index>` (a stable face may split into several).
     pub entries: Vec<(String, Vec<u64>)>,
     /// Local indices that no longer exist after the op.
     pub removed_local_indices: Vec<u64>,
+    /// Stable identities explicitly removed by the topology operation.
+    #[serde(default)]
+    pub removed_stable_ids: Vec<String>,
 }
 
 /// Authoritative selection state, always from Blender (`selection_state`).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SelectionState {
+    /// Revision of the mesh to which these local indices belong.
+    pub mesh_revision: Revision,
+    /// Stable element identities and their topology kind.
+    #[serde(default)]
+    pub elements: Vec<SelectedElement>,
     /// Edit-mode vert indices selected after the op round-trip.
     pub verts: Vec<u64>,
     pub faces: Vec<u64>,
     pub edges: Vec<u64>,
     pub object_mode_names: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ElementKind {
+    Vert,
+    Edge,
+    Face,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SelectedElement {
+    pub stable_id: String,
+    pub kind: ElementKind,
+}
+
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+pub enum SelectionError {
+    #[error(
+        "selection revision {selection} does not match remap source revision {source_revision}"
+    )]
+    StaleRevision {
+        selection: Revision,
+        source_revision: Revision,
+    },
+    #[error("selection contains an element without a stable identity: {0}")]
+    MissingStableIdentity(u64),
+    #[error("selected stable element has no remap entry: {0}")]
+    MissingRemap(String),
+    #[error("remap table contains duplicate stable element id: {0}")]
+    DuplicateRemap(String),
+    #[error("selection indices do not match stable identities for {0:?} elements")]
+    SelectionShapeMismatch(ElementKind),
+    #[error("remap target revision must be newer than its source revision")]
+    InvalidRevisionRange,
+}
+
+/// Rebase a topology selection only through the remap for its exact source mesh.
+pub fn rebase_selection(
+    selection: &SelectionState,
+    remap: &RemapTable,
+) -> Result<SelectionState, SelectionError> {
+    if selection.mesh_revision != remap.source_revision {
+        return Err(SelectionError::StaleRevision {
+            selection: selection.mesh_revision,
+            source_revision: remap.source_revision,
+        });
+    }
+    if remap.target_revision <= remap.source_revision {
+        return Err(SelectionError::InvalidRevisionRange);
+    }
+
+    let entries: std::collections::BTreeMap<_, _> = remap.entries.iter().cloned().collect();
+    if entries.len() != remap.entries.len() {
+        let mut seen = std::collections::BTreeSet::new();
+        let duplicate = remap
+            .entries
+            .iter()
+            .map(|(stable_id, _)| stable_id)
+            .find(|stable_id| !seen.insert(*stable_id))
+            .expect("length mismatch means a duplicate exists");
+        return Err(SelectionError::DuplicateRemap(duplicate.clone()));
+    }
+    let removed: std::collections::BTreeSet<_> = remap.removed_stable_ids.iter().collect();
+    let selected_indices: std::collections::BTreeSet<_> = selection
+        .verts
+        .iter()
+        .chain(&selection.edges)
+        .chain(&selection.faces)
+        .copied()
+        .collect();
+    if selection.elements.is_empty() && !selected_indices.is_empty() {
+        return Err(SelectionError::MissingStableIdentity(
+            *selected_indices.first().expect("non-empty selection"),
+        ));
+    }
+    for (kind, indices) in [
+        (ElementKind::Vert, &selection.verts),
+        (ElementKind::Edge, &selection.edges),
+        (ElementKind::Face, &selection.faces),
+    ] {
+        let stable_count = selection
+            .elements
+            .iter()
+            .filter(|element| element.kind == kind)
+            .count();
+        if stable_count != indices.len() {
+            return Err(SelectionError::SelectionShapeMismatch(kind));
+        }
+    }
+    let mut rebased = SelectionState {
+        mesh_revision: remap.target_revision,
+        elements: Vec::new(),
+        object_mode_names: selection.object_mode_names.clone(),
+        ..SelectionState::default()
+    };
+
+    for element in &selection.elements {
+        if removed.contains(&element.stable_id) {
+            continue;
+        }
+        let indices = entries
+            .get(&element.stable_id)
+            .ok_or_else(|| SelectionError::MissingRemap(element.stable_id.clone()))?;
+        rebased.elements.push(element.clone());
+        match element.kind {
+            ElementKind::Vert => rebased.verts.extend(indices.iter().copied()),
+            ElementKind::Edge => rebased.edges.extend(indices.iter().copied()),
+            ElementKind::Face => rebased.faces.extend(indices.iter().copied()),
+        }
+    }
+    rebased.verts.sort_unstable();
+    rebased.verts.dedup();
+    Ok(rebased)
 }
 
 /// A command frame over the wire.
@@ -473,9 +605,125 @@ impl fmt::Display for SessionState {
 mod tests {
     use super::*;
 
+    fn topology_selection(revision: Revision) -> SelectionState {
+        SelectionState {
+            mesh_revision: revision,
+            elements: vec![
+                SelectedElement {
+                    stable_id: "vertex-a".into(),
+                    kind: ElementKind::Vert,
+                },
+                SelectedElement {
+                    stable_id: "edge-a".into(),
+                    kind: ElementKind::Edge,
+                },
+                SelectedElement {
+                    stable_id: "face-a".into(),
+                    kind: ElementKind::Face,
+                },
+            ],
+            verts: vec![2],
+            edges: vec![3],
+            faces: vec![4],
+            ..SelectionState::default()
+        }
+    }
+
+    fn topology_remap() -> RemapTable {
+        RemapTable {
+            source_revision: Revision(4),
+            target_revision: Revision(5),
+            entries: vec![
+                ("vertex-a".into(), vec![12]),
+                ("edge-a".into(), vec![13]),
+                ("face-a".into(), vec![14, 15]),
+            ],
+            removed_local_indices: vec![4],
+            removed_stable_ids: vec![],
+        }
+    }
+
     #[test]
     fn revision_increments() {
         assert_eq!(Revision(1).next(), Revision(2));
+    }
+
+    #[test]
+    fn topology_selection_rebases_by_revision_and_element_kind() {
+        let selection = topology_selection(Revision(4));
+        let rebased = rebase_selection(&selection, &topology_remap()).unwrap();
+        assert_eq!(rebased.mesh_revision, Revision(5));
+        assert_eq!(rebased.verts, vec![12]);
+        assert_eq!(rebased.edges, vec![13]);
+        assert_eq!(rebased.faces, vec![14, 15]);
+        assert_eq!(rebased.elements, selection.elements);
+    }
+
+    #[test]
+    fn topology_selection_rejects_stale_source_revision() {
+        let err =
+            rebase_selection(&topology_selection(Revision(3)), &topology_remap()).unwrap_err();
+        assert_eq!(
+            err,
+            SelectionError::StaleRevision {
+                selection: Revision(3),
+                source_revision: Revision(4),
+            }
+        );
+    }
+
+    #[test]
+    fn topology_revision_fields_are_required_on_the_wire() {
+        assert!(serde_json::from_str::<SelectionState>("{}").is_err());
+        assert!(
+            serde_json::from_str::<RemapTable>(
+                r#"{"entries":[],"removed_local_indices":[],"removed_stable_ids":[]}"#
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn topology_selection_rejects_duplicate_remap_ids() {
+        let mut remap = topology_remap();
+        remap.entries.push(("vertex-a".into(), vec![99]));
+        assert!(matches!(
+            rebase_selection(&topology_selection(Revision(4)), &remap),
+            Err(SelectionError::DuplicateRemap(id)) if id == "vertex-a"
+        ));
+    }
+
+    #[test]
+    fn topology_selection_rejects_index_and_identity_count_mismatch() {
+        let mut selection = topology_selection(Revision(4));
+        selection.verts.push(7);
+        assert_eq!(
+            rebase_selection(&selection, &topology_remap()).unwrap_err(),
+            SelectionError::SelectionShapeMismatch(ElementKind::Vert)
+        );
+    }
+
+    #[test]
+    fn topology_selection_drops_explicitly_removed_stable_elements() {
+        let mut remap = topology_remap();
+        remap.entries.retain(|(id, _)| id != "face-a");
+        remap.removed_stable_ids.push("face-a".into());
+        let rebased = rebase_selection(&topology_selection(Revision(4)), &remap).unwrap();
+        assert_eq!(rebased.faces, Vec::<u64>::new());
+        assert_eq!(rebased.elements.len(), 2);
+    }
+
+    #[test]
+    fn topology_selection_rejects_local_indices_without_stable_ids() {
+        let selection = SelectionState {
+            mesh_revision: Revision(4),
+            verts: vec![2],
+            ..SelectionState::default()
+        };
+        assert!(matches!(
+            rebase_selection(&selection, &topology_remap()),
+            Err(SelectionError::MissingStableIdentity(2))
+        ));
     }
 
     #[test]

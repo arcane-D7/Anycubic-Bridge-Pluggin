@@ -63,26 +63,119 @@ export function applyTransform(t: SceneTransform | undefined): GroupTransformPro
   };
 }
 
-/**
- * S9.10-001 — "lay on plate" (OrcaSlicer/BambuStudio convention): compute a
- * transform whose WORLD min-Y touches the plate top (Y=0) — objects must
- * never sit through the bed. With the snapshot's mesh-offset semantics
- * (world = transform + bounds*scale), the world bottom is
- * `transform.y + bounds.min[1] * sy`, so settling means
- * `transform.y = -bounds.min[1] * sy`. X/Z and rotation/scale are preserved.
- * Pure — no three.js — headless-testable.
- */
+export interface Bounds3Mm {
+  readonly min: readonly [number, number, number];
+  readonly max: readonly [number, number, number];
+}
+
+function validateParentMatrix(matrix: readonly number[] | undefined): void {
+  if (matrix && (matrix.length !== 16 || matrix.some((value) => !Number.isFinite(value)))) {
+    throw new Error("parent world transform must be a finite 4x4 matrix");
+  }
+}
+
+/** Transform the eight corners of evaluated local bounds into editor-world mm. */
+export function evaluatedBoundsWorld(
+  bounds: Bounds3Mm,
+  transform?: SceneTransform,
+  parentWorldMatrix?: readonly number[],
+): Bounds3Mm {
+  validateParentMatrix(parentWorldMatrix);
+  if (
+    [...bounds.min, ...bounds.max].some((value) => !Number.isFinite(value)) ||
+    bounds.min.some((value, axis) => value > bounds.max[axis]!)
+  ) {
+    throw new Error("evaluated bounds must be finite and ordered");
+  }
+  const n = normalizeTransform(transform);
+  const [rx, ry, rz] = [n.rx, n.ry, n.rz].map((degrees) => (degrees * Math.PI) / 180);
+  const [sinX, sinY, sinZ] = [Math.sin(rx!), Math.sin(ry!), Math.sin(rz!)];
+  const [cosX, cosY, cosZ] = [Math.cos(rx!), Math.cos(ry!), Math.cos(rz!)];
+  const min: [number, number, number] = [Infinity, Infinity, Infinity];
+  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
+  for (const x of [bounds.min[0], bounds.max[0]]) {
+    for (const y of [bounds.min[1], bounds.max[1]]) {
+      for (const z of [bounds.min[2], bounds.max[2]]) {
+        const sx = x * n.sx;
+        const sy = y * n.sy;
+        const sz = z * n.sz;
+        const local: [number, number, number] = [
+          n.x +
+            sx * cosZ! * cosY! +
+            sy * (cosZ! * sinY! * sinX! - sinZ! * cosX!) +
+            sz * (cosZ! * sinY! * cosX! + sinZ! * sinX!),
+          n.y +
+            sx * sinZ! * cosY! +
+            sy * (cosZ! * cosX! + sinZ! * sinY! * sinX!) +
+            sz * (-cosZ! * sinX! + sinZ! * sinY! * cosX!),
+          n.z - sx * sinY! + sy * cosY! * sinX! + sz * cosY! * cosX!,
+        ];
+        const matrix = parentWorldMatrix;
+        const world: [number, number, number] = matrix
+          ? [
+              matrix[0]! * local[0] + matrix[4]! * local[1] + matrix[8]! * local[2] + matrix[12]!,
+              matrix[1]! * local[0] + matrix[5]! * local[1] + matrix[9]! * local[2] + matrix[13]!,
+              matrix[2]! * local[0] + matrix[6]! * local[1] + matrix[10]! * local[2] + matrix[14]!,
+            ]
+          : local;
+        for (const axis of [0, 1, 2] as const) {
+          min[axis] = Math.min(min[axis], world[axis]);
+          max[axis] = Math.max(max[axis], world[axis]);
+        }
+      }
+    }
+  }
+  return { min, max };
+}
+
+/** Convert a world translation vector into the parent's local coordinate frame. */
+export function worldTranslationToParentLocal(
+  delta: readonly [number, number, number],
+  parentWorldMatrix?: readonly number[],
+): [number, number, number] {
+  validateParentMatrix(parentWorldMatrix);
+  if (!parentWorldMatrix) return [...delta];
+  const m = parentWorldMatrix;
+  const a = m[0]!;
+  const b = m[4]!;
+  const c = m[8]!;
+  const d = m[1]!;
+  const e = m[5]!;
+  const f = m[9]!;
+  const g = m[2]!;
+  const h = m[6]!;
+  const i = m[10]!;
+  const determinant = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+  if (!Number.isFinite(determinant) || Math.abs(determinant) < 1e-12) {
+    throw new Error("parent world transform is not invertible");
+  }
+  return [
+    ((e * i - f * h) * delta[0] + (c * h - b * i) * delta[1] + (b * f - c * e) * delta[2]) /
+      determinant,
+    ((f * g - d * i) * delta[0] + (a * i - c * g) * delta[1] + (c * d - a * f) * delta[2]) /
+      determinant,
+    ((d * h - e * g) * delta[0] + (b * g - a * h) * delta[1] + (a * e - b * d) * delta[2]) /
+      determinant,
+  ];
+}
+
+/** Drop only the world-vertical delta needed to place evaluated bounds on the plate. */
 export function settleOnPlateTransform(o: {
-  readonly bounds: { readonly min: readonly [number, number, number] };
+  readonly bounds: Bounds3Mm;
   readonly transform?: SceneTransform;
+  readonly plateTopYmm?: number;
+  readonly parentWorldMatrix?: readonly number[];
 }): SceneTransform {
   const n = normalizeTransform(o.transform);
-  const minY = o.bounds.min[1];
-  // `-0` (from -0*sy) is a nasty equality trap — normalize to 0.
+  const worldBounds = evaluatedBoundsWorld(o.bounds, n, o.parentWorldMatrix);
+  const delta = worldTranslationToParentLocal(
+    [0, (o.plateTopYmm ?? 0) - worldBounds.min[1], 0],
+    o.parentWorldMatrix,
+  );
   return {
-    x: n.x,
-    y: -minY * n.sy || 0,
-    z: n.z,
+    x: n.x + delta[0],
+    y: n.y + delta[1] || 0,
+    z: n.z + delta[2],
     rx: n.rx,
     ry: n.ry,
     rz: n.rz,

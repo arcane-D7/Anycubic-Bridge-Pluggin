@@ -161,14 +161,15 @@ test("object action context preserves selected targets and revalidates revision 
 
 test("buildObjectMenuItems: full action set + repair only when non-watertight", async () => {
   const items = await itemsPromise;
-  const calls = { dup: 0, ren: 0, vis: 0, place: 0, rep: [], rem: 0 };
+  const calls = { dup: 0, ren: 0, vis: 0, center: 0, drop: 0, rep: [], rem: 0 };
   const menu = items.buildObjectMenuItems(
     { name: "cone", visible: true, watertight: false },
     {
       onDuplicate: () => calls.dup++,
       onRename: () => calls.ren++,
       onToggleVisible: () => calls.vis++,
-      onPlaceOnPlate: () => calls.place++,
+      onCenterOnPlate: () => calls.center++,
+      onDropToPlate: () => calls.drop++,
       onRepair: (m) => calls.rep.push(m),
       onRemove: () => calls.rem++,
     },
@@ -178,13 +179,19 @@ test("buildObjectMenuItems: full action set + repair only when non-watertight", 
     "duplicate",
     "rename",
     "toggle-visible",
-    "place-on-plate",
+    "center-on-plate",
+    "drop-to-plate",
     "repair-replace",
     "repair-copy",
     "delete",
   ]);
   assert.equal(menu.find((i) => i.id === "delete")?.danger, true);
   assert.equal(menu.find((i) => i.id === "repair-replace")?.separatorBefore, true);
+
+  menu.find((i) => i.id === "center-on-plate")?.onSelect();
+  menu.find((i) => i.id === "drop-to-plate")?.onSelect();
+  assert.equal(calls.center, 1);
+  assert.equal(calls.drop, 1);
 
   // Trigger the repair + delete handlers.
   menu.find((i) => i.id === "repair-copy")?.onSelect();
@@ -201,7 +208,8 @@ test("buildObjectMenuItems: watertight objects get no repair entries", async () 
       onDuplicate: () => {},
       onRename: () => {},
       onToggleVisible: () => {},
-      onPlaceOnPlate: () => {},
+      onCenterOnPlate: () => {},
+      onDropToPlate: () => {},
       onRepair: () => {},
       onRemove: () => {},
     },

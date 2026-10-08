@@ -17,6 +17,8 @@ import {
 const CUBE_META = {
   version: "1.0",
   dialect: "anycubic",
+  coordinate_frame: "slice-ir",
+  units: "mm",
   mode: "standard",
   profile_fingerprint: "f0a10c6050c985e3",
   build_volume: { x: 220, y: 220, z: 250 },
@@ -81,6 +83,8 @@ test("toIrSegment projects pose/orientation/bead/flow/cooling/speed/provenance",
 
 test("toIrDocument projects a mode-tagged IR document v1", () => {
   const ir = toIrDocument(CUBE_META);
+  assert.equal(ir.coordinate_frame, "slice-ir");
+  assert.equal(ir.units, "mm");
   assert.equal(ir.version, IR_VERSION);
   assert.equal(ir.mode, "standard");
   assert.equal(ir.dialect, "anycubic");
@@ -157,6 +161,21 @@ test("independent validator: unsupported dialect rejected with whitelist", () =>
   assert.ok(d);
   assert.ok(errors.some((e) => e.reason.includes("prusa")));
   assert.deepEqual(DIALECT_WHITELIST, ["anycubic", "cura"]);
+});
+
+test("independent validator: rejects unknown coordinate frame and units", () => {
+  const frame = validateIr({ ...toIrDocument(CUBE_META), coordinate_frame: "editor-world" });
+  assert.equal(frame.pass, false);
+  assert.ok(frame.errors.some((error) => error.code === "COORDINATE_FRAME"));
+  const units = validateIr({ ...toIrDocument(CUBE_META), units: "in" });
+  assert.equal(units.pass, false);
+  assert.ok(units.errors.some((error) => error.code === "UNITS"));
+});
+
+test("independent validator: rejects the pre-frame IR schema version", () => {
+  const result = validateIr({ ...toIrDocument(CUBE_META), version: "1.0" });
+  assert.equal(result.pass, false);
+  assert.ok(result.errors.some((error) => error.code === "IR_VERSION"));
 });
 
 test("independent validator: nonplanar segment with no Z is a mode-consistency warning", () => {

@@ -27,11 +27,13 @@ export interface IrDocument {
   readonly version: string;
   readonly mode: SlicingMode;
   readonly dialect: string;
+  readonly coordinate_frame: "slice-ir";
+  readonly units: "mm";
   readonly build_volume?: { readonly x: number; readonly y: number; readonly z: number } | null;
   readonly segments: readonly IrSegment[];
 }
 
-const IR_VERSION = "1.0";
+const IR_VERSION = "1.1";
 const IR_KINDS = new Set(["WALL", "INFILL", "BRIM", "SKIRT", "TRAVEL"]);
 const IR_MAX_SEGMENTS = 200_000;
 const IR_Z_EPSILON = 1e-6;
@@ -135,6 +137,12 @@ export function parseIrDocument(input: unknown): IrDocument {
   if (input.dialect !== "anycubic" && input.dialect !== "cura") {
     irFail(`dialect (${JSON.stringify(input.dialect)}) must be "anycubic" or "cura"`);
   }
+  if (input.coordinate_frame !== "slice-ir") {
+    irFail(`coordinate_frame (${JSON.stringify(input.coordinate_frame)}) must be "slice-ir"`);
+  }
+  if (input.units !== "mm") {
+    irFail(`units (${JSON.stringify(input.units)}) must be "mm"`);
+  }
   let buildVolume: IrDocument["build_volume"];
   if (input.build_volume !== undefined) {
     if (input.build_volume === null) {
@@ -164,6 +172,8 @@ export function parseIrDocument(input: unknown): IrDocument {
     version: IR_VERSION,
     mode: docMode,
     dialect: input.dialect,
+    coordinate_frame: "slice-ir",
+    units: "mm",
     segments,
     ...(buildVolume !== undefined ? { build_volume: buildVolume } : {}),
   };

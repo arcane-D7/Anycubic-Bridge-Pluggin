@@ -24,7 +24,7 @@
  */
 import assert from "node:assert/strict";
 
-export const IR_VERSION = "1.0";
+export const IR_VERSION = "1.1";
 export const DIALECT_WHITELIST = ["anycubic", "cura"];
 
 /** The slice-cache key MUST include the mode (§3.0a). */
@@ -91,7 +91,7 @@ export function toIrSegment(engineSeg, layerIndex, mode, opts = {}) {
  *
  * @param {object|string} sliceMeta — JSON string or object (from planar-core `slice-json`)
  * @param {object} opts — { speed_mm_s, cooling_fan_pct, provenance, chainGapMm }
- * @returns {object} {version, mode, dialect, profile_fingerprint, build_volume, segments}
+ * @returns {object} {version, mode, dialect, coordinate_frame, units, profile_fingerprint, build_volume, segments}
  */
 export function toIrDocument(sliceMeta, opts = {}) {
   const { chainGapMm = 0.05 } = opts; // gap above this starts a new chain
@@ -124,6 +124,8 @@ export function toIrDocument(sliceMeta, opts = {}) {
     version: IR_VERSION,
     mode,
     dialect: meta.dialect ?? "anycubic",
+    coordinate_frame: "slice-ir",
+    units: "mm",
     profile_fingerprint: meta.profile_fingerprint ?? "",
     build_volume: meta.build_volume ?? null,
     provenance: { generator: "planar-core", revision: meta.version },
@@ -151,11 +153,36 @@ export function validateIr(ir, opts = {}) {
 
   assert.ok(ir?.segments && Array.isArray(ir.segments), "IR segments required");
 
+  if (ir.version !== IR_VERSION) {
+    errors.push({
+      code: "IR_VERSION",
+      reason: `IR version must be "${IR_VERSION}"`,
+      segmentId: "*",
+      layer: "*",
+    });
+  }
+
   // Dialect whitelist.
   if (!DIALECT_WHITELIST.includes(ir.dialect)) {
     errors.push({
       code: "DIALECT",
       reason: `dialect \`${ir.dialect}\` not in allowlist ${JSON.stringify(DIALECT_WHITELIST)}`,
+      segmentId: "*",
+      layer: "*",
+    });
+  }
+  if (ir.coordinate_frame !== "slice-ir") {
+    errors.push({
+      code: "COORDINATE_FRAME",
+      reason: 'coordinate_frame must be "slice-ir"',
+      segmentId: "*",
+      layer: "*",
+    });
+  }
+  if (ir.units !== "mm") {
+    errors.push({
+      code: "UNITS",
+      reason: 'units must be "mm"',
       segmentId: "*",
       layer: "*",
     });

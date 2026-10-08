@@ -63,7 +63,7 @@ test("isOverlayPanel: empty rect list always false", () => {
 test("settleOnPlateTransform: lifts a mesh whose bounds dip below 0 so its world minY = 0", () => {
   // Sphere: local bounds -13..13 in Y, previous transform y=0 → 13 mm buried.
   const t = core.settleOnPlateTransform({
-    bounds: { min: [-13, -13, -13] },
+    bounds: { min: [-13, -13, -13], max: [13, 13, 13] },
     transform: { x: 8, y: 0, z: -18 },
   });
   assert.equal(t.x, 8);
@@ -73,7 +73,7 @@ test("settleOnPlateTransform: lifts a mesh whose bounds dip below 0 so its world
 
 test("settleOnPlateTransform: respects scale (world bottom = y + minY*sy)", () => {
   const t = core.settleOnPlateTransform({
-    bounds: { min: [-5, -5, 0] },
+    bounds: { min: [-5, -5, 0], max: [5, 5, 2] },
     transform: { x: 0, y: 0, z: 0, sy: 2 },
   });
   const n = core.normalizeTransform(t);
@@ -84,12 +84,56 @@ test("settleOnPlateTransform: respects scale (world bottom = y + minY*sy)", () =
 
 test("settleOnPlateTransform: already resting mesh is unchanged (y stays 0)", () => {
   const t = core.settleOnPlateTransform({
-    bounds: { min: [0, 0, 0] },
+    bounds: { min: [0, 0, 0], max: [1, 1, 1] },
     transform: { x: 14, y: 0, z: 14 },
   });
   assert.equal(t.y, 0);
   // `-0` trap: y must be exactly 0, not -0
   assert.ok(Object.is(t.y, 0));
+});
+
+test("settleOnPlateTransform: evaluates rotated bounds with negative nonuniform scale", () => {
+  const t = core.settleOnPlateTransform({
+    bounds: { min: [-1, -2, -3], max: [1, 2, 3] },
+    transform: { x: 8, y: 5, z: -4, rx: 90, ry: 35, rz: 70, sx: -2, sy: 3, sz: 2 },
+    plateTopYmm: 4,
+  });
+  assert.equal(t.x, 8);
+  assert.equal(t.z, -4);
+  assert.equal(t.rx, 90);
+  assert.equal(t.ry, 35);
+  assert.equal(t.rz, 70);
+  assert.equal(t.sx, -2);
+  assert.equal(t.sy, 3);
+  assert.equal(t.sz, 2);
+  assert.ok(Number.isFinite(t.y));
+  assert.notEqual(t.y, 5);
+});
+
+test("settleOnPlateTransform: parent translation is included in evaluated world minimum", () => {
+  const parent = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 12, 0, 1];
+  const t = core.settleOnPlateTransform({
+    bounds: { min: [-1, -2, -1], max: [1, 2, 1] },
+    transform: { x: 2, y: 3, z: 4 },
+    parentWorldMatrix: parent,
+  });
+  assert.equal(t.y, -10);
+  assert.equal(t.x, 2);
+  assert.equal(t.z, 4);
+});
+
+test("settleOnPlateTransform: parent rotation moves only the world-vertical component", () => {
+  const parent = [0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1];
+  const before = { x: 4, y: 3, z: 6, rx: 0, ry: 0, rz: 0, sx: 1, sy: 1, sz: 1 };
+  const bounds = { min: [-1, -2, -1], max: [1, 2, 1] };
+  const worldBefore = core.evaluatedBoundsWorld(bounds, before, parent);
+  const t = core.settleOnPlateTransform({ bounds, transform: before, parentWorldMatrix: parent });
+  const worldAfter = core.evaluatedBoundsWorld(bounds, t, parent);
+  assert.ok(Math.abs(worldAfter.min[1]) < 1e-9);
+  assert.equal(worldAfter.min[0], worldBefore.min[0]);
+  assert.equal(worldAfter.max[0], worldBefore.max[0]);
+  assert.equal(worldAfter.min[2], worldBefore.min[2]);
+  assert.equal(worldAfter.max[2], worldBefore.max[2]);
 });
 
 test("clampBedY: raises draft y when it would sink below the plate", () => {

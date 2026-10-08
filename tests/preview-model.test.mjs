@@ -53,7 +53,7 @@ function rampSegment(layer, from, to) {
 
 test("buildPreviewModel: groups per-layer toolpaths + overlay counts", () => {
   const ir = {
-    version: "1.0",
+    version: "1.1",
     mode: "standard",
     dialect: "anycubic",
     build_volume: { x: 220, y: 220, z: 250 },
@@ -80,7 +80,7 @@ test("buildPreviewModel: groups per-layer toolpaths + overlay counts", () => {
 
 test("buildPreviewModel: nonplanar ramps are tagged, never a layer jump", () => {
   const ir = {
-    version: "1.0",
+    version: "1.1",
     mode: "nonplanar",
     dialect: "anycubic",
     build_volume: { x: 220, y: 220, z: 250 },
@@ -103,7 +103,7 @@ test("buildPreviewModel: nonplanar ramps are tagged, never a layer jump", () => 
 
 test("previewLayerAt: standard renders only the selected layer, layer-aligned", () => {
   const ir = {
-    version: "1.0",
+    version: "1.1",
     mode: "standard",
     dialect: "anycubic",
     build_volume: { x: 220, y: 220, z: 250 },
@@ -121,7 +121,7 @@ test("previewLayerAt: standard renders only the selected layer, layer-aligned", 
 
 test("previewLayerAt: nonplanar ramps bridge adjacent layers (no jump)", () => {
   const ir = {
-    version: "1.0",
+    version: "1.1",
     mode: "nonplanar",
     dialect: "anycubic",
     build_volume: { x: 220, y: 220, z: 250 },
@@ -146,7 +146,7 @@ test("previewLayerAt: nonplanar ramps bridge adjacent layers (no jump)", () => {
 
 test("model is deterministic: same IR → identical JSON", () => {
   const ir = {
-    version: "1.0",
+    version: "1.1",
     mode: "standard",
     dialect: "anycubic",
     segments: [wallLayer(0, 0.2, [10, 10], [20, 10])],
@@ -169,9 +169,11 @@ function parsedSegment(overrides = {}) {
 
 function validDoc(overrides = {}) {
   return {
-    version: "1.0",
+    version: "1.1",
     mode: "standard",
     dialect: "anycubic",
+    coordinate_frame: "slice-ir",
+    units: "mm",
     build_volume: { x: 220, y: 220, z: 250 },
     segments: [parsedSegment()],
     ...overrides,
@@ -181,6 +183,17 @@ function validDoc(overrides = {}) {
 test("parseIrDocument: rejects an unknown mode", () => {
   assert.throws(() => parseIrDocument(validDoc({ mode: "spiral" })), /mode/);
   assert.throws(() => parseIrDocument(validDoc({ mode: 1 })), /mode/);
+});
+
+test("parseIrDocument: requires the declared IR frame and millimetre units", () => {
+  assert.throws(
+    () => parseIrDocument(validDoc({ coordinate_frame: "editor-world" })),
+    /coordinate_frame/,
+  );
+  assert.throws(() => parseIrDocument(validDoc({ units: "in" })), /units/);
+  const missingFrame = validDoc();
+  delete missingFrame.coordinate_frame;
+  assert.throws(() => parseIrDocument(missingFrame), /coordinate_frame/);
 });
 
 test("parseIrDocument: rejects nonfinite numbers", () => {
@@ -217,9 +230,11 @@ test("parseIrDocument: rejects Z ramps on standard extrusions but allows TRAVEL"
 test("parseIrDocument: accepts a valid sample and returns detached data", () => {
   const ir = validDoc();
   const doc = parseIrDocument(ir);
-  assert.equal(doc.version, "1.0");
+  assert.equal(doc.version, "1.1");
   assert.equal(doc.mode, "standard");
   assert.equal(doc.dialect, "anycubic");
+  assert.equal(doc.coordinate_frame, "slice-ir");
+  assert.equal(doc.units, "mm");
   assert.equal(doc.build_volume?.x, 220);
   assert.equal(doc.segments.length, 1);
   assert.equal(doc.segments[0].kind, "WALL");

@@ -10,7 +10,7 @@ import {
   resolveObjectActionContext,
 } from "../state/context-action-core";
 import { useContextMenuStore } from "../state/context-menu";
-import { centerOnPlateTransform } from "../state/arrange-core";
+import { centerOnPlateTransform, dropOnPlateTransform } from "../state/arrange-core";
 import { useScene } from "../state/scene";
 import { useUi } from "../state/ui";
 import { useViewport } from "../state/viewport";
@@ -36,7 +36,13 @@ export function useObjectContextMenu(scene: BridgeHandle | undefined) {
   const dispatch = useCallback(
     async (
       action:
-        "duplicate" | "toggleVisible" | "placeOnPlate" | "repairReplace" | "repairCopy" | "remove",
+        | "duplicate"
+        | "toggleVisible"
+        | "centerOnPlate"
+        | "dropOnPlate"
+        | "repairReplace"
+        | "repairCopy"
+        | "remove",
       context: ReturnType<typeof createObjectActionContext>,
     ) => {
       const latest = queryClient.getQueryData<BridgeHandle>(["bridge", "scene"]) ?? scene;
@@ -72,8 +78,11 @@ export function useObjectContextMenu(scene: BridgeHandle | undefined) {
           useScene.getState().toggleVisible(target.name);
           const result = await latest.mutateObject({ kind: "toggleVisible", name: target.name });
           if (!result.ok) throw new Error(result.error);
-        } else if (action === "placeOnPlate") {
-          const transform = centerOnPlateTransform(target);
+        } else if (action === "centerOnPlate" || action === "dropOnPlate") {
+          const transform =
+            action === "centerOnPlate"
+              ? centerOnPlateTransform(target)
+              : dropOnPlateTransform(target);
           useScene.getState().setTransform(target.name, transform);
           const result = await latest.mutateObject({
             kind: "setTransform",
@@ -133,7 +142,8 @@ export function useObjectContextMenu(scene: BridgeHandle | undefined) {
           onDuplicate: run("duplicate"),
           ...(treeActions ? { onRename: treeActions.onRename } : {}),
           onToggleVisible: run("toggleVisible"),
-          onPlaceOnPlate: run("placeOnPlate"),
+          onCenterOnPlate: run("centerOnPlate"),
+          onDropToPlate: run("dropOnPlate"),
           onRepair: (mode) => run(mode === "replace" ? "repairReplace" : "repairCopy")(),
           onRemove: run("remove"),
           ...(treeActions ? { onMoreInfo: treeActions.onMoreInfo } : {}),

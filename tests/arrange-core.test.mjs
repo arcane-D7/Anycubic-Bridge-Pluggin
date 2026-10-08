@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
  *       and block-centered).
  * AC-2: Overflow triggers a collision/overflow toast (the lane returns
  *       warnings for oversized objects | block); per-object place-on-plate
- *       centers X/Y + drops minZ to 0.
+ *       centers X/Z and drops the evaluated bounds independently.
  */
 
 const require_ = createRequire(import.meta.url);
@@ -37,14 +37,18 @@ function obj(name, opts = {}) {
   };
 }
 
-test("arrange-core: place-on-plate centers X and sits Y (minY=0) on the plate", async () => {
+test("arrange-core: center is horizontal-only and drop is vertical-only", async () => {
   const core = await corePromise;
   // Mesh bounds -30..10 (center -10), minY -5 (buries 5 mm if y=0), minZ -6.
   const o = obj("part", { min: [-30, -5, -6], max: [10, 15, 4] });
-  const t = core.centerOnPlateTransform(o);
-  assert.equal(t.x, 10); // -cx * 1 = -(-10) = 10
-  assert.equal(t.y, 5); // -minY = -(-5) = 5 → world bottom = 5 + (-5) = 0
-  assert.equal(t.z, 1); // -cz = -(-1) = 1 → world center Z = 1 + (-1) = 0
+  const centered = core.centerOnPlateTransform(o);
+  assert.equal(centered.x, 10);
+  assert.equal(centered.y, 0);
+  assert.equal(centered.z, 1);
+  const dropped = core.dropOnPlateTransform({ ...o, transform: { ...centered, y: 20 } });
+  assert.equal(dropped.x, centered.x);
+  assert.equal(dropped.y, 5);
+  assert.equal(dropped.z, centered.z);
 });
 
 test("arrange-core: place-on-plate respects scale", async () => {
@@ -54,7 +58,7 @@ test("arrange-core: place-on-plate respects scale", async () => {
     max: [10, 10, 10],
     transform: { x: 40, y: 20, z: 4, sx: 2, sy: 3, sz: 4, rx: 0, ry: 0, rz: 0 },
   });
-  const t = core.centerOnPlateTransform(o);
+  const t = core.placeOnPlateTransform(o);
   assert.equal(t.x, 0); // center 0 * 2 → offset 0
   assert.equal(t.y, 30); // -minY * sy = -(-10)*3 = 30 → world bottom 30 + (-10)*3 = 0
   assert.equal(t.z, -20); // -cz * sz = -(5)*4 = -20 → world center Z = 0
@@ -63,6 +67,26 @@ test("arrange-core: place-on-plate respects scale", async () => {
   assert.equal(t.sz, 4);
   // rotation preserved
   assert.equal(t.rx, 0);
+});
+
+test("arrange-core: Centre uses rotated world bounds and preserves height and orientation", async () => {
+  const core = await corePromise;
+  const o = obj("rotated-asymmetric", {
+    min: [0, -3, 0],
+    max: [4, 3, 2],
+    transform: { x: 5, y: 9, z: 7, ry: 90, sx: -2, sy: 1, sz: 3 },
+  });
+  const t = core.centerOnPlateTransform(o);
+  assert.equal(t.y, 9);
+  assert.equal(t.ry, 90);
+  assert.equal(t.sx, -2);
+  assert.equal(t.sy, 1);
+  assert.equal(t.sz, 3);
+  const centeredBounds = await import(
+    new URL("../apps/editor/src/viewport/transform-core.ts", import.meta.url).href
+  ).then((module) => module.evaluatedBoundsWorld(o.bounds, t));
+  assert.ok(Math.abs((centeredBounds.min[0] + centeredBounds.max[0]) / 2) < 1e-9);
+  assert.ok(Math.abs((centeredBounds.min[2] + centeredBounds.max[2]) / 2) < 1e-9);
 });
 
 test("arrange-core: deterministic layout packs all objects inside the plate", async () => {

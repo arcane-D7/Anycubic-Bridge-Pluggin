@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { sliceIrToEditorWorld } from "../state/coordinate-frames";
 import type { PreviewModel } from "./preview-model";
 import { previewLayerAt } from "./preview-model";
 
@@ -21,7 +22,7 @@ export interface PreviewFit {
 }
 
 function toScene(point: readonly [number, number, number]): ScenePoint {
-  return [point[0], point[2], -point[1]];
+  return sliceIrToEditorWorld(point);
 }
 
 export function previewFit(model: PreviewModel): PreviewFit {

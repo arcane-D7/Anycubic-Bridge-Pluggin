@@ -19,6 +19,11 @@
  */
 
 import type { SceneObjectSnapshot } from "../bridge/types";
+import {
+  evaluatedBoundsWorld,
+  settleOnPlateTransform,
+  worldTranslationToParentLocal,
+} from "../viewport/transform-core.ts";
 import type { SceneTransform } from "../viewport/transform-core";
 
 /** Local normalize — keeps this core dependency-free (headless Node 24). */
@@ -64,35 +69,41 @@ export interface ArrangeTransformResult {
 const clampGap = (value: number | undefined): number => Math.max(0, value ?? 2);
 
 /**
- * Per-object "place on plate" (OrcaSlicer/BambuStudio lay-on-plate): center
- * the object's X/Y footprint on the plate origin and sit its world min-Y
- * exactly on Y=0 (the plate top — Y is up in this scene). The result is
- * derived from the snapshot bounds + scale only; the previous position is
- * replaced (the mesh offset is recomputed so world center = 0,0 and the
- * object rests ON the bed, never through it).
+ * Centre is horizontal-only: it moves the local bounds center to the plate
+ * origin in X/Z and leaves height, orientation, scale and vertical placement
+ * unchanged.
  */
 export function centerOnPlateTransform(o: SceneObjectSnapshot): SceneTransform {
   const n = normalize(o.transform);
-  const { bounds } = o;
-  const cx = (bounds.min[0] + bounds.max[0]) / 2;
-  const cz = (bounds.min[2] + bounds.max[2]) / 2;
-  const minY = bounds.min[1];
+  const worldBounds = evaluatedBoundsWorld(o.bounds, n);
+  const dx = -((worldBounds.min[0] + worldBounds.max[0]) / 2);
+  const dz = -((worldBounds.min[2] + worldBounds.max[2]) / 2);
+  const [localX, , localZ] = worldTranslationToParentLocal([dx, 0, dz]);
   const sx = n.sx;
-  const sy = n.sy;
   const sz = n.sz;
   return {
-    x: -cx * sx || 0,
-    // world min-Y = 0 → rests ON the bed (Y is up in this scene).
-    y: -minY * sy || 0,
+    x: n.x + localX || 0,
+    y: n.y,
     // Center the depth axis too (Z is the plate depth on the world grid).
-    z: -cz * sz || 0,
+    z: n.z + localZ || 0,
     rx: n.rx,
     ry: n.ry,
     rz: n.rz,
     sx,
-    sy,
+    sy: n.sy,
     sz,
   };
+}
+
+/** Drop changes only the vertical component needed to touch the plate. */
+export function dropOnPlateTransform(o: SceneObjectSnapshot): SceneTransform {
+  return settleOnPlateTransform({ bounds: o.bounds, transform: o.transform });
+}
+
+/** Arrange's combined placement is explicitly Centre followed by Drop. */
+export function placeOnPlateTransform(o: SceneObjectSnapshot): SceneTransform {
+  const centered = centerOnPlateTransform(o);
+  return dropOnPlateTransform({ ...o, transform: centered });
 }
 
 interface Footprint {
@@ -238,7 +249,7 @@ export function arrangeTransforms(
   for (const p of placed) {
     const o = byName.get(p.name);
     if (!o) continue;
-    const base = centerOnPlateTransform(o);
+    const base = placeOnPlateTransform(o);
     transforms.set(o.name, { ...base, x: p.x + base.x, z: p.z + base.z });
   }
 

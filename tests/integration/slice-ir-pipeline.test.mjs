@@ -114,7 +114,7 @@ test(
       const ir = toIrDocument(sliceMeta);
       assert.equal(ir.mode, "standard");
       assert.equal(ir.dialect, "anycubic");
-      assert.equal(ir.version, "1.0");
+      assert.equal(ir.version, "1.1");
 
       const validation = validateIr(ir);
       assert.deepEqual(validation.errors, []);

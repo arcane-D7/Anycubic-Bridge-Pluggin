@@ -12,7 +12,7 @@
 | **Primary Owner**     | Project authority, geometry IPC and worker adapters                                                                                         |
 | **Source**            | [Editor workspace CAD/AI audit](../../docs/audit/editor-workspace-cad-ai-audit-2026-10-07.md), AUD-07/AUD-08/AUD-13; sections 6, 13, 18, 19 |
 | **Depends On**        | Sprint 9.14                                                                                                                                 |
-| **Status**            | 🔄 In progress (3/4 delivered; S9.15-004 next)                                                                                              |
+| **Status**            | ✅ Complete (4/4 delivered; 2026-10-08)                                                                                                     |
 
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
@@ -205,7 +205,7 @@ Changing `watertight` or returning fixture geometry is not repair/boolean. Conne
 | **Type**             | Feature + Test                                                     |
 | **Estimated Effort** | L                                                                  |
 | **Source Finding**   | AUD-13; CAD-16; audit sections 6.3, 6.6, 13.3                      |
-| **Status**           | ⏳ Planned                                                         |
+| **Status**           | ✅ Delivered                                                       |
 
 #### Context
 
@@ -213,11 +213,50 @@ The editor, plate, machine and Preview must not apply placement inconsistently. 
 
 #### Acceptance Criteria
 
-- [ ] **CAD-16:** Named-frame transforms round-trip landmarks and declared units with consistent constraints.
-- [ ] Mesh/IR/telemetry positions share tested frame contracts; no global axis substitution or silent clamp.
-- [ ] Selection IDs are revision-bound; topology worker returns remap/removed IDs, and stale selection is rejected.
-- [ ] Rotations, negative/nonuniform scale, parenting, plate origins and future modes have fixtures.
-- [ ] Run focused geometry/contract corpus, full gate and sanitizer dry-run successfully.
+- [x] **CAD-16:** Named-frame transforms round-trip landmarks and declared units with consistent constraints.
+- [x] Mesh/IR/telemetry positions share tested frame contracts; no global axis substitution or silent clamp.
+- [x] Selection IDs are revision-bound; topology worker returns remap/removed IDs, and stale selection is rejected.
+- [x] Rotations, negative/nonuniform scale, parenting, plate origins and future modes have fixtures.
+- [x] Run focused geometry/contract corpus, full gate and sanitizer dry-run successfully.
+
+#### Implementation Notes (S9.15-004)
+
+- `state/coordinate-frames.ts` names object-local, editor-world, plate,
+  machine-telemetry, slice-IR and screen frames; geometry uses millimetres,
+  screen anchors use CSS pixels. IR uses the existing Z-up to Y-up mapping `[x, y, z] → [x, z,
+-y]`; its inverse and landmark round-trip are tested. Machine telemetry uses
+  the snapshot's existing X/Y/-Z axis semantics only when an explicit machine
+  origin, axis basis and world-space profile bounds are declared.
+- IR schema is version 1.1 and serializes `coordinate_frame: "slice-ir"` and
+  `units: "mm"`; the editor parser and independent validator reject older
+  versions and absent/unknown metadata.
+  Live telemetry is not clamped: missing frame/profile bounds and points outside
+  declared bounds return named diagnostics; the live overlay hides its stale
+  marker and shows a localized unavailable-frame label.
+- `evaluatedBoundsWorld` transforms all eight evaluated local-bounds corners
+  using the editor's XYZ Euler order, signed/nonuniform scale and optional
+  parent world matrix. `settleOnPlateTransform` applies only the world-vertical
+  delta, transformed back through the parent matrix. The shared context menu
+  now offers separate horizontal `Center on plate` and vertical `Drop to plate`
+  actions; Arrange composes Centre then Drop.
+- Blender IPC `RemapTable` and `SelectionState` carry source/target mesh
+  revisions and stable element IDs with vertex/edge/face kinds. `rebase_selection`
+  rejects stale revisions, missing stable identities and missing remaps, while
+  preserving element kind and dropping only explicitly removed stable IDs.
+- Focused tests: coordinate/Drop/live/Arrange/context/IR contract files passed;
+  `pnpm exec tsc --noEmit` passed; `cargo test -p blender-bridge` passed (47
+  unit, 3 I/O, 2 journal and 3 watchdog tests). The explicit real pinned-worker
+  integration was also executed and passed during S9.15-003.
+- Final `pnpm run check` passed: 748 unit, 11 integration, Rust workspace and
+  editor shell, 115-tool smoke, both E2E suites, 59 license checks, architecture
+  check and integrated sanitizer. Standalone sanitizer dry-run: 0 files, 0
+  substitution groups. No physical printer action was performed.
+
+## Sprint 9.15 Complete
+
+All four tickets are delivered. S9.15-004 closes the frame, unit and
+revision-bound topology-selection contracts. The complete sprint passed the
+full health gate and standalone sanitizer on 2026-10-08.
 
 ## Sprint Commit
 

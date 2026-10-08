@@ -12,7 +12,8 @@ export interface ObjectMenuHandlers {
   readonly onDuplicate: () => void;
   readonly onRename?: () => void;
   readonly onToggleVisible: () => void;
-  readonly onPlaceOnPlate: () => void;
+  readonly onCenterOnPlate: () => void;
+  readonly onDropToPlate: () => void;
   readonly onRepair: (mode: "replace" | "copy") => void;
   readonly onRemove: () => void;
   /** P1-7 — optional "More info" item opens the row's info popover. */
@@ -26,7 +27,7 @@ export interface ObjectMenuContext {
   readonly watertight: boolean;
 }
 
-/** Row menu: duplicate/rename/hide/place-on-plate (+repair if not watertight
+/** Row menu: duplicate/rename/hide/center/drop (+repair if not watertight
  * — the S9.7-003 repair lane only makes sense for non-watertight shells)/
  * delete. */
 export function buildObjectMenuItems(
@@ -62,10 +63,16 @@ export function buildObjectMenuItems(
       onSelect: handlers.onToggleVisible,
     },
     {
-      id: "place-on-plate",
-      label: "Place on plate",
+      id: "center-on-plate",
+      label: "Center on plate",
       icon: "arrange",
-      onSelect: handlers.onPlaceOnPlate,
+      onSelect: handlers.onCenterOnPlate,
+    },
+    {
+      id: "drop-to-plate",
+      label: "Drop to plate",
+      icon: "arrange",
+      onSelect: handlers.onDropToPlate,
     },
   );
   if (!ctx.watertight) {

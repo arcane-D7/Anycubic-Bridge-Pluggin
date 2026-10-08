@@ -29,6 +29,7 @@ import {
 } from "../state/live-overlay-core";
 import { useViewMode } from "../state/view-mode";
 import { usePlateUpgrades } from "../state/plate-upgrades";
+import { useI18n } from "../state/i18n";
 
 interface LiveOverlayProps {
   readonly volume: BuildVolume | null;
@@ -61,6 +62,7 @@ export const LiveOverlay = memo(function LiveOverlay({ volume }: LiveOverlayProp
   const snapshot = usePrinterDevice((s) => s.snapshot);
   const viewMode = useViewMode((s) => s.mode);
   const hotendOn = usePlateUpgrades((s) => s.hotend);
+  const t = useI18n((s) => s.t);
 
   const groupRef = useRef<THREE.Group>(null);
   const nozzleRef = useRef<THREE.Mesh>(null);
@@ -77,9 +79,11 @@ export const LiveOverlay = memo(function LiveOverlay({ volume }: LiveOverlayProp
       const now = Date.now();
       if (!shouldUpdateLive(lastApplied.current, now)) return;
       lastApplied.current = now;
-      const world = toolheadWorld(motion, volume);
+      const mapping = toolheadWorld(motion, volume, null);
       const g = groupRef.current;
-      if (g && world) {
+      if (g) g.visible = mapping.ok;
+      if (g && mapping.ok) {
+        const world = mapping.position;
         g.position.set(world.x, world.y + 5, world.z);
         const n = nozzleRef.current;
         if (n) {
@@ -100,6 +104,7 @@ export const LiveOverlay = memo(function LiveOverlay({ volume }: LiveOverlayProp
   return (
     <group>
       {/* Toolhead carriage (imperatively moved). */}
+      <TextSprite text={t("viewport.live.frameUnavailable")} y={volume ? volume.heightMm / 2 : 0} />
       <group ref={groupRef}>
         <mesh>
           <boxGeometry args={[18, 14, 22]} />

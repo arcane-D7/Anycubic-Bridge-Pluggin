@@ -13,6 +13,8 @@
  */
 
 import type { AceBox, BuildVolume, PrintProgress } from "../bridge/types.ts";
+import type { MachineTelemetryFrame } from "./coordinate-frames.ts";
+import { machineTelemetryToEditorWorld } from "./coordinate-frames.ts";
 
 /** Live update throttle — the sprint AC says ≤ 4 Hz (250 ms). */
 export const LIVE_UPDATE_MS = 250 as const;
@@ -26,10 +28,21 @@ export interface ToolheadWorld {
   readonly z: number;
 }
 
+export type ToolheadMapping =
+  | { readonly ok: true; readonly position: ToolheadWorld }
+  | {
+      readonly ok: false;
+      readonly reason:
+        | "motion-unavailable"
+        | "machine-frame-unknown"
+        | "profile-bounds-unknown"
+        | "outside-build-volume";
+    };
+
 /**
  * Map printer motion (mm) to world position on the plate. Returns null when
- * the motion or volume is incomplete (no guess — the overlay hides until the
- * machine reports a real position).
+ * motion, frame or profile bounds are incomplete. Coordinates outside declared
+ * world bounds are diagnosed, never clipped into the build volume.
  */
 export function toolheadWorld(
   motion: {
@@ -38,24 +51,43 @@ export function toolheadWorld(
     readonly zMm: number | null;
   } | null,
   volume: BuildVolume | null,
-): ToolheadWorld | null {
-  if (!motion || !volume) return null;
-  const { xMm, yMm, zMm } = motion;
-  if (xMm === null || yMm === null || zMm === null) return null;
+  frame: MachineTelemetryFrame | null,
+): ToolheadMapping {
+  if (!motion) return { ok: false, reason: "motion-unavailable" };
+  if (!frame) return { ok: false, reason: "machine-frame-unknown" };
+  if (!volume) return { ok: false, reason: "profile-bounds-unknown" };
   if (
-    ![volume.widthMm, volume.depthMm, volume.heightMm].every((v) => Number.isFinite(v) && v > 0)
+    ![volume.widthMm, volume.depthMm, volume.heightMm].every(
+      (value) => value > 0 && Number.isFinite(value),
+    )
   ) {
-    return null;
+    return { ok: false, reason: "profile-bounds-unknown" };
   }
-  // Clamp to the build volume so a stale/wrong report never throws the
-  // toolhead out of the renderable plate area (safe floor/ceiling).
-  const halfW = volume.widthMm / 2;
-  const halfD = volume.depthMm / 2;
-  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+  const profileBounds = frame.buildVolumeBoundsWorldMm;
+  if (
+    !profileBounds ||
+    [...profileBounds.min, ...profileBounds.max].some((value) => !Number.isFinite(value)) ||
+    profileBounds.min.some((value, axis) => value > profileBounds.max[axis]!)
+  ) {
+    return { ok: false, reason: "profile-bounds-unknown" };
+  }
+  const { xMm, yMm, zMm } = motion;
+  if (xMm === null || yMm === null || zMm === null) {
+    return { ok: false, reason: "motion-unavailable" };
+  }
+  const point = machineTelemetryToEditorWorld([xMm, yMm, zMm], frame);
+  if (!point) return { ok: false, reason: "machine-frame-unknown" };
+  const [x, y, z] = point;
+  const { min, max } = profileBounds;
+  if (
+    min.some((value, axis) => point[axis]! < value) ||
+    max.some((value, axis) => point[axis]! > value)
+  ) {
+    return { ok: false, reason: "outside-build-volume" };
+  }
   return {
-    x: clamp(xMm, -halfW, halfW),
-    y: clamp(yMm, 0, volume.heightMm),
-    z: -clamp(zMm, -halfD, halfD),
+    ok: true,
+    position: { x, y, z },
   };
 }
 

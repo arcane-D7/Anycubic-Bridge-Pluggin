@@ -49,9 +49,11 @@ const ROTARY_PROFILE = {
 };
 
 const IR = {
-  version: "1.0",
+  version: "1.1",
   mode: "standard",
   dialect: "anycubic",
+  coordinate_frame: "slice-ir",
+  units: "mm",
   profile_fingerprint: "fp-1",
   build_volume: { x: 220, y: 220, z: 250 },
   segments: [

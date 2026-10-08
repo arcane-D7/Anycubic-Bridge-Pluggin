@@ -39,31 +39,63 @@ function box(overrides) {
   };
 }
 
-test("live overlay: toolhead world maps motion with Z mirror + clamp", async () => {
+test("live overlay: toolhead mapping requires declared machine frame and preserves coordinates", async () => {
   const { toolheadWorld, LIVE_UPDATE_MS } = await loadCore();
-  // motion (0, 0, 0) → plate center, at build surface.
-  const center = toolheadWorld({ xMm: 0, yMm: 0, zMm: 0 }, VOLUME);
-  assert.ok(center.x === 0);
-  assert.ok(center.y === 0);
-  assert.ok(center.z === 0); // clamp may yield -0; SameValueZero treats -0 === 0
-
-  // motion z positive (toward back) maps to world -z; clamped to half-depth.
-  const back = toolheadWorld({ xMm: 500, yMm: 40, zMm: 500 }, VOLUME);
-  assert.ok(back.x === 110);
-  assert.ok(back.y === 40);
-  assert.ok(back.z === -110);
+  const frame = {
+    originWorldMm: [0, 0, 0],
+    xAxisWorld: [1, 0, 0],
+    yAxisWorld: [0, 1, 0],
+    zAxisWorld: [0, 0, -1],
+    buildVolumeBoundsWorldMm: { min: [-110, 0, -110], max: [110, 260, 110] },
+  };
+  assert.deepEqual(toolheadWorld({ xMm: 20, yMm: 30, zMm: 40 }, VOLUME, frame), {
+    ok: true,
+    position: { x: 20, y: 30, z: -40 },
+  });
+  assert.deepEqual(toolheadWorld({ xMm: 0, yMm: 0, zMm: 0 }, VOLUME, null), {
+    ok: false,
+    reason: "machine-frame-unknown",
+  });
+  assert.deepEqual(toolheadWorld({ xMm: 500, yMm: 40, zMm: 500 }, VOLUME, frame), {
+    ok: false,
+    reason: "outside-build-volume",
+  });
 
   assert.equal(LIVE_UPDATE_MS, 250); // AC: ≤4 Hz
 });
 
 test("live overlay: toolhead null when motion/volume incomplete", async () => {
   const { toolheadWorld } = await loadCore();
-  assert.equal(toolheadWorld(null, VOLUME), null);
-  assert.equal(toolheadWorld({ xMm: 1, yMm: 2, zMm: 3 }, null), null);
-  assert.equal(toolheadWorld({ xMm: null, yMm: 2, zMm: 3 }, VOLUME), null);
+  const frame = {
+    originWorldMm: [0, 0, 0],
+    xAxisWorld: [1, 0, 0],
+    yAxisWorld: [0, 1, 0],
+    zAxisWorld: [0, 0, -1],
+    buildVolumeBoundsWorldMm: { min: [-110, 0, -110], max: [110, 260, 110] },
+  };
+  assert.deepEqual(toolheadWorld(null, VOLUME, frame), {
+    ok: false,
+    reason: "motion-unavailable",
+  });
+  assert.deepEqual(toolheadWorld({ xMm: 1, yMm: 2, zMm: 3 }, null, frame), {
+    ok: false,
+    reason: "profile-bounds-unknown",
+  });
+  assert.deepEqual(toolheadWorld({ xMm: null, yMm: 2, zMm: 3 }, VOLUME, frame), {
+    ok: false,
+    reason: "motion-unavailable",
+  });
   assert.equal(
-    toolheadWorld({ xMm: 1, yMm: 2, zMm: 3 }, { widthMm: 0, depthMm: 220, heightMm: 260 }),
-    null,
+    toolheadWorld({ xMm: 1, yMm: 2, zMm: 3 }, { widthMm: 0, depthMm: 220, heightMm: 260 }, frame)
+      .reason,
+    "profile-bounds-unknown",
+  );
+  assert.equal(
+    toolheadWorld({ xMm: 1, yMm: 2, zMm: 3 }, VOLUME, {
+      ...frame,
+      buildVolumeBoundsWorldMm: { min: [0, 0, 0], max: [0, 0, 0] },
+    }).reason,
+    "outside-build-volume",
   );
 });
 

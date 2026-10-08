@@ -718,6 +718,7 @@ export type MsgKey =
   | "viewport.preview.walls"
   | "viewport.preview.infill"
   | "viewport.live.banner"
+  | "viewport.live.frameUnavailable"
   | "viewport.repairLabel"
   | "viewport.dropHint"
   | "viewport.menu.arrange"
@@ -1468,6 +1469,7 @@ export const EN: Record<MsgKey, string> = {
   "viewport.preview.walls": "Walls",
   "viewport.preview.infill": "Infill",
   "viewport.live.banner": "Live mode needs a reachable printer — showing slicer style.",
+  "viewport.live.frameUnavailable": "Machine frame or profile bounds unavailable",
   "viewport.repairLabel": "Needs repair:",
   "viewport.dropHint": "Drop to import",
   "viewport.menu.arrange": "Arrange objects",
@@ -2216,6 +2218,7 @@ export const PT_BR: Record<MsgKey, string> = {
   "viewport.preview.walls": "Paredes",
   "viewport.preview.infill": "Preenchimento",
   "viewport.live.banner": "O modo ao vivo precisa de impressora alcançável — a mostrar slicer.",
+  "viewport.live.frameUnavailable": "Referencial da máquina ou limites do perfil indisponíveis",
   "viewport.repairLabel": "Precisa de reparação:",
   "viewport.dropHint": "Solte para importar",
   "viewport.menu.arrange": "Arrumar objetos",

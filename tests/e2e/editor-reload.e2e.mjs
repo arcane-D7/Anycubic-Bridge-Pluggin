@@ -797,7 +797,8 @@ try {
   );
   assert.ok(treeObjectActions.includes("context-item-duplicate"));
   assert.ok(treeObjectActions.includes("context-item-toggle-visible"));
-  assert.ok(treeObjectActions.includes("context-item-place-on-plate"));
+  assert.ok(treeObjectActions.includes("context-item-center-on-plate"));
+  assert.ok(treeObjectActions.includes("context-item-drop-to-plate"));
   assert.ok(treeObjectActions.includes("context-item-delete"));
   const selectedAfterContext = await page.$$eval('.object-item[aria-selected="true"]', (rows) =>
     rows.map((row) => row.getAttribute("data-name")).sort(),
