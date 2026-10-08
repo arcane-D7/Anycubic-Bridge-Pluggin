@@ -6,6 +6,9 @@ import { previewLayerAt } from "./preview-model";
 const WALL_COLOR = "#4f9cf7";
 const INFILL_COLOR = "#22c55e";
 const TRAVEL_COLOR = "#59616f";
+const ADHESION_COLOR = "#e0a24a";
+const SUPPORT_COLOR = "#b8860b";
+const AUXILIARY_COLOR = "#a56b9f";
 
 type ScenePoint = readonly [number, number, number];
 
@@ -56,33 +59,46 @@ export function LayerPreview({ model, layerIndex, showWalls, showInfill }: Layer
   const paths = useMemo(() => previewLayerAt(model, layerIndex), [model, layerIndex]);
 
   const buffers = useMemo(() => {
-    const walls: number[] = [];
-    const infill: number[] = [];
-    const travel: number[] = [];
+    const byKind = new Map<string, number[]>();
     for (const path of paths) {
       const from = toScene(path.from);
       const to = toScene(path.to);
-      const bucket = path.kind === "WALL" ? walls : path.kind === "INFILL" ? infill : travel;
+      const bucket = byKind.get(path.kind) ?? [];
       bucket.push(from[0], from[1], from[2], to[0], to[1], to[2]);
+      byKind.set(path.kind, bucket);
     }
-    return {
-      walls: new Float32Array(walls),
-      infill: new Float32Array(infill),
-      travel: new Float32Array(travel),
-    };
+    return [...byKind.entries()].map(([kind, positions]) => ({
+      kind,
+      positions: new Float32Array(positions),
+      color: colorForKind(kind),
+    }));
   }, [paths]);
 
   return (
     <group data-testid="preview-lines">
-      <PathLines positions={buffers.travel} color={TRAVEL_COLOR} layerKey={layerIndex} />
-      {showWalls ? (
-        <PathLines positions={buffers.walls} color={WALL_COLOR} layerKey={layerIndex} />
-      ) : null}
-      {showInfill ? (
-        <PathLines positions={buffers.infill} color={INFILL_COLOR} layerKey={layerIndex} />
-      ) : null}
+      {buffers.map((buffer) => {
+        if (buffer.kind.includes("WALL") && !showWalls) return null;
+        if (buffer.kind.includes("INFILL") && !showInfill) return null;
+        return (
+          <PathLines
+            key={buffer.kind}
+            positions={buffer.positions}
+            color={buffer.color}
+            layerKey={layerIndex}
+          />
+        );
+      })}
     </group>
   );
+}
+
+function colorForKind(kind: string): string {
+  if (kind.includes("WALL")) return WALL_COLOR;
+  if (kind.includes("INFILL")) return INFILL_COLOR;
+  if (kind.includes("SUPPORT")) return SUPPORT_COLOR;
+  if (["BRIM", "SKIRT", "PRIME", "PURGE"].includes(kind)) return ADHESION_COLOR;
+  if (["RETRACTION", "SEAM", "TOOL_CHANGE"].includes(kind)) return AUXILIARY_COLOR;
+  return TRAVEL_COLOR;
 }
 
 function PathLines({

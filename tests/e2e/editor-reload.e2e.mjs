@@ -31,7 +31,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..", "..");
 const editorDir = path.join(root, "apps", "editor");
 const viteEntry = path.join(editorDir, "node_modules", "vite", "bin", "vite.js");
-const URL = "http://127.0.0.1:1420/";
+const DEV_PORT = Number(process.env.EDITOR_E2E_PORT ?? 1421);
+const URL = `http://127.0.0.1:${DEV_PORT}/?provider=demo`;
 
 function pickExecutable() {
   const candidates = [
@@ -86,13 +87,13 @@ async function waitHttp(url, timeoutMs) {
 
 try {
   // REUSE an already-running dev server if present; otherwise spawn one.
-  // The spawn MUST bind 127.0.0.1 explicitly: Vite 8 defaults to `localhost`
-  // (IPv6 ::1), while this test and the broker CORS contract use 127.0.0.1.
+  // The spawn owns a dedicated port so the test cannot reuse a stale editor
+  // dev server; Vite 8 must also bind 127.0.0.1 explicitly (not IPv6 ::1).
   if (!(await devAlreadyUp())) {
     assert.ok(fs.existsSync(viteEntry), `vite entry missing: ${viteEntry}`);
     child = spawn(
       process.execPath,
-      [viteEntry, "--host", "127.0.0.1", "--port", "1420", "--strictPort"],
+      [viteEntry, "--host", "127.0.0.1", "--port", String(DEV_PORT), "--strictPort"],
       {
         cwd: editorDir,
         stdio: ["ignore", "pipe", "pipe"],
@@ -166,10 +167,20 @@ try {
   // ---- 1. initial load — shell renders ----
   await page.goto(URL, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForSelector(".app-shell", { timeout: 30000 });
+  await page.waitForFunction(
+    () => document.querySelector('[data-testid="bridge-state"]')?.textContent === "Demo geometry",
+    { timeout: 15000 },
+  );
+  await page.click(".sidebar-nav button:nth-of-type(2)");
+  await page.waitForSelector(".object-name", { timeout: 15000 });
+  await page.click(".sidebar-nav button:nth-of-type(1)");
 
-  // S9.14-001 — exercise the shared menu through real browser input. The
-  // central viewport point avoids the frame's toolbar and plate controls.
+  // S9.14-001 — exercise the shared background menu through real browser
+  // input without selecting a mesh before later no-selection assertions.
   await page.waitForSelector('[data-testid="viewport-frame"]', { timeout: 15000 });
+  await page.$eval('[data-testid="viewport-frame"]', (frame) =>
+    frame.scrollIntoView({ block: "center", inline: "center" }),
+  );
   const canvasAnchor = await page.$eval('[data-testid="viewport-frame"]', (frame) => {
     const rect = frame.getBoundingClientRect();
     const visibleLeft = Math.max(0, rect.left);
@@ -177,8 +188,8 @@ try {
     const visibleTop = Math.max(0, rect.top);
     const visibleBottom = Math.min(document.documentElement.clientHeight, rect.bottom);
     return {
-      x: visibleLeft + (visibleRight - visibleLeft) * 0.5,
-      y: visibleTop + (visibleBottom - visibleTop) * 0.48,
+      x: visibleLeft + 8,
+      y: visibleTop + (visibleBottom - visibleTop) * 0.5,
     };
   });
   await page.mouse.click(canvasAnchor.x, canvasAnchor.y, { button: "right" });

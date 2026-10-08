@@ -576,7 +576,7 @@ fn run_slice_job(
     if control.cancelled.load(Ordering::SeqCst) {
         return Err("slice job cancelled".into());
     }
-    let ir = build_ir(&meta, &profile, request.expected_revision)?;
+    let ir = build_ir(&meta, &profile, request, target_ids)?;
     let program = emit_and_validate_program(&meta, &profile)?;
     let ir_segments = ir["segments"]
         .as_array()
@@ -813,9 +813,11 @@ fn cross(left: Pt3, right: Pt3) -> Pt3 {
 fn build_ir(
     meta: &planar_core::slice::SliceMeta,
     profile: &PlanarProfile,
-    source_revision: u64,
+    request: &SliceJobRequest,
+    target_ids: &[String],
 ) -> Result<serde_json::Value, String> {
     let mut segments = Vec::new();
+    let mut execution_order = 0_u64;
     for layer in &meta.layers {
         for (index, segment) in layer.segments.iter().enumerate() {
             let dx = segment.to.x - segment.from.x;
@@ -849,6 +851,7 @@ fn build_ir(
                 "kind": kind,
                 "layer": layer.index,
                 "chain_id": format!("{kind}#{}#{index}", layer.index),
+                "execution_order": execution_order,
                 "pose": {
                     "from": {"x": segment.from.x, "y": segment.from.y, "z": segment.from.z},
                     "to": {"x": segment.to.x, "y": segment.to.y, "z": segment.to.z},
@@ -857,8 +860,11 @@ fn build_ir(
                 "bead": {"area_mm2": bead_area, "variable": false},
                 "flow": {"q_mm3_s": segment.q_mm3_s, "e_mm": segment.delta_e_mm},
                 "speed": {"mm_s": 30.0},
-                "provenance": {"generator": "planar-core-section-v2", "revision": source_revision, "layer": layer.index},
+                "layer_height_mm": profile.layer_height_mm,
+                "line_width_mm": profile.line_width_mm,
+                "provenance": {"generator": "planar-core-section-v2", "revision": request.expected_revision, "layer": layer.index},
             }));
+            execution_order += 1;
         }
     }
     if segments.len() > 200_000 {
@@ -914,6 +920,10 @@ fn build_ir(
         "dialect": profile.dialect,
         "coordinate_frame": "slice-ir",
         "units": "mm",
+        "job_id": request.job_id,
+        "source_revision": request.expected_revision,
+        "target_ids": target_ids,
+        "placement": null,
         "build_volume": {"x": meta.build_volume.x, "y": meta.build_volume.y, "z": meta.build_volume.z},
         "segments": segments,
     }))
@@ -1622,6 +1632,17 @@ mod slice_job_tests {
         let mut guard = state.0.lock().unwrap();
         let authority = guard.as_mut().unwrap();
         let current = authority.snapshot().unwrap();
+        assert_eq!(reply.ir["job_id"], reply.job_id);
+        assert_eq!(reply.ir["source_revision"], reply.source_revision);
+        assert_eq!(reply.ir["target_ids"], serde_json::json!(reply.target_ids));
+        assert!(reply.ir["placement"].is_null());
+        let ir_segments = reply.ir["segments"].as_array().unwrap();
+        assert!(ir_segments.iter().enumerate().all(|(index, segment)| {
+            segment["execution_order"].as_u64() == Some(index as u64)
+                && segment["layer_height_mm"].as_f64() == Some(request.layer_height_mm)
+                && segment["line_width_mm"].as_f64() == Some(request.line_width_mm)
+                && segment["provenance"]["revision"].as_u64() == Some(reply.source_revision)
+        }));
         let mut changed_project = current.project.clone();
         changed_project.name = "Edited during slice".into();
         authority
@@ -1703,7 +1724,44 @@ mod slice_job_tests {
             }),
         };
         let meta = planar_core::slice::slice(&l_prism(), &profile).expect("L prism should slice");
-        let ir = build_ir(&meta, &profile, 4).expect("IR validation");
+        let request = SliceJobRequest {
+            job_id: "test-job".into(),
+            expected_revision: 4,
+            slicing_mode: "standard".into(),
+            coordinate_frame: "editor-world".into(),
+            editor_to_slice_frame: SliceFrame {
+                origin_mm: [0.0; 3],
+                x_axis: [1.0, 0.0, 0.0],
+                y_axis: [0.0, 0.0, 1.0],
+                z_axis: [0.0, -1.0, 0.0],
+            },
+            plate_id: "plate-1".into(),
+            profile_id: "test-profile".into(),
+            profile_version: "test-version".into(),
+            build_volume_x_mm: 250.0,
+            build_volume_y_mm: 250.0,
+            build_volume_z_mm: 250.0,
+            dialect: "anycubic".into(),
+            layer_height_mm: 1.0,
+            line_width_mm: 0.45,
+            nozzle_diameter_mm: 0.4,
+            wall_loops: 1,
+            top_bottom_layers: 0,
+            infill_density_pct: 15.0,
+            infill_pattern: "Grid".into(),
+            brim_width_mm: 0.0,
+            filament_diameter_mm: 1.75,
+            material_id: "test-material".into(),
+            material_type: "PLA".into(),
+            nozzle_temperature_c: 210.0,
+            bed_temperature_c: 60.0,
+            fan_pct: 100.0,
+            print_speed_mm_s: 30.0,
+            travel_speed_mm_s: 120.0,
+            supports: false,
+            target_ids: vec!["object-a".into()],
+        };
+        let ir = build_ir(&meta, &profile, &request, &request.target_ids).expect("IR validation");
         let program = emit_and_validate_program(&meta, &profile).expect("program validation");
         let segments = ir["segments"].as_array().expect("IR segments");
         assert!(!segments.is_empty());

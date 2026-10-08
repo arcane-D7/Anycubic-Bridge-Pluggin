@@ -247,3 +247,81 @@ test("parseIrDocument: accepts a valid sample and returns detached data", () => 
   assert.equal(doc.build_volume?.x, 220);
   assert.throws(() => parseIrDocument(validDoc({ segments: ["nope"] })), /must be an object/);
 });
+
+test("parseIrDocument and preview preserve native artifact identity, attributes and layer IDs", () => {
+  const segment = parsedSegment({
+    kind: "BRIM",
+    layer: 7,
+    segment_id: "seg-7-0",
+    object_id: "object-a",
+    part_id: "part-a",
+    execution_order: 0,
+    gcode_line_start: 21,
+    gcode_line_end: 22,
+    tool_id: null,
+    material_id: "pla-project",
+    speed: { mm_s: 30 },
+    flow: { q_mm3_s: 2.7, e_mm: 0.374 },
+    bead: { area_mm2: 0.09, variable: false },
+    cooling: { fan_pct: 100 },
+    layer_height_mm: 0.2,
+    line_width_mm: 0.45,
+    provenance: { generator: "planar-core-section-v2", revision: 42, layer: 7 },
+  });
+  const parsed = parseIrDocument(
+    validDoc({
+      source_revision: 42,
+      target_ids: ["object-a"],
+      placement: { x: 11, y: 12, z: 13 },
+      segments: [segment, parsedSegment({ kind: "TRAVEL", layer: 23 })],
+    }),
+  );
+  assert.equal(parsed.segments[0].segment_id, "seg-7-0");
+  assert.equal(parsed.segments[0].object_id, "object-a");
+  assert.equal(parsed.segments[0].flow?.q_mm3_s, 2.7);
+  assert.equal(parsed.segments[0].speed?.mm_s, 30);
+  assert.equal(parsed.source_revision, 42);
+
+  const model = buildPreviewModel(parsed);
+  assert.deepEqual(
+    model.layers.map((layer) => layer.index),
+    [7, 23],
+  );
+  assert.equal(model.layers[0].toolpaths[0].kind, "BRIM");
+  assert.equal(model.layers[0].toolpaths[0].segmentId, "seg-7-0");
+  assert.equal(model.layers[0].toolpaths[0].flowMm3S, 2.7);
+  assert.equal(model.layers[0].toolpaths[0].placementMm[0], 11);
+  assert.equal(model.layers[0].zAvailable, true);
+  assert.equal(model.layers[1].toolpaths[0].speedMmS, null);
+});
+
+test("parseIrDocument rejects unsupported kinds and invalid cross-references", () => {
+  assert.throws(
+    () => parseIrDocument(validDoc({ segments: [parsedSegment({ kind: "UNKNOWN" })] })),
+    /kind/,
+  );
+  assert.throws(
+    () =>
+      parseIrDocument(
+        validDoc({
+          source_revision: 1,
+          segments: [
+            parsedSegment({ segment_id: "duplicate" }),
+            parsedSegment({ segment_id: "duplicate" }),
+          ],
+        }),
+      ),
+    /unique/,
+  );
+});
+
+test("parseIrDocument exposes stable structured diagnostics for invalid and oversized artifacts", () => {
+  assert.throws(
+    () => parseIrDocument(validDoc({ mode: "spiral" })),
+    (error) => error.code === "IR_INVALID" && error.path === "mode",
+  );
+  assert.throws(
+    () => parseIrDocument(validDoc({ segments: Array(200_001).fill(parsedSegment()) })),
+    (error) => error.code === "IR_LIMIT" && error.path === "segments",
+  );
+});

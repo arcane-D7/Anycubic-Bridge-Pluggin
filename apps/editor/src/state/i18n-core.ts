@@ -719,6 +719,7 @@ export type MsgKey =
   // viewport ---------------------------------------------------------------------
   | "viewport.preview.mode"
   | "viewport.preview.layerOf"
+  | "viewport.preview.artifact"
   | "viewport.preview.walls"
   | "viewport.preview.infill"
   | "viewport.live.banner"
@@ -1474,6 +1475,7 @@ export const EN: Record<MsgKey, string> = {
   "measure.clear.aria": "Clear measurement",
   "measure.clear": "clear",
   "viewport.preview.mode": "mode: {mode}",
+  "viewport.preview.artifact": "job {job} · source revision {revision} · preview only",
   "viewport.preview.layerOf": "Layer {n} of {total}",
   "viewport.preview.walls": "Walls",
   "viewport.preview.infill": "Infill",
@@ -2230,6 +2232,8 @@ export const PT_BR: Record<MsgKey, string> = {
   "measure.clear.aria": "Limpar medição",
   "measure.clear": "limpar",
   "viewport.preview.mode": "modo: {mode}",
+  "viewport.preview.artifact":
+    "trabalho {job} · revisão de origem {revision} · só pré-visualização",
   "viewport.preview.layerOf": "Camada {n} de {total}",
   "viewport.preview.walls": "Paredes",
   "viewport.preview.infill": "Preenchimento",

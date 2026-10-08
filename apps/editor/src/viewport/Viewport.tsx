@@ -190,6 +190,14 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
           <span className="preview-mode" data-testid="preview-mode-label">
             {t("viewport.preview.mode", { mode: preview.mode })}
           </span>
+          {preview.jobId ? (
+            <span className="preview-artifact" data-testid="preview-artifact">
+              {t("viewport.preview.artifact", {
+                job: preview.jobId,
+                revision: String(preview.sourceRevision ?? "unavailable"),
+              })}
+            </span>
+          ) : null}
           <label htmlFor="preview-layer-slider">
             {t("viewport.preview.layerOf", {
               n: String(layerCount > 0 ? clampedLayer + 1 : 0),
@@ -329,7 +337,7 @@ function PreviewScene({
   const fit = useMemo(() => previewFit(model), [model]);
   return (
     <>
-      <group position={[-fit.center[0], 0, -fit.center[2]]}>
+      <group position={[-fit.center[0], -fit.center[1], -fit.center[2]]}>
         <LayerPreview
           model={model}
           layerIndex={layerIndex}

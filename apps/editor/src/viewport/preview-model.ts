@@ -14,7 +14,11 @@
  * always yields the same preview model (byte-identical JSON).
  */
 import type { SlicingMode } from "../contract";
-import type { IrDocument as IrDocumentShape, IrSegment as IrSegmentShape } from "../bridge/ir";
+import type {
+  IrDocument as IrDocumentShape,
+  IrPathKind,
+  IrSegment as IrSegmentShape,
+} from "../bridge/ir";
 
 /** Minimal IR segment shape the preview needs (subset of slice-ir output). */
 export type PreviewIrSegment = IrSegmentShape;
@@ -24,7 +28,26 @@ export type PreviewIrDocument = IrDocumentShape;
 
 /** One previewable toolpath (per-layer). */
 export interface PreviewToolpath {
-  readonly kind: string;
+  readonly kind: IrPathKind;
+  readonly segmentId: string | null;
+  readonly executionOrder: number;
+  readonly objectId: string | null;
+  readonly partId: string | null;
+  readonly toolId: number | null;
+  readonly materialId: string | null;
+  readonly speedMmS: number | null;
+  readonly flowMm3S: number | null;
+  readonly extrusionMm: number | null;
+  readonly beadAreaMm2: number | null;
+  readonly fanPct: number | null;
+  readonly nozzleTemperatureC: number | null;
+  readonly bedTemperatureC: number | null;
+  readonly layerHeightMm: number | null;
+  readonly lineWidthMm: number | null;
+  readonly gcodeLineStart: number | null;
+  readonly gcodeLineEnd: number | null;
+  readonly placementMm: readonly [number, number, number] | null;
+  readonly provenance: PreviewIrSegment["provenance"] | null;
   readonly from: readonly [number, number, number];
   readonly to: readonly [number, number, number];
   /** True when the segment is a nonplanar ramp (continuous Z change). */
@@ -36,11 +59,15 @@ export interface PreviewLayer {
   readonly index: number;
   /** Layer plane Z (mm) — the nominal z for standard mode. */
   readonly z: number;
+  readonly zAvailable: boolean;
   readonly toolpaths: readonly PreviewToolpath[];
   /** Overlay counts: walls/infill/extrusion totals for the UI. */
   readonly kindCounts: {
     readonly wall: number;
     readonly infill: number;
+    readonly support: number;
+    readonly adhesion: number;
+    readonly travel: number;
     readonly other: number;
   };
 }
@@ -53,6 +80,10 @@ export interface PreviewModel {
   readonly layers: readonly PreviewLayer[];
   /** Any segment tagged nonplanar (ramp) anywhere in the IR. */
   readonly hasRamps: boolean;
+  readonly jobId: string | null;
+  readonly sourceRevision: number | null;
+  readonly targetIds: readonly string[];
+  readonly placementMm: readonly [number, number, number] | null;
 }
 
 /** True when the segment is a Z-ramp (continuous Z change along the path). */
@@ -61,12 +92,21 @@ function isRamp(seg: PreviewIrSegment): boolean {
   return dz > 1e-6;
 }
 
-function kindClass(kind: string): PreviewLayer["kindCounts"] {
-  const k = (kind ?? "").toUpperCase();
+function kindClass(kind: IrPathKind): PreviewLayer["kindCounts"] {
+  const k = kind.toUpperCase();
   return {
     wall: k.includes("WALL") ? 1 : 0,
     infill: k.includes("INFILL") ? 1 : 0,
-    other: k.includes("WALL") || k.includes("INFILL") ? 0 : 1,
+    support: k.includes("SUPPORT") ? 1 : 0,
+    adhesion: k === "BRIM" || k === "SKIRT" || k === "PRIME" || k === "PURGE" ? 1 : 0,
+    travel: k === "TRAVEL" ? 1 : 0,
+    other:
+      k.includes("WALL") ||
+      k.includes("INFILL") ||
+      k.includes("SUPPORT") ||
+      ["BRIM", "SKIRT", "PRIME", "PURGE", "TRAVEL"].includes(k)
+        ? 0
+        : 1,
   };
 }
 
@@ -91,21 +131,36 @@ export function buildPreviewModel(ir: PreviewIrDocument): PreviewModel {
   const counts = new Map<number, PreviewLayer["kindCounts"]>();
   let hasRamps = false;
 
-  for (const seg of ir.segments) {
+  for (const [sourceIndex, seg] of ir.segments.entries()) {
     const from: readonly [number, number, number] = [
-      seg.pose?.from?.x ?? 0,
-      seg.pose?.from?.y ?? 0,
-      seg.pose?.from?.z ?? 0,
+      seg.pose.from.x,
+      seg.pose.from.y,
+      seg.pose.from.z,
     ];
-    const to: readonly [number, number, number] = [
-      seg.pose?.to?.x ?? 0,
-      seg.pose?.to?.y ?? 0,
-      seg.pose?.to?.z ?? 0,
-    ];
+    const to: readonly [number, number, number] = [seg.pose.to.x, seg.pose.to.y, seg.pose.to.z];
     const ramp = isRamp(seg);
     if (ramp) hasRamps = true;
     const path: PreviewToolpath = {
-      kind: String(seg.kind ?? "TRAVEL").toUpperCase(),
+      kind: seg.kind,
+      segmentId: seg.segment_id ?? null,
+      executionOrder: seg.execution_order ?? sourceIndex,
+      objectId: seg.object_id ?? null,
+      partId: seg.part_id ?? null,
+      toolId: seg.tool_id ?? null,
+      materialId: seg.material_id ?? null,
+      speedMmS: seg.speed?.mm_s ?? null,
+      flowMm3S: seg.flow?.q_mm3_s ?? null,
+      extrusionMm: seg.flow?.e_mm ?? null,
+      beadAreaMm2: seg.bead?.area_mm2 ?? null,
+      fanPct: seg.cooling?.fan_pct ?? null,
+      nozzleTemperatureC: seg.temperature?.nozzle_c ?? null,
+      bedTemperatureC: seg.temperature?.bed_c ?? null,
+      layerHeightMm: seg.layer_height_mm ?? null,
+      lineWidthMm: seg.line_width_mm ?? null,
+      gcodeLineStart: seg.gcode_line_start ?? null,
+      gcodeLineEnd: seg.gcode_line_end ?? null,
+      placementMm: ir.placement ? [ir.placement.x, ir.placement.y, ir.placement.z] : null,
+      provenance: seg.provenance ?? null,
       from,
       to,
       ramp,
@@ -114,23 +169,43 @@ export function buildPreviewModel(ir: PreviewIrDocument): PreviewModel {
     const list = byLayer.get(layer) ?? [];
     list.push(path);
     byLayer.set(layer, list);
-    const c = counts.get(layer) ?? { wall: 0, infill: 0, other: 0 };
+    const c = counts.get(layer) ?? {
+      wall: 0,
+      infill: 0,
+      support: 0,
+      adhesion: 0,
+      travel: 0,
+      other: 0,
+    };
+    const classified = kindClass(path.kind);
     counts.set(layer, {
-      wall: c.wall + kindClass(path.kind).wall,
-      infill: c.infill + kindClass(path.kind).infill,
-      other: c.other + kindClass(path.kind).other,
+      wall: c.wall + classified.wall,
+      infill: c.infill + classified.infill,
+      support: c.support + classified.support,
+      adhesion: c.adhesion + classified.adhesion,
+      travel: c.travel + classified.travel,
+      other: c.other + classified.other,
     });
   }
 
   const layers: PreviewLayer[] = [];
   for (const [index, toolpaths] of byLayer) {
     const zs = toolpaths.map((t) => t.from[2]).filter(isFinite);
-    const z = zs.length > 0 ? Math.min(...zs) : 0;
+    const zAvailable = zs.length > 0;
+    const z = zAvailable ? Math.min(...zs) : Number.NaN;
     layers.push({
       index,
       z,
+      zAvailable,
       toolpaths: Object.freeze([...toolpaths]),
-      kindCounts: counts.get(index) ?? { wall: 0, infill: 0, other: 0 },
+      kindCounts: counts.get(index) ?? {
+        wall: 0,
+        infill: 0,
+        support: 0,
+        adhesion: 0,
+        travel: 0,
+        other: 0,
+      },
     });
   }
   layers.sort((a, b) => a.index - b.index);
@@ -141,6 +216,10 @@ export function buildPreviewModel(ir: PreviewIrDocument): PreviewModel {
     layerCount: layers.length,
     layers: Object.freeze(layers),
     hasRamps,
+    jobId: ir.job_id ?? null,
+    sourceRevision: ir.source_revision ?? null,
+    targetIds: Object.freeze([...(ir.target_ids ?? [])]),
+    placementMm: ir.placement ? [ir.placement.x, ir.placement.y, ir.placement.z] : null,
   };
 }
 

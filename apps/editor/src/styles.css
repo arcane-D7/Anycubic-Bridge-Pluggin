@@ -2001,6 +2001,11 @@ code {
   font-weight: 650;
 }
 
+.preview-artifact {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
 button,
 input,
 select {

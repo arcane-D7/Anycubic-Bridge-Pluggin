@@ -108,7 +108,7 @@ The simulated UI stages are not a slice result. A job must capture project revis
 | **Type**             | Feature + Test                                                              |
 | **Estimated Effort** | L                                                                           |
 | **Source Finding**   | AUD-04/AUD-06; PRV-01–PRV-04, PRV-06–PRV-07, PRV-09                         |
-| **Status**           | ⏳ Planned                                                                  |
+| **Status**           | ✅ Delivered (2026-10-08)                                                   |
 
 #### Context
 
@@ -116,11 +116,19 @@ The parser and renderer must preserve supported engine facts and artifact placem
 
 #### Acceptance Criteria
 
-- [ ] **PRV-01–PRV-04:** Supported attributes survive parse/model; manufacturing kinds are classified correctly; noncontiguous layer IDs and deterministic segment/G-code mapping work.
-- [ ] **PRV-06–PRV-07:** Units/origin are correct; absent values display unavailable rather than fabricated zero.
-- [ ] **PRV-09:** Preview placement matches the immutable captured scene revision.
-- [ ] Invalid, oversized and mismatched artifact inputs fail safely with structured diagnostics.
-- [ ] Run focused parser/contract/render checks, full gate and sanitizer dry-run successfully.
+- [x] **PRV-01–PRV-04:** Supported segment identity, flow/E/bead/speed/cooling/temperature/dimensions and provenance survive strict parsing/model projection; known path kinds retain distinct classes; noncontiguous layer IDs are preserved. Native execution order is explicit and deterministic. G-code-line/object/part/tool/material attribution remains nullable because the native backend merges captured objects and emits no instruction-line mapping; it is not invented.
+- [x] **PRV-06–PRV-07:** `slice-ir` millimetres and Z-up are retained; native captured source revision and stable target IDs are attached to the IR document. Object placement is explicitly null because transforms are baked into the combined slice coordinates. Unsupported numeric attributes remain unavailable, never zero-filled.
+- [x] **PRV-09:** Native Preview consumes the returned immutable artifact IR, labels job/source revision and preview-only status, and centers the baked coordinates without reading current-scene transforms.
+- [x] Invalid, oversized, duplicate-ID/order and mismatched target-reference inputs fail with `IrDocumentError` structured code/path diagnostics.
+- [x] Focused parser/model and Tauri artifact checks, full gate and standalone sanitizer dry-run pass.
+
+#### Implementation Notes (S9.16-003)
+
+- `bridge/ir.ts` remains IR 1.1 compatible and now explicitly validates/preserves optional supported native fields, document job/source/targets/placement, full supported path-kind vocabulary, execution order, nullable values, bounds and references. Unknown optional properties remain ignored only when they are outside the supported contract; supported values are never silently stripped. Structured failures expose `code` (`IR_INVALID`, `IR_LIMIT`, `IR_REFERENCE`) and `path` while preserving the existing human-readable Error message.
+- `preview-model.ts` carries layer IDs, artifact identity, placement availability, path category, segment IDs/order and nullable manufacturing measurements. It no longer fabricates coordinates/layer zero. Renderer batches each path kind and gives BRIM/SKIRT/prime/purge, supports and auxiliary paths their own visual classes instead of rendering them as travel.
+- Native artifact IR now carries the exact job ID, captured source revision, stable sorted target IDs, sequential execution order, actual layer/line-width values, and existing generator provenance. The current backend merges objects before slicing, so per-segment object/part/tool/material and G-code line references are not provided; those values remain absent/unavailable. Captured placement is null because transforms are baked into the slice-IR coordinates.
+- Focused evidence: Preview/parser 14/14; Tauri `slice_job_tests` 9/9, including SQLite/CAS artifact round-trip and the provenance/order/dimensions assertions. No physical hardware path was invoked.
+- Final `pnpm run check`: exit 0; unit 758/758, integration 11/11, Rust workspace + Tauri shell pass, build emits `dist/server.mjs` (255608 bytes), smoke 115 tools, both UI E2Es pass, licenses 59, architecture clean, integrated sanitizer 0 files/groups. Standalone `node scripts/sanitize-repo.mjs --dry-run`: 0 files/groups.
 
 ### S9.16-004 — Artifact playback, filters and performance budgets
 
