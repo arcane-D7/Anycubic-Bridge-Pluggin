@@ -520,9 +520,9 @@ pub struct AppState {
     /// At most one in-flight provider call at a time (owned permit).
     semaphore: Arc<Semaphore>,
     client: reqwest::Client,
-    /// Backend-owned writer capabilities (session/transport/resolver
-    /// wiring + revocation). NEVER derived from request JSON — a client
-    /// cannot enable a capability by querying it.
+    /// Backend-owned writer capabilities (granted session scopes,
+    /// transport/resolver wiring + revocation). NEVER derived from request
+    /// JSON — a client cannot enable a capability by querying it.
     pub capabilities: broker::BackendCapabilityState,
 }
 
@@ -531,7 +531,7 @@ impl AppState {
     /// the configured timeout (clamped 1–60s). The bearer key is added per
     /// request to the pinned URL only; redirects are off, so it is never
     /// forwarded. Capabilities default to the honest backend-default state
-    /// (no session, no wired transport, no resolver → every writer
+    /// (no granted scopes, no wired transport, no resolver → every writer
     /// unavailable).
     pub fn from_config(config: EgressConfig) -> Self {
         let client = reqwest::Client::builder()
@@ -920,13 +920,32 @@ pub struct OperationCatalogEnvelope {
     pub operations: Vec<broker::OperationEntry>,
 }
 
-/// Structured unknown-operation error (`GET /operations/{id}` 404). Generic
-/// and stable — the id is echoed back to the caller, nothing else.
+/// Structured unknown-operation error (`GET /operations/{id}` 404). STATIC
+/// and generic — it never echoes the caller-supplied id (which the caller
+/// controls and could be oversized or sensitive), keeping the endpoint
+/// public-safe. Plausible-but-unknown AND implausible ids both answer this
+/// exact same body.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OperationNotFound {
     pub error: &'static str,
-    pub id: String,
+}
+
+/// Upper bound for a plausible public operation id (the 13 known ids are
+/// `[a-z0-9._-]` and ≤ 21 chars; 64 leaves headroom while keeping unbounded
+/// caller input out of the registry).
+pub const MAX_OPERATION_ID_LEN: usize = 64;
+
+/// Bounds the identifier path segment BEFORE any registry lookup: non-empty,
+/// ≤ [`MAX_OPERATION_ID_LEN`] bytes, restricted to the stable id charset
+/// (`[a-z0-9._-]`). Out-of-bound segments answer the SAME static not-found —
+/// no reflection, no echo, no unbounded allocation of the caller's input.
+fn is_plausible_operation_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= MAX_OPERATION_ID_LEN
+        && id.bytes().all(|b| {
+            b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'.' | b'_' | b'-')
+        })
 }
 
 fn forbidden_body() -> AxumResponse<Body> {
@@ -969,7 +988,10 @@ pub async fn operations_handler(
 }
 
 /// `GET /operations/{id}` — one registry entry, or a structured 404 for an
-/// unknown id (no fallback, no widening). Same strict origin guard.
+/// unknown/implausible id (no fallback, no widening, NO echo of the caller's
+/// id). Same strict origin guard. Availability in the entry is an ADVISORY
+/// descriptor — it never authenticates anything; dispatch independently
+/// enforces approval/scope, capability and revocation.
 pub async fn operation_handler(
     headers: HeaderMap,
     State(state): State<AppState>,
@@ -977,6 +999,24 @@ pub async fn operation_handler(
 ) -> AxumResponse<Body> {
     if !origin_allowed(&headers, &state) {
         return forbidden_body();
+    }
+    // The not-found body is STATIC: the caller-controllable id is never
+    // echoed (and never allocated into the response).
+    let not_found = || {
+        serde_json::to_vec(&OperationNotFound {
+            error: "operation-not-found",
+        })
+        .expect("not-found error serializes")
+    };
+    // Bound the identifier BEFORE any registry lookup: implausible ids
+    // (empty/oversized/off-charset) get the same static 404 as unknown ids —
+    // no reflection, no widening.
+    if !is_plausible_operation_id(&id) {
+        return AxumResponse::builder()
+            .status(StatusCode::NOT_FOUND)
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from(not_found()))
+            .unwrap();
     }
     let entry = broker::operation(&id, &state.capabilities);
     let (status, body) = match entry {
@@ -987,14 +1027,7 @@ pub async fn operation_handler(
             // runtime condition.
             serde_json::to_vec(&entry).expect("operation entry serializes"),
         ),
-        None => (
-            StatusCode::NOT_FOUND,
-            serde_json::to_vec(&OperationNotFound {
-                error: "operation-not-found",
-                id: id.clone(),
-            })
-            .expect("not-found error serializes"),
-        ),
+        None => (StatusCode::NOT_FOUND, not_found()),
     };
     AxumResponse::builder()
         .status(status)

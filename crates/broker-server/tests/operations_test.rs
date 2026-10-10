@@ -4,7 +4,7 @@
 
 use axum::body::{to_bytes, Body};
 use axum::http::{header, HeaderMap, Method, Request, StatusCode};
-use broker::BackendCapabilityState;
+use broker::{BackendCapabilityState, Scope};
 use broker_server::{router_with_state, AppState, EgressConfig, ALLOWED_ORIGIN_DEV};
 use tower::ServiceExt as _; // oneshot
 
@@ -36,7 +36,7 @@ async fn get_json(uri: &str, headers: HeaderMap, state: AppState) -> (StatusCode
 
 fn wired_state(revoked: &[&str]) -> AppState {
     AppState::from_config(EgressConfig::default()).with_capabilities(BackendCapabilityState {
-        authenticated_session: true,
+        granted_scopes: vec![Scope::DeviceControl, Scope::DeviceUpload, Scope::PrintJob],
         device_control_wired: true,
         job_transport_wired: true,
         snapshot_resolver_wired: true,
@@ -128,14 +128,11 @@ async fn operation_by_id_returns_the_registry_entry() {
 }
 
 #[tokio::test]
-async fn operation_unknown_id_is_a_structured_404() {
-    // Non-empty unknown ids reach the handler → the structured error.
-    for id in [
-        "does-not-exist",
-        "job.anything",
-        "device.command",
-        "nozzle-extra",
-    ] {
+async fn operation_unknown_id_is_a_structured_404_without_echo() {
+    // Non-empty plausible unknown ids reach the handler → the structured
+    // error. The body is STATIC: the caller-supplied id is never echoed
+    // (unbounded/possibly-sensitive input never reflects into the response).
+    for id in ["does-not-exist", "job.anything", "device.command", "nozzle-extra"] {
         let (status, body) = get_json(
             &format!("/operations/{id}"),
             dev_headers(),
@@ -145,7 +142,47 @@ async fn operation_unknown_id_is_a_structured_404() {
         assert_eq!(status, StatusCode::NOT_FOUND, "{id}");
         let json: serde_json::Value = serde_json::from_str(&body).expect("valid JSON");
         assert_eq!(json["error"], "operation-not-found", "{id}");
-        assert_eq!(json["id"], id, "the id is echoed back unchanged");
+        assert!(
+            json.get("id").is_none(),
+            "{id}: not-found body must not carry an id key"
+        );
+        assert!(
+            !body.contains(id),
+            "{id}: caller-supplied id must never be echoed"
+        );
+    }
+    // Implausible ids (oversized / off-charset / empty) are bounded BEFORE
+    // the registry lookup and answer the EXACT same static body — still no
+    // echo, still structured. Off-charset input is percent-encoded so the
+    // URI stays valid; axum decodes `%2F`/`%00`/`%20` back into the id, which
+    // then hits `is_plausible_operation_id`.
+    let oversized = "x".repeat(4096);
+    let off_charset = ["Nozzle", "nozzle%2F", "nozzle%00x", "a%20b", "nozzle%2e%2e"];
+    for id in ["x".repeat(64), oversized.clone()] {
+        let (status, body) = get_json(
+            &format!("/operations/{id}"),
+            dev_headers(),
+            AppState::from_config(EgressConfig::default()),
+        )
+        .await;
+        assert_eq!(status, StatusCode::NOT_FOUND, "{id}");
+        let json: serde_json::Value = serde_json::from_str(&body).expect("valid JSON");
+        assert_eq!(json["error"], "operation-not-found");
+        assert!(json.get("id").is_none(), "no id key for implausible input");
+        assert!(!body.contains(&oversized), "oversized input is never echoed");
+    }
+    for id in off_charset {
+        let (status, body) = get_json(
+            &format!("/operations/{id}"),
+            dev_headers(),
+            AppState::from_config(EgressConfig::default()),
+        )
+        .await;
+        assert_eq!(status, StatusCode::NOT_FOUND, "{id:?}");
+        let json: serde_json::Value = serde_json::from_str(&body).expect("valid JSON");
+        assert_eq!(json["error"], "operation-not-found", "{id:?}");
+        assert!(json.get("id").is_none(), "{id:?}: no id key");
+        assert!(!body.contains("nozzle"), "{id:?}: no decoded echo");
     }
     // An empty trailing segment never reaches the handler — the router's own
     // 404 still applies (no widening, no fallback entry).
@@ -210,11 +247,12 @@ async fn injected_backend_state_flips_availability_honestly() {
 
 #[tokio::test]
 async fn operations_missing_session_reports_no_session_behind_wiring() {
-    // Transport wired but NO authenticated session → the entry is honest
-    // about the session gate (never "available" from a transport alone).
+    // Transport wired but NO granted scopes → the entry is honest about the
+    // scope gate (never "available" from a transport alone; no-session is
+    // the single stable reason for both absent session and missing scope).
     let state =
         AppState::from_config(EgressConfig::default()).with_capabilities(BackendCapabilityState {
-            authenticated_session: false,
+            granted_scopes: vec![],
             device_control_wired: true,
             job_transport_wired: true,
             snapshot_resolver_wired: true,
@@ -225,34 +263,92 @@ async fn operations_missing_session_reports_no_session_behind_wiring() {
     let json: serde_json::Value = serde_json::from_str(&body).expect("valid JSON");
     assert_eq!(json["available"], false);
     assert_eq!(json["availabilityReason"], "no-session");
-    // Same for a job writer.
-    let (_, body) = get_json("/operations/job.queue", dev_headers(), state).await;
-    let json: serde_json::Value = serde_json::from_str(&body).expect("valid JSON");
-    assert_eq!(json["availabilityReason"], "no-session");
+    // Same for a job writer and the upload writer.
+    for id in ["job.queue", "upload", "nozzle"] {
+        let (_, body) = get_json(
+            &format!("/operations/{id}"),
+            dev_headers(),
+            state.clone(),
+        )
+        .await;
+        let json: serde_json::Value = serde_json::from_str(&body).expect("valid JSON");
+        assert_eq!(json["available"], false, "{id}");
+        assert_eq!(json["availabilityReason"], "no-session", "{id}");
+    }
 }
 
 #[tokio::test]
-async fn operations_missing_snapshot_resolver_pins_start_stop() {
-    // Everything wired + session, but NO trusted snapshot resolver → start
-    // and stop stay unavailable (no-trusted-snapshot) while queue/upload are
-    // available. This mirrors the dispatch gate ordering exactly.
+async fn operations_missing_snapshot_resolver_pins_device_control_and_job_families() {
+    // Everything wired + full scopes, but NO trusted snapshot resolver →
+    // device-control writers are pinned exactly like start/stop
+    // (no-trusted-snapshot): the owning Tauri path also revalidates against
+    // a trusted snapshot. queue/upload need no resolver and stay available.
     let state =
         AppState::from_config(EgressConfig::default()).with_capabilities(BackendCapabilityState {
-            authenticated_session: true,
+            granted_scopes: vec![Scope::DeviceControl, Scope::DeviceUpload, Scope::PrintJob],
             device_control_wired: true,
             job_transport_wired: true,
             snapshot_resolver_wired: false,
             revoked_actions: vec![],
         });
-    for id in ["job.start", "job.stop"] {
+    for id in ["nozzle", "bed", "part_fan", "speed", "job.start", "job.stop"] {
         let (_, body) = get_json(&format!("/operations/{id}"), dev_headers(), state.clone()).await;
         let json: serde_json::Value = serde_json::from_str(&body).expect("valid JSON");
         assert_eq!(json["available"], false, "{id}");
         assert_eq!(json["availabilityReason"], "no-trusted-snapshot", "{id}");
     }
-    let (_, body) = get_json("/operations/job.queue", dev_headers(), state).await;
+    let (_, body) = get_json("/operations/job.queue", dev_headers(), state.clone()).await;
     let json: serde_json::Value = serde_json::from_str(&body).expect("valid JSON");
     assert_eq!(json["available"], true, "queue needs no snapshot resolver");
+    let (_, body) = get_json("/operations/upload", dev_headers(), state).await;
+    let json: serde_json::Value = serde_json::from_str(&body).expect("valid JSON");
+    assert_eq!(json["available"], true, "upload needs no snapshot resolver");
+}
+
+#[tokio::test]
+async fn operations_scoped_backend_matches_scope_and_snapshot_gates() {
+    fn scoped(granted: &[Scope], snapshot: bool) -> AppState {
+        AppState::from_config(EgressConfig::default()).with_capabilities(BackendCapabilityState {
+            granted_scopes: granted.to_vec(),
+            device_control_wired: true,
+            job_transport_wired: true,
+            snapshot_resolver_wired: snapshot,
+            revoked_actions: vec![],
+        })
+    }
+    // deviceOnly: device control available; upload + every job action need
+    // their own scope → no-session.
+    let state = scoped(&[Scope::DeviceControl], true);
+    for id in ["nozzle", "bed", "speed", "light_brightness"] {
+        let (_, body) = get_json(&format!("/operations/{id}"), dev_headers(), state.clone()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).expect("valid JSON");
+        assert_eq!(json["available"], true, "{id}");
+        assert_eq!(json["availabilityReason"], "", "{id}");
+    }
+    for id in ["upload", "job.queue", "job.start", "job.stop"] {
+        let (_, body) = get_json(&format!("/operations/{id}"), dev_headers(), state.clone()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).expect("valid JSON");
+        assert_eq!(json["available"], false, "{id}");
+        assert_eq!(json["availabilityReason"], "no-session", "{id}");
+    }
+    // uploadOnly: only upload.
+    let (_, body) = get_json("/operations/upload", dev_headers(), scoped(&[Scope::DeviceUpload], true)).await;
+    let json: serde_json::Value = serde_json::from_str(&body).expect("valid JSON");
+    assert_eq!(json["available"], true);
+    let (_, body) = get_json("/operations/job.queue", dev_headers(), scoped(&[Scope::DeviceUpload], true)).await;
+    let json: serde_json::Value = serde_json::from_str(&body).expect("valid JSON");
+    assert_eq!(json["available"], false);
+    assert_eq!(json["availabilityReason"], "no-session");
+    // jobScopeOnly: every job action available; device + upload not.
+    let state = scoped(&[Scope::PrintJob], true);
+    for id in ["job.queue", "job.start", "job.stop"] {
+        let (_, body) = get_json(&format!("/operations/{id}"), dev_headers(), state.clone()).await;
+        let json: serde_json::Value = serde_json::from_str(&body).expect("valid JSON");
+        assert_eq!(json["available"], true, "{id}");
+    }
+    let (_, body) = get_json("/operations/upload", dev_headers(), state).await;
+    let json: serde_json::Value = serde_json::from_str(&body).expect("valid JSON");
+    assert_eq!(json["availabilityReason"], "no-session");
 }
 
 #[tokio::test]

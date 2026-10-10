@@ -21,6 +21,12 @@ pub use action_registry::{
     REASON_NO_TRUSTED_SNAPSHOT, REASON_REVOKED,
 };
 
+/// Re-export of the auth tenant's scope enum — used by the registry scope
+/// map, `OperationEntry::required_scope` and the backend-owned
+/// `BackendCapabilityState::granted_scopes` (a single shared scope type, so
+/// catalog wording and approval issuance can never disagree on names).
+pub use auth_service::Scope;
+
 pub use approval::{
     ApprovalAuthority, ApprovalError, ConsumeContext, ConsumedApproval, IssueRequest,
     IssuedApproval, ScopedIssueRequest,

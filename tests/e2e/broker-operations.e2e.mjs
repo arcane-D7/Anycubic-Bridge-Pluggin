@@ -308,8 +308,26 @@ try {
   }, brokerBase);
   assert.equal(unknown.status, 404, "unknown operation id must be 404");
   assert.equal(unknown.json.error, "operation-not-found", "structured error code");
-  assert.equal(unknown.json.id, "does-not-exist", "the id is echoed back unchanged");
-  console.log("[S9.18-001-ops] unknown id -> structured 404 PASS");
+  assert.ok(!("id" in unknown.json), "the 404 body must be STATIC — no caller-controlled id key");
+  assert.ok(!JSON.stringify(unknown.json).includes("does-not-exist"));
+  console.log("[S9.18-001-ops] unknown id -> static structured 404 PASS");
+
+  // Oversized / off-charset ids are bounded before the registry lookup and
+  // answer the exact same static 404 (no echo, no reflection).
+  const oversized = await page.evaluate(async (base) => {
+    const response = await fetch(`${base}/operations/${"x".repeat(4096)}`);
+    let json = null;
+    try {
+      json = JSON.parse(await response.text());
+    } catch {
+      json = { parseFailed: true };
+    }
+    return { status: response.status, json };
+  }, brokerBase);
+  assert.equal(oversized.status, 404, "oversized id must be 404");
+  assert.equal(oversized.json.error, "operation-not-found");
+  assert.ok(!("id" in oversized.json), "no id key: even 4096 bytes never echoes");
+  console.log("[S9.18-001-ops] oversized id -> static 404 PASS");
 
   // Bad-origin 403 at the HTTP layer. The browser CORS sandbox masks the 403
   // body as a network error (its feature), so the strict origin guard is
