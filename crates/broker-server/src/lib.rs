@@ -276,7 +276,11 @@ impl std::fmt::Debug for EgressConfig {
             .field("model_url", &self.model_url)
             .field(
                 "api_key",
-                &self.api_key.as_ref().map(|_| "[REDACTED]").unwrap_or("none"),
+                &self
+                    .api_key
+                    .as_ref()
+                    .map(|_| "[REDACTED]")
+                    .unwrap_or("none"),
             )
             .field("endpoint", &self.endpoint)
             .field("timeout", &self.timeout)
@@ -294,7 +298,9 @@ pub fn config_from_env() -> EgressConfig {
     let endpoint = std::env::var("ANYCUBIC_MODEL_ENDPOINT")
         .ok()
         .filter(|s| !s.is_empty());
-    let model = std::env::var("ANYCUBIC_MODEL").ok().filter(|s| !s.is_empty());
+    let model = std::env::var("ANYCUBIC_MODEL")
+        .ok()
+        .filter(|s| !s.is_empty());
     let allowed_origins = std::env::var("ANYCUBIC_BROKER_ALLOWED_ORIGIN")
         .ok()
         .map(|raw| {
@@ -506,32 +512,51 @@ pub fn provider_status_for(config: &EgressConfig) -> ProviderStatus {
 // Provider transport (S9.18-001 — real, reqwest)
 // ---------------------------------------------------------------------------
 
-/// Router state: config + concurrency gate + the pinned HTTP client.
+/// Router state: config + concurrency gate + the pinned HTTP client + the
+/// backend-owned capability state that the discovery catalog consults.
 #[derive(Clone)]
 pub struct AppState {
     pub config: EgressConfig,
     /// At most one in-flight provider call at a time (owned permit).
     semaphore: Arc<Semaphore>,
     client: reqwest::Client,
+    /// Backend-owned writer capabilities (session/transport/resolver
+    /// wiring + revocation). NEVER derived from request JSON — a client
+    /// cannot enable a capability by querying it.
+    pub capabilities: broker::BackendCapabilityState,
 }
 
 impl AppState {
     /// Build the client with redirects DISABLED (pinned base, one hop) and
     /// the configured timeout (clamped 1–60s). The bearer key is added per
     /// request to the pinned URL only; redirects are off, so it is never
-    /// forwarded.
+    /// forwarded. Capabilities default to the honest backend-default state
+    /// (no session, no wired transport, no resolver → every writer
+    /// unavailable).
     pub fn from_config(config: EgressConfig) -> Self {
         let client = reqwest::Client::builder()
             .redirect(reqwest::redirect::Policy::none())
             .connect_timeout(Duration::from_secs(10))
-            .timeout(config.timeout.clamp(Duration::from_secs(1), MAX_EGRESS_TIMEOUT))
+            .timeout(
+                config
+                    .timeout
+                    .clamp(Duration::from_secs(1), MAX_EGRESS_TIMEOUT),
+            )
             .build()
             .expect("reqwest client builds");
         Self {
             config,
             semaphore: Arc::new(Semaphore::new(1)),
             client,
+            capabilities: broker::BackendCapabilityState::default(),
         }
+    }
+
+    /// Override the backend-owned capability state (tests inject richer or
+    /// revoked states to prove the catalog never fabricates availability).
+    pub fn with_capabilities(mut self, capabilities: broker::BackendCapabilityState) -> Self {
+        self.capabilities = capabilities;
+        self
     }
 }
 
@@ -576,10 +601,7 @@ fn map_messages(messages: &[serde_json::Value]) -> Result<Vec<serde_json::Value>
 /// temporarily oversized, so a hostile chunked/unknown-length body cannot
 /// force an unbounded allocation). On overflow the caller DROPS the response,
 /// which aborts the connection — no more bytes are read.
-pub fn append_bounded(
-    buf: &mut Vec<u8>,
-    chunk: &[u8],
-) -> Result<(), ProviderError> {
+pub fn append_bounded(buf: &mut Vec<u8>, chunk: &[u8]) -> Result<(), ProviderError> {
     if buf.len().saturating_add(chunk.len()) > MAX_RESPONSE_BODY {
         return Err(ProviderError::ResponseTooLarge);
     }
@@ -597,7 +619,10 @@ async fn call_provider(
     messages: &[serde_json::Value],
 ) -> Result<String, ProviderError> {
     let config = &state.config;
-    let model_url = config.model_url.as_deref().ok_or(ProviderError::MissingModelUrl)?;
+    let model_url = config
+        .model_url
+        .as_deref()
+        .ok_or(ProviderError::MissingModelUrl)?;
     if !validate_model_url(model_url) {
         return Err(ProviderError::InvalidModelUrl);
     }
@@ -644,7 +669,11 @@ async fn call_provider(
         .client
         .post(&request_url)
         .header(header::CONTENT_TYPE, "application/json")
-        .timeout(config.timeout.clamp(Duration::from_secs(1), MAX_EGRESS_TIMEOUT));
+        .timeout(
+            config
+                .timeout
+                .clamp(Duration::from_secs(1), MAX_EGRESS_TIMEOUT),
+        );
     if let Some(key) = &config.api_key {
         builder = builder.header(header::AUTHORIZATION, format!("Bearer {key}"));
     }
@@ -877,6 +906,103 @@ pub async fn provider_status_handler(State(state): State<AppState>) -> impl Into
     Json(provider_status_for(&state.config))
 }
 
+// ---------------------------------------------------------------------------
+// Operation catalog (S9.18-001 — registry/discovery, read-only)
+// ---------------------------------------------------------------------------
+
+/// List envelope for `GET /operations`. `schemaVersion` is the catalog wire
+/// version ([`broker::OPERATION_SCHEMA_VERSION`]); the entries are the
+/// registry entries with availability evaluated against the backend state.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OperationCatalogEnvelope {
+    pub schema_version: u16,
+    pub operations: Vec<broker::OperationEntry>,
+}
+
+/// Structured unknown-operation error (`GET /operations/{id}` 404). Generic
+/// and stable — the id is echoed back to the caller, nothing else.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OperationNotFound {
+    pub error: &'static str,
+    pub id: String,
+}
+
+fn forbidden_body() -> AxumResponse<Body> {
+    AxumResponse::builder()
+        .status(StatusCode::FORBIDDEN)
+        .header(header::CONTENT_TYPE, "text/plain; charset=utf-8")
+        .body(Body::from("Origin not allowed"))
+        .unwrap()
+}
+
+/// `GET /operations` — the public-safe discovery catalog. Strict origin
+/// guard (same as `/chat`); bounded output (13 constant entries, closed
+/// schemas); no secrets, provider URLs or account paths — the entries are
+/// derived from the broker registry and the backend-owned capability state.
+pub async fn operations_handler(
+    headers: HeaderMap,
+    State(state): State<AppState>,
+) -> AxumResponse<Body> {
+    if !origin_allowed(&headers, &state) {
+        return forbidden_body();
+    }
+    let envelope = OperationCatalogEnvelope {
+        schema_version: broker::OPERATION_SCHEMA_VERSION,
+        operations: broker::operations(&state.capabilities),
+    };
+    let body = match serde_json::to_vec(&envelope) {
+        Ok(body) => body,
+        Err(_) => {
+            return AxumResponse::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Body::empty())
+                .unwrap();
+        }
+    };
+    AxumResponse::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(body))
+        .unwrap()
+}
+
+/// `GET /operations/{id}` — one registry entry, or a structured 404 for an
+/// unknown id (no fallback, no widening). Same strict origin guard.
+pub async fn operation_handler(
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> AxumResponse<Body> {
+    if !origin_allowed(&headers, &state) {
+        return forbidden_body();
+    }
+    let entry = broker::operation(&id, &state.capabilities);
+    let (status, body) = match entry {
+        Some(entry) => (
+            StatusCode::OK,
+            // All fields are serializable by construction (constant registry
+            // entries); a failure here is a programming error, never a
+            // runtime condition.
+            serde_json::to_vec(&entry).expect("operation entry serializes"),
+        ),
+        None => (
+            StatusCode::NOT_FOUND,
+            serde_json::to_vec(&OperationNotFound {
+                error: "operation-not-found",
+                id: id.clone(),
+            })
+            .expect("not-found error serializes"),
+        ),
+    };
+    AxumResponse::builder()
+        .status(status)
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(body))
+        .unwrap()
+}
+
 /// `GET /chat/{chat_id}/stream` — reconnect probe (Phase 1: always idle).
 pub async fn stream_handler(Path(chat_id): Path<String>) -> AxumResponse<Body> {
     if chat_id.is_empty() || chat_id == "." || chat_id == ".." {
@@ -925,6 +1051,10 @@ pub fn router_with_state(state: AppState) -> Router {
         .route("/health", get(health_handler))
         .route("/chat/{chat_id}/stream", get(stream_handler))
         .route("/provider/status", get(provider_status_handler))
+        // S9.18-001 discovery: read-only catalog (registry + backend state),
+        // strictly origin-guarded — same policy as /chat.
+        .route("/operations", get(operations_handler))
+        .route("/operations/{operation_id}", get(operation_handler))
         // The inbound /chat body is capped at the SAME 256 KiB budget —
         // enforced by the body-limiter BEFORE the handler runs, so an
         // oversized payload gets a generic 413 without ever touching the

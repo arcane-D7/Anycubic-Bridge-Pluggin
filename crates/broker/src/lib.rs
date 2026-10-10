@@ -15,6 +15,12 @@ pub mod job_dispatch;
 pub mod keystore;
 pub mod resolve;
 
+pub use action_registry::{
+    operation, operations, ApprovalPolicy, BackendCapabilityState, HandlerRef, OperationEffect,
+    OperationEntry, OPERATION_SCHEMA_VERSION, REASON_BACKEND_NOT_WIRED, REASON_NO_SESSION,
+    REASON_NO_TRUSTED_SNAPSHOT, REASON_REVOKED,
+};
+
 pub use approval::{
     ApprovalAuthority, ApprovalError, ConsumeContext, ConsumedApproval, IssueRequest,
     IssuedApproval, ScopedIssueRequest,
