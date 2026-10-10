@@ -9,12 +9,16 @@
 use serde::{Deserialize, Serialize};
 
 pub mod api;
+pub mod config;
 pub mod db;
 pub mod principal;
+pub mod sessions;
 
 pub use api::{AuthApiV1, Scope, SyncState};
+pub use config::{ConfigError, Platform};
 pub use db::{AuthDb, AuthDbError};
 pub use principal::Principal;
+pub use sessions::{SessionError, SessionToken, VerifiedSession};
 
 /// API contract version (v1: who/scope/sync).
 pub const AUTH_API_VERSION: &str = "v1";

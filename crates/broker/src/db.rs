@@ -7,7 +7,7 @@ use rusqlite::{Connection, OptionalExtension};
 use std::path::Path;
 
 /// Current schema version. Bump + add a migration arm when evolving.
-pub const SCHEMA_VERSION: i64 = 4;
+pub const SCHEMA_VERSION: i64 = 6;
 
 #[derive(Debug, thiserror::Error)]
 pub enum MigrationError {
@@ -63,6 +63,12 @@ impl DbHandle {
         }
         if current < 4 {
             self.apply_v4()?;
+        }
+        if current < 5 {
+            self.apply_v5()?;
+        }
+        if current < 6 {
+            self.apply_v6()?;
         }
         Ok(())
     }
@@ -179,6 +185,62 @@ impl DbHandle {
         tx.pragma_update(None, "user_version", 4)?;
         tx.commit()?;
         Ok(())
+    }
+
+    /// v5: one-use, expiring, payload-bound approvals (S9.18-003 slice). Only the
+    /// SHA-256 hash of the raw token is persisted — never the token itself.
+    fn apply_v5(&mut self) -> Result<(), MigrationError> {
+        let tx = self.conn.transaction()?;
+        tx.execute_batch(
+            "CREATE TABLE IF NOT EXISTS approvals (
+                token_hash      TEXT PRIMARY KEY,  -- sha256(token) hex; raw token never stored
+                principal       TEXT NOT NULL,     -- bound editor-user identity
+                action          TEXT NOT NULL,
+                payload_digest  TEXT NOT NULL,     -- sha256 of canonicalized args JSON
+                target          TEXT NOT NULL,
+                purpose         TEXT NOT NULL,     -- human-readable effect for the UI
+                session_ref     TEXT,
+                revision        INTEGER,
+                artifact        TEXT,
+                material        TEXT,
+                issued_ms       INTEGER NOT NULL,
+                expires_ms      INTEGER NOT NULL,
+                consumed_ms     INTEGER,
+                revoked         INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_approvals_principal ON approvals(principal, issued_ms);",
+        )
+        .map_err(|source| MigrationError::Apply { version: 5, source })?;
+        tx.pragma_update(None, "user_version", 5)?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    /// v6 (S9.18-003 continuation slice): dedicated nullable snapshot + project
+    /// bindings on approvals. `device_snapshot_ms` is the exact moment the
+    /// trusted resolver captured the context the approval was issued over, and
+    /// `project_id` is the trusted project id — both are FIRST-CLASS nullable
+    /// columns, deliberately NOT overloaded onto `revision`/`artifact`/`material`
+    /// string/raw fields. Legacy v5 rows keep NULL for both; NULL must never
+    /// authorize a device write when the consume context carries Some (the
+    /// broker compares at consume → ContextChanged). Generic job paths that
+    /// carry None/None keep working unchanged.
+    fn apply_v6(&mut self) -> Result<(), MigrationError> {
+        let tx = self.conn.transaction()?;
+        tx.execute_batch(
+            "ALTER TABLE approvals ADD COLUMN device_snapshot_ms INTEGER;
+             ALTER TABLE approvals ADD COLUMN project_id TEXT;",
+        )
+        .map_err(|source| MigrationError::Apply { version: 6, source })?;
+        tx.pragma_update(None, "user_version", 6)?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    /// Crate-internal access to the underlying connection (used by the approval
+    /// authority for its own atomic transactions).
+    pub(crate) fn conn(&self) -> &Connection {
+        &self.conn
     }
 
     /// Report the enforced schema version.
@@ -507,7 +569,7 @@ mod tests {
     #[test]
     fn migration_creates_v2_and_persists() {
         let db = DbHandle::open_in_memory().expect("migrate ok");
-        assert_eq!(db.schema_version().unwrap(), 4);
+        assert_eq!(db.schema_version().unwrap(), 6);
         db.create_project("p-1", "demo").unwrap();
         db.append_op("p-1", 1, "add_object", r#"{"id":"o-1"}"#)
             .unwrap();
@@ -554,7 +616,7 @@ mod tests {
             .unwrap();
         }
         let db = DbHandle::open(&path).unwrap();
-        assert_eq!(db.schema_version().unwrap(), 4);
+        assert_eq!(db.schema_version().unwrap(), 6);
         assert_eq!(db.slicing_mode("legacy-1").unwrap(), "standard");
         // data survived
         let n: i64 = db

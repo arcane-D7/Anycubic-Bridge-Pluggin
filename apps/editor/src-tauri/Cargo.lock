@@ -104,6 +104,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
+name = "auth-service"
+version = "0.1.0"
+dependencies = [
+ "getrandom 0.2.17",
+ "hex",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -188,9 +201,13 @@ dependencies = [
 name = "broker"
 version = "0.1.0"
 dependencies = [
+ "auth-service",
+ "getrandom 0.2.17",
+ "hex",
  "rusqlite",
  "serde",
  "serde_json",
+ "sha2",
  "thiserror 2.0.21",
 ]
 
@@ -772,6 +789,7 @@ dependencies = [
 name = "editor"
 version = "0.1.0"
 dependencies = [
+ "auth-service",
  "blender-bridge",
  "broker",
  "hex",
@@ -783,6 +801,7 @@ dependencies = [
  "sha2",
  "tauri",
  "tauri-build",
+ "tempfile",
 ]
 
 [[package]]
@@ -1169,6 +1188,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c5a7f08910fd98737a6eda7568e7c5e645093e073328eeef49758cfe8b0489c7"
 dependencies = [
  "libm",
+]
+
+[[package]]
+name = "getrandom"
+version = "0.2.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ff2abc00be7fca6ebc474524697ae276ad847ad0a6b3faa4bcb027e9a4614ad0"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "wasi",
 ]
 
 [[package]]

@@ -10,6 +10,15 @@ serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 
+# S9.18-003 slice — backend approval authority. Typed principal comes from the
+# auth tenant (auth-service); tokens are 32 bytes of OS RNG (getrandom), hex
+# encoded, and only their SHA-256 hash is persisted (sha2 + hex). All three
+# crates are already locked/built for this workspace — no new packages.
+auth-service = { path = "../auth-service" }
+getrandom = "0.2"
+sha2 = "0.10"
+hex = "0.4"
+
 [features]
 default = []
 file-keystore = []

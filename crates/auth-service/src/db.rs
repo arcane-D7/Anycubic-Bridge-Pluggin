@@ -11,7 +11,7 @@ use crate::api::{Scope, SyncState};
 use crate::principal::Principal;
 
 /// Current auth schema version.
-pub const AUTH_SCHEMA_VERSION: i64 = 1;
+pub const AUTH_SCHEMA_VERSION: i64 = 2;
 
 #[derive(Debug, thiserror::Error)]
 pub enum AuthDbError {
@@ -21,10 +21,18 @@ pub enum AuthDbError {
     NewerSchema { found: i64 },
 }
 
+/// Epoch-millis clock used for session expiry/revocation (injectable, e.g. in
+/// tests; each `AuthDb` owns its own closure so parallel tests never share a
+/// global clock).
+pub type AuthClock = Box<dyn Fn() -> i64>;
+
 /// Owns the loopback auth DB. Constructing this does **not** touch the
 /// workspace DB used by `broker`/`project-store`.
 pub struct AuthDb {
-    conn: Connection,
+    /// Crate-internal handle — used by `sessions` (and its tests) for raw
+    /// access without a full repository method.
+    pub(crate) conn: Connection,
+    clock: AuthClock,
 }
 
 impl AuthDb {
@@ -32,7 +40,10 @@ impl AuthDb {
     /// schema.
     pub fn open(path: impl AsRef<Path>) -> Result<Self, AuthDbError> {
         let conn = Connection::open(path)?;
-        let mut db = AuthDb { conn };
+        let mut db = AuthDb {
+            conn,
+            clock: Box::new(crate::now_ms),
+        };
         db.migrate()?;
         Ok(db)
     }
@@ -40,12 +51,35 @@ impl AuthDb {
     /// Open an in-memory auth DB (tests).
     pub fn open_in_memory() -> Result<Self, AuthDbError> {
         let conn = Connection::open_in_memory()?;
-        let mut db = AuthDb { conn };
+        let mut db = AuthDb {
+            conn,
+            clock: Box::new(crate::now_ms),
+        };
         db.migrate()?;
         Ok(db)
     }
 
+    /// Open an in-memory auth DB with a deterministic clock (tests).
+    pub fn open_in_memory_with_clock(
+        clock: impl Fn() -> i64 + 'static,
+    ) -> Result<Self, AuthDbError> {
+        let conn = Connection::open_in_memory()?;
+        let mut db = AuthDb {
+            conn,
+            clock: Box::new(clock),
+        };
+        db.migrate()?;
+        Ok(db)
+    }
+
+    /// Crate-internal: the current clock value (tests inject a fake).
+    pub(crate) fn now(&self) -> i64 {
+        (self.clock)()
+    }
+
     fn migrate(&mut self) -> Result<(), AuthDbError> {
+        // FK enforcement enables ON DELETE CASCADE for users → sessions/scopes.
+        self.conn.execute_batch("PRAGMA foreign_keys = ON;")?;
         let current: i64 = self
             .conn
             .query_row("PRAGMA user_version", [], |r| r.get(0))?;
@@ -54,6 +88,9 @@ impl AuthDb {
         }
         if current < 1 {
             self.apply_v1()?;
+        }
+        if current < 2 {
+            self.apply_v2()?;
         }
         Ok(())
     }
@@ -98,6 +135,21 @@ impl AuthDb {
         Ok(())
     }
 
+    /// v2: sessions gain expiry + an explicit scope binding. `expires_ms`
+    /// defaults to 0, so every pre-existing v1 session is **invalid** (never
+    /// resolvable as active). `scope` defaults to '' (unknown → never grants;
+    /// the exhaustive parser refuses it).
+    fn apply_v2(&mut self) -> Result<(), AuthDbError> {
+        let tx = self.conn.transaction()?;
+        tx.execute_batch(
+            "ALTER TABLE device_sessions ADD COLUMN expires_ms INTEGER NOT NULL DEFAULT 0;
+             ALTER TABLE device_sessions ADD COLUMN scope TEXT NOT NULL DEFAULT '';",
+        )?;
+        tx.pragma_update(None, "user_version", 2)?;
+        tx.commit()?;
+        Ok(())
+    }
+
     /// Register a local user (id, display name). Idempotent style: upsert.
     pub fn upsert_user(&mut self, id: &str, display_name: &str) -> Result<(), AuthDbError> {
         let now = crate::now_ms();
@@ -124,12 +176,13 @@ impl AuthDb {
         self.conn.execute(
             "INSERT INTO scopes (user_id, scope, granted_ms) VALUES (?1, ?2, ?3)
              ON CONFLICT(user_id, scope) DO UPDATE SET granted_ms = excluded.granted_ms",
-            rusqlite::params![user_id, scope_name(scope), now],
+            rusqlite::params![user_id, scope.name(), now],
         )?;
         Ok(())
     }
 
-    /// Scopes granted to a principal (empty for anonymous).
+    /// Scopes granted to a principal (empty for anonymous). Unknown scope
+    /// rows are SKIPPED — never defaulted to a grant (fail-closed parsing).
     pub fn scopes_for(&self, principal: &Principal) -> Result<Vec<Scope>, AuthDbError> {
         let user_id = match principal {
             Principal::Local { user_id } => user_id,
@@ -141,9 +194,31 @@ impl AuthDb {
         let rows = stmt.query_map([user_id], |r| r.get::<_, String>(0))?;
         let mut out = Vec::new();
         for row in rows {
-            out.push(scope_from_name(&row?));
+            let name = row?;
+            if let Some(scope) = Scope::from_name(&name) {
+                out.push(scope);
+            }
         }
         Ok(out)
+    }
+
+    /// Revoke a previously granted scope (removes the row; unknown/never
+    /// granted → no-op).
+    pub fn revoke_scope(&mut self, user_id: &str, scope: Scope) -> Result<(), AuthDbError> {
+        self.conn.execute(
+            "DELETE FROM scopes WHERE user_id = ?1 AND scope = ?2",
+            rusqlite::params![user_id, scope.name()],
+        )?;
+        Ok(())
+    }
+
+    /// Remove a user and everything tied to it (sessions, scopes, sync state;
+    /// ON DELETE CASCADE). Returns true when a user was deleted.
+    pub fn remove_user(&mut self, user_id: &str) -> Result<bool, AuthDbError> {
+        let changed = self
+            .conn
+            .execute("DELETE FROM users WHERE id = ?1", [user_id])?;
+        Ok(changed > 0)
     }
 
     /// `sync_state` for a principal+scope name. Anonymous → `Unavailable`;
@@ -202,21 +277,6 @@ impl AuthDb {
             .conn
             .query_row("SELECT COUNT(*) FROM audit_log", [], |r| r.get(0))?;
         Ok(n as u64)
-    }
-}
-
-/// Scope serialized form (informational; scopes are just strings in the DB).
-fn scope_name(scope: Scope) -> &'static str {
-    match scope {
-        Scope::LocalProject => "local_project",
-        Scope::CloudSynced => "cloud_synced",
-    }
-}
-
-fn scope_from_name(name: &str) -> Scope {
-    match name {
-        "cloud_synced" => Scope::CloudSynced,
-        _ => Scope::LocalProject,
     }
 }
 

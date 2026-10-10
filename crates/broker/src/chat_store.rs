@@ -196,10 +196,7 @@ impl ChatStore {
                 let bytes = serde_json::to_vec(&v)?;
                 {
                     use std::io::Write;
-                    let mut f = fs::OpenOptions::new()
-                        .write(true)
-                        .create(true)
-                        .open(&tmp)?;
+                    let mut f = fs::OpenOptions::new().write(true).create(true).open(&tmp)?;
                     f.write_all(&bytes)?;
                     f.flush()?;
                 }
@@ -269,7 +266,11 @@ mod tests {
     fn roundtrip_put_get() {
         let d = temp_dir();
         let store = ChatStore::open(d.path()).expect("open");
-        let v = FakeConvo { id: "conversation-1".into(), title: "Job A".into(), revision: 3 };
+        let v = FakeConvo {
+            id: "conversation-1".into(),
+            title: "Job A".into(),
+            revision: 3,
+        };
         store.put("conversation-1", &v).expect("put");
         let got = store.get::<FakeConvo>("conversation-1").expect("get");
         assert_eq!(got, Some(v));
@@ -282,8 +283,16 @@ mod tests {
     fn put_is_atomic_and_append_journal() {
         let d = temp_dir();
         let store = ChatStore::open(d.path()).expect("open");
-        let v1 = FakeConvo { id: "c1".into(), title: "one".into(), revision: 1 };
-        let v2 = FakeConvo { id: "c1".into(), title: "two".into(), revision: 2 };
+        let v1 = FakeConvo {
+            id: "c1".into(),
+            title: "one".into(),
+            revision: 1,
+        };
+        let v2 = FakeConvo {
+            id: "c1".into(),
+            title: "two".into(),
+            revision: 2,
+        };
         store.put("c1", &v1).expect("put1");
         store.put("c1", &v2).expect("put2");
         let got = store.get::<FakeConvo>("c1").expect("get");
@@ -292,14 +301,21 @@ mod tests {
         let journal = fs::read_to_string(store.journal_path("c1")).expect("journal");
         assert_eq!(journal.lines().count(), 2);
         // no leftover tmp
-        assert!(!store.snapshot_path("c1").with_extension("json.tmp").exists());
+        assert!(!store
+            .snapshot_path("c1")
+            .with_extension("json.tmp")
+            .exists());
     }
 
     #[test]
     fn corrupt_snapshot_recovered_from_journal() {
         let d = temp_dir();
         let store = ChatStore::open(d.path()).expect("open");
-        let v = FakeConvo { id: "c1".into(), title: "ok".into(), revision: 5 };
+        let v = FakeConvo {
+            id: "c1".into(),
+            title: "ok".into(),
+            revision: 5,
+        };
         store.put("c1", &v).expect("put");
         // corrupt the snapshot
         fs::write(store.snapshot_path("c1"), "{oops".as_bytes()).expect("corrupt");
@@ -316,7 +332,16 @@ mod tests {
     fn delete_removes_snapshot_and_journal() {
         let d = temp_dir();
         let store = ChatStore::open(d.path()).expect("open");
-        store.put("c1", &FakeConvo { id: "c1".into(), title: "t".into(), revision: 1 }).expect("put");
+        store
+            .put(
+                "c1",
+                &FakeConvo {
+                    id: "c1".into(),
+                    title: "t".into(),
+                    revision: 1,
+                },
+            )
+            .expect("put");
         assert!(store.exists("c1").expect("exists"));
         store.delete("c1").expect("delete");
         assert!(!store.exists("c1").expect("exists-after-delete"));
@@ -327,8 +352,26 @@ mod tests {
     fn list_returns_persisted_ids_only() {
         let d = temp_dir();
         let store = ChatStore::open(d.path()).expect("open");
-        store.put("conversation-1", &FakeConvo { id: "conversation-1".into(), title: "a".into(), revision: 0 }).expect("p1");
-        store.put("conversation-2", &FakeConvo { id: "conversation-2".into(), title: "b".into(), revision: 0 }).expect("p2");
+        store
+            .put(
+                "conversation-1",
+                &FakeConvo {
+                    id: "conversation-1".into(),
+                    title: "a".into(),
+                    revision: 0,
+                },
+            )
+            .expect("p1");
+        store
+            .put(
+                "conversation-2",
+                &FakeConvo {
+                    id: "conversation-2".into(),
+                    title: "b".into(),
+                    revision: 0,
+                },
+            )
+            .expect("p2");
         let ids = store.list().expect("list");
         assert_eq!(ids.len(), 2);
         assert!(ids.contains(&"conversation-1".to_string()));
@@ -344,7 +387,16 @@ mod tests {
             ChatStoreError::InsecureId(_)
         ));
         assert!(matches!(
-            store.put("a\\b", &FakeConvo { id: "x".into(), title: "t".into(), revision: 0 }).unwrap_err(),
+            store
+                .put(
+                    "a\\b",
+                    &FakeConvo {
+                        id: "x".into(),
+                        title: "t".into(),
+                        revision: 0
+                    }
+                )
+                .unwrap_err(),
             ChatStoreError::InsecureId(_)
         ));
         assert!(matches!(

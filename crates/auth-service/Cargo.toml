@@ -12,5 +12,13 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 rusqlite = { version = "0.32", features = ["bundled"] }
 
+# S9.17-003/S9.18-003 slice — local verified-session repository. Raw session
+# tokens are 32 bytes of OS RNG (getrandom), hex encoded, and only their
+# SHA-256 hash is persisted (sha2 + hex). All three crates are already locked/
+# built for this workspace (broker uses them) — no new packages.
+getrandom = "0.2"
+sha2 = "0.10"
+hex = "0.4"
+
 [dev-dependencies]
 tempfile = "3"

@@ -21,16 +21,18 @@ use auth_service::db::AuthDb;
 use auth_service::principal::Principal;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // `--db <path>` overrides $AUTH_DB, which overrides "auth.db".
-    let mut db_path = std::env::var("AUTH_DB").unwrap_or_else(|_| "auth.db".to_string());
-    let mut args = std::env::args().skip(1);
-    while let Some(arg) = args.next() {
-        if arg == "--db" {
-            if let Some(p) = args.next() {
-                db_path = p;
-            }
-        }
-    }
+    // Single owner for the auth DB path: `--db <path>` > `ANYCUBIC_AUTH_DB` >
+    // legacy `AUTH_DB` > platform app-data default (`auth_service::config`).
+    // Relative explicit values resolve against the startup working directory
+    // (preserves the historical `"auth.db"` == `<cwd>/auth.db` convention).
+    // The resolver never touches the DB file or its directory.
+    let cli_db = auth_service::config::cli_db_from_args(std::env::args().skip(1));
+    let db_path = auth_service::config::resolve_auth_db_path(
+        cli_db.as_deref(),
+        &|key| std::env::var(key).ok(),
+        auth_service::config::current_platform(),
+        &auth_service::config::current_dir(),
+    )?;
 
     let mut db = AuthDb::open(&db_path)?;
     let stdin = io::stdin();
@@ -90,7 +92,11 @@ fn handle(db: &mut AuthDb, op: &str, req: &serde_json::Value) -> serde_json::Val
             if let Err(e) = db.upsert_user(user, user) {
                 return json_err("grant", &format!("{e}"));
             }
-            match db.grant_scope(user, scope_from_name(scope)) {
+            // Fail-closed: an unknown scope name is refused, never defaulted.
+            let Some(parsed) = scope_from_name(scope) else {
+                return json_err("grant", &format!("unknown scope {scope:?}"));
+            };
+            match db.grant_scope(user, parsed) {
                 Ok(()) => serde_json::json!({ "ok": "granted", "user": user, "scope": scope }),
                 Err(e) => json_err("grant", &format!("{e}")),
             }
@@ -137,18 +143,11 @@ fn json_err(op: &str, msg: &str) -> serde_json::Value {
 }
 
 fn scope_name(scope: Scope) -> &'static str {
-    match scope {
-        Scope::LocalProject => "local_project",
-        Scope::CloudSynced => "cloud_synced",
-    }
+    Scope::name(scope)
 }
 
-fn scope_from_name(name: &str) -> Scope {
-    if name == "cloud_synced" {
-        Scope::CloudSynced
-    } else {
-        Scope::LocalProject
-    }
+fn scope_from_name(name: &str) -> Option<Scope> {
+    Scope::from_name(name)
 }
 
 fn sync_name(state: SyncState) -> &'static str {

@@ -18,6 +18,57 @@ pub enum Scope {
     LocalProject,
     /// Cloud-synced reads (require an identified principal; auth off → empty).
     CloudSynced,
+    /// Device-control capability: authorizes protected writes (temperature,
+    /// fan, speed, lights, ACE). This scope NEVER covers reads.
+    DeviceControl,
+    /// Device-upload capability (DEV-10): authorizes writing artifacts to
+    /// the account cloud shelf via the typed upload effect. A protected
+    /// WRITER scope — unrelated to the read-only `CloudSynced` scope; it
+    /// never covers reads.
+    DeviceUpload,
+    /// Print-job capability (DEV-10): authorizes the queue / start / stop
+    /// print-job effects. A protected WRITER scope; it never covers reads.
+    PrintJob,
+}
+
+impl Scope {
+    /// Stable wire/storage name (also the `scopes`/`device_sessions` column
+    /// value). The parser side (`Scope::from_name`) is exhaustive and
+    /// fail-closed: an unknown name is `None`, never a fallback grant.
+    pub fn name(self) -> &'static str {
+        match self {
+            Scope::LocalProject => "local_project",
+            Scope::CloudSynced => "cloud_synced",
+            Scope::DeviceControl => "device_control",
+            Scope::DeviceUpload => "device_upload",
+            Scope::PrintJob => "print_job",
+        }
+    }
+
+    /// Parse a storage name. **Exhaustive allowlist:** unknown names return
+    /// `None` — never a default scope — so a corrupted/unknown row cannot
+    /// silently widen to a grant.
+    pub fn from_name(name: &str) -> Option<Scope> {
+        match name {
+            "local_project" => Some(Scope::LocalProject),
+            "cloud_synced" => Some(Scope::CloudSynced),
+            "device_control" => Some(Scope::DeviceControl),
+            "device_upload" => Some(Scope::DeviceUpload),
+            "print_job" => Some(Scope::PrintJob),
+            _ => None,
+        }
+    }
+
+    /// Scopes that can back a session (an explicit writable capability).
+    /// `LocalProject`/`CloudSynced` are READ scopes and must never grant
+    /// writer access. Only the protected writers — `DeviceControl`,
+    /// `DeviceUpload` and `PrintJob` — are session capabilities.
+    pub fn is_session_capability(self) -> bool {
+        matches!(
+            self,
+            Scope::DeviceControl | Scope::DeviceUpload | Scope::PrintJob
+        )
+    }
 }
 
 /// Sync state of cloud data for the current principal.

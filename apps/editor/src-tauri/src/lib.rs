@@ -29,6 +29,15 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tauri::{Manager, State};
 
+// S9.18-003 continuation slice — typed Tauri approval bridge (device control).
+// Backend-managed compound authority: separate `auth.db` + the same
+// `workspace.db` the project store owns, with a trusted-resolver gate.
+mod device_control;
+use device_control::{
+    device_control_approve, device_control_availability, device_control_dispatch,
+    device_control_preflight,
+};
+
 /// Managed handle to the shared chat store (single-writer, like the DB).
 struct ChatStoreState(Mutex<ChatStore>);
 
@@ -1147,7 +1156,7 @@ fn workspace_db_path() -> Result<PathBuf, String> {
     Ok(app_dir.join("workspace.db"))
 }
 
-fn workspace_data_dir() -> Result<PathBuf, String> {
+pub(crate) fn workspace_data_dir() -> Result<PathBuf, String> {
     let db_path = workspace_db_path()?;
     db_path
         .parent()
@@ -1219,17 +1228,13 @@ fn project_reprint_preflight(
     let db = DbHandle::open(workspace_db_path()?).map_err(|error| error.to_string())?;
     let project_id = ProjectAuthority::list(&db)
         .map_err(|error| error.to_string())?
-    .into_iter()
-    .find(|project| project.id == "local-project")
-    .map(|project| project.id)
-    .ok_or_else(|| "active project is unavailable".to_owned())?;
+        .into_iter()
+        .find(|project| project.id == "local-project")
+        .map(|project| project.id)
+        .ok_or_else(|| "active project is unavailable".to_owned())?;
     let authority = reopen_project_authority(&project_id)?;
     authority
-        .preflight_reprint(
-            &source_job_id,
-            &intent_id,
-            &UnavailableReprintDestination,
-        )
+        .preflight_reprint(&source_job_id, &intent_id, &UnavailableReprintDestination)
         .map_err(|error| error.to_string())
 }
 
@@ -1376,6 +1381,93 @@ struct ProjectCommitReply {
     diagnostics: Vec<String>,
 }
 
+// S9.17-004 — Workbench Live backend slice. `live_job_binding` is a
+// REGISTERED read-only command that always replies with a typed view; this
+// build has no physical job publisher (no login, no device binding
+// publisher), so the reply is EXPLICITLY `available: false` with
+// `unavailable_reason: "no-physical-job-source"`. Absence is never a
+// swallowed unknown command, and no binding/printer id is ever invented.
+// `live_artifact_read` serves the artifact BLOCK from the project-owned CAS
+// (project-blobs); the frontend strict-parses the IR (parseIrDocument 1.1)
+// before any preview routes.
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LiveJobBindingArgs {
+    project_id: Option<String>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct LiveJobBindingReply {
+    observed_job_id: Option<String>,
+    observed_printer_id: Option<String>,
+    job_binding: Option<serde_json::Value>,
+    artifact: Option<serde_json::Value>,
+    source: String,
+    available: bool,
+    unavailable_reason: String,
+}
+
+#[tauri::command]
+fn live_job_binding(_args: LiveJobBindingArgs) -> LiveJobBindingReply {
+    LiveJobBindingReply {
+        observed_job_id: None,
+        observed_printer_id: None,
+        job_binding: None,
+        artifact: None,
+        source: "tauri".to_owned(),
+        available: false,
+        unavailable_reason: "no-physical-job-source".to_owned(),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LiveArtifactReadArgs {
+    project_id: String,
+    artifact_id: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct LiveArtifactReadView {
+    artifact_id: String,
+    source_revision: u64,
+    current_revision: u64,
+    ir: serde_json::Value,
+}
+
+#[tauri::command]
+fn live_artifact_read(args: LiveArtifactReadArgs) -> Result<LiveArtifactReadView, String> {
+    if args.project_id.trim().is_empty() || args.artifact_id.trim().is_empty() {
+        return Err("project id and artifact id are required".into());
+    }
+    let authority = reopen_project_authority(&args.project_id)?;
+    let current_revision = authority.snapshot().map_err(|error| error.to_string())?.revision;
+    let artifact_bytes = authority
+        .get_artifact(&args.artifact_id)
+        .map_err(|error| error.to_string())?;
+    let artifact_bytes = artifact_bytes.ok_or_else(|| "artifact not found".to_owned())?;
+    let artifact: serde_json::Value =
+        serde_json::from_slice(&artifact_bytes).map_err(|error| error.to_string())?;
+    let source_revision = artifact
+        .get("source_revision")
+        .and_then(serde_json::Value::as_u64)
+        .or_else(|| artifact.get("sourceRevision").and_then(serde_json::Value::as_u64))
+        .ok_or_else(|| "artifact records no source revision".to_owned())?;
+    let ir = artifact
+        .get("ir")
+        .cloned()
+        .ok_or_else(|| "artifact has no IR payload".to_owned())?;
+    Ok(LiveArtifactReadView {
+        artifact_id: args.artifact_id,
+        source_revision,
+        current_revision,
+        ir,
+    })
+}
+
 pub fn run() {
     tauri::Builder::default()
         .manage(ChatStoreState(Mutex::new(
@@ -1387,7 +1479,12 @@ pub fn run() {
         ))))
         .manage(GeometryWorkerState(Mutex::new(())))
         .manage(SliceJobsState(Mutex::new(HashMap::new())))
+        .manage(device_control::DeviceAuthorityState::open())
         .invoke_handler(tauri::generate_handler![
+            device_control_availability,
+            device_control_preflight,
+            device_control_approve,
+            device_control_dispatch,
             app_info,
             chat_store_dir,
             chat_store_put,
@@ -1407,6 +1504,8 @@ pub fn run() {
             project_geometry_execute,
             slice_job_run,
             slice_job_cancel,
+            live_job_binding,
+            live_artifact_read,
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").expect("main window");

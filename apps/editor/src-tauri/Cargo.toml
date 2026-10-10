@@ -28,9 +28,19 @@ tauri = { version = "2", features = [] }
 serde = "1"
 serde_json = "1"
 broker = { path = "../../../crates/broker" }
+# S9.18-003 continuation slice — the typed approval bridge resolves sessions
+# through the backend session repository (`auth.db`). auth-service is already
+# in the workspace lockfile (broker depends on it); no new packages.
+auth-service = { path = "../../../crates/auth-service" }
 blender-bridge = { path = "../../../crates/blender-bridge" }
 project-store = { path = "../../../crates/project-store" }
 planar-core = { path = "../../../crates/planar-core" }
 machine-profile = { path = "../../../crates/machine-profile" }
 sha2 = "0.10"
 hex = "0.4"
+
+# Test-only: isolated temp DBs for the writer-authority path/config tests.
+# tempfile is already in the workspace lockfile (auth-service dev-dep); no
+# new packages.
+[dev-dependencies]
+tempfile = "3"
