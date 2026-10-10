@@ -1,11 +1,11 @@
 //! S9.6-008 — integration tests for the broker-server loopback.
 
 use axum::body::{to_bytes, Body};
+use axum::extract::State;
 use axum::http::{header, HeaderMap, Method, Request};
-use axum::Extension;
 use broker_server::{
-    chat_handler, router, sse_body_for, ALLOWED_ORIGIN_DEV, ChatRequest, EgressConfig,
-    UiMessageChunk, UI_STREAM_HEADER,
+    chat_handler, router, sse_body_for, AppState, ChatRequest, EgressConfig, UiMessageChunk,
+    ALLOWED_ORIGIN_DEV, UI_STREAM_HEADER,
 };
 use tower::ServiceExt as _; // oneshot
 
@@ -72,7 +72,7 @@ async fn loopback_echo_streams_ui_protocol() {
 async fn chat_handler_streams_sse_with_headers() {
     let res = chat_handler(
         dev_headers(),
-        Extension(EgressConfig::default()),
+        State(AppState::from_config(EgressConfig::default())),
         axum::Json(chat_request_json()),
     )
     .await;
@@ -86,13 +86,17 @@ async fn chat_handler_streams_sse_with_headers() {
         "text/event-stream; charset=utf-8"
     );
     assert_eq!(
-        res.headers().get(UI_STREAM_HEADER).unwrap().to_str().unwrap(),
+        res.headers()
+            .get(UI_STREAM_HEADER)
+            .unwrap()
+            .to_str()
+            .unwrap(),
         "v1"
     );
     // CORS vem do layer — o handler não os duplica (testado no router).
     assert_eq!(res.headers().get(header::ACCESS_CONTROL_ALLOW_ORIGIN), None);
-    let text = String::from_utf8_lossy(&to_bytes(res.into_body(), 128 * 1024).await.unwrap())
-        .into_owned();
+    let text =
+        String::from_utf8_lossy(&to_bytes(res.into_body(), 128 * 1024).await.unwrap()).into_owned();
     assert!(text.contains(r#""type":"start""#));
     assert!(text.contains(r#""finishReason":"stop""#));
     assert!(text.ends_with("data: [DONE]\n\n"));
@@ -104,7 +108,7 @@ async fn chat_handler_rejects_unknown_origin() {
     headers.insert(header::ORIGIN, "http://evil.example".parse().unwrap());
     let res = chat_handler(
         headers,
-        Extension(EgressConfig::default()),
+        State(AppState::from_config(EgressConfig::default())),
         axum::Json(chat_request_json()),
     )
     .await;

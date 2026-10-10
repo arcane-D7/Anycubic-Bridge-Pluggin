@@ -19,11 +19,15 @@ export default defineConfig({
   // a blanket ANYCUBIC_ prefix — tokens/access codes stay server-side.
   // S9.13-002: the CLOUD lane is also loopback-only — we expose the bridge
   // URL + region (no token ever leaves the MCP child).
+  // S9.18-001: the broker lane env is loopback-only too — expose exactly
+  // ANYCUBIC_BROKER_URL (the status/chunk protocol is public-safe), never
+  // ANYCUBIC_MODEL_* secrets (those stay in the Rust broker process).
   envPrefix: [
     "VITE_",
     "ANYCUBIC_PRINTER_IPS",
     "ANYCUBIC_CLOUD_LOOPBACK_URL",
     "ANYCUBIC_CLOUD_REGION",
+    "ANYCUBIC_BROKER_URL",
   ],
   server: {
     port: 1420,

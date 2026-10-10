@@ -42,6 +42,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { redact } from "./cloud-readonly-diagnostics.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const mcpEntry = path.join(root, "scripts", "mcp-entry.mjs");
@@ -55,6 +56,27 @@ const STATE = Object.freeze({
   READY: "ready",
   UNAVAILABLE: "unavailable",
 });
+
+const CLOUD_REGIONS = new Set(["en", "cn"]);
+const SNAPSHOT_KINDS = new Set([
+  "printers_status",
+  "printer_status",
+  "printer_info",
+  "printer_tool",
+  "printer_functions",
+  "print_history",
+  "print_history_detail",
+  "project_info",
+  "project_monitor",
+  "work_project_error_list",
+  "project_list",
+  "gcode_info_fdm",
+  "gcode_info",
+  "cloud_file_info",
+  "model_file_info",
+  "multi_color_box_info",
+  "video_thumbnail_list",
+]);
 
 function json(res, status, body, origin) {
   const payload = JSON.stringify(body);
@@ -112,13 +134,15 @@ export async function startCloudBridge(options = {}) {
   const timeoutMs = options.timeoutMs ?? 30_000;
 
   // 1. Spawn the preserved MCP server (resolves dist/server.mjs itself).
-  const transport = new StdioClientTransport({
-    command: process.execPath,
-    args: [mcpEntry],
-    stderr: "pipe",
-    cwd: root,
-  });
-  const client = new Client({ name: "cloud-bridge", version: "0.1.0" });
+  const transport = options.client
+    ? null
+    : new StdioClientTransport({
+        command: process.execPath,
+        args: [mcpEntry],
+        stderr: "pipe",
+        cwd: root,
+      });
+  const client = options.client ?? new Client({ name: "cloud-bridge", version: "0.1.0" });
 
   // 2. HTTP server — loopback only, Origin allow-list (CORS parity).
   let unavailable = false;
@@ -160,25 +184,47 @@ export async function startCloudBridge(options = {}) {
     if (pathname === "/printer/cloud/login") {
       if (req.method !== "POST") return json(res, 405, { ok: false, error: "POST only" });
       if (unavailable) return json(res, 502, { ok: false, error: "mcp server not running" });
-      let body = {};
+      let body;
       try {
         const raw = await readBody(req);
-        if (raw) body = JSON.parse(raw);
+        body = raw ? JSON.parse(raw) : {};
       } catch {
         return json(res, 400, { ok: false, error: "invalid JSON body" });
       }
+      if (!body || typeof body !== "object" || Array.isArray(body)) {
+        return json(res, 400, { ok: false, error: "JSON body must be an object" });
+      }
+      const allowedLoginKeys = new Set(["region", "timeout_ms"]);
+      if (Object.keys(body).some((key) => !allowedLoginKeys.has(key))) {
+        return json(res, 400, { ok: false, error: "unsupported login field" });
+      }
+      const region = body.region ?? process.env.ANYCUBIC_CLOUD_REGION ?? "en";
+      const loginTimeout = body.timeout_ms ?? 15_000;
+      if (
+        !CLOUD_REGIONS.has(region) ||
+        !Number.isInteger(loginTimeout) ||
+        loginTimeout < 500 ||
+        loginTimeout > 30_000
+      ) {
+        return json(res, 400, { ok: false, error: "invalid region or timeout_ms" });
+      }
       try {
-        const reply = await client.callTool({ name: "account_login", arguments: body }, undefined, {
-          timeout: timeoutMs,
-        });
-        if (reply.isError) return json(res, 502, { ok: false, error: structuredText(reply) });
+        const reply = await client.callTool(
+          { name: "account_login", arguments: { region, timeout_ms: loginTimeout } },
+          undefined,
+          {
+            timeout: timeoutMs,
+          },
+        );
+        if (reply.isError) return json(res, 502, { ok: false, error: "cloud login failed" });
         const data = reply.structuredContent ?? tryParseText(reply) ?? {};
-        // Never return a token to the webview — only non-secret fields.
-        const { token: _t, ...safe } = data;
-        return json(res, 200, { ...safe, ok: data.ok !== false });
+        return json(res, 200, {
+          ok: data.ok !== false,
+          region: CLOUD_REGIONS.has(data.region) ? data.region : region,
+        });
       } catch (error) {
         unavailable = true;
-        return json(res, 502, { ok: false, error: String(error.message ?? error).slice(0, 200) });
+        return json(res, 502, { ok: false, error: "cloud login failed" });
       }
     }
 
@@ -195,7 +241,8 @@ export async function startCloudBridge(options = {}) {
           undefined,
           { timeout: timeoutMs },
         );
-        if (reply.isError) return json(res, 502, { ok: false, error: structuredText(reply) });
+        if (reply.isError)
+          return json(res, 502, { ok: false, error: "cloud device lookup failed" });
         const data = reply.structuredContent ?? tryParseText(reply) ?? {};
         const devices = Array.isArray(data.devices) ? data.devices : [];
         return json(res, 200, {
@@ -205,7 +252,7 @@ export async function startCloudBridge(options = {}) {
         });
       } catch (error) {
         unavailable = true;
-        return json(res, 502, { ok: false, error: String(error.message ?? error).slice(0, 200) });
+        return json(res, 502, { ok: false, error: "cloud device lookup failed" });
       }
     }
 
@@ -213,9 +260,19 @@ export async function startCloudBridge(options = {}) {
       if (req.method !== "GET") return json(res, 405, { ok: false, error: "GET only" });
       if (unavailable) return json(res, 502, { ok: false, error: "mcp server not running" });
       const printerId = url.searchParams.get("printerId");
-      const kind = url.searchParams.get("kind") ?? "printer_all";
+      const kind = url.searchParams.get("kind") ?? "printer_info";
       const region = url.searchParams.get("region") ?? process.env.ANYCUBIC_CLOUD_REGION ?? "en";
-      if (!printerId) return json(res, 400, { ok: false, error: "printerId query param required" });
+      if (
+        [...url.searchParams.keys()].some((key) => !["printerId", "kind", "region"].includes(key))
+      ) {
+        return json(res, 400, { ok: false, error: "unsupported snapshot query parameter" });
+      }
+      if (!/^[1-9]\d*$/.test(printerId ?? "") || !Number.isSafeInteger(Number(printerId))) {
+        return json(res, 400, { ok: false, error: "printerId must be a positive safe integer" });
+      }
+      if (!SNAPSHOT_KINDS.has(kind) || !CLOUD_REGIONS.has(region)) {
+        return json(res, 400, { ok: false, error: "invalid kind or region" });
+      }
       try {
         const reply = await client.callTool(
           {
@@ -230,26 +287,32 @@ export async function startCloudBridge(options = {}) {
           undefined,
           { timeout: timeoutMs },
         );
-        if (reply.isError) return json(res, 502, { ok: false, error: structuredText(reply) });
+        if (reply.isError)
+          return json(res, 502, { ok: false, error: "cloud snapshot lookup failed" });
         const data = reply.structuredContent ?? tryParseText(reply) ?? {};
-        return json(res, 200, { ok: data.ok !== false, diagnostic: data.diagnostic ?? null });
+        return json(res, 200, {
+          ok: data.ok !== false,
+          diagnostic: redact(data.diagnostic ?? null),
+        });
       } catch (error) {
         unavailable = true;
-        return json(res, 502, { ok: false, error: String(error.message ?? error).slice(0, 200) });
+        return json(res, 502, { ok: false, error: "cloud snapshot lookup failed" });
       }
     }
 
     return json(res, 404, { ok: false, error: "not found" });
   });
 
-  transport.onclose = () => {
-    unavailable = true;
-  };
-  transport.onerror = () => {
-    unavailable = true;
-  };
+  if (transport) {
+    transport.onclose = () => {
+      unavailable = true;
+    };
+    transport.onerror = () => {
+      unavailable = true;
+    };
+  }
 
-  await client.connect(transport);
+  if (transport) await client.connect(transport);
 
   await new Promise((resolve, reject) => {
     server.once("error", reject);
@@ -267,7 +330,7 @@ export async function startCloudBridge(options = {}) {
     isReady: !unavailable,
     async close() {
       try {
-        await client.close();
+        if (transport) await client.close();
       } catch {
         /* upstream already gone */
       }
@@ -275,11 +338,6 @@ export async function startCloudBridge(options = {}) {
     },
   };
   return handle;
-}
-
-function structuredText(reply) {
-  const text = reply?.content?.[0]?.text ?? "";
-  return String(text).slice(0, 200);
 }
 
 /** Map the MCP `account_devices` entry to a minimal, agnostic device shape
