@@ -6,33 +6,55 @@ import { useI18n } from "@/state/i18n";
 import { usePrinterDevice } from "@/state/printer-device";
 import { printReady } from "@/state/printer-print-guard-core";
 import type { MsgKey } from "@/state/i18n-core";
-import { activeProjectScene } from "@/bridge/project-provider";
+import { activeProjectProvider, activeProjectScene } from "@/bridge/project-provider";
 import { useScene } from "@/state/scene";
 import { usePresets } from "@/state/presets";
 import { materialBindingDiagnostics } from "@/state/material-assign-core";
 import { FILAMENT_PRESETS } from "@/presets/catalog";
 
 /**
- * Send-to-print dialog (S9.5-004, G25) — reuses the S9-006 approval-card
- * pattern (pending/approved/rejected + token hashing) to gate the ONLY path
- * that sends a control order to a printer.
+ * Print job approval dialog (S9.5-004, G25 + S9.17-003 SimSend).
+ *
+ * UI TRUTHFULNESS: the dialog is SIMULATION-ONLY. It mounts exclusively in
+ * demo mode (App.tsx) and requires the caller to pass `simulationOnly` — an
+ * approved card runs the DEMO simulator lane and reports "Simulation
+ * complete", NEVER "Job sent": no data is uploaded and no printer command
+ * is sent. The card itself states this ("Demo simulation, no data uploaded
+ * and no printer command sent.") and the token line is a local FNV hash
+ * that pins the payload — it is not an authentication proof or a transport
+ * authority.
  *
  * Flow:
- *  1. A ready slice (stats panel) + an armed printer (PrinterPicker) lets the
- *     user click "Send to printer" — the dialog opens with a pending card.
- *  2. The card shows the exact payload (printer, stats summary) + a token hash
- *     that pins that payload. Nothing is sent until the user approves.
- *  3. Approve → the send lane runs (progress via the print job machine) →
- *     completion toast; reject/close → nothing leaves the editor.
- *  4. Offline / region failures surface as semantic error toasts.
+ *  1. A ready slice (stats panel) + an armed printer lets the user click
+ *     "Simulate send" — the dialog opens with a pending card.
+ *  2. The card shows the exact payload + a token hash pinning it. Nothing
+ *     runs until the user approves; reject/close → nothing leaves the
+ *     editor (no real transport exists to leave).
+ *  3. Approve → the simulation stage runs (timers only, no network) →
+ *     "Simulation complete".
+ *  4. A hard guard re-checks the provider at run time: if the provider is
+ *     no longer demo, the run is ABORTED — there is deliberately NO real
+ *     fallback path that could reach a real project handle.
  */
-const SEND_STAGES = [
+const SEND_STAGES_REAL = [
   { stage: "negotiate", key: "send.stage.negotiate" },
   { stage: "upload", key: "send.stage.upload" },
   { stage: "queue", key: "send.stage.queue" },
 ] as const satisfies readonly { readonly stage: string; readonly key: MsgKey }[];
 
-export function PrintJobDialog() {
+/** Single simulation stage — timers only, no upload/queue claims when
+ * simulating (S9.17-003). */
+const SEND_STAGES_SIM = [
+  { stage: "simulate", key: "send.stage.simulate" },
+] as const satisfies readonly { readonly stage: string; readonly key: MsgKey }[];
+
+interface PrintJobDialogProps {
+  /** MANDATORY: true only when the provider is the demo simulator. When
+   * false the dialog renders nothing — there is no real send UI behind it. */
+  readonly simulationOnly: boolean;
+}
+
+export function PrintJobDialog({ simulationOnly }: PrintJobDialogProps) {
   const t = useI18n((s) => s.t);
   const status = usePrintJob((s) => s.status);
   const stats = usePrintJob((s) => s.stats);
@@ -158,10 +180,27 @@ export function PrintJobDialog() {
     setRanSend(true);
     sendStart();
     try {
+      // S9.17-003 hard guard: the demo simulator must NEVER fall through to
+      // a real provider's transport if the provider flipped mid-run — there
+      // is deliberately NO real fallback from an unavailable state.
+      const provider = await activeProjectProvider();
+      if (provider.mode !== "demo") {
+        sendError(provider.reason ?? "simulation provider unavailable");
+        closeSendApproval();
+        setRanSend(false);
+        pushToast({
+          kind: "error",
+          title: t("send.unavailable.title"),
+          message: t("send.unavailable.message"),
+        });
+        return;
+      }
       const handle = await activeProjectScene();
-      for (let i = 0; i < SEND_STAGES.length; i += 1) {
-        const { stage } = SEND_STAGES[i]!;
-        reportSendStage((i + 1) / SEND_STAGES.length, stage);
+      const stages = simulationOnly ? SEND_STAGES_SIM : SEND_STAGES_REAL;
+      for (let i = 0; i < stages.length; i += 1) {
+        const { stage } = stages[i]!;
+        reportSendStage((i + 1) / stages.length, stage);
+        // Simulation timing only — no network traffic is produced.
         await new Promise((r) => setTimeout(r, 320));
       }
       const result = await handle.sendJob({
@@ -180,13 +219,27 @@ export function PrintJobDialog() {
         });
         return;
       }
-      setTaskId(result.taskId);
+      // Honest result: a demo run completes with a SIMULATION receipt, not a
+      // physical task — the UI reports "Simulation complete", never "Job sent".
+      const simulationId = result.simulation?.simulationId ?? result.taskId;
+      setTaskId(simulationId);
       sendFinished();
-      pushToast({
-        kind: "success",
-        title: t("send.jobSent.title"),
-        message: t("send.jobSent.message", { name: selected.name, taskId: result.taskId }),
-      });
+      if (simulationOnly) {
+        pushToast({
+          kind: "success",
+          title: t("send.simulationComplete"),
+          message: t("send.simulationCompleteMessage", {
+            name: selected.name,
+            simulationId,
+          }),
+        });
+      } else {
+        pushToast({
+          kind: "success",
+          title: t("send.jobSent.title"),
+          message: t("send.jobSent.message", { name: selected.name, taskId: result.taskId }),
+        });
+      }
     } catch (err) {
       sendError(err instanceof Error ? err.message : String(err));
       closeSendApproval();
@@ -203,6 +256,7 @@ export function PrintJobDialog() {
     sendError,
     sendFinished,
     sendStart,
+    simulationOnly,
     t,
   ]);
   // Auto-run the send as soon as the card is approved (the dialog shows
@@ -213,9 +267,14 @@ export function PrintJobDialog() {
     }
   }, [approval?.state, approval?.id, ranSend, sending, sent, runSend]);
 
+  // Demo-only dialog: when the caller does not declare simulation, there is
+  // no send UI at all — a real transport is NOT wired anywhere. All hooks
+  // run BEFORE this guard so hook order stays stable per instance.
+  if (!simulationOnly) return null;
+
   if (approval === null) {
     return (
-      <div className="print-job-dialog" data-testid="print-job-dialog">
+      <div className="print-job-dialog" data-testid="print-job-dialog" data-origin="demo">
         {canOpen ? (
           <button
             type="button"
@@ -223,7 +282,7 @@ export function PrintJobDialog() {
             data-testid="print-job-send"
             onClick={openCard}
           >
-            {t("send.sendToPrinter")}
+            {t("send.simulateSend")}
           </button>
         ) : null}
       </div>
@@ -231,9 +290,10 @@ export function PrintJobDialog() {
   }
 
   const decided = approval.state !== "pending";
+  const sandboxStages = simulationOnly ? SEND_STAGES_SIM : SEND_STAGES_REAL;
   const stageLabel = sending
     ? (() => {
-        const s = SEND_STAGES.find((x) => x.stage === sendStage);
+        const s = sandboxStages.find((x) => x.stage === sendStage);
         return s ? t(s.key) : null;
       })()
     : null;
@@ -242,6 +302,7 @@ export function PrintJobDialog() {
     <div
       className="print-job-dialog"
       data-testid="print-job-dialog"
+      data-origin="demo"
       role="dialog"
       aria-modal="false"
     >
@@ -250,7 +311,9 @@ export function PrintJobDialog() {
         data-state={approval.state}
         data-testid="send-approval-card"
       >
-        <header className="panel-title">{t("send.sendTitle")}</header>
+        <header className="panel-title">
+          {simulationOnly ? t("send.demoTitle") : t("send.sendTitle")}
+        </header>
 
         <div className="approval-effect" data-testid="send-approval-effect">
           {approval.summary}
@@ -306,7 +369,7 @@ export function PrintJobDialog() {
         <div
           className="approval-token"
           data-testid="send-approval-token"
-          title={t("send.token.title")}
+          title={simulationOnly ? t("send.token.demoTitle") : t("send.token.title")}
         >
           token {approval.tokenHashHex}
         </div>
@@ -317,7 +380,9 @@ export function PrintJobDialog() {
         ) : null}
         {taskId ? (
           <div className="approval-task" data-testid="send-approval-task">
-            {t("send.task", { id: taskId })}
+            {simulationOnly
+              ? t("send.simulationTask", { id: taskId })
+              : t("send.task", { id: taskId })}
           </div>
         ) : null}
 

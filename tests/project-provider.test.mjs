@@ -218,6 +218,59 @@ test("real backend failure remains unavailable and never bootstraps Demo", async
   assert.equal(boot.scene, undefined);
 });
 
+test("real project snapshots normalize authority geometry without inventing missing blobs", async () => {
+  const { sceneObjectsFromProjectSnapshot } = await import(
+    pathToFileURL(path.join(root, "apps/editor/src/bridge/real-project-bridge.ts")).href
+  );
+  const [restored, missing] = sceneObjectsFromProjectSnapshot("project-a", [
+    {
+      id: "object-a",
+      name: "Recovered part",
+      vertices: 3,
+      triangles: 1,
+      bounds: { min: [0, 0, 0], max: [1, 1, 0] },
+      sizeMm: [1, 1, 0],
+      volumeMm3: 0.5,
+      surfaceAreaMm2: 1,
+      watertight: true,
+      visible: true,
+      locked: false,
+      plateId: "plate-2",
+      filamentId: "petg-red",
+      transform: { x: 4, y: 0, z: -2 },
+      artifactSha256: "synthetic-cas-hash",
+      geometry: {
+        positions: [0, 0, 0, 1, 0, 0, 0, 1, 0],
+        normals: [0, 0, 1, 0, 0, 1, 0, 0, 1],
+        indices: [0, 1, 2],
+      },
+    },
+    {
+      id: "object-missing",
+      name: "Blob unavailable",
+      vertices: 0,
+      triangles: 0,
+      bounds: { min: [0, 0, 0], max: [0, 0, 0] },
+      sizeMm: [0, 0, 0],
+      volumeMm3: 0,
+      surfaceAreaMm2: 0,
+      watertight: false,
+      visible: true,
+      locked: false,
+      artifactSha256: "missing-cas-hash",
+    },
+  ]);
+
+  assert.equal(restored.objectId, "object-a");
+  assert.ok(restored.geometry.positions instanceof Float32Array);
+  assert.ok(restored.geometry.indices instanceof Uint32Array);
+  assert.equal(restored.plateId, "plate-2");
+  assert.equal(restored.filamentId, "petg-red");
+  assert.deepEqual(restored.transform, { x: 4, y: 0, z: -2 });
+  assert.equal(missing.objectId, "object-missing");
+  assert.equal(missing.geometry, undefined);
+});
+
 test("real transform conflict rebases to the authority snapshot and discards provisional state", async () => {
   const provider = await import(providerUrl());
   let project = {

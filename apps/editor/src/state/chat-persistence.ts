@@ -9,12 +9,15 @@ import type { ChatConversationsState, Conversation } from "./chat-conversations-
  *   - atomic writes (temp-file + rename), corruption-safe reads
  *     (snapshot → journal replay fallback), env-resolved path.
  *
- * This module lives in the webview and talks to that lane through the Tauri
- * command surface (`invoke("chat_store_*")`). When Tauri is NOT available
- * (plain browser dev), the adapter degrades to an in-memory map + a
- * `localStorage`-backed fallback (same contract, no machine paths) so the
- * store round-trips even without the shell; all exported functions keep the
- * exact same signature either way (no UI drift).
+ * S9.17-004 NAV-05 — conversations are persisted keyed by PROJECT scope in
+ * the plain-browser fallback: workspace-global conversations (projectId
+ * null, including all LEGACY unscoped conversations) keep the original
+ * `anycubic:chat-store:v1` key; project conversations live under
+ * `anycubic:chat-store:project:<projectId>`. reads merge ALL buckets so no
+ * scope's history is ever dropped on hydrate. The Tauri lane stays flat by
+ * id (the broker FS has no scope setter yet — files carry `projectId` in
+ * their JSON payload; scoped listing there is a reported backend TODO, not
+ * a frontend change).
  */
 
 export interface ChatPersistence {
@@ -28,6 +31,22 @@ export interface ChatPersistence {
 }
 
 const STORAGE_KEY = "anycubic:chat-store:v1";
+/** Project-bucket prefix: `anycubic:chat-store:project:<projectId>`. */
+const PROJECT_BUCKET_PREFIX = "anycubic:chat-store:project:";
+
+/** Scope bucket key for a conversation (null/undefined → legacy workspace key). */
+export function chatBucketKeyFor(projectId: string | null): string {
+  return projectId == null ? STORAGE_KEY : `${PROJECT_BUCKET_PREFIX}${projectId}`;
+}
+
+/** Minimal Storage shape (injectable for headless tests). */
+export interface ChatStoreStorage {
+  readonly length: number;
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+  key(index: number): string | null;
+}
 
 /** True when running inside the Tauri webview. */
 function isTauri(): boolean {
@@ -45,39 +64,108 @@ async function tauriInvoke(cmd: string, args: Record<string, unknown>): Promise<
   return invoke(cmd, args);
 }
 
-/** Plain-browser fallback backed by localStorage (never machine paths). */
+/**
+ * Plain-browser fallback backed by localStorage (never machine paths).
+ * S9.17-004 — conversations are bucketed by project scope:
+ *   - projectId null (incl. all legacy unscoped conversations) → legacy
+ *     `anycubic:chat-store:v1` key (never renamed or dropped);
+ *   - projectId string → `anycubic:chat-store:project:<projectId>`.
+ * `read()` merges every bucket so hydrate never loses a scope's history.
+ * Storage is injectable so headless tests can round-trip the exact contract.
+ */
 class LocalFallback implements ChatPersistence {
   readonly available = true;
-  private read(): Record<string, Conversation> {
+  // Explicit field + constructor assignment (Node 24 type-strip rejects TS
+  // "parameter properties", which this module must avoid to stay importable
+  // from the headless .mjs unit tests).
+  private readonly storage: ChatStoreStorage;
+  constructor(storage?: ChatStoreStorage) {
+    this.storage =
+      storage ??
+      (() => {
+        if (typeof localStorage === "undefined") {
+          throw new Error("localStorage unavailable — pass a ChatStoreStorage");
+        }
+        return localStorage;
+      })();
+  }
+
+  private readBucket(key: string): Record<string, Conversation> {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return {};
-      return JSON.parse(raw) as Record<string, Conversation>;
+      const raw = this.storage.getItem(key);
+      if (!raw) return Object.create(null) as Record<string, Conversation>;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return Object.create(null) as Record<string, Conversation>;
+      }
+      // null-prototype map + own-property schema filter: a hostile
+      // `"__proto__"`/`"constructor"` key in the JSON becomes an inert own
+      // data property (never the [[Set]]/prototype-pollution path of
+      // Object.assign) and non-object values (garbage) are dropped.
+      const out = Object.create(null) as Record<string, Conversation>;
+      for (const id of Object.keys(parsed)) {
+        const value = (parsed as Record<string, unknown>)[id];
+        if (value !== null && typeof value === "object") out[id] = value as Conversation;
+      }
+      return out;
     } catch {
-      return {};
+      return Object.create(null) as Record<string, Conversation>;
     }
   }
-  private write(map: Record<string, Conversation>): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  private read(): Record<string, Conversation> {
+    // merge onto a null-prototype map with direct own-key writes (equivalent
+    // to `{...a, ...b}` — safe CreateDataProperty semantics for hostile keys)
+    const merged = this.readBucket(STORAGE_KEY);
+    const keys: string[] = [];
+    for (let i = 0; i < this.storage.length; i += 1) {
+      const key = this.storage.key(i);
+      if (key !== null && key.startsWith(PROJECT_BUCKET_PREFIX)) keys.push(key);
+    }
+    for (const key of keys) {
+      const bucket = this.readBucket(key);
+      for (const id of Object.keys(bucket)) {
+        const value = bucket[id];
+        if (value !== undefined) merged[id] = value;
+      }
+    }
+    return merged;
+  }
+  private writeBucket(key: string, map: Record<string, Conversation>): void {
+    this.storage.setItem(key, JSON.stringify(map));
   }
   async dir(): Promise<string | null> {
     return null; // fallback has no resolved fs dir
   }
   async list(): Promise<string[]> {
-    return Object.keys(this.read());
+    try {
+      return Object.keys(this.read());
+    } catch {
+      return [];
+    }
   }
   async get(id: string): Promise<Conversation | null> {
     return this.read()[id] ?? null;
   }
   async put(id: string, convo: Conversation): Promise<void> {
-    const map = this.read();
+    const key = chatBucketKeyFor(convo.projectId ?? null);
+    const map = this.readBucket(key);
     map[id] = convo;
-    this.write(map);
+    this.writeBucket(key, map);
   }
   async delete(id: string): Promise<void> {
-    const map = this.read();
+    const merged = this.read();
+    if (!Object.hasOwn(merged, id)) return;
+    const bucket = chatBucketKeyFor(merged[id]!.projectId ?? null);
+    const map = this.readBucket(bucket);
+    const wasActive = Object.hasOwn(map, id);
     delete map[id];
-    this.write(map);
+    if (wasActive) {
+      if (Object.keys(map).length === 0 && bucket !== STORAGE_KEY) {
+        this.storage.removeItem(bucket); // drop empty project buckets
+      } else {
+        this.writeBucket(bucket, map);
+      }
+    }
   }
 }
 
@@ -117,10 +205,10 @@ class Unavailable implements ChatPersistence {
   async delete(): Promise<void> {}
 }
 
-export function resolvePersistence(): ChatPersistence {
+export function resolvePersistence(storage?: ChatStoreStorage): ChatPersistence {
   if (typeof window === "undefined") return new Unavailable();
   if (isTauri()) return new TauriPersistence();
-  return new LocalFallback();
+  return storage !== undefined ? new LocalFallback(storage) : new LocalFallback();
 }
 
 /**

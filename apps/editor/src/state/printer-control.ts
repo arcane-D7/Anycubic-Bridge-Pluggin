@@ -20,10 +20,18 @@
 import { create } from "zustand";
 import {
   buildCommandEnvelope,
+  controlEffectObserved,
+  executeControl,
+  unavailableControlProvider,
+  capabilityForControlAction,
+  type ControlExecutionProvider,
   type ControlAction,
   type ControlRequest,
 } from "./printer-control-core.ts";
+import { validateControlTarget, type ControlTargetContext } from "./device-availability-core.ts";
 import type { MsgKey } from "./i18n-core.ts";
+
+export type ControlObservationMatcher = typeof controlEffectObserved;
 
 export type { ControlAction, ControlRequest } from "./printer-control-core.ts";
 
@@ -33,6 +41,13 @@ export interface PrinterControlState {
   /** True while a control write is in flight (disable repeat presses). */
   readonly busy: boolean;
   readonly lastError: string | null;
+  readonly lastOutcome: Readonly<{
+    kind:
+      "accepted" | "observed" | "refused" | "timeout" | "invalid" | "unavailable" | "indeterminate";
+    command: string | null;
+    reason: string | null;
+    snapshotCapturedAt: number | null;
+  }> | null;
 }
 
 export interface PrinterControlApi extends PrinterControlState {
@@ -40,10 +55,11 @@ export interface PrinterControlApi extends PrinterControlState {
   sendControl(req: {
     readonly action: ControlAction;
     readonly payload: ControlRequest;
-    readonly printerId: string;
-    readonly lane: {
-      printerControl(req: { printerId: string; envelope: unknown }): Promise<unknown>;
-    };
+    readonly target: ControlTargetContext;
+    readonly selectedPrinterId: string | null;
+    readonly currentCapturedAt: number | null;
+    readonly provider?: ControlExecutionProvider;
+    readonly observationMatcher?: ControlObservationMatcher;
     readonly toast: (t: {
       kind: "info" | "success" | "warning" | "error";
       title: string;
@@ -56,20 +72,66 @@ export interface PrinterControlApi extends PrinterControlState {
 
 /** Initial empty state. */
 export function initialControlState(): PrinterControlState {
-  return { lastEnvelope: null, busy: false, lastError: null };
+  return { lastEnvelope: null, busy: false, lastError: null, lastOutcome: null };
 }
 
-export const usePrinterControl = create<PrinterControlApi>((set) => ({
+export const usePrinterControl = create<PrinterControlApi>((set, get) => ({
   ...initialControlState(),
-  async sendControl({ action, payload, printerId, lane, toast, t }) {
+  async sendControl({
+    action: _action,
+    payload,
+    target,
+    selectedPrinterId,
+    currentCapturedAt,
+    provider = unavailableControlProvider,
+    observationMatcher = controlEffectObserved,
+    toast,
+    t,
+  }) {
+    if (get().busy) return;
     // 1) Grammar: build + validate the envelope (never sends anything invalid).
     const envelope = buildCommandEnvelope(payload);
     if (!envelope.ok) {
-      set({ lastError: envelope.reason, busy: false });
+      set({
+        lastError: envelope.reason,
+        busy: false,
+        lastOutcome: {
+          kind: "invalid",
+          command: null,
+          reason: envelope.reason,
+          snapshotCapturedAt: null,
+        },
+      });
       toast({
         kind: "error",
         title: t("control.invalid.title"),
         message: `${t("control.invalid.message")} ${envelope.reason}`,
+      });
+      return;
+    }
+    const capabilityKey = capabilityForControlAction(payload.action);
+    const targetCheck = validateControlTarget(
+      target,
+      selectedPrinterId,
+      currentCapturedAt,
+      capabilityKey,
+    );
+    if (!targetCheck.ok) {
+      const kind = targetCheck.kind === "invalid" ? "invalid" : "unavailable";
+      set({
+        lastError: targetCheck.reason,
+        busy: false,
+        lastOutcome: {
+          kind,
+          command: null,
+          reason: targetCheck.reason,
+          snapshotCapturedAt: null,
+        },
+      });
+      toast({
+        kind: targetCheck.kind === "invalid" ? "error" : "warning",
+        title: t(kind === "invalid" ? "control.invalid.title" : "control.unavailable.title"),
+        message: kind === "invalid" ? targetCheck.reason : t("control.unavailable.message"),
       });
       return;
     }
@@ -78,17 +140,17 @@ export const usePrinterControl = create<PrinterControlApi>((set) => ({
       lastEnvelope: { command: envelope.envelope.command, args: envelope.envelope.args },
     });
     try {
-      const result = await lane.printerControl({
-        printerId,
-        envelope: envelope.envelope,
-      });
-      const r = result as {
-        readonly ok: boolean;
-        readonly command?: string;
-        readonly error?: string;
-        readonly kind?: string;
-      };
+      const r = await executeControl(provider, { target, envelope: envelope.envelope });
       if (!r.ok) {
+        const outcomeKind = r.kind;
+        set({
+          lastOutcome: {
+            kind: outcomeKind,
+            command: envelope.envelope.command,
+            reason: r.error ?? null,
+            snapshotCapturedAt: null,
+          },
+        });
         // Refused vs timeout are DISTINCT toasts (AC-2: no silent failures).
         if (r.kind === "refused") {
           set({ lastError: r.error ?? null });
@@ -96,6 +158,20 @@ export const usePrinterControl = create<PrinterControlApi>((set) => ({
             kind: "warning",
             title: t("control.refused.title"),
             message: r.error ?? t("control.refused.message"),
+          });
+        } else if (r.kind === "unavailable") {
+          set({ lastError: r.error ?? null });
+          toast({
+            kind: "warning",
+            title: t("control.unavailable.title"),
+            message: t("control.unavailable.message"),
+          });
+        } else if (r.kind === "indeterminate") {
+          set({ lastError: r.error ?? null });
+          toast({
+            kind: "warning",
+            title: t("control.indeterminate.title"),
+            message: t("control.indeterminate.message"),
           });
         } else if (r.kind === "timeout") {
           set({ lastError: r.error ?? null });
@@ -114,15 +190,41 @@ export const usePrinterControl = create<PrinterControlApi>((set) => ({
         }
         return;
       }
-      set({ lastError: null });
+      const observed = observationMatcher(
+        envelope.envelope,
+        r.observed,
+        target,
+        target.snapshotCapturedAt,
+        provider.currentContext().currentCapturedAt,
+      );
+      const kind = observed ? "observed" : "accepted";
+      set({
+        lastError: null,
+        lastOutcome: {
+          kind,
+          command: r.command,
+          reason: null,
+          snapshotCapturedAt: observed ? (r.observed?.capturedAt ?? null) : null,
+        },
+      });
       toast({
-        kind: "success",
-        title: t("control.accepted.title"),
-        message: t("control.accepted.message", { command: r.command ?? action }),
+        kind: observed ? "success" : "info",
+        title: t(observed ? "control.observed.title" : "control.accepted.title"),
+        message: observed
+          ? t("control.observed.message", { command: r.command })
+          : t("control.accepted.message"),
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      set({ lastError: message });
+      set({
+        lastError: message,
+        lastOutcome: {
+          kind: "indeterminate",
+          command: envelope.envelope.command,
+          reason: message,
+          snapshotCapturedAt: null,
+        },
+      });
       toast({ kind: "error", title: t("control.failed.title"), message });
     } finally {
       set({ busy: false });

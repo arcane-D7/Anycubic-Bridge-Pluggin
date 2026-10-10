@@ -65,6 +65,10 @@ export interface ShortcutContext {
 /** Custom-event name the F shortcut uses; the frame camera picks it up. */
 export const FRAME_SELECTED_EVENT = "anycubic:frame-selected";
 
+export function isViewportReadOnly(mode: "prepare" | "preview" = "prepare"): boolean {
+  return mode === "preview";
+}
+
 function isEditableTarget(e: ShortcutEventLike): boolean {
   const tag = e.targetTag?.toUpperCase();
   return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || e.isContentEditable === true;

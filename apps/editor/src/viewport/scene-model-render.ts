@@ -30,6 +30,7 @@ export interface ModelRenderState {
   readonly baseColor: string;
   readonly hasRealGeometry: boolean;
   readonly selectionOutline: boolean;
+  readonly showEdges: boolean;
 }
 
 /**
@@ -42,11 +43,17 @@ export interface ModelRenderState {
  */
 export function resolveModelRenderState(
   info: ObjectMeshInfo,
-  opts: { readonly isSelected: boolean; readonly isHovered: boolean },
+  opts: {
+    readonly isSelected: boolean;
+    readonly isHovered: boolean;
+    readonly viewMode?: "mesh" | "slicer" | "live";
+    readonly edgesVisible?: boolean;
+  },
 ): ModelRenderState {
   const locked = (info as { locked?: boolean }).locked ?? false;
   const visible = (info as { visible?: boolean }).visible ?? true;
   const hasRealGeometry = geometryExists(info);
+  const solidPresentation = opts.viewMode === "slicer" || opts.viewMode === "live";
   const baseColor = !info.watertight
     ? MODEL_COLORS.nonWatertight
     : opts.isSelected
@@ -59,6 +66,7 @@ export function resolveModelRenderState(
     locked,
     baseColor,
     hasRealGeometry,
-    selectionOutline: opts.isSelected && hasRealGeometry,
+    selectionOutline: opts.isSelected && hasRealGeometry && !solidPresentation,
+    showEdges: (opts.edgesVisible ?? false) && !solidPresentation,
   };
 }

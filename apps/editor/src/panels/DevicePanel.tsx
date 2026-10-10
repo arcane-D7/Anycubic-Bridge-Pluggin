@@ -7,6 +7,13 @@ import { useUi } from "@/state/ui";
 import { useDock } from "@/state/dock";
 import { useOperatorProfile } from "@/profile/useOperatorProfile";
 import { cloudLaneConfigured, cloudFetchSnapshot } from "@/bridge/cloud";
+import {
+  backendControlBootstrapUsable,
+  deviceAvailability,
+  fetchBackendDeviceControlStatus,
+  type ControlTargetContext,
+  type DeviceAvailabilityDescriptor,
+} from "@/state/device-availability-core";
 import { PrinterList } from "@/components/printer-list";
 import { Icon } from "@/components/icons";
 import { printerEnvRaw } from "@/lib/printer-env";
@@ -169,15 +176,18 @@ function FormatSeconds(total: number | null): string | null {
  * pure envelope core (bounds + confirm + policy) and the store's semantic
  * toasts (accepted/refused/timeout/invalid — no silent failures).
  */
-function useControlSender() {
+function useControlSender(canWrite: boolean) {
   const t = useI18n((s) => s.t);
   const sendControl = usePrinterControl((s) => s.sendControl);
   const busy = usePrinterControl((s) => s.busy);
   const selectedId = usePrinters((s) => s.selectedId);
+  const devicePrinterId = usePrinterDevice((s) => s.printerId);
+  const snapshot = usePrinterDevice((s) => s.snapshot);
   const pushToast = useUi((s) => s.pushToast);
 
   const send = useCallback(
     (payload: ControlRequest) => {
+      if (!canWrite) return;
       if (!selectedId) {
         pushToast({
           kind: "warning",
@@ -186,20 +196,31 @@ function useControlSender() {
         });
         return;
       }
-      void (async () => {
-        const lane = await import("@/bridge/mock");
-        const handle = await lane.fetchSceneSnapshot();
-        await sendControl({
-          action: payload.action,
-          payload,
-          printerId: selectedId,
-          lane: handle,
-          toast: pushToast,
-          t,
-        });
-      })();
+      const source: ControlTargetContext["source"] = selectedId.startsWith("cloud-")
+        ? "cloud"
+        : selectedId.startsWith("printer-")
+          ? "lan"
+          : "profile";
+      const target = snapshot
+        ? {
+            printerId: devicePrinterId ?? selectedId,
+            source,
+            snapshotCapturedAt: snapshot.capturedAt ?? Number.NaN,
+            capabilities: snapshot.capabilities,
+          }
+        : null;
+      if (!target) return;
+      void sendControl({
+        action: payload.action,
+        payload,
+        target,
+        selectedPrinterId: selectedId,
+        currentCapturedAt: snapshot?.capturedAt ?? null,
+        toast: pushToast,
+        t,
+      });
     },
-    [selectedId, sendControl, pushToast, t],
+    [canWrite, selectedId, devicePrinterId, snapshot, sendControl, pushToast, t],
   );
 
   return { send, busy };
@@ -377,7 +398,13 @@ function FilamentTab({
  * card as the sliced-job send (S9.5-004): nothing leaves the panel until the
  * user approves; the storage preflight (used/total) is shown before send.
  */
-function FilesTab({ storage }: { storage: PrinterSnapshot["storage"] | null }) {
+function FilesTab({
+  storage,
+  readOnly,
+}: {
+  storage: PrinterSnapshot["storage"] | null;
+  readOnly: boolean;
+}) {
   const t = useI18n((s) => s.t);
   const [sub, setSub] = useState<"local" | "usb">("local");
   const [local, setLocal] = useState<PrinterFileListResult | null>(null);
@@ -433,7 +460,7 @@ function FilesTab({ storage }: { storage: PrinterSnapshot["storage"] | null }) {
   const viewBusy = loading || rowBusy;
 
   const onConfirm = useCallback(async () => {
-    if (!pending || !selectedId) return;
+    if (readOnly || !pending || !selectedId) return;
     setConfirmOpen(false);
     const printer = printers.find((p) => p.id === selectedId) ?? {
       id: selectedId,
@@ -481,10 +508,18 @@ function FilesTab({ storage }: { storage: PrinterSnapshot["storage"] | null }) {
       setRowBusy(false);
       setPending(null);
     }
-  }, [pending, selectedId, printers, local, usb, sub, pushToast, t, load]);
+  }, [readOnly, pending, selectedId, printers, local, usb, sub, pushToast, t, load]);
 
   return (
-    <div className="device-panel" data-testid="device-files-tab">
+    <div
+      className="device-panel"
+      data-testid="device-files-tab"
+      data-origin="demo"
+      data-read-only="true"
+    >
+      <div className="device-banner device-banner-origin" data-testid="device-files-origin">
+        {t("device.origin.demoData")}
+      </div>
       <section className="device-section" data-testid="device-section-files">
         <header className="device-section-title">
           {t("device.files.title")}
@@ -492,7 +527,7 @@ function FilesTab({ storage }: { storage: PrinterSnapshot["storage"] | null }) {
             type="button"
             className="device-files-refresh"
             data-testid="device-files-refresh"
-            disabled={viewBusy}
+            disabled={viewBusy || readOnly}
             onClick={() => void load([sub], false)}
           >
             {t("device.files.refresh")}
@@ -550,7 +585,7 @@ function FilesTab({ storage }: { storage: PrinterSnapshot["storage"] | null }) {
                   type="button"
                   className="device-files-send"
                   data-testid="device-files-send"
-                  disabled={viewBusy}
+                  disabled={readOnly || viewBusy}
                   onClick={() => {
                     setPending(entry);
                     setConfirmOpen(true);
@@ -596,7 +631,7 @@ function FilesTab({ storage }: { storage: PrinterSnapshot["storage"] | null }) {
                 type="button"
                 className="device-bind-submit"
                 data-testid="device-files-confirm-send"
-                disabled={rowBusy}
+                disabled={readOnly || rowBusy}
                 onClick={() => void onConfirm()}
               >
                 {rowBusy ? t("device.files.sendBusy") : t("device.files.confirmSend")}
@@ -700,6 +735,71 @@ function BindSlotModal({
  * it renders as a CLICKABLE row that calls `armProfile` (injects the
  * synthetic entry + selects it), so the panel is never a dead end.
  */
+/**
+ * S9.18-004 — backend-control availability status.
+ *
+ * Honest status only: it reports where we are in the bootstrap chain
+ * (checking → auth unavailable → no resolver → ready). It NEVER grants a
+ * writer: `availability.canWrite` stays `false` by construction, and in
+ * production the row always renders the blocked states (empty auth store,
+ * no resolver, UnavailableTransport). A "writer ready" affordance is
+ * deliberately absent — remote write stays disabled in the editor.
+ */
+function BackendControlStatus() {
+  const t = useI18n((s) => s.t);
+  const [desc, setDesc] = useState<DeviceAvailabilityDescriptor | null>(null);
+
+  const refresh = useCallback(async () => {
+    setDesc(await fetchBackendDeviceControlStatus());
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const ready = desc ? backendControlBootstrapUsable(desc) : false;
+  const stateKey = !desc
+    ? ("checking" as const)
+    : !desc.session.established
+      ? ("auth-unavailable" as const)
+      : !desc.capability.defined
+        ? ("no-resolver" as const)
+        : ("ready-read-only" as const);
+  const msgKey: MsgKey =
+    stateKey === "checking"
+      ? "device.backend.status.checking"
+      : stateKey === "auth-unavailable"
+        ? "device.backend.status.authUnavailable"
+        : stateKey === "no-resolver"
+          ? "device.backend.status.noResolver"
+          : "device.backend.status.readyReadOnly";
+
+  return (
+    <div
+      className="device-banner device-banner-backend"
+      data-testid="device-backend-status"
+      data-state={stateKey}
+      data-ready={ready ? "true" : "false"}
+      data-writer="false"
+    >
+      <span className="device-backend-dot" aria-hidden="true" />
+      <span>{t(msgKey)}</span>
+      <button
+        type="button"
+        className="device-backend-refresh"
+        data-testid="device-backend-refresh"
+        aria-label={t("device.files.refresh")}
+        onClick={() => void refresh()}
+      >
+        {t("device.files.refresh")}
+      </button>
+      <span className="device-backend-writer" data-testid="device-backend-writer">
+        writer=disabled
+      </span>
+    </div>
+  );
+}
+
 function DevicePickerEmpty() {
   const t = useI18n((s) => s.t);
   const printers = usePrinters((s) => s.printers);
@@ -759,11 +859,10 @@ function DevicePickerEmpty() {
   );
 }
 
-export function DevicePanelMonitor() {
+export function DevicePanelMonitor({ readOnly = true }: { readonly readOnly?: boolean } = {}) {
   const t = useI18n((s) => s.t);
   const selectedId = usePrinters((s) => s.selectedId);
   const { printerId, snapshot, pollingStatus } = usePrinterDevice();
-  const [cameraOn, setCameraOn] = useState(false);
   const [tab, setTab] = useState<"monitor" | "filament" | "files" | "devtools">("monitor");
 
   // S9.9-006 — status-bar chips navigate here: focus flips the tab and, when
@@ -790,7 +889,14 @@ export function DevicePanelMonitor() {
   );
 
   // S9.10-002 — Device Monitor write controls map to printer_command_send.
-  const { send, busy } = useControlSender();
+  const availability = deviceAvailability(selectedId);
+  const controlReadOnly =
+    readOnly ||
+    availability.readOnly ||
+    !availability.canWrite ||
+    !snap ||
+    snap.capturedAt === null;
+  const { send, busy } = useControlSender(!controlReadOnly);
   const toggleLight = useCallback(() => {
     void send({
       action: "lights.setEnabled",
@@ -878,7 +984,20 @@ export function DevicePanelMonitor() {
   const speedKey = snap?.print.speedMode ? SPEED_KEY[snap.print.speedMode] : null;
 
   return (
-    <div className="device-panel" data-testid="device-panel">
+    <div
+      className="device-panel"
+      data-testid="device-panel"
+      data-origin={availability.origin}
+      data-read-only="true"
+    >
+      <div className="device-banner device-banner-origin" data-testid="device-origin-banner">
+        {t(
+          availability.origin === "cloud" && cloudLaneConfigured()
+            ? "device.origin.cloudReadOnly"
+            : "device.origin.demoReadOnly",
+        )}
+      </div>
+      <BackendControlStatus />
       <div className="device-tabs" role="tablist" aria-label={t("device.panel.title")}>
         <button
           type="button"
@@ -926,11 +1045,13 @@ export function DevicePanelMonitor() {
           snap={snap}
           onDry={setDry}
           onAutoFeed={setAutoFeed}
-          onBind={(boxId, slotIndex) => setBindTarget({ boxId, slotIndex })}
-          busy={busy}
+          onBind={(boxId, slotIndex) => {
+            if (!readOnly && availability.canWrite) setBindTarget({ boxId, slotIndex });
+          }}
+          busy={busy || controlReadOnly}
         />
       ) : tab === "files" ? (
-        <FilesTab storage={snap?.storage ?? null} />
+        <FilesTab storage={snap?.storage ?? null} readOnly={controlReadOnly} />
       ) : tab === "devtools" ? (
         <DevToolsPane raw={snap?.raw ?? {}} />
       ) : (
@@ -977,7 +1098,7 @@ export function DevicePanelMonitor() {
                   id="device-speed-mode"
                   className="device-speed-input"
                   value={snap.print.speedMode ?? "standard"}
-                  disabled={busy}
+                  disabled={busy || controlReadOnly}
                   data-testid="device-speed-mode"
                   onChange={(e) => setSpeedMode(e.target.value as SpeedMode)}
                 >
@@ -997,14 +1118,14 @@ export function DevicePanelMonitor() {
                 currentC={snap?.temps.nozzle.currentC ?? null}
                 targetC={snap?.temps.nozzle.targetC ?? null}
                 onTarget={snap?.capabilities.tempature ? setNozzleTarget : undefined}
-                disabled={busy}
+                disabled={busy || readOnly || !availability.canWrite}
               />
               <TempCard
                 label={t("device.temp.bed")}
                 currentC={snap?.temps.bed.currentC ?? null}
                 targetC={snap?.temps.bed.targetC ?? null}
                 onTarget={snap?.capabilities.tempature ? setBedTarget : undefined}
-                disabled={busy}
+                disabled={busy || controlReadOnly}
               />
               {snap?.capabilities.chamber ? (
                 <TempCard
@@ -1022,7 +1143,7 @@ export function DevicePanelMonitor() {
               label={t("device.fans.part")}
               pct={snap?.fans.partCoolingPct ?? null}
               onSpeed={snap?.capabilities.fans ? setPartFan : undefined}
-              disabled={busy}
+              disabled={busy || controlReadOnly}
             />
             <FanRow label={t("device.fans.hotend")} pct={snap?.fans.hotendPct ?? null} />
           </section>
@@ -1063,7 +1184,7 @@ export function DevicePanelMonitor() {
                   type="button"
                   className={`device-light-toggle${snap.lights.enabled ? " is-on" : ""}`}
                   data-testid="device-light-toggle"
-                  disabled={busy}
+                  disabled={busy || controlReadOnly}
                   onClick={toggleLight}
                 >
                   {t(snap.lights.enabled ? "device.lights.on" : "device.lights.off")}
@@ -1074,7 +1195,7 @@ export function DevicePanelMonitor() {
                       type="button"
                       className="device-step-btn"
                       aria-label={t("control.step.decrement")}
-                      disabled={busy}
+                      disabled={busy || readOnly || !availability.canWrite}
                       onClick={() => setBrightness((snap.lights?.brightnessPct ?? 0) - 10)}
                     >
                       −
@@ -1086,7 +1207,7 @@ export function DevicePanelMonitor() {
                       type="button"
                       className="device-step-btn"
                       aria-label={t("control.step.increment")}
-                      disabled={busy}
+                      disabled={busy || readOnly || !availability.canWrite}
                       onClick={() => setBrightness((snap.lights?.brightnessPct ?? 0) + 10)}
                     >
                       +
@@ -1124,29 +1245,23 @@ export function DevicePanelMonitor() {
           {snap?.capabilities.camera ? (
             <section className="device-section" data-testid="device-section-camera">
               <header className="device-section-title">{t("device.camera.title")}</header>
-              {cameraOn ? (
-                <div className="device-camera-preview" data-testid="device-camera-preview">
-                  <span className="device-camera-hint">{t("device.camera.title")} —</span>
-                  {/* The player wires here in S9.11-003 live overlay (H.264/FLV by
-                  capability); starting ONLY on demand avoids turning the
-                  chamber light on without user intent. */}
-                  <video
-                    className="device-camera-video"
-                    muted
-                    playsInline
-                    data-testid="device-camera-video"
-                  />
-                </div>
-              ) : (
+              {/* Honest S9.17-004 DEV-08: no camera adapter exists in this build, so
+              the start button is always disabled and no placeholder frame is ever
+              invented (no video element, no fake loading, no click effect). */}
+              <div className="device-camera-row" data-testid="device-camera-row">
                 <button
                   type="button"
                   className="device-camera-start"
                   data-testid="device-camera-start"
-                  onClick={() => setCameraOn(true)}
+                  disabled
+                  aria-disabled="true"
                 >
                   {t("device.camera.start")}
                 </button>
-              )}
+                <span className="device-camera-reason" data-testid="device-camera-reason">
+                  {t("workbench.camera.unavailable")}
+                </span>
+              </div>
             </section>
           ) : null}
 

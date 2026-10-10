@@ -161,13 +161,14 @@ async function persistMutation(
 }
 
 /** Global keyboard listener wiring the pure decisions to the stores. */
-export function useShortcuts(bridge: BridgeHandle | undefined): void {
+export function useShortcuts(bridge: BridgeHandle | undefined, enabled = true): void {
   const queryClient = useQueryClient();
   const bridgeRef = useRef(bridge);
   bridgeRef.current = bridge;
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      if (!enabled) return;
       // AC: never fire while typing in a text field.
       if (isEditable(e.target)) return;
       if (e.altKey) return; // OS/menu reserved — buttons keep Alt+Shift nav
@@ -189,7 +190,7 @@ export function useShortcuts(bridge: BridgeHandle | undefined): void {
       e.preventDefault();
       applyAction(action, { bridge: bridgeRef.current, queryClient });
     },
-    [queryClient],
+    [enabled, queryClient],
   );
 
   useEffect(() => {

@@ -16,13 +16,16 @@ import { ChatPanelLazy } from "../../panels/ChatPanelLazy";
  * onOpenChange(false) → collapse-to-pill, no body scroll-lock, focus
  * management + role="dialog" from Radix without trapping focus.
  */
-export function DockPanel() {
+export function DockPanel({ onDock }: { readonly onDock?: () => void }) {
   const t = useI18n((s) => s.t);
   const panel = useDock((s) => s.panels.chat);
   const setPanelMode = useDock((s) => s.setPanelMode);
   const focusPanel = useDock((s) => s.focusPanel);
 
-  const dock = () => setPanelMode("chat", "docked");
+  const dock = () => {
+    onDock?.();
+    setPanelMode("chat", "docked");
+  };
   const collapse = () => setPanelMode("chat", "collapsed");
   const expand = () => {
     focusPanel("chat");

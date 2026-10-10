@@ -27,6 +27,7 @@ interface SliceButtonProps {
   readonly objects: readonly SceneObjectSnapshot[];
   readonly revision: number;
   readonly slicingMode: SlicingMode;
+  readonly projectId: string | null;
   readonly providerMode: "demo" | "real" | "unavailable";
   readonly machineName: string;
   readonly buildVolume: {
@@ -35,13 +36,20 @@ interface SliceButtonProps {
     readonly heightMm: number;
   } | null;
   readonly onSliced?:
-    ((document: IrDocument, artifactId: string, sourceRevision: number) => void) | undefined;
+    | ((
+        projectId: string | null,
+        document: IrDocument,
+        artifactId: string,
+        sourceRevision: number,
+      ) => void)
+    | undefined;
 }
 
 export function SliceButton({
   objects,
   revision,
   slicingMode,
+  projectId,
   providerMode,
   machineName,
   buildVolume,
@@ -131,7 +139,7 @@ export function SliceButton({
               min: String(result.stats.estimated_minutes),
             }),
           });
-          onSliced?.(document, result.artifact_id, result.source_revision);
+          onSliced?.(projectId, document, result.artifact_id, result.source_revision);
           return;
         }
         if (providerMode !== "demo") throw new Error("slice provider is unavailable");
@@ -172,6 +180,7 @@ export function SliceButton({
     onSliced,
     plateObjects,
     profile,
+    projectId,
     preflight,
     providerMode,
     pushToast,

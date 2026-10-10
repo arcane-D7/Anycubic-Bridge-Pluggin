@@ -1,3 +1,4 @@
+import { FIT_PLATE_EVENT } from "../state/camera-core";
 import { FRAME_SELECTED_EVENT } from "../state/shortcuts-core";
 import { useToolbar, type ViewPreset } from "../state/toolbar";
 import { useUi, type ToolMode } from "../state/ui";
@@ -14,6 +15,8 @@ import type { BridgeHandle } from "../bridge/mock";
 import { usePrinters } from "../state/printers";
 import { useViewMode, effectiveViewMode, VIEW_MODES } from "../state/view-mode";
 import { useDock } from "../state/dock";
+import { previewFit } from "./LayerPreview";
+import type { PreviewModel } from "./preview-model";
 
 /**
  * S9.4-001 floating viewport toolbar (AC-1/AC-2).
@@ -64,9 +67,11 @@ const PRESETS: readonly {
 
 interface ToolbarProps {
   readonly scene: BridgeHandle | undefined;
+  readonly mode?: "prepare" | "preview";
+  readonly preview?: PreviewModel | null;
 }
 
-export function Toolbar({ scene }: ToolbarProps) {
+export function Toolbar({ scene, mode = "prepare", preview = null }: ToolbarProps) {
   const t = useI18n((s) => s.t);
   const tool = useUi((s) => s.tool);
   const setTool = useUi((s) => s.setTool);
@@ -164,13 +169,74 @@ export function Toolbar({ scene }: ToolbarProps) {
   }, [scene, allObjects, activePlateId, pushToast, queryClient, t]);
 
   const onFit = () => {
-    window.dispatchEvent(new CustomEvent(FRAME_SELECTED_EVENT));
+    if (mode === "preview" && preview) {
+      window.dispatchEvent(
+        new CustomEvent(FIT_PLATE_EVENT, {
+          detail: { center: [0, 0, 0], radius: previewFit(preview).radius },
+        }),
+      );
+      return;
+    }
+    window.dispatchEvent(
+      new CustomEvent(mode === "preview" ? FIT_PLATE_EVENT : FRAME_SELECTED_EVENT),
+    );
   };
 
   const toolTip = (id: string) => {
     const entry = shortcutFor(id);
     return entry ? shortcutLabel(entry) : undefined;
   };
+
+  const fitButton = (
+    <button
+      type="button"
+      className="toolbar-btn"
+      aria-label={t("toolbar.fitSelection.aria")}
+      title={t("toolbar.fitSelection.title", { shortcut: toolTip("view.fit") ?? "" })}
+      data-testid="toolbar-fit-selection"
+      disabled={(mode === "prepare" && !hasSelection) || (mode === "preview" && !preview)}
+      onClick={onFit}
+    >
+      <Icon name="fit" size={18} />
+    </button>
+  );
+
+  if (mode === "preview") {
+    return (
+      <div
+        className="viewport-toolbar"
+        data-testid="viewport-toolbar"
+        role="toolbar"
+        aria-label={t("toolbar.aria")}
+      >
+        <div className="toolbar-group" role="group" aria-label={t("toolbar.group.scene.aria")}>
+          {fitButton}
+        </div>
+        <div
+          className="toolbar-group toolbar-view-presets"
+          role="group"
+          aria-label={t("toolbar.presets.aria")}
+        >
+          {PRESETS.map(({ preset, labelKey, key }) => {
+            const label = t(labelKey);
+            return (
+              <button
+                type="button"
+                key={preset}
+                className="toolbar-btn"
+                aria-label={t("toolbar.preset.aria", { label })}
+                title={t("toolbar.preset.title", { label, key })}
+                data-testid={`view-${preset}`}
+                onClick={() => dispatchPreset(preset)}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -256,11 +322,10 @@ export function Toolbar({ scene }: ToolbarProps) {
         </label>
       </div>
 
-      {/* S9.11-001 — view mode seg (mesh | slicer | live). Live requires a
-          reachable printer; when it isn't, the seg still shows the request
-          but the effective mode falls back to slicer (+ toolbar hint). */}
+      {/* Mesh and slicer are presentation choices here; live belongs to its
+          dedicated workspace stage. */}
       <div className="toolbar-group" role="group" aria-label={t("toolbar.viewmode.aria")}>
-        {VIEW_MODES.map((mode) => {
+        {VIEW_MODES.filter((mode) => mode !== "live").map((mode) => {
           const label = t(`toolbar.viewmode.${mode}`);
           const active = effectiveMode === mode;
           return (
@@ -270,12 +335,7 @@ export function Toolbar({ scene }: ToolbarProps) {
               className={`toolbar-btn${active ? " is-active" : ""}`}
               aria-pressed={active}
               aria-label={label}
-              title={
-                mode === "live"
-                  ? t("toolbar.viewmode.live") +
-                    (liveReachable ? "" : ` — ${t("toolbar.viewmode.fallback")}`)
-                  : label
-              }
+              title={label}
               data-testid={`view-mode-${mode}`}
               onClick={() => setViewMode(mode)}
             >
@@ -296,17 +356,7 @@ export function Toolbar({ scene }: ToolbarProps) {
         >
           <Icon name="arrange" size={18} />
         </button>
-        <button
-          type="button"
-          className="toolbar-btn"
-          aria-label={t("toolbar.fitSelection.aria")}
-          title={t("toolbar.fitSelection.title", { shortcut: toolTip("view.fit") ?? "" })}
-          data-testid="toolbar-fit-selection"
-          disabled={!hasSelection}
-          onClick={onFit}
-        >
-          <Icon name="fit" size={18} />
-        </button>
+        {fitButton}
         {/* P1-6 — open the numeric transform inspector as a floating viewport
             panel (selection-aware; no-op hint when nothing is selected). */}
         <button

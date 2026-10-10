@@ -25,8 +25,10 @@
  */
 
 import type { SpeedMode } from "../bridge/types.ts";
+import type { PrinterControlResult, PrinterSnapshot } from "../bridge/types.ts";
 import { CAPABILITY_SURFACE } from "./capability-surface.ts";
 import type { ActorKind } from "./capability-surface.ts";
+import type { ControlTargetContext } from "./device-availability-core.ts";
 
 /* --------------------------- Central limits --------------------------- */
 
@@ -88,7 +90,209 @@ export type BusCommandName =
 
 /* --------------------------- Result types --------------------------- */
 
-export type ControlOutcome = "accepted" | "refused" | "timeout" | "invalid";
+export type ControlOutcome =
+  "accepted" | "refused" | "timeout" | "invalid" | "unavailable" | "indeterminate";
+
+const CONTROL_CAPABILITY_BY_COMMAND: Readonly<Record<BusCommandName, string>> = {
+  temperature_set: "tempature",
+  fan_set: "fans",
+  print_update: "print",
+  light_control: "light",
+  ace_dry: "multiColorBox",
+  ace_auto_feed: "multiColorBox",
+  ace_set_slot: "multiColorBox",
+};
+
+export function controlEffectObserved(
+  envelope: ControlEnvelope,
+  snapshot: PrinterSnapshot | undefined,
+  target: ControlTargetContext,
+  requestedCapturedAt: number,
+  currentCapturedAt: number | null,
+): boolean {
+  if (
+    !snapshot ||
+    !target ||
+    snapshot.printerId !== target.printerId ||
+    !Number.isFinite(snapshot.capturedAt) ||
+    !Number.isFinite(requestedCapturedAt) ||
+    !Number.isFinite(currentCapturedAt) ||
+    snapshot.capturedAt === null ||
+    snapshot.capturedAt <= requestedCapturedAt ||
+    currentCapturedAt !== snapshot.capturedAt
+  ) {
+    return false;
+  }
+  const args = envelope.args;
+  switch (envelope.command) {
+    case "temperature_set": {
+      const fields = Object.entries(args);
+      return (
+        fields.length > 0 &&
+        fields.every(([key, value]) => {
+          if (key === "nozzle" || key === "bed") {
+            return typeof value === "number" && snapshot.temps[key].targetC === value;
+          }
+          return false;
+        })
+      );
+    }
+    case "fan_set":
+      return args.fan === "part" && snapshot.fans.partCoolingPct === args.speed_pct;
+    case "light_control":
+      return (
+        snapshot.lights !== null &&
+        typeof args.on === "boolean" &&
+        snapshot.lights.enabled === args.on &&
+        (args.brightness === undefined ||
+          (typeof args.brightness === "number" &&
+            snapshot.lights.brightnessPct === args.brightness))
+      );
+    case "print_update": {
+      const mode = Object.entries(SPEED_MODE_NUM).find(([, value]) =>
+        Object.entries(args).some(
+          ([key, argValue]) => key === "print_speed_mode" && argValue === value,
+        ),
+      )?.[0];
+      return mode !== undefined && snapshot.print.speedMode === mode;
+    }
+    default:
+      return false;
+  }
+}
+
+export interface ControlExecutionRequest {
+  readonly target: ControlTargetContext;
+  readonly envelope: ControlEnvelope;
+}
+
+export interface ControlExecutionProvider {
+  currentContext(): ControlExecutionContext;
+  authorize(
+    request: ControlExecutionRequest,
+  ): Promise<
+    | { readonly ok: true; readonly reference: string }
+    | { readonly ok: false; readonly reason: string }
+  >;
+  execute(request: ControlExecutionRequest, reference: string): Promise<PrinterControlResult>;
+}
+
+export interface ControlExecutionContext {
+  readonly target: ControlTargetContext | null;
+  readonly selectedPrinterId: string | null;
+  readonly currentCapturedAt: number | null;
+  readonly capabilityKey: string;
+}
+
+function freezeTree<T>(value: T): T {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const child of Object.values(value)) freezeTree(child);
+  }
+  return value;
+}
+
+function immutableRequest(request: ControlExecutionRequest): ControlExecutionRequest {
+  const copy: ControlExecutionRequest = {
+    target: {
+      ...request.target,
+      capabilities: { ...request.target.capabilities },
+    },
+    envelope: {
+      ...request.envelope,
+      args: Object.fromEntries(
+        Object.entries(request.envelope.args).map(([key, value]) => [
+          key,
+          Array.isArray(value) ? [...value] : value,
+        ]),
+      ),
+    },
+  };
+  return freezeTree(copy);
+}
+
+export const unavailableControlProvider: ControlExecutionProvider = {
+  currentContext() {
+    return {
+      target: null,
+      selectedPrinterId: null,
+      currentCapturedAt: null,
+      capabilityKey: "",
+    };
+  },
+  async authorize() {
+    return { ok: false, reason: "printer control provider unavailable" };
+  },
+  async execute() {
+    return { ok: false, kind: "unavailable", error: "printer control provider unavailable" };
+  },
+};
+
+export async function executeControl(
+  provider: ControlExecutionProvider,
+  request: ControlExecutionRequest,
+): Promise<PrinterControlResult> {
+  const authorizedRequest = immutableRequest(request);
+  let approval: Awaited<ReturnType<ControlExecutionProvider["authorize"]>>;
+  try {
+    approval = await provider.authorize(authorizedRequest);
+  } catch (error) {
+    return {
+      ok: false,
+      kind: "unavailable",
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+  if (!approval.ok || !approval.reference.trim()) {
+    return {
+      ok: false,
+      kind: approval.ok ? "invalid" : "unavailable",
+      error: approval.ok ? "missing backend approval reference" : approval.reason,
+    };
+  }
+  try {
+    const { validateControlTarget } = await import("./device-availability-core.ts");
+    const context = provider.currentContext();
+    const requiredCapability = CONTROL_CAPABILITY_BY_COMMAND[authorizedRequest.envelope.command];
+    const current = validateControlTarget(
+      context.target,
+      context.selectedPrinterId,
+      context.currentCapturedAt,
+      requiredCapability,
+    );
+    if (
+      !current.ok ||
+      context.capabilityKey !== requiredCapability ||
+      !context.target ||
+      context.target?.printerId !== authorizedRequest.target.printerId ||
+      context.target?.source !== authorizedRequest.target.source ||
+      context.target?.snapshotCapturedAt !== authorizedRequest.target.snapshotCapturedAt
+    ) {
+      return {
+        ok: false,
+        kind: "invalid",
+        error: current.ok
+          ? "control target or snapshot changed after authorization"
+          : current.reason,
+      };
+    }
+  } catch {
+    return {
+      ok: false,
+      kind: "unavailable",
+      error: "control context could not be revalidated",
+    };
+  }
+  try {
+    return await provider.execute(authorizedRequest, approval.reference);
+  } catch (error) {
+    return {
+      ok: false,
+      kind: "indeterminate",
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
 
 /** A validated command envelope — exactly what the bridge lane sends. */
 export interface ControlEnvelope {
@@ -147,6 +351,10 @@ export type ControlRequest =
       /** Filament color #hex (e.g. "#4fa8dc") — converted to [R,G,B] below. */
       readonly colorHex: string;
     };
+
+export function capabilityForControlAction(action: ControlAction): string {
+  return CAPABILITY_SURFACE.byAction[action]?.capabilityKey ?? "";
+}
 
 /* --------------------------- Envelope build --------------------------- */
 

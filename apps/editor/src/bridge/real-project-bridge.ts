@@ -28,21 +28,51 @@ function stableLegacyId(projectId: string, name: string): string {
   return `legacy:${encodeURIComponent(projectId)}:${encodeURIComponent(name)}`;
 }
 
-function normaliseObject(projectId: string, object: SceneObjectSnapshot): SceneObjectSnapshot {
-  const geometry = object.geometry;
-  return {
-    ...object,
-    objectId: object.objectId ?? stableLegacyId(projectId, object.name),
-    ...(geometry
-      ? {
-          geometry: {
-            positions: Float32Array.from(geometry.positions),
-            normals: Float32Array.from(geometry.normals),
-            indices: Uint32Array.from(geometry.indices),
-          },
-        }
-      : {}),
-  };
+export function sceneObjectsFromProjectSnapshot(
+  projectId: string,
+  values: readonly unknown[],
+): SceneObjectSnapshot[] {
+  return values.map((value) => {
+    if (typeof value !== "object" || value === null || !("name" in value)) {
+      throw new Error("project_object_snapshot_invalid");
+    }
+    const object = value as Record<string, unknown>;
+    if (typeof object.name !== "string") throw new Error("project_object_snapshot_invalid");
+    const rawGeometry = object.geometry;
+    const geometry =
+      typeof rawGeometry === "object" &&
+      rawGeometry !== null &&
+      "positions" in rawGeometry &&
+      "normals" in rawGeometry &&
+      "indices" in rawGeometry
+        ? {
+            positions: Float32Array.from(rawGeometry.positions as ArrayLike<number>),
+            normals: Float32Array.from(rawGeometry.normals as ArrayLike<number>),
+            indices: Uint32Array.from(rawGeometry.indices as ArrayLike<number>),
+          }
+        : undefined;
+    const sceneObject = {
+      ...object,
+      name: object.name,
+      vertices: typeof object.vertices === "number" ? object.vertices : 0,
+      triangles: typeof object.triangles === "number" ? object.triangles : 0,
+      bounds: object.bounds as SceneObjectSnapshot["bounds"],
+      sizeMm: object.sizeMm as SceneObjectSnapshot["sizeMm"],
+      volumeMm3: typeof object.volumeMm3 === "number" ? object.volumeMm3 : 0,
+      surfaceAreaMm2: typeof object.surfaceAreaMm2 === "number" ? object.surfaceAreaMm2 : 0,
+      watertight: object.watertight === true,
+      visible: object.visible !== false,
+      locked: object.locked === true,
+      ...(geometry ? { geometry } : {}),
+      objectId:
+        typeof object.objectId === "string"
+          ? object.objectId
+          : typeof object.id === "string"
+            ? object.id
+            : stableLegacyId(projectId, object.name),
+    } as SceneObjectSnapshot;
+    return sceneObject;
+  });
 }
 
 function persistedObject(object: SceneObjectSnapshot): SceneObjectSnapshot {
@@ -328,9 +358,7 @@ export async function createRealProjectBridge(
   const projectId = initial.project.id;
   let revision = initial.revision;
   let projectName = initial.project.name;
-  let objects = initial.project.objects.map((value) =>
-    normaliseObject(projectId, value as SceneObjectSnapshot),
-  );
+  let objects = sceneObjectsFromProjectSnapshot(projectId, initial.project.objects);
   let session:
     { readonly beginRevision: number; readonly startObjects: SceneObjectSnapshot[] } | undefined;
   const legacyObjects = initial.project.legacy_objects ?? [];
@@ -355,9 +383,7 @@ export async function createRealProjectBridge(
       revision = reply.actual_revision;
       if (reply.snapshot) {
         projectName = reply.snapshot.project.name;
-        objects = reply.snapshot.project.objects.map((value) =>
-          normaliseObject(projectId, value as SceneObjectSnapshot),
-        );
+        objects = sceneObjectsFromProjectSnapshot(projectId, reply.snapshot.project.objects);
         handle.onCommitEvent?.({
           revision,
           selection: {
@@ -373,14 +399,15 @@ export async function createRealProjectBridge(
     }
     const saved = reply.snapshot;
     revision = saved.revision;
-    objects = saved.project.objects.map((value) =>
-      normaliseObject(projectId, value as SceneObjectSnapshot),
-    );
+    objects = sceneObjectsFromProjectSnapshot(projectId, saved.project.objects);
     return saved;
   };
 
   const handle = {
     id: "local-project-profile",
+    projectId,
+    workspaceScope: null,
+    bridgeSnapshot: { id: "local-project-profile", projectId, workspaceScope: null },
     machineType: null,
     buildVolume: { widthMm: 0, depthMm: 0, heightMm: 0 },
     capabilities: ["project.persistence", "scene.read", "scene.mutate"],

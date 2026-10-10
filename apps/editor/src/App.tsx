@@ -1,6 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { activeProjectProvider, activeProjectScene } from "./bridge/project-provider";
+import {
+  createRealProjectBridge,
+  sceneObjectsFromProjectSnapshot,
+} from "./bridge/real-project-bridge";
 import type { IrDocument } from "./bridge/ir";
 import { parseIrDocument } from "./bridge/ir";
 import type { SlicingMode } from "./contract";
@@ -19,6 +23,7 @@ import { PlateTabs } from "./viewport/PlateTabs";
 import { resolveNonPlanarEligibility } from "./profile/capabilities";
 import { useOperatorProfile } from "./profile/useOperatorProfile";
 import { ThemeToggle } from "./components/theme-toggle";
+import { Icon } from "./components/icons";
 import { StatusBar } from "./components/status-bar";
 import { PrinterStatusBar } from "./components/PrinterStatusBar";
 import { ToastViewport } from "./components/toast-viewport";
@@ -28,23 +33,26 @@ import { ShortcutHelp } from "./components/shortcut-help";
 import { SliceButton } from "./components/SliceButton";
 import { SliceProgress } from "./components/SliceProgress";
 import { SliceStatsPanel } from "./panels/SliceStatsPanel";
-import { DevicePanelHost } from "./components/dock/DevicePanelHost";
 import { TransformPanelHost } from "./components/dock/TransformPanelHost";
-import { useDock } from "./state/dock";
 import { PrinterPicker } from "./components/PrinterPicker";
 import { PrintJobDialog } from "./dialogs/PrintJobDialog";
 import { useShortcuts } from "./hooks/useShortcuts";
 import { DockLayer } from "./components/dock/dock-layer";
 import { DockPanel } from "./components/dock/dock-panel";
+import { useDock } from "./state/dock";
 import { useScene } from "./state/scene";
 import { useUi } from "./state/ui";
 import { useI18n } from "./state/i18n";
 import { usePlates } from "./state/plates";
 import { usePrinters } from "./state/printers";
+import { useChatConversations } from "./state/chat-conversations";
+import { useProjectScope } from "./state/project-scope";
 import { activePlate as activePlateOf } from "./state/plates-core";
 import { CATALOG_MACHINES } from "./profile/operatorProfile";
 import { useViewport } from "./state/viewport";
 import { isTauriRuntime } from "./bridge/project-provider";
+import { DevicePanelMonitor } from "./panels/DevicePanel";
+import { WorkbenchLivePanel } from "./panels/WorkbenchLivePanel";
 import {
   createLocalProject,
   continueLocalProject,
@@ -112,7 +120,10 @@ export function App() {
   // the whole map (G/R/S grabs, X/Y/Z axis constrain, Enter/Esc, Q/W/E/R tools,
   // F frame, Delete/Ctrl+D, Ctrl+Z/Y soft journal) — decisions in the pure
   // `shortcuts-core`, actions here against the stores + bridge mutation lane.
-  useShortcuts(scene);
+  const [workspaceView, setWorkspaceView] = useState<"home" | "prepare" | "preview" | "workbench">(
+    "home",
+  );
+  useShortcuts(scene, workspaceView === "prepare");
   const objects = useScene((s) => s.objects);
   const projectRevision = useViewport((s) => s.revision);
 
@@ -157,8 +168,29 @@ export function App() {
   const [leftSize, setLeftSize] = useState(330);
   const [bottomSize, setBottomSize] = useState(116);
   const [sidebarView, setSidebarView] = useState<"settings" | "objects" | "chat">("settings");
-  const [workspaceView, setWorkspaceView] = useState<"home" | "prepare" | "preview">("home");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => !window.matchMedia("(max-width: 760px)").matches,
+  );
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 760px)");
+    const syncSidebar = (event: MediaQueryListEvent) => {
+      if (event.matches) setSidebarOpen(false);
+    };
+    media.addEventListener("change", syncSidebar);
+    return () => media.removeEventListener("change", syncSidebar);
+  }, []);
+  const visibleSidebarView = sidebarView;
+  const chatPanelMode = useDock((s) => s.panels.chat.mode);
+
+  const devicePanelMode = useDock((s) => s.panels.device.mode);
+  const previousDevicePanelMode = useRef(devicePanelMode);
+  useEffect(() => {
+    if (devicePanelMode === "floating" && previousDevicePanelMode.current !== "floating") {
+      setWorkspaceView("workbench");
+      useDock.getState().setPanelMode("device", "collapsed");
+    }
+    previousDevicePanelMode.current = devicePanelMode;
+  }, [devicePanelMode]);
 
   // S9.4-003 — plate membership from the scene store (authoritative snapshot)
   // + active plate name from the plate store (drives per-plate filter label).
@@ -177,6 +209,7 @@ export function App() {
   const [localProjects, setLocalProjects] = useState<LocalProjectSummary[]>([]);
   const [localJobs, setLocalJobs] = useState<LocalSliceJob[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const activeProjectIdRef = useRef<string | null>(null);
   const [homeError, setHomeError] = useState<string | null>(null);
   const [homeBusy, setHomeBusy] = useState(false);
   const [reprintResults, setReprintResults] = useState<Record<string, string>>({});
@@ -264,8 +297,23 @@ export function App() {
               : action === "recover"
                 ? await recoverLocalProject(invoke, projectId!)
                 : await openLocalProject(invoke, projectId!);
+        if (action === "recover") {
+          await queryClient.cancelQueries({ queryKey: QUERY_KEY });
+          queryClient.setQueryData(QUERY_KEY, await createRealProjectBridge(invoke, snapshot));
+        }
         setSelectedProjectId(snapshot.project.id);
-        useScene.getState().hydrate(snapshot.project.objects as never[]);
+        activeProjectIdRef.current = snapshot.project.id;
+        // S9.17-004 NAV-05: entering a project activates its chat scope.
+        // Synchronous + snapshot-derived (NOT the async scene query, so a
+        // stale-cache scene for a PREVIOUS project can never re-write the
+        // scope back to the wrong project). Page-tab switches
+        // (setWorkspaceView) never touch the chat scope on purpose — the
+        // active conversation persists across all four pages.
+        useChatConversations.getState().enterProjectScope(snapshot.project.id);
+        useProjectScope.getState().setScope(snapshot.project.id, snapshot.project.name ?? null);
+        useScene
+          .getState()
+          .hydrate(sceneObjectsFromProjectSnapshot(snapshot.project.id, snapshot.project.objects));
         useViewport.setState({ revision: snapshot.revision });
         if (
           action === "recover" &&
@@ -288,7 +336,7 @@ export function App() {
         setHomeBusy(false);
       }
     },
-    [localProjects, refreshHome, selectedProjectId, t],
+    [localProjects, queryClient, refreshHome, selectedProjectId, t],
   );
 
   const localBackendAvailable = isTauriRuntime() && provider?.mode === "real" && provider.available;
@@ -331,13 +379,43 @@ export function App() {
   }, []);
 
   const onNativeSliced = useCallback(
-    (document: IrDocument, artifactId: string, sourceRevision: number) => {
+    (
+      projectId: string | null,
+      document: IrDocument,
+      artifactId: string,
+      sourceRevision: number,
+    ) => {
+      if (projectId !== activeProjectIdRef.current) return;
       setPreviewIr(document);
       setPreviewArtifactId(artifactId);
       setPreviewSourceRevision(sourceRevision);
       setMode(document.mode);
-      setWorkspaceView("preview");
       setIrError(null);
+      setWorkspaceView((current) => (current === "prepare" ? "preview" : current));
+    },
+    [],
+  );
+
+  // S9.17-004 — Workbench live artifact → Preview. The slice backend already
+  // STRICTLY parsed the IR (live-job.ts); the App re-checks the ACTIVE
+  // project scope (current state id, never a stale ref) and bumps the load
+  // sequence so the new document wins over any in-flight read. PreviewIr,
+  // artifact id and source revision are written in one atomic state batch.
+  const handleLiveArtifactOpen = useCallback(
+    (payload: {
+      projectId: string;
+      artifactId: string;
+      sourceRevision: number;
+      ir: IrDocument;
+    }) => {
+      if (useProjectScope.getState().projectId !== payload.projectId) return;
+      loadSeq.current += 1;
+      setPreviewIr(payload.ir);
+      setPreviewArtifactId(payload.artifactId);
+      setPreviewSourceRevision(payload.sourceRevision);
+      setMode(payload.ir.mode);
+      setIrError(null);
+      setWorkspaceView("preview");
     },
     [],
   );
@@ -368,6 +446,7 @@ export function App() {
   return (
     <div
       className={`app-shell${sidebarOpen ? "" : " sidebar-collapsed"}`}
+      data-workspace-view={workspaceView}
       style={
         {
           "--left-panel-size": `${leftSize}px`,
@@ -402,48 +481,67 @@ export function App() {
           >
             {t("app.tab.preview")}
           </button>
+          <button
+            type="button"
+            aria-pressed={workspaceView === "workbench"}
+            onClick={() => setWorkspaceView("workbench")}
+          >
+            {t("app.tab.workbench")}
+          </button>
         </nav>
-        <SliceButton
-          objects={objects}
-          revision={Math.max(scene?.revision ?? 0, projectRevision)}
-          slicingMode={mode}
-          providerMode={provider?.mode ?? "unavailable"}
-          machineName={operatorProfile.displayName}
-          buildVolume={selectedMachine?.buildVolume ?? operatorProfile.buildVolume}
-          onSliced={onNativeSliced}
-        />
+        <div className="header-slice-action" hidden={workspaceView !== "prepare"}>
+          <SliceButton
+            objects={objects}
+            revision={Math.max(scene?.revision ?? 0, projectRevision)}
+            slicingMode={mode}
+            projectId={activeProjectIdRef.current}
+            providerMode={provider?.mode ?? "unavailable"}
+            machineName={operatorProfile.displayName}
+            buildVolume={selectedMachine?.buildVolume ?? operatorProfile.buildVolume}
+            onSliced={onNativeSliced}
+          />
+        </div>
         <PrinterPicker />
+        {workspaceView !== "workbench" ? (
+          <button
+            type="button"
+            className="device-panel-toggle"
+            aria-label={t("device.button.aria")}
+            title={t("device.button.title")}
+            data-testid="device-panel-toggle"
+            onClick={() => setWorkspaceView("workbench")}
+          >
+            <span className="device-panel-toggle-label">{t("device.panel.title")}</span>
+            {deviceTitle ? (
+              <span className="device-panel-toggle-ctx" data-testid="device-panel-toggle-ctx">
+                {deviceTitle}
+              </span>
+            ) : null}
+          </button>
+        ) : null}
         <button
           type="button"
-          className="device-panel-toggle"
-          aria-label={t("device.button.aria")}
-          title={t("device.button.title")}
-          data-testid="device-panel-toggle"
+          className="header-chat-toggle"
+          aria-label={t("app.chat.open")}
+          title={t("app.chat.open")}
           onClick={() => {
-            const state = useDock.getState().panels.device;
-            if (state.mode === "floating") {
-              useDock.getState().setPanelMode("device", "collapsed");
-            } else {
-              useDock.getState().focusPanel("device");
-              useDock.getState().setPanelMode("device", "floating");
-            }
+            setSidebarView("settings");
+            useDock.getState().focusPanel("chat");
+            useDock.getState().setPanelMode("chat", "floating");
           }}
         >
-          <span className="device-panel-toggle-label">{t("device.panel.title")}</span>
-          {deviceTitle ? (
-            <span className="device-panel-toggle-ctx" data-testid="device-panel-toggle-ctx">
-              {deviceTitle}
-            </span>
-          ) : null}
+          <Icon name="chat" size={16} />
         </button>
-        <button
-          type="button"
-          className="sidebar-toggle"
-          aria-expanded={sidebarOpen}
-          onClick={() => setSidebarOpen((current) => !current)}
-        >
-          {t("app.sidebarToggle")}
-        </button>
+        {workspaceView === "prepare" || workspaceView === "preview" ? (
+          <button
+            type="button"
+            className="sidebar-toggle"
+            aria-expanded={sidebarOpen}
+            onClick={() => setSidebarOpen((current) => !current)}
+          >
+            {t(workspaceView === "preview" ? "app.tab.preview" : "app.sidebarToggle")}
+          </button>
+        ) : null}
         <span className="app-sub" data-testid="bridge-state" data-provider={provider?.mode}>
           {sceneQuery.isFetching
             ? t("app.bridgeState.fetching")
@@ -454,14 +552,16 @@ export function App() {
                 : t("app.bridgeState.unavailable")}
           {provider?.reason ? ` · ${provider.reason}` : ""}
         </span>
-        <DirtyChip />
+        {workspaceView === "prepare" ? <DirtyChip /> : null}
         <ToastViewport />
-        <details className="shortcut-help-popover" data-testid="shortcut-help-toggle">
-          <summary aria-label={t("app.shortcutHelp.aria")} title={t("app.shortcutHelp.title")}>
-            ?
-          </summary>
-          <ShortcutHelp />
-        </details>
+        {workspaceView === "prepare" ? (
+          <details className="shortcut-help-popover" data-testid="shortcut-help-toggle">
+            <summary aria-label={t("app.shortcutHelp.aria")} title={t("app.shortcutHelp.title")}>
+              ?
+            </summary>
+            <ShortcutHelp />
+          </details>
+        ) : null}
         <ThemeToggle />
       </header>
 
@@ -508,9 +608,21 @@ export function App() {
                 <button
                   type="button"
                   data-testid="home-continue"
-                  disabled={!localBackendAvailable || !selectedProjectId || homeBusy}
-                  onClick={() => void activateProject("continue")}
+                  disabled={
+                    homeBusy ||
+                    (provider?.mode === "demo"
+                      ? !scene
+                      : !localBackendAvailable || !selectedProjectId)
+                  }
+                  onClick={() => {
+                    if (provider?.mode === "demo") {
+                      setWorkspaceView("prepare");
+                    } else {
+                      void activateProject("continue");
+                    }
+                  }}
                 >
+                  <Icon name="folder" size={16} />
                   {t("home.continueProject")}
                 </button>
                 <button
@@ -522,7 +634,27 @@ export function App() {
                   {t("home.recoverProject")}
                 </button>
               </div>
-              {localProjects.length ? (
+              {provider?.mode === "demo" && scene ? (
+                <ul className="home-project-list">
+                  <li>
+                    <div className="home-project-copy">
+                      <strong>{t("app.bridgeState.demo")}</strong>
+                      <span>{t("home.demoMode")}</span>
+                    </div>
+                    <button
+                      type="button"
+                      data-testid="home-demo-prepare"
+                      onClick={() => {
+                        setSidebarView("objects");
+                        setWorkspaceView("prepare");
+                      }}
+                    >
+                      <Icon name="cube" size={16} />
+                      {t("app.tab.prepare")}
+                    </button>
+                  </li>
+                </ul>
+              ) : localProjects.length ? (
                 <ul className="home-project-list">
                   {localProjects.map((project) => (
                     <li key={project.id} data-testid={`home-project-${project.id}`}>
@@ -608,20 +740,42 @@ export function App() {
             </div>
           </div>
         </section>
-        <div className="editor-workspace" hidden={workspaceView === "home"}>
+        <section
+          className="workbench-page"
+          hidden={workspaceView !== "workbench"}
+          aria-label={t("device.panel.title")}
+        >
+          {/* S9.17-004 Workbench Live — telemetry/camera/artifact views on top,
+              the existing read-only device monitor below. The panel is gated
+              on the active page + active project, and only routes a preview
+              after a project-scoped strict IR parse (handleLiveArtifactOpen). */}
+          <WorkbenchLivePanel
+            active={workspaceView === "workbench"}
+            projectId={activeProjectIdRef.current}
+            onOpenPreview={handleLiveArtifactOpen}
+          />
+          <DevicePanelMonitor />
+        </section>
+        <div
+          className="editor-workspace"
+          hidden={workspaceView === "home" || workspaceView === "workbench"}
+        >
           <aside className="panel-left">
             <nav className="sidebar-nav" aria-label={t("app.sidebarNav.aria")}>
-              {(
-                [
-                  ["settings", "app.view.settings"],
-                  ["objects", "app.view.objects"],
-                  ["chat", "app.view.chat"],
-                ] as const
+              {(workspaceView === "prepare"
+                ? ([
+                    ["settings", "app.view.settings"],
+                    ["objects", "app.view.objects"],
+                    ["chat", "app.view.chat"],
+                  ] as const)
+                : sidebarView === "chat"
+                  ? ([["chat", "app.view.chat"]] as const)
+                  : ([] as const)
               ).map(([view, key]) => (
                 <button
                   type="button"
                   key={view}
-                  aria-pressed={sidebarView === view}
+                  aria-pressed={visibleSidebarView === view}
                   onClick={() => setSidebarView(view)}
                 >
                   {t(key)}
@@ -634,6 +788,7 @@ export function App() {
                 aria-label={t("app.chat.detachAria")}
                 data-testid="chat-detach"
                 onClick={() => {
+                  setSidebarView("settings");
                   useDock.getState().focusPanel("chat");
                   useDock.getState().setPanelMode("chat", "floating");
                 }}
@@ -641,19 +796,21 @@ export function App() {
                 ⇱
               </button>
             </nav>
-            <div hidden={sidebarView !== "settings"}>
+            {workspaceView === "prepare" && sidebarView === "settings" ? (
               <SettingsPanel profile={operatorProfile} onProfileChange={setOperatorProfile} />
-            </div>
-            {sidebarView === "objects" ? (
+            ) : null}
+            {workspaceView === "prepare" && sidebarView === "objects" ? (
               <>
                 <ObjectTree scene={scene} onOpenImport={() => setImportOpen(true)} />
                 <ObjectSettingsPanel scene={scene} />
                 <BooleanToolPanel scene={scene} />
               </>
             ) : null}{" "}
-            {sidebarView === "chat" ? <ChatPanelLazy /> : null}
+            {visibleSidebarView === "chat" && chatPanelMode === "docked" ? <ChatPanelLazy /> : null}
             <section className="panel-section" aria-label={t("app.ir.aria")}>
-              <header className="panel-title">{t("app.ir.title")}</header>
+              <header className="panel-title">
+                {workspaceView === "preview" ? t("app.tab.preview") : t("app.ir.title")}
+              </header>
               <div className="panel-body">
                 <label className="ir-file-label" htmlFor="ir-file-input">
                   {t("app.ir.fileLabel")}
@@ -706,7 +863,22 @@ export function App() {
             onSizeChange={setLeftSize}
           />
           <section className="viewport-host" aria-label={t("app.viewport.aria")}>
-            <PlateTabs scene={scene} objects={objects} />
+            {workspaceView === "preview" && !preview && !irError ? (
+              <section className="preview-empty" data-testid="preview-empty" role="status">
+                <strong>{t("app.preview.empty.title")}</strong>
+                <span>{t("app.preview.empty.message")}</span>
+                <button
+                  type="button"
+                  aria-label={t("app.preview.empty.prepare")}
+                  title={t("app.preview.empty.prepare")}
+                  onClick={() => setWorkspaceView("prepare")}
+                >
+                  <Icon name="cube" />
+                  {t("app.preview.empty.prepare")}
+                </button>
+              </section>
+            ) : null}
+            {workspaceView === "prepare" ? <PlateTabs scene={scene} objects={objects} /> : null}
             <div className="plate-heading">
               <strong data-testid="plate-heading-name">{activePlateName}</strong>
               <span>{operatorProfile.displayName || t("app.plate.operatorFallback")}</span>
@@ -722,6 +894,7 @@ export function App() {
             </div>
             <Viewport
               scene={scene}
+              workspaceMode={workspaceView === "preview" ? "preview" : "prepare"}
               preview={workspaceView === "preview" ? preview : null}
               buildVolume={operatorProfile.buildVolume ?? undefined}
             />
@@ -729,15 +902,20 @@ export function App() {
         </div>
       </main>
 
-      <PanelDivider
-        axis="horizontal"
-        size={bottomSize}
-        minSize={90}
-        maxSize={420}
-        onSizeChange={setBottomSize}
-      />
-      <footer className="app-footer">
-        <PrinterStatusBar />
+      <div className="workspace-footer-divider" hidden={workspaceView !== "prepare"}>
+        <PanelDivider
+          axis="horizontal"
+          size={bottomSize}
+          minSize={90}
+          maxSize={420}
+          onSizeChange={setBottomSize}
+        />
+      </div>
+      <footer
+        className="app-footer"
+        hidden={workspaceView === "home" || workspaceView === "workbench"}
+      >
+        <PrinterStatusBar enabled={workspaceView === "prepare" || workspaceView === "preview"} />
         <StatusBar scene={scene} buildVolume={operatorProfile.buildVolume ?? undefined} />
         {previewStale ? (
           <div className="slice-stale" role="status" data-testid="slice-stale">
@@ -752,21 +930,32 @@ export function App() {
         ) : null}
         <SliceProgress nativeProvider={provider?.mode === "real"} />
         <SliceStatsPanel />
-        {provider?.mode === "demo" ? <PrintJobDialog /> : null}
-        <Timeline
-          scene={scene}
-          mode={mode}
-          onModeChange={onModeChange}
-          operatorProfile={operatorProfile}
-          eligibility={eligibility}
-          modeLockReason={modeLockReason}
-        />
+        {/* S9.17-003 SimSend: the print-job dialog is mounted ONLY in demo
+            mode and is explicitly declared simulation-only — approved cards
+            simulate, they never send a real printer command. */}
+        {provider?.mode === "demo" ? <PrintJobDialog simulationOnly /> : null}
+        {workspaceView === "prepare" ? (
+          <Timeline
+            scene={scene}
+            mode={mode}
+            onModeChange={onModeChange}
+            operatorProfile={operatorProfile}
+            eligibility={eligibility}
+            modeLockReason={modeLockReason}
+          />
+        ) : null}
       </footer>
       <ContextMenu />
-      <DockLayer>
-        <DockPanel />
-        <DevicePanelHost />
-        <TransformPanelHost scene={scene} />
+      <DockLayer
+        scope={workspaceView === "home" || workspaceView === "workbench" ? "window" : "canvas"}
+      >
+        <DockPanel
+          onDock={() => {
+            setSidebarView("chat");
+            setWorkspaceView("prepare");
+          }}
+        />
+        {workspaceView === "prepare" ? <TransformPanelHost scene={scene} /> : null}
       </DockLayer>
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} scene={scene} />
     </div>

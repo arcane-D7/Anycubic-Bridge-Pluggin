@@ -1,33 +1,21 @@
 /**
  * S9.12-002 — DevTools pane (raw snapshot mirror + property catalog +
- * hidden command map + raw command form).
+ * hidden command map).
  *
  * Views:
  *   - Raw: collapsible JSON viewer of the snapshot's `raw` mirror (9.9-002).
  *   - Catalog: searchable table of `printer_property_catalog` fixtures.
  *   - Commands: searchable table of `printer_hidden_command_map` fixtures
  *     with per-row safety badges.
- *   - Raw send: a `printer_command_send` form that is GATED — the user must
- *     type the exact confirmation word (`EXECUTE`) before send enables, and
- *     the capability policy (raw.command: agentBlocked) blocks the Agent
- *     from ever reaching this lane (9.10-001).
- *
- * Audit: every DevTools action (open, search, send attempt / accepted /
- * failed) is appended to the session journal store (`useDevtoolsJournal`).
- *
- * The UI is always the USER actor — the Agent gate is enforced by
- * `allowedFor("agent", …) === false` (unit-tested) and by the printer
- * bridge lane never trusting callers.
+ * The fixture-backed catalog/command map are reference data only. No
+ * hardware write transport is available from this pane.
  */
 
 import { useMemo, useState } from "react";
 import { useI18n } from "@/state/i18n";
-import { useUi } from "@/state/ui";
 import { useDevtoolsJournal } from "@/state/devtools-journal";
-import { searchCatalog, searchCommands, validateRawCommand } from "@/state/devtools-core";
-import { allowedFor, entryFor, CAPABILITY_SURFACE } from "@/state/capability-surface";
+import { searchCatalog, searchCommands } from "@/state/devtools-core";
 import type { DevtoolsReadModel } from "@/bridge/types";
-import type { RawCommandRequest } from "@/bridge/types";
 import type { MsgKey } from "@/state/i18n-core";
 
 interface DevToolsPaneProps {
@@ -47,7 +35,6 @@ const SAFETY_LABEL: Record<DevtoolsReadModel["commands"][number]["safety"], MsgK
 
 export function DevToolsPane({ raw }: DevToolsPaneProps) {
   const t = useI18n((s) => s.t);
-  const pushToast = useUi((s) => s.pushToast);
   const log = useDevtoolsJournal((s) => s.log);
   const clear = useDevtoolsJournal((s) => s.clear);
   const entries = useDevtoolsJournal((s) => s.entries);
@@ -57,14 +44,6 @@ export function DevToolsPane({ raw }: DevToolsPaneProps) {
   const [catalogQuery, setCatalogQuery] = useState("");
   const [commandQuery, setCommandQuery] = useState("");
   const [model, setModel] = useState<DevtoolsReadModel | null>(null);
-  const [cmdName, setCmdName] = useState("");
-  const [argsText, setArgsText] = useState("");
-  const [confirmWord, setConfirmWord] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  const rawEntry = entryFor(CAPABILITY_SURFACE, "raw.command");
-  // The pane is the USER side — the Agent is structurally blocked.
-  const rawAllowed = rawEntry ? allowedFor("user", rawEntry) : false;
 
   // First open of catalog/commands triggers the read-only model lane and
   // journal the load.
@@ -92,53 +71,17 @@ export function DevToolsPane({ raw }: DevToolsPaneProps) {
   const setViewForever = (next: View) => {
     setView(next);
     if (next === "catalog" || next === "commands") {
-      void ensureModel().catch(() =>
-        pushToast({ kind: "warning", title: "DevTools", message: t("devtools.rawEmpty") }),
-      );
-    }
-  };
-
-  const argsParsed = useMemo<Record<string, string | number | boolean> | null>(() => {
-    if (!argsText.trim()) return {};
-    try {
-      const parsed = JSON.parse(argsText) as unknown;
-      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return null;
-      return parsed as Record<string, string | number | boolean>;
-    } catch {
-      return null;
-    }
-  }, [argsText]);
-
-  const validation = argsParsed === null ? "JSON" : validateRawCommand(cmdName, argsParsed);
-  const confirmOk = confirmWord === "EXECUTE";
-  const canSend = rawAllowed && confirmOk && validation === null && !busy;
-
-  const onSendRaw = async () => {
-    if (!canSend || argsParsed === null || !rawEntry) return;
-    setBusy(true);
-    log("devtools.raw.request", `raw ${cmdName}`);
-    try {
-      const request: RawCommandRequest = { command: cmdName, args: argsParsed };
-      const lane = await import("@/bridge/mock");
-      const handle = await lane.fetchSceneSnapshot();
-      const result = await handle.rawCommand(request);
-      if (result.ok) {
-        log("devtools.raw.accepted", `raw ${result.command}`);
-        pushToast({ kind: "success", title: t("devtools.accepted"), message: result.command });
-      } else {
-        log("devtools.raw.failed", `raw ${request.command} — ${result.error} (${result.kind})`);
-        pushToast({ kind: "error", title: t("devtools.failed"), message: result.error });
-      }
-    } catch (error) {
-      log("devtools.raw.failed", `raw ${cmdName} — ${String(error)}`);
-      pushToast({ kind: "error", title: t("devtools.failed"), message: String(error) });
-    } finally {
-      setBusy(false);
+      void ensureModel();
     }
   };
 
   return (
-    <div className="devtools-pane" data-testid="devtools-pane">
+    <div
+      className="devtools-pane"
+      data-testid="devtools-pane"
+      data-origin="demo"
+      data-read-only="true"
+    >
       <header className="device-section-title">{t("devtools.title")}</header>
       <div className="devtools-tabs" role="tablist">
         <button
@@ -271,65 +214,11 @@ export function DevToolsPane({ raw }: DevToolsPaneProps) {
             </table>
           </div>
 
-          <div className="devtools-rawsend" data-testid="devtools-rawsend">
+          <div className="devtools-rawsend" data-testid="devtools-rawsend" data-read-only="true">
             <header className="devtools-rawsend-title">{t("devtools.rawSend")}</header>
-            {!rawAllowed ? (
-              <div className="devtools-blocked" data-testid="devtools-raw-blocked">
-                {t("devtools.rawBlockedAgent")}
-              </div>
-            ) : (
-              <>
-                <label className="devtools-field">
-                  <span>{t("devtools.rawCommand")}</span>
-                  <input
-                    className="devtools-input mono-num"
-                    data-testid="devtools-raw-command"
-                    value={cmdName}
-                    placeholder="light"
-                    onChange={(e) => setCmdName(e.target.value)}
-                  />
-                </label>
-                <label className="devtools-field">
-                  <span>{t("devtools.rawArgs")}</span>
-                  <textarea
-                    className="devtools-input devtools-args mono-num"
-                    data-testid="devtools-raw-args"
-                    value={argsText}
-                    rows={3}
-                    placeholder='{"status": 1}'
-                    onChange={(e) => setArgsText(e.target.value)}
-                  />
-                </label>
-                {argsParsed === null && argsText.trim() ? (
-                  <div
-                    className="devtools-hint devtools-hint-error"
-                    data-testid="devtools-raw-json-error"
-                  >
-                    {t("devtools.rawConfirmMismatch")}
-                  </div>
-                ) : null}
-                <label className="devtools-field">
-                  <span>{t("devtools.rawConfirmWord")}</span>
-                  <input
-                    className="devtools-input mono-num"
-                    data-testid="devtools-raw-confirm"
-                    value={confirmWord}
-                    placeholder="EXECUTE"
-                    onChange={(e) => setConfirmWord(e.target.value)}
-                  />
-                </label>
-                <div className="devtools-hint">{t("devtools.rawConfirmHint")}</div>
-                <button
-                  type="button"
-                  className="devtools-send"
-                  data-testid="devtools-raw-send"
-                  disabled={!canSend}
-                  onClick={() => void onSendRaw()}
-                >
-                  {busy ? "…" : "EXECUTE"}
-                </button>
-              </>
-            )}
+            <div className="devtools-blocked" data-testid="devtools-raw-blocked">
+              {t("devtools.rawBlockedAgent")}
+            </div>
           </div>
         </section>
       ) : null}

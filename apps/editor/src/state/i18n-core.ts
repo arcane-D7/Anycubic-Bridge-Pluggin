@@ -49,11 +49,23 @@ export function isLocale(value: unknown): value is Locale {
 
 /** All keys, in canonical (EN) order — the parity contract for both tables. */
 export type MsgKey =
+  | "device.origin.cloudReadOnly"
+  | "device.origin.demoReadOnly"
+  | "device.origin.demoData"
+  | "device.backend.status.checking"
+  | "device.backend.status.authUnavailable"
+  | "device.backend.status.noResolver"
+  | "device.backend.status.readyReadOnly"
+  | "chat.source.broker"
+  | "chat.source.configured"
+  | "chat.source.unavailable"
+  | "chat.source.demo"
   // app shell -----------------------------------------------------------
   | "app.brand"
   | "app.tab.home"
   | "app.tab.prepare"
   | "app.tab.preview"
+  | "app.tab.workbench"
   | "app.sidebarToggle"
   | "app.bridgeState.fetching"
   | "app.bridgeState.demo"
@@ -67,8 +79,12 @@ export type MsgKey =
   | "app.view.chat"
   | "app.chat.detachAria"
   | "app.chat.detachTitle"
+  | "app.chat.open"
   | "app.viewport.aria"
   | "app.workspaceView.aria"
+  | "app.preview.empty.title"
+  | "app.preview.empty.message"
+  | "app.preview.empty.prepare"
   // IR preview ------------------------------------------------------------
   | "app.ir.aria"
   | "app.ir.title"
@@ -272,6 +288,20 @@ export type MsgKey =
   | "device.peripherals.camera"
   | "device.peripherals.ace"
   | "device.peripherals.usb"
+  | "objectSettings.binding.title"
+  | "objectSettings.binding.selectLoaded"
+  | "objectSettings.binding.unknownMaterial"
+  | "objectSettings.binding.toolId"
+  | "objectSettings.binding.toolIdentifier"
+  | "objectSettings.binding.unassigned"
+  | "objectSettings.binding.printerOffline"
+  | "objectSettings.binding.snapshotStale"
+  | "objectSettings.binding.boundSlot"
+  | "objectSettings.binding.otherPrinter"
+  | "objectSettings.binding.save"
+  | "objectSettings.binding.clear"
+  | "objectSettings.binding.selectSlot"
+  | "objectSettings.binding.metadataOnly"
   | "device.camera.title"
   | "device.camera.start"
   | "device.camera.aria"
@@ -433,6 +463,12 @@ export type MsgKey =
   | "control.invalid.title"
   | "control.invalid.message"
   | "control.failed.title"
+  | "control.unavailable.title"
+  | "control.unavailable.message"
+  | "control.indeterminate.title"
+  | "control.indeterminate.message"
+  | "control.observed.title"
+  | "control.observed.message"
   // printer control UI (S9.10-002) ----------------------------------------
   | "control.step.decrement"
   | "control.step.increment"
@@ -509,8 +545,11 @@ export type MsgKey =
   | "chat.thinking"
   | "chat.input.placeholder"
   | "chat.send"
+  | "chat.error"
   | "chat.title"
   | "chat.switchConversation.title"
+  | "chat.scope.project"
+  | "chat.scope.workspace"
   | "conversation.none"
   | "conversation.empty"
   | "conversation.new"
@@ -896,9 +935,67 @@ export type MsgKey =
   | "send.stage.negotiate"
   | "send.stage.upload"
   | "send.stage.queue"
+  | "send.stage.simulate"
+  | "send.simulateSend"
+  | "send.demoTitle"
+  | "send.simulationComplete"
+  | "send.simulationCompleteMessage"
+  | "send.simulationTask"
+  | "send.token.demoTitle"
+  | "send.unavailable.title"
+  | "send.unavailable.message"
   | "send.reject"
   | "send.approve"
   | "send.dismiss"
+  // S9.17-004 — Workbench Live (NAV-04 / DEV-08 / DEV-09) ---------------------
+  | "workbench.live.title"
+  | "workbench.live.aria"
+  | "workbench.live.refresh"
+  | "workbench.live.refreshAria"
+  | "workbench.live.tab.telemetry"
+  | "workbench.live.tab.camera"
+  | "workbench.live.tab.artifact"
+  | "workbench.telemetry.empty"
+  | "workbench.telemetry.origin.cloud"
+  | "workbench.telemetry.origin.demo"
+  | "workbench.telemetry.origin.none"
+  | "workbench.telemetry.freshness.fresh"
+  | "workbench.telemetry.freshness.stale"
+  | "workbench.telemetry.freshness.offline"
+  | "workbench.telemetry.freshness.unknown"
+  | "workbench.telemetry.capturedAt"
+  | "workbench.telemetry.age.never"
+  | "workbench.telemetry.age.seconds"
+  | "workbench.telemetry.age.minutes"
+  | "workbench.telemetry.job.filename"
+  | "workbench.telemetry.job.taskId"
+  | "workbench.telemetry.job.taskIdAbsent"
+  | "workbench.camera.title"
+  | "workbench.camera.source.none"
+  | "workbench.camera.activate"
+  | "workbench.camera.unavailable"
+  | "workbench.camera.permissionDenied"
+  | "workbench.camera.startFailure"
+  | "workbench.camera.hint"
+  | "workbench.artifact.title"
+  | "workbench.artifact.measured"
+  | "workbench.artifact.noLink"
+  | "workbench.artifact.noLinkHint"
+  | "workbench.artifact.linked"
+  | "workbench.artifact.stale"
+  | "workbench.artifact.mismatch"
+  | "workbench.artifact.notParsed"
+  | "workbench.artifact.id"
+  | "workbench.artifact.revs"
+  | "workbench.artifact.qualified"
+  | "workbench.artifact.previewOnly"
+  | "workbench.artifact.unqualified"
+  | "workbench.artifact.openPreview"
+  | "workbench.live.unavailable"
+  | "workbench.artifact.open.opening"
+  | "workbench.artifact.open.invalid"
+  | "workbench.artifact.open.unavailable"
+  | "workbench.artifact.open.revoked"
   // shared verb fragments ---------------------------------------------------------
   | "common.cancel"
   | "common.undo"
@@ -911,6 +1008,7 @@ export const EN: Record<MsgKey, string> = {
   "app.tab.home": "Home",
   "app.tab.prepare": "Prepare",
   "app.tab.preview": "Preview",
+  "app.tab.workbench": "Workbench",
   "app.sidebarToggle": "Settings",
   "app.bridgeState.fetching": "bridge: loading…",
   "app.bridgeState.demo": "Demo geometry",
@@ -924,8 +1022,12 @@ export const EN: Record<MsgKey, string> = {
   "app.view.chat": "chat",
   "app.chat.detachAria": "Detach chat",
   "app.chat.detachTitle": "Detach chat to floating panel",
+  "app.chat.open": "Open chat",
   "app.viewport.aria": "3D viewport",
   "app.workspaceView.aria": "Workspace view",
+  "app.preview.empty.title": "No slice preview yet",
+  "app.preview.empty.message": "Slice the current plate to create a preview artifact.",
+  "app.preview.empty.prepare": "Go to Prepare",
   "app.ir.aria": "IR preview loader",
   "app.ir.title": "IR preview",
   "app.ir.fileLabel": "Load IR document (JSON)",
@@ -1114,6 +1216,17 @@ export const EN: Record<MsgKey, string> = {
   "device.empty.arm": "Monitor {device} (profile machine)",
   "device.offline.banner": "Printer unreachable — showing last known data",
   "device.stale.banner": "Data is stale — reconnecting…",
+  "device.origin.cloudReadOnly": "Cloud diagnostics · read-only; printer controls are disabled.",
+  "device.origin.demoReadOnly":
+    "Demo data · live printer telemetry is unavailable; controls are disabled.",
+  "device.origin.demoData": "Demo file catalog · no printer storage is being read.",
+  "device.backend.status.checking": "Device control · checking backend…",
+  "device.backend.status.authUnavailable":
+    "Device control · backend authentication unavailable (local desktop not signed in).",
+  "device.backend.status.noResolver":
+    "Device control · no device resolver attached — remote control stays disabled.",
+  "device.backend.status.readyReadOnly":
+    "Device control · backend ready; remote write stays disabled in the editor.",
   "device.temp.nozzle": "Nozzle",
   "device.temp.bed": "Bed",
   "device.temp.chamber": "Chamber",
@@ -1126,6 +1239,20 @@ export const EN: Record<MsgKey, string> = {
   "device.peripherals.camera": "Camera",
   "device.peripherals.ace": "ACE unit",
   "device.peripherals.usb": "USB drive",
+  "objectSettings.binding.title": "Spool binding",
+  "objectSettings.binding.selectLoaded": "Select loaded spool",
+  "objectSettings.binding.unknownMaterial": "Unknown material",
+  "objectSettings.binding.toolId": "Tool ID",
+  "objectSettings.binding.toolIdentifier": "Tool identifier",
+  "objectSettings.binding.unassigned": "Unassigned",
+  "objectSettings.binding.printerOffline": "Printer offline",
+  "objectSettings.binding.snapshotStale": "Binding snapshot stale",
+  "objectSettings.binding.boundSlot": "Bound to box {box}, slot {slot}",
+  "objectSettings.binding.otherPrinter": "Bound to another printer",
+  "objectSettings.binding.save": "Save binding",
+  "objectSettings.binding.clear": "Clear binding",
+  "objectSettings.binding.selectSlot": "Select slot",
+  "objectSettings.binding.metadataOnly": "Local metadata only; does not assign a physical spool.",
   "device.camera.title": "Camera",
   "device.camera.start": "Start camera",
   "device.camera.aria": "Start on-demand camera preview",
@@ -1276,8 +1403,9 @@ export const EN: Record<MsgKey, string> = {
   "toast.temp.off.message": "Nozzle temp differs from the material's recommended range",
   "toast.ace.error.title": "ACE error detected",
   "toast.ace.error.message": "Check the Device panel — error code {code}",
-  "control.accepted.title": "Command sent",
-  "control.accepted.message": "{command} applied to the printer",
+  "control.accepted.title": "Command accepted",
+  "control.accepted.message":
+    "The command was accepted for processing; this does not confirm a printer-state change.",
   "control.refused.title": "Command refused",
   "control.refused.message": "The printer rejected the command",
   "control.timeout.title": "Command timed out",
@@ -1285,6 +1413,12 @@ export const EN: Record<MsgKey, string> = {
   "control.invalid.title": "Invalid command",
   "control.invalid.message": "The command was not sent:",
   "control.failed.title": "Command failed",
+  "control.unavailable.title": "Control unavailable",
+  "control.unavailable.message": "Printer control is unavailable. No command was sent.",
+  "control.indeterminate.title": "Outcome unknown",
+  "control.indeterminate.message": "Outcome unknown. Refresh status before trying again.",
+  "control.observed.title": "Change observed",
+  "control.observed.message": "A fresh printer snapshot confirms {command}.",
   "control.step.decrement": "Decrease",
   "control.step.increment": "Increase",
   "control.speed.aria": "Print speed mode",
@@ -1348,16 +1482,22 @@ export const EN: Record<MsgKey, string> = {
   "import.cancel": "Cancel",
   "import.commit.busy": "Importing…",
   "import.commit.idle": "Import",
-  "chat.thread.empty.title": "No messages yet — offline dev transport (S9.6-005/008).",
-  "chat.thread.empty.hint":
-    "Send a message to get a canned mock reply; set {env} to pin the chat lane to the Rust broker loopback.",
+  "chat.thread.empty.title": "No messages yet.",
+  "chat.thread.empty.hint": "Demo conversation. Replies are simulated.",
+  "chat.source.broker": "Source: local Rust broker",
+  "chat.source.configured": "Source: local broker — provider Configured",
+  "chat.source.unavailable": "Source: local broker — provider unavailable",
+  "chat.source.demo": "Source: offline demo transport",
   "chat.role.user": "user",
   "chat.role.assistant": "assistant",
   "chat.thinking": "thinking…",
-  "chat.input.placeholder": 'Ask the harness… (try "request: geometry.boolean")',
+  "chat.input.placeholder": "Message",
   "chat.send": "Send",
+  "chat.error": "Message could not be sent. Please try again.",
   "chat.title": "Chat",
   "chat.switchConversation.title": "Switch conversation (active: {title})",
+  "chat.scope.project": "Project: {name}",
+  "chat.scope.workspace": "Workspace",
   "conversation.none": "none",
   "conversation.empty": "No conversations yet.",
   "conversation.new": "+ New conversation",
@@ -1727,9 +1867,72 @@ export const EN: Record<MsgKey, string> = {
   "send.stage.negotiate": "Negotiating with printer…",
   "send.stage.upload": "Uploading slice…",
   "send.stage.queue": "Queuing job…",
+  "send.stage.simulate": "Simulating send…",
+  "send.simulateSend": "Simulate send",
+  "send.demoTitle": "Demo simulation, no data uploaded and no printer command sent.",
+  "send.simulationComplete": "Simulation complete",
+  "send.simulationCompleteMessage": "Demo simulation on {name} · {simulationId}",
+  "send.simulationTask": "simulation {id}",
+  "send.token.demoTitle":
+    "Local FNV-1a hash — pins this payload only; no authentication or transport",
+  "send.unavailable.title": "Send unavailable",
+  "send.unavailable.message": "No printer transport is connected — demo simulation only.",
   "send.reject": "Reject",
   "send.approve": "Approve",
   "send.dismiss": "Dismiss",
+  "workbench.live.title": "Live",
+  "workbench.live.aria": "Workbench live views",
+  "workbench.live.refresh": "Refresh",
+  "workbench.live.refreshAria": "Refresh live views",
+  "workbench.live.tab.telemetry": "Telemetry",
+  "workbench.live.tab.camera": "Camera",
+  "workbench.live.tab.artifact": "Artifact",
+  "workbench.telemetry.empty": "No printer selected — live telemetry is unknown.",
+  "workbench.telemetry.origin.cloud": "Cloud read",
+  "workbench.telemetry.origin.demo": "Demo read",
+  "workbench.telemetry.origin.none": "No origin",
+  "workbench.telemetry.freshness.fresh": "Fresh",
+  "workbench.telemetry.freshness.stale": "Stale",
+  "workbench.telemetry.freshness.offline": "Offline",
+  "workbench.telemetry.freshness.unknown": "Unknown",
+  "workbench.telemetry.capturedAt": "Captured {time} · {age} ago",
+  "workbench.telemetry.age.never": "never",
+  "workbench.telemetry.age.seconds": "{n}s",
+  "workbench.telemetry.age.minutes": "{n}m",
+  "workbench.telemetry.job.filename": "Print file: {name}",
+  "workbench.telemetry.job.taskId": "Physical task id: {id}",
+  "workbench.telemetry.job.taskIdAbsent": "No physical task id is published by telemetry.",
+  "workbench.camera.title": "Camera",
+  "workbench.camera.source.none": "Actual camera source: none",
+  "workbench.camera.activate": "Activate camera",
+  "workbench.camera.unavailable": "Camera unavailable: no supported provider.",
+  "workbench.camera.permissionDenied": "Camera permission denied: {message}",
+  "workbench.camera.startFailure": "Camera start failed: {message}",
+  "workbench.camera.hint":
+    "No camera adapter is installed. Camera capture stays disabled until a supported provider (authorized hardware or service) exists.",
+  "workbench.artifact.title": "Artifact preview",
+  "workbench.artifact.measured": "Live measured paths",
+  "workbench.artifact.noLink": "Current job has no linked artifact",
+  "workbench.artifact.noLinkHint":
+    "An artifact is only shown when the backend publishes an exact job/printer binding (physical task id), a fresh source revision and parsed slice IR.",
+  "workbench.artifact.linked": "Artifact linked to the running job",
+  "workbench.artifact.stale": "Artifact source revision is stale — no preview.",
+  "workbench.artifact.mismatch": "Artifact binding does not match the observed job — no preview.",
+  "workbench.artifact.notParsed": "Artifact IR is not parsed yet.",
+  "workbench.artifact.id": "Artifact {id}",
+  "workbench.artifact.revs": "Source rev {source} · current rev {current}",
+  "workbench.artifact.qualified": "Qualified",
+  "workbench.artifact.previewOnly": "Preview only",
+  "workbench.artifact.unqualified": "Unqualified",
+  "workbench.artifact.openPreview": "Open Preview",
+  "workbench.live.unavailable":
+    "Live job backend unavailable — no physical job source is connected in this build.",
+  "workbench.artifact.open.opening": "Opening artifact…",
+  "workbench.artifact.open.invalid": "Artifact IR is invalid: {message}",
+  "workbench.artifact.open.unavailable":
+    "Artifact read unavailable — the backend cannot serve this artifact.",
+  "workbench.artifact.open.revoked":
+    "Artifact open cancelled — the active project/printer changed while reading.",
   "common.cancel": "Cancel",
   "common.undo": "Undo",
   "common.redo": "Redo",
@@ -1742,6 +1945,7 @@ export const PT_BR: Record<MsgKey, string> = {
   "app.tab.home": "Início",
   "app.tab.prepare": "Preparar",
   "app.tab.preview": "Pré-visualizar",
+  "app.tab.workbench": "Bancada",
   "app.sidebarToggle": "Definições",
   "app.bridgeState.fetching": "bridge: a carregar…",
   "app.bridgeState.demo": "Geometria de demonstração",
@@ -1755,8 +1959,12 @@ export const PT_BR: Record<MsgKey, string> = {
   "app.view.chat": "chat",
   "app.chat.detachAria": "Desprender chat",
   "app.chat.detachTitle": "Desprender chat para painel flutuante",
+  "app.chat.open": "Abrir chat",
   "app.viewport.aria": "Viewport 3D",
   "app.workspaceView.aria": "Vista do espaço de trabalho",
+  "app.preview.empty.title": "Ainda não há pré-visualização da fatia",
+  "app.preview.empty.message": "Fatie a chapa atual para criar um artefacto de pré-visualização.",
+  "app.preview.empty.prepare": "Ir para Preparar",
   "app.ir.aria": "Carregador de pré-visualização IR",
   "app.ir.title": "Pré-visualização IR",
   "app.ir.fileLabel": "Carregar documento IR (JSON)",
@@ -1947,6 +2155,19 @@ export const PT_BR: Record<MsgKey, string> = {
   "device.empty.arm": "Monitorizar {device} (máquina do perfil)",
   "device.offline.banner": "Impressora inacessível — a mostrar últimos dados conhecidos",
   "device.stale.banner": "Dados desatualizados — a reconectar…",
+  "device.origin.cloudReadOnly":
+    "Diagnóstico na nuvem · somente leitura; controles da impressora desativados.",
+  "device.origin.demoReadOnly":
+    "Dados de demonstração · telemetria ao vivo indisponível; controles desativados.",
+  "device.origin.demoData":
+    "Catálogo de arquivos de demonstração · o armazenamento da impressora não está sendo lido.",
+  "device.backend.status.checking": "Controle de dispositivo · verificando backend…",
+  "device.backend.status.authUnavailable":
+    "Controle de dispositivo · autenticação de backend indisponível (desktop local não autenticado).",
+  "device.backend.status.noResolver":
+    "Controle de dispositivo · nenhum resolvedor de dispositivo anexado — controle remoto permanece desativado.",
+  "device.backend.status.readyReadOnly":
+    "Controle de dispositivo · backend pronto; escrita remota permanece desativada no editor.",
   "device.temp.nozzle": "Bico",
   "device.temp.bed": "Mesa",
   "device.temp.chamber": "Câmara",
@@ -1959,6 +2180,21 @@ export const PT_BR: Record<MsgKey, string> = {
   "device.peripherals.camera": "Câmara",
   "device.peripherals.ace": "Unidade ACE",
   "device.peripherals.usb": "Pen USB",
+  "objectSettings.binding.title": "Vínculo de filamento",
+  "objectSettings.binding.selectLoaded": "Selecione um filamento carregado",
+  "objectSettings.binding.unknownMaterial": "Material desconhecido",
+  "objectSettings.binding.toolId": "ID da ferramenta",
+  "objectSettings.binding.toolIdentifier": "Identificador da ferramenta",
+  "objectSettings.binding.unassigned": "Sem vínculo",
+  "objectSettings.binding.printerOffline": "Impressora offline",
+  "objectSettings.binding.snapshotStale": "Snapshot do vínculo desatualizado",
+  "objectSettings.binding.boundSlot": "Vinculado à caixa {box}, slot {slot}",
+  "objectSettings.binding.otherPrinter": "Vinculado a outra impressora",
+  "objectSettings.binding.save": "Salvar vínculo",
+  "objectSettings.binding.clear": "Limpar vínculo",
+  "objectSettings.binding.selectSlot": "Selecione um slot",
+  "objectSettings.binding.metadataOnly":
+    "Somente metadados locais; não atribui um filamento físico.",
   "device.camera.title": "Câmara",
   "device.camera.start": "Iniciar câmara",
   "device.camera.aria": "Iniciar pré-visualização de câmara a pedido",
@@ -2111,8 +2347,9 @@ export const PT_BR: Record<MsgKey, string> = {
   "toast.temp.off.message": "A temperatura do bico difere da gama recomendada do material",
   "toast.ace.error.title": "Erro ACE detetado",
   "toast.ace.error.message": "Verifique o painel Dispositivo — código {code}",
-  "control.accepted.title": "Comando enviado",
-  "control.accepted.message": "{command} aplicado à impressora",
+  "control.accepted.title": "Comando aceite",
+  "control.accepted.message":
+    "O comando foi aceite para processamento; isso não confirma uma alteração no estado da impressora.",
   "control.refused.title": "Comando recusado",
   "control.refused.message": "A impressora recusou o comando",
   "control.timeout.title": "Comando expirou",
@@ -2120,6 +2357,14 @@ export const PT_BR: Record<MsgKey, string> = {
   "control.invalid.title": "Comando inválido",
   "control.invalid.message": "O comando não foi enviado:",
   "control.failed.title": "Falha no comando",
+  "control.unavailable.title": "Controlo indisponível",
+  "control.unavailable.message":
+    "O controlo da impressora está indisponível. Nenhum comando foi enviado.",
+  "control.indeterminate.title": "Resultado desconhecido",
+  "control.indeterminate.message":
+    "Resultado desconhecido. Atualize o estado antes de tentar novamente.",
+  "control.observed.title": "Alteração observada",
+  "control.observed.message": "Um instantâneo recente da impressora confirma {command}.",
   "control.step.decrement": "Diminuir",
   "control.step.increment": "Aumentar",
   "control.speed.aria": "Modo de velocidade de impressão",
@@ -2184,16 +2429,22 @@ export const PT_BR: Record<MsgKey, string> = {
   "import.cancel": "Cancelar",
   "import.commit.busy": "A importar…",
   "import.commit.idle": "Importar",
-  "chat.thread.empty.title": "Sem mensagens ainda — transporte dev offline (S9.6-005/008).",
-  "chat.thread.empty.hint":
-    "Envie uma mensagem para obter uma resposta mock; defina {env} para fixar o lane de chat ao loopback do broker Rust.",
+  "chat.thread.empty.title": "Sem mensagens ainda.",
+  "chat.thread.empty.hint": "Conversa de demonstração. As respostas são simuladas.",
+  "chat.source.broker": "Origem: broker Rust local",
+  "chat.source.configured": "Origem: broker local — provedor configurado",
+  "chat.source.unavailable": "Origem: broker local — provedor indisponível",
+  "chat.source.demo": "Origem: transporte de demonstração offline",
   "chat.role.user": "utilizador",
   "chat.role.assistant": "assistente",
   "chat.thinking": "a pensar…",
-  "chat.input.placeholder": 'Pergunte ao harness… (tente "request: geometry.boolean")',
+  "chat.input.placeholder": "Mensagem",
   "chat.send": "Enviar",
+  "chat.error": "Não foi possível enviar a mensagem. Tente novamente.",
   "chat.title": "Chat",
   "chat.switchConversation.title": "Mudar conversa (ativa: {title})",
+  "chat.scope.project": "Projeto: {name}",
+  "chat.scope.workspace": "Espaço de trabalho",
   "conversation.none": "nenhuma",
   "conversation.empty": "Sem conversas ainda.",
   "conversation.new": "+ Nova conversa",
@@ -2567,9 +2818,75 @@ export const PT_BR: Record<MsgKey, string> = {
   "send.stage.negotiate": "A negociar com a impressora…",
   "send.stage.upload": "A enviar corte…",
   "send.stage.queue": "A colocar em fila…",
+  "send.stage.simulate": "A simular envio…",
+  "send.simulateSend": "Simular envio",
+  "send.demoTitle": "Simulação demo, sem dados carregados e sem comando enviado à impressora.",
+  "send.simulationComplete": "Simulação concluída",
+  "send.simulationCompleteMessage": "Simulação demo em {name} · {simulationId}",
+  "send.simulationTask": "simulação {id}",
+  "send.token.demoTitle":
+    "Hash FNV-1a local — fixa apenas este payload; sem autenticação ou transporte",
+  "send.unavailable.title": "Envio indisponível",
+  "send.unavailable.message":
+    "Nenhum transporte de impressora está ligado — apenas simulação demo.",
   "send.reject": "Rejeitar",
   "send.approve": "Aprovar",
   "send.dismiss": "Dispensar",
+  "workbench.live.title": "Ao vivo",
+  "workbench.live.aria": "Vistas ao vivo do Workbench",
+  "workbench.live.refresh": "Atualizar",
+  "workbench.live.refreshAria": "Atualizar vistas ao vivo",
+  "workbench.live.tab.telemetry": "Telemetria",
+  "workbench.live.tab.camera": "Câmara",
+  "workbench.live.tab.artifact": "Artefacto",
+  "workbench.telemetry.empty": "Nenhuma impressora selecionada — telemetria ao vivo desconhecida.",
+  "workbench.telemetry.origin.cloud": "Leitura cloud",
+  "workbench.telemetry.origin.demo": "Leitura demo",
+  "workbench.telemetry.origin.none": "Sem origem",
+  "workbench.telemetry.freshness.fresh": "Atualizado",
+  "workbench.telemetry.freshness.stale": "Desatualizado",
+  "workbench.telemetry.freshness.offline": "Offline",
+  "workbench.telemetry.freshness.unknown": "Desconhecido",
+  "workbench.telemetry.capturedAt": "Capturado {time} · há {age}",
+  "workbench.telemetry.age.never": "nunca",
+  "workbench.telemetry.age.seconds": "{n}s",
+  "workbench.telemetry.age.minutes": "{n}m",
+  "workbench.telemetry.job.filename": "Ficheiro de impressão: {name}",
+  "workbench.telemetry.job.taskId": "Id da tarefa física: {id}",
+  "workbench.telemetry.job.taskIdAbsent": "A telemetria não publica id de tarefa física.",
+  "workbench.camera.title": "Câmara",
+  "workbench.camera.source.none": "Fonte de câmara real: nenhuma",
+  "workbench.camera.activate": "Ativar câmara",
+  "workbench.camera.unavailable": "Câmara indisponível: nenhum provider suportado.",
+  "workbench.camera.permissionDenied": "Permissão de câmara negada: {message}",
+  "workbench.camera.startFailure": "Falha ao iniciar a câmara: {message}",
+  "workbench.camera.hint":
+    "Nenhum adaptador de câmara está instalado. A captura de câmara permanece desativada até existir um provider suportado (hardware ou serviço autorizado).",
+  "workbench.artifact.title": "Pré-visualização do artefacto",
+  "workbench.artifact.measured": "Caminhos medidos ao vivo",
+  "workbench.artifact.noLink": "O trabalho atual não tem artefacto ligado",
+  "workbench.artifact.noLinkHint":
+    "Um artefacto só é mostrado quando o backend publica uma ligação exata trabalho/impressora (id de tarefa física), revisão de origem atualizada e IR de fatia analisado.",
+  "workbench.artifact.linked": "Artefacto ligado ao trabalho em execução",
+  "workbench.artifact.stale":
+    "Revisão de origem do artefacto desatualizada — sem pré-visualização.",
+  "workbench.artifact.mismatch":
+    "A ligação do artefacto não coincide com o trabalho observado — sem pré-visualização.",
+  "workbench.artifact.notParsed": "O IR do artefacto ainda não foi analisado.",
+  "workbench.artifact.id": "Artefacto {id}",
+  "workbench.artifact.revs": "Rev. origem {source} · rev. atual {current}",
+  "workbench.artifact.qualified": "Qualificado",
+  "workbench.artifact.previewOnly": "Só pré-visualização",
+  "workbench.artifact.unqualified": "Não qualificado",
+  "workbench.artifact.openPreview": "Abrir Pré-visualização",
+  "workbench.live.unavailable":
+    "Backend de trabalho ao vivo indisponível — nenhuma fonte física de trabalho está ligada nesta compilação.",
+  "workbench.artifact.open.opening": "A abrir artefacto…",
+  "workbench.artifact.open.invalid": "O IR do artefacto é inválido: {message}",
+  "workbench.artifact.open.unavailable":
+    "Leitura do artefacto indisponível — o backend não consegue servir este artefacto.",
+  "workbench.artifact.open.revoked":
+    "Abertura do artefacto cancelada — o projeto/impressora ativos mudaram durante a leitura.",
   "common.cancel": "Cancelar",
   "common.undo": "Desfazer",
   "common.redo": "Refazer",

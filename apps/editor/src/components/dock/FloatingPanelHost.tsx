@@ -1,6 +1,8 @@
 import { createPortal } from "react-dom";
 import {
   useCallback,
+  useEffect,
+  useRef,
   useState,
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
@@ -21,11 +23,19 @@ import { useDockRail, useViewportDockRoot } from "./dock-layer";
  * canvas — Consultor §3.1).
  *
  * Owns the drag (useDockDrag, ref-based + rAF), the SE resize handle, the
- * header chrome (title + dock/collapse) and the a11y extras added in
- * S9.1a-004: soft Tab trap (only while focus is inside), Alt+Shift+arrows
+ * header chrome (title + dock/collapse) and Alt+Shift+arrows
  * move the panel, visible focus ring via CSS. Position comes from the dock
  * store (viewport fractions); the drag applies a translate3d and commits
  * fractions on drag-stop.
+ *
+ * Focus-return (chat panels): Radix non-modal dialogs close with
+ * `event.preventDefault()` and rely on `triggerRef` for focus restore — we
+ * render no `Dialog.Trigger`, so the default would drop focus to <body>.
+ * `onOpenAutoFocus` fires BEFORE Radix moves focus into the panel, so the
+ * opener (pointer or keyboard trigger) is captured there; `onCloseAutoFocus`
+ * restores it if it is still connected/visible/interactive, else falls back
+ * to the always-visible global `.header-chat-toggle`. Device/transform panels
+ * (`kind !== "chat"`) keep Radix's default close behavior untouched.
  */
 
 export type FloatingPanelKind = "chat" | "device" | "transform";
@@ -43,9 +53,25 @@ interface FloatingPanelHostProps {
 
 const MOVE_STEP = 0.05; // viewport fraction per Alt+Shift+arrow press
 
+/** A focus target is restorable when it is still mounted, paints (zero client
+ *  rects ⇒ display:none/[hidden] ancestor) and is not a disabled control.
+ *  <body> is never restorable: it is the browser's default fallback (e.g. the
+ *  collapsed pill we opened from is unmounted the instant the panel mounts, so
+ *  onOpenAutoFocus may capture BODY) — BODY must fall through to the global
+ *  header chat toggle. */
+function isRestorableFocusTarget(el: Element | null, ownerDocument: Document): el is HTMLElement {
+  if (!(el instanceof HTMLElement) || !el.isConnected) return false;
+  if (el === ownerDocument.body) return false;
+  if (el.getClientRects().length === 0) return false;
+  if (el instanceof HTMLButtonElement && el.disabled) return false;
+  if (el instanceof HTMLInputElement && el.disabled) return false;
+  return true;
+}
+
 export function FloatingPanelHost({
   id,
   title,
+  kind,
   children,
   onDock,
   onCollapse,
@@ -57,9 +83,14 @@ export function FloatingPanelHost({
   const setPanelRect = useDock((s) => s.setPanelRect);
   const { onPointerDown, bindElement } = useDockDrag(id);
   const [inlineRect, setInlineRect] = useState<{ w: number; h: number } | null>(null);
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
+  // Chat panels (S9.18-003 follow-up): the opener focused at open time, to be
+  // restored when Escape collapses the panel. Captured in onOpenAutoFocus so
+  // it runs before Radix's autofocus moves focus inside the dialog.
+  const openerRef = useRef<HTMLElement | null>(null);
+  const restoreFocusOnClose = kind === "chat";
 
-  // 2026-10-06 layout fix (Consultor): panels portal into the CANVAS-local
-  // dock root (inside .viewport-frame) — so rect fractions are canvas-relative.
+  // Panels use the root provided by DockLayer as their fraction reference.
   const dockRoot = useViewportDockRoot();
   const portalTarget = typeof document !== "undefined" && dockRoot ? dockRoot : undefined;
 
@@ -71,12 +102,8 @@ export function FloatingPanelHost({
         const startX = e.clientX;
         const startY = e.clientY;
         const startRect = panel.rect;
-        // Canvas-relative base (2026-10-06 layout fix): the frame box, not the
-        // window — same reference frame as the drag commit.
-        const frame = e.currentTarget.ownerDocument
-          ? e.currentTarget.ownerDocument.querySelector<HTMLElement>(".viewport-frame")
-          : null;
-        const base = frame?.getBoundingClientRect() ?? document.body.getBoundingClientRect();
+        const base =
+          dockRoot?.getBoundingClientRect() ?? document.documentElement.getBoundingClientRect();
         const vw = Math.max(1, base.width);
         const vh = Math.max(1, base.height);
         // Track the resized rect in a closure so `up` commits the final
@@ -93,15 +120,21 @@ export function FloatingPanelHost({
         const up = () => {
           window.removeEventListener("pointermove", move);
           window.removeEventListener("pointerup", up);
+          window.removeEventListener("pointercancel", up);
+          resizeCleanupRef.current = null;
           setPanelRect(id, cur);
           setInlineRect(null);
         };
         window.addEventListener("pointermove", move);
         window.addEventListener("pointerup", up);
+        window.addEventListener("pointercancel", up);
+        resizeCleanupRef.current = up;
       }
     },
-    [id, panel.rect, setPanelRect],
+    [dockRoot, id, panel.rect, setPanelRect],
   );
+
+  useEffect(() => () => resizeCleanupRef.current?.(), []);
 
   /** Soft focus trap: only wraps Tab while focus is inside the panel. */
   const handleKeyDown = useCallback(
@@ -131,28 +164,6 @@ export function FloatingPanelHost({
           const r = useDock.getState().panels[id].rect;
           setPanelRect(id, { x: r.x + dx, y: r.y + dy, w: r.w, h: r.h });
           return;
-        }
-      }
-
-      // Soft Tab trap (only active while focus is inside this panel).
-      if (e.key === "Tab") {
-        const el = e.currentTarget as HTMLElement;
-        const focusables = Array.from(
-          el.querySelectorAll<HTMLElement>(
-            'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
-          ),
-        ).filter((n) => n.offsetParent !== null);
-        if (focusables.length === 0) return;
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        if (!first || !last) return;
-        const active = document.activeElement as HTMLElement | null;
-        if (e.shiftKey && (active === first || active === el)) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && active === last) {
-          e.preventDefault();
-          first.focus();
         }
       }
     },
@@ -185,6 +196,30 @@ export function FloatingPanelHost({
         onPointerDown={onPointerDown}
         onFocusCapture={() => focusPanel(id)}
         onKeyDown={handleKeyDown}
+        onOpenAutoFocus={(_event) => {
+          // Radix runs this before focusing the first tabbable inside the
+          // panel, so the trigger that opened the panel is still the focused
+          // element here — save it and allow the default autofocus.
+          if (restoreFocusOnClose) {
+            const active = document.activeElement;
+            openerRef.current = active instanceof HTMLElement ? active : null;
+          }
+        }}
+        onCloseAutoFocus={(event) => {
+          // Radix non-modal close always ends with preventDefault() and only
+          // restores via triggerRef (none mounted): without this, Escape would
+          // drop focus to <body>. Restore the captured opener when it is still
+          // usable, else the always-visible global header chat toggle.
+          if (!restoreFocusOnClose) return; // device/transform: Radix default
+          event.preventDefault();
+          const opener = openerRef.current;
+          if (isRestorableFocusTarget(opener, document)) {
+            opener.focus();
+            return;
+          }
+          const header = document.querySelector<HTMLElement>(".header-chat-toggle");
+          if (isRestorableFocusTarget(header, document)) header.focus();
+        }}
       >
         <div className="floating-header" data-drag>
           <DialogPrimitive.Title className="floating-title" title={title}>
@@ -194,6 +229,7 @@ export function FloatingPanelHost({
           <button
             type="button"
             className="floating-icon-btn"
+            aria-label={t("dock.dockTitle")}
             title={t("dock.dockTitle")}
             data-testid={`dock-${id}`}
             onClick={onDock}
@@ -203,6 +239,7 @@ export function FloatingPanelHost({
           <button
             type="button"
             className="floating-icon-btn"
+            aria-label={t("dock.collapseTitle")}
             title={t("dock.collapseTitle")}
             data-testid={`collapse-${id}`}
             onClick={onCollapse}
@@ -257,6 +294,7 @@ export function CollapsedPill({
     <button
       type="button"
       className="dock-pill"
+      aria-label={t("dock.expandTitle", { title })}
       data-testid={`pill-${id}`}
       title={t("dock.expandTitle", { title })}
       onClick={onExpand}

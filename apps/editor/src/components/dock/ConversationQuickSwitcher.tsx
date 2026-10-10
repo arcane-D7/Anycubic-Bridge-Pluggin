@@ -1,6 +1,10 @@
 import { useState } from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
-import { conversationsSorted, conversationStats } from "../../state/chat-conversations-core";
+import {
+  conversationsForScope,
+  conversationsSorted,
+  conversationStats,
+} from "../../state/chat-conversations-core";
 import { useChatConversations } from "../../state/chat-conversations";
 import { useI18n } from "../../state/i18n";
 
@@ -11,6 +15,10 @@ import { useI18n } from "../../state/i18n";
  * non-modal Radix Popover; the row sits beside the title so the header drag
  * handle (`data-drag`) is not obstructed. Docked mode uses the sidebar list
  * (ConversationList in ChatPanel) — this Popover targets floating mode.
+ *
+ * S9.17-004 NAV-05: rows show ONLY the current project scope's
+ * conversations (approval counts are per-conversation, so they are same-
+ * scope by construction); "New" creates in the current scope.
  */
 export function ConversationQuickSwitcher() {
   const t = useI18n((s) => s.t);
@@ -57,10 +65,11 @@ function ConversationQuickList({ onPick }: { readonly onPick: () => void }) {
   const t = useI18n((s) => s.t);
   const conversations = useChatConversations((s) => s.conversations);
   const activeId = useChatConversations((s) => s.activeId);
+  const scope = useChatConversations((s) => s.currentProjectId);
   const switchTo = useChatConversations((s) => s.switchTo);
   const create = useChatConversations((s) => s.create);
 
-  const rows = conversationsSorted(conversations);
+  const rows = conversationsSorted(conversationsForScope(conversations, scope));
 
   return (
     <div className="conversation-popover-inner" data-testid="conversation-list">

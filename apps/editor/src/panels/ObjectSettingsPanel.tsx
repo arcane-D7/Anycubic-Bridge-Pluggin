@@ -9,7 +9,7 @@
  * TransformInspector pattern) — the snapshot rehydrates the store.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { BridgeHandle } from "../bridge/mock";
 import type { ObjectPrintSettings } from "../bridge/types";
@@ -59,6 +59,11 @@ export function ObjectSettingsPanel({ scene }: ObjectSettingsPanelProps) {
   const printerStatus = usePrinterDevice((state) => state.pollingStatus);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [toolId, setToolId] = useState(materialBinding?.toolId ?? "");
+
+  useEffect(() => {
+    setToolId(materialBinding?.toolId ?? "");
+    setSelectedSlot("");
+  }, [name, materialBinding?.toolId]);
 
   // P1-7 — multi-selection mixed state (plan: `object.mixed`). When more than
   // one object is selected and their filament assignments differ, show the
@@ -135,8 +140,22 @@ export function ObjectSettingsPanel({ scene }: ObjectSettingsPanelProps) {
 
   const availableSlots =
     printerSnapshot?.printerId === selectedPrinterId
-      ? printerSnapshot.ace.boxes.flatMap((box) => box.slots.map((slot) => ({ box, slot })))
+      ? printerSnapshot.ace.boxes.flatMap((box) =>
+          box.slots
+            .filter((slot) => slot.material != null && slot.material !== "")
+            .map((slot) => ({ box, slot })),
+        )
       : [];
+  const selectedSlotIsAvailable = availableSlots.some(
+    ({ box, slot }) => `${box.index}:${slot.index}` === selectedSlot,
+  );
+  const canSaveBinding =
+    Boolean(
+      name && selectedPrinterId && selectedSlot && selectedSlotIsAvailable && toolId.trim(),
+    ) &&
+    printerStatus !== "offline" &&
+    printerStatus !== "stale" &&
+    printerSnapshot?.printerId === selectedPrinterId;
 
   if (!name || !object) {
     return (
@@ -246,45 +265,52 @@ export function ObjectSettingsPanel({ scene }: ObjectSettingsPanelProps) {
       </label>
 
       <label className="settings-stack">
-        Physical spool binding
+        {t("objectSettings.binding.title")}
         <select
           data-testid="material-binding-slot"
           value={selectedSlot}
           onChange={(event) => setSelectedSlot(event.currentTarget.value)}
         >
-          <option value="">Select a loaded spool</option>
+          <option value="">{t("objectSettings.binding.selectLoaded")}</option>
           {availableSlots.map(({ box, slot }) => (
             <option key={`${box.index}:${slot.index}`} value={`${box.index}:${slot.index}`}>
-              Box {box.index + 1} · Slot {slot.index + 1} · {slot.material ?? "Unknown material"}
+              Box {box.index + 1} · Slot {slot.index + 1} ·{" "}
+              {slot.material ?? t("objectSettings.binding.unknownMaterial")}
             </option>
           ))}
         </select>
         <input
-          aria-label="Tool ID"
+          aria-label={t("objectSettings.binding.toolId")}
           data-testid="material-binding-tool"
           value={toolId}
           onChange={(event) => setToolId(event.currentTarget.value)}
-          placeholder="Tool identifier"
+          placeholder={t("objectSettings.binding.toolIdentifier")}
         />
         <span className="object-filament-state" data-testid="material-binding-status">
           {!materialBinding
-            ? "Unassigned"
+            ? t("objectSettings.binding.unassigned")
             : printerStatus === "offline"
-              ? "Printer offline"
+              ? t("objectSettings.binding.printerOffline")
               : printerStatus === "stale"
-                ? "Binding snapshot stale"
+                ? t("objectSettings.binding.snapshotStale")
                 : materialBinding.printerId === selectedPrinterId
-                  ? `Bound to box ${materialBinding.boxId + 1}, slot ${materialBinding.slotIndex + 1}`
-                  : "Bound to another printer"}
+                  ? t("objectSettings.binding.boundSlot", {
+                      box: String(materialBinding.boxId + 1),
+                      slot: String(materialBinding.slotIndex + 1),
+                    })
+                  : t("objectSettings.binding.otherPrinter")}
         </span>
+        <small>{t("objectSettings.binding.metadataOnly")}</small>
         <span className="object-settings-actions">
           <button
             type="button"
             data-testid="material-binding-save"
-            disabled={!selectedPrinterId || !selectedSlot || !toolId.trim()}
+            disabled={!canSaveBinding}
             onClick={() => {
+              if (!canSaveBinding) return;
               const [boxId, slotIndex] = selectedSlot.split(":").map(Number);
-              if (boxId === undefined || slotIndex === undefined || !selectedPrinterId) return;
+              if (boxId === undefined || slotIndex === undefined || !selectedPrinterId || !name)
+                return;
               void assignBinding({
                 printerId: selectedPrinterId,
                 toolId: toolId.trim(),
@@ -295,7 +321,7 @@ export function ObjectSettingsPanel({ scene }: ObjectSettingsPanelProps) {
               setSelectedSlot("");
             }}
           >
-            Save binding
+            {t("objectSettings.binding.save")}
           </button>
           <button
             type="button"
@@ -303,7 +329,7 @@ export function ObjectSettingsPanel({ scene }: ObjectSettingsPanelProps) {
             disabled={!materialBinding}
             onClick={() => void assignBinding(null)}
           >
-            Clear binding
+            {t("objectSettings.binding.clear")}
           </button>
         </span>
       </label>

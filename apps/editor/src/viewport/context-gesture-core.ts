@@ -32,5 +32,5 @@ export function consumeRightGestureMenu(gesture: RightGesture | null): {
   readonly openMenu: boolean;
   readonly next: null;
 } {
-  return { openMenu: gesture !== null && !gesture.suppressMenu, next: null };
+  return { openMenu: gesture === null || !gesture.suppressMenu, next: null };
 }

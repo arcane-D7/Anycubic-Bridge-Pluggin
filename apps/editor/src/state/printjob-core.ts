@@ -33,7 +33,7 @@ export type SliceStage = (typeof SLICE_STAGES)[number];
 export type PrintJobStatus =
   "idle" | "slicing" | "ready" | "sending" | "sent" | "cancelled" | "error";
 
-export type SendStage = "negotiate" | "upload" | "queue";
+export type SendStage = "negotiate" | "upload" | "queue" | "simulate";
 
 export interface PrintJobState {
   readonly status: PrintJobStatus;

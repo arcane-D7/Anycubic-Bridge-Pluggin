@@ -13,6 +13,8 @@ import { usePlates } from "../state/plates";
 import { objectsOnPlate } from "../state/plates-core";
 import { useUi } from "../state/ui";
 import { useI18n } from "../state/i18n";
+import { isViewportReadOnly } from "../state/shortcuts-core";
+export { isViewportReadOnly } from "../state/shortcuts-core";
 import { usePrinters } from "../state/printers";
 import { effectiveViewMode, useViewMode } from "../state/view-mode";
 import { useOperatorProfile } from "../profile/useOperatorProfile";
@@ -59,9 +61,15 @@ interface ViewportProps {
   readonly scene: BridgeHandle | undefined;
   readonly preview: PreviewModel | null;
   readonly buildVolume?: BuildVolume;
+  readonly workspaceMode?: "prepare" | "preview";
 }
 
-export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
+export function Viewport({
+  scene,
+  preview,
+  buildVolume,
+  workspaceMode = "prepare",
+}: ViewportProps) {
   const t = useI18n((s) => s.t);
   const openObjectMenu = useObjectContextMenu(scene);
   const volume = buildVolume ?? scene?.buildVolume;
@@ -117,8 +125,8 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
   const viewMode = useViewMode((s) => s.mode);
   const selectedPrinter = usePrinters((s) => s.printers.find((p) => p.id === s.selectedId));
   const liveReachable = selectedPrinter?.reachable === true;
-  const effectiveMode = effectiveViewMode(viewMode, liveReachable);
-  const modeFallbackActive = viewMode === "live" && effectiveMode !== "live";
+  const effectiveMode = effectiveViewMode(viewMode === "live" ? "slicer" : viewMode, liveReachable);
+  const isPreviewMode = isViewportReadOnly(workspaceMode);
 
   const layerCount = preview?.layerCount ?? 0;
   useEffect(() => {
@@ -197,15 +205,12 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
   };
 
   return (
-    <ViewportFrame bridge={scene}>
-      <Toolbar scene={scene} />
-      {modeFallbackActive ? (
-        <div className="viewport-live-banner" data-testid="viewport-live-banner" role="status">
-          {t("viewport.live.banner")}
-        </div>
-      ) : null}
+    <ViewportFrame bridge={scene} readOnly={isPreviewMode}>
+      <Toolbar scene={scene} mode={workspaceMode} preview={preview} />
       {/* P1-5 — plate identity + quick actions (fit/top/grid). */}
-      {!preview ? <PlateRail volume={volume} profile={operatorProfile} objects={objects} /> : null}
+      {!isPreviewMode ? (
+        <PlateRail volume={volume} profile={operatorProfile} objects={objects} />
+      ) : null}
       <RendererGuard scene={scene} />
       <Canvas
         camera={{ position: [180, 260, 320], fov: 40, near: 0.1, far: 10000 }}
@@ -213,7 +218,7 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
         gl={{ preserveDrawingBuffer: true }}
       >
         <color attach="background" args={[viewportBg]} />
-        {!preview ? (
+        {!isPreviewMode && !preview ? (
           <ObjectContextMenuPicker objects={visibleObjects} onOpen={openObjectMenu} />
         ) : null}
         <ambientLight intensity={0.55} />
@@ -221,7 +226,9 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
         <directionalLight position={[-100, 60, -60]} intensity={0.35} color="#9fb4ff" />
         {volume ? <BuildPlate volume={volume} /> : null}
         {/* S9.11-003 — live overlay (toolhead ≤4 Hz, nozzle color, spray, layer bar). */}
-        {effectiveMode === "live" ? <LiveOverlay volume={volume ?? null} /> : null}
+        {!isPreviewMode && effectiveMode === "live" ? (
+          <LiveOverlay volume={volume ?? null} />
+        ) : null}
         <FitCamera
           radius={Math.max(
             volume ? Math.hypot(volume.widthMm, volume.depthMm) / 2 : 160,
@@ -241,18 +248,20 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
                 : null
             }
           />
-        ) : (
+        ) : !isPreviewMode ? (
           visibleObjects.map((o) => (
             <SceneObjectModel key={o.name} info={o} onObjectContextMenu={openObjectMenu} />
           ))
-        )}
+        ) : null}
         {/* S9.8-002 — in-canvas label projector (writes NDC to the bus). */}
-        {!preview ? <LabelProjector objects={visibleObjects} /> : null}
-        {!preview && scene ? <TransformGizmo bridge={scene} selectedName={selectedName} /> : null}
+        {!isPreviewMode && !preview ? <LabelProjector objects={visibleObjects} /> : null}
+        {!isPreviewMode && !preview && scene ? (
+          <TransformGizmo bridge={scene} selectedName={selectedName} />
+        ) : null}
         {/* S9.8-003 — measure probe collector + world markers (in-canvas). */}
-        {!preview ? <MeasureTool objects={visibleObjects} /> : null}
-        {!preview ? <FrameSelectedCamera /> : null}
-        {!preview ? <ViewportCamera /> : null}
+        {!isPreviewMode && !preview ? <MeasureTool objects={visibleObjects} /> : null}
+        {!isPreviewMode && !preview ? <FrameSelectedCamera /> : null}
+        <ViewportCamera />
         {/* S9.8-006 — GL context-loss recovery (inside Canvas via useThree). */}
         <ContextLossGuard />
         {/* S9.9-010 — navigation like Orca/Anycubic Slicer: LEFT drag = orbit,
@@ -269,18 +278,18 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
           }}
         />
       </Canvas>
-      {!preview ? <ViewCube /> : null}{" "}
+      {!isPreviewMode ? <ViewCube /> : null}{" "}
       {/* S9.7-003 — repair trigger + popover (top-left of the frame — the zone
           freed by the old corner chip removal; never overlaps the toolbar or
           plate rail). */}
-      {!preview ? <NonWatertightBadges bridge={scene} /> : null}{" "}
+      {!isPreviewMode && !preview ? <NonWatertightBadges bridge={scene} /> : null}{" "}
       {/* S9.8-002 — chip overlay outside the Canvas (no three re-renders). */}
-      {!preview ? <ObjectLabels objects={visibleObjects} /> : null}{" "}
+      {!isPreviewMode && !preview ? <ObjectLabels objects={visibleObjects} /> : null}{" "}
       {/* S9.8-003 — measure readout overlay (mono, bottom-left) outside the canvas. */}
-      {!preview ? <MeasureReadout /> : null}{" "}
+      {!isPreviewMode && !preview ? <MeasureReadout /> : null}{" "}
       {/* S9.13 — snap readout overlay (axis/value/step chip) outside the canvas.
           DOM must never mount inside the R3F tree (crash fix). */}
-      {!preview ? <SnapReadout volume={volume} /> : null}{" "}
+      {!isPreviewMode && !preview ? <SnapReadout volume={volume} /> : null}{" "}
       {preview ? (
         <div
           className="viewport-preview-controls"
@@ -353,7 +362,21 @@ export function Viewport({ scene, preview, buildVolume }: ViewportProps) {
             type="button"
             data-testid="preview-play-toggle"
             aria-pressed={playing}
-            onClick={() => setPlaying((value) => !value)}
+            onClick={() => {
+              if (!playing && preview) {
+                const current = currentLayerSegments[clampedSegment];
+                const last = preview.orderedSegments.at(-1);
+                if (current && current === last) {
+                  const first = preview.orderedSegments[0];
+                  const position = first ? preview.playbackPositions.get(first) : null;
+                  if (position) {
+                    setLayerIndex(position.layerPosition);
+                    setSegmentIndex(position.segmentPosition);
+                  }
+                }
+              }
+              setPlaying((value) => !value);
+            }}
           >
             {playing ? t("viewport.preview.pause") : t("viewport.preview.play")}
           </button>
@@ -523,6 +546,10 @@ function ObjectContextMenuPicker({
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const pointer = useMemo(() => new THREE.Vector2(), []);
   const rightGesture = useRef<RightGesture | null>(null);
+  const objectsRef = useRef(objects);
+  const onOpenRef = useRef(onOpen);
+  objectsRef.current = objects;
+  onOpenRef.current = onOpen;
 
   useEffect(() => {
     const canvas = gl.domElement;
@@ -566,16 +593,17 @@ function ObjectContextMenuPicker({
         -((event.clientY - bounds.top) / bounds.height) * 2 + 1,
       );
       raycaster.setFromCamera(pointer, camera);
-      const objectNames = new Set(objects.map((object) => object.name));
+      const currentObjects = objectsRef.current;
+      const objectNames = new Set(currentObjects.map((object) => object.name));
       for (const hit of raycaster.intersectObjects(scene.children, true)) {
         let owner: THREE.Object3D | null = hit.object;
         while (owner && !objectNames.has(owner.name)) owner = owner.parent;
         if (!owner) continue;
-        const target = objects.find((object) => object.name === owner?.name);
+        const target = currentObjects.find((object) => object.name === owner?.name);
         if (!target) continue;
         event.preventDefault();
         event.stopImmediatePropagation();
-        onOpen("canvas", target, { clientX: event.clientX, clientY: event.clientY });
+        onOpenRef.current("canvas", target, { clientX: event.clientX, clientY: event.clientY });
         return;
       }
     };
@@ -591,7 +619,7 @@ function ObjectContextMenuPicker({
       canvas.removeEventListener("lostpointercapture", onLostPointerCapture, true);
       canvas.removeEventListener("contextmenu", onContextMenu, true);
     };
-  }, [camera, gl, objects, onOpen, pointer, raycaster, scene]);
+  }, [camera, gl, pointer, raycaster, scene]);
 
   return null;
 }
@@ -635,16 +663,31 @@ function PreviewScene({
 function FitCamera({ radius }: { readonly radius: number }) {
   const camera = useThree((s) => s.camera);
   const size = useThree((state) => state.size);
-  const fitPlate = useCallback(() => {
-    const perspective = camera as THREE.PerspectiveCamera;
-    const distance = fitDistanceForRadius(radius, perspective.fov, size.width, size.height);
-    const direction = new THREE.Vector3(0.36, 0.62, 0.7).normalize();
-    camera.position.copy(direction.multiplyScalar(distance));
-    camera.lookAt(0, 0, 0);
-    camera.updateProjectionMatrix();
-  }, [camera, radius, size.width, size.height]);
+  const didInitialFit = useRef(false);
+  const fitPlate = useCallback(
+    (event?: Event) => {
+      const perspective = camera as THREE.PerspectiveCamera;
+      const target = (
+        event as
+          CustomEvent<{ center?: readonly [number, number, number]; radius?: number }> | undefined
+      )?.detail;
+      const center = target?.center ? new THREE.Vector3(...target.center) : new THREE.Vector3();
+      const fitRadius = target?.radius ?? radius;
+      const distance = fitDistanceForRadius(fitRadius, perspective.fov, size.width, size.height);
+      const direction = camera.position.clone().sub(center);
+      if (direction.lengthSq() < 1e-8) direction.set(0.36, 0.62, 0.7);
+      direction.normalize();
+      camera.position.copy(center).add(direction.multiplyScalar(distance));
+      camera.lookAt(center);
+      camera.updateProjectionMatrix();
+    },
+    [camera, radius, size.width, size.height],
+  );
   useEffect(() => {
-    fitPlate();
+    if (!didInitialFit.current) {
+      fitPlate();
+      didInitialFit.current = true;
+    }
     window.addEventListener(FIT_PLATE_EVENT, fitPlate);
     return () => window.removeEventListener(FIT_PLATE_EVENT, fitPlate);
   }, [fitPlate]);
@@ -664,9 +707,11 @@ function FitCamera({ radius }: { readonly radius: number }) {
  */
 function ViewportFrame({
   bridge,
+  readOnly = false,
   children,
 }: {
   readonly bridge: BridgeHandle | undefined;
+  readonly readOnly?: boolean;
   readonly children: React.ReactNode;
 }) {
   const t = useI18n((s) => s.t);
@@ -683,6 +728,10 @@ function ViewportFrame({
   // own context menu (SceneObjectModel), so this only fires for the empty
   // canvas area; toolbar/tabs/preview controls stop propagation themselves.
   const onFrameContextMenu = (e: React.MouseEvent) => {
+    if (readOnly) {
+      e.preventDefault();
+      return;
+    }
     const targetEl = e.target as HTMLElement;
     if (
       targetEl.closest(
@@ -786,6 +835,7 @@ function ViewportFrame({
   };
 
   const onDragEnter = (e: React.DragEvent) => {
+    if (readOnly) return;
     const file = e.dataTransfer?.files?.[0];
     if (!file || !classifyFile(file.name)) return;
     e.preventDefault();
@@ -793,6 +843,7 @@ function ViewportFrame({
     setDragActive(true);
   };
   const onDragOver = (e: React.DragEvent) => {
+    if (readOnly) return;
     const file = e.dataTransfer?.files?.[0];
     if (!file || !classifyFile(file.name)) return;
     e.preventDefault();
@@ -803,6 +854,7 @@ function ViewportFrame({
     if (depth.current === 0) setDragActive(false);
   };
   const onDrop = (e: React.DragEvent) => {
+    if (readOnly) return;
     const file = e.dataTransfer?.files?.[0];
     e.preventDefault();
     depth.current = 0;
@@ -826,15 +878,17 @@ function ViewportFrame({
       data-testid="viewport-frame"
     >
       {children}
-      <ModalInteraction bridge={bridge} />
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".stl,.3mf"
-        data-testid="viewport-import-input"
-        className="visually-hidden"
-        onChange={onImportFile}
-      />
+      {!readOnly ? <ModalInteraction bridge={bridge} /> : null}
+      {!readOnly ? (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".stl,.3mf"
+          data-testid="viewport-import-input"
+          className="visually-hidden"
+          onChange={onImportFile}
+        />
+      ) : null}
       {/* 2026-10-06 layout fix (Consultor): canvas-local dock root — the ONLY
           anchor for floating panels + collapsed pills, so dock chrome is
           frame-relative (never window-anchored over the header/footer). */}
@@ -843,7 +897,7 @@ function ViewportFrame({
         className="viewport-dock-root"
         data-testid="viewport-dock-root"
       />
-      {dragActive ? (
+      {!readOnly && dragActive ? (
         <div className="viewport-drop-hint" data-testid="viewport-drop-hint" role="status">
           {t("viewport.dropHint")}
         </div>

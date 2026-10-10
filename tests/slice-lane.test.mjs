@@ -149,3 +149,122 @@ test("slice-lane: full lane through fetchSceneSnapshot slice()", async () => {
     assert.equal(result.revision, handle.revision);
   }
 });
+
+// --- S9.17-003 SimSend slice: visibility parity with the UI Slice gate ------
+// The Slice button derives eligibility from `objectsOnPlate(...).filter(o =>
+// o.visible)` (SliceButton.tsx) — an explicitly hidden object (`visible ===
+// false`) neither blocks nor counts. The lane must apply the SAME predicate.
+// Snapshots that omit `visible` default to visible (`visible !== false`),
+// matching the broad mock where every object starts `visible: true`. These
+// tests use a FRESH mock instance per test (unique `?key` busts the import
+// cache) so the module-level demo scene always starts from its defaults and
+// no CRUD mutation can leak between tests — same isolation the serial suite
+// relies on, made explicit.
+async function freshDemoMock() {
+  const url = pathToFileURL(path.join(root, "apps", "editor", "src", "bridge", "mock.ts"));
+  const key = `vis-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const mock = await import(`${url.href}?key=${key}`);
+  const handle = await mock.fetchSceneSnapshot();
+  return { mock, handle };
+}
+
+test("slice-lane: hidden non-watertight stops blocking and never counts in stats", async () => {
+  const { handle } = await freshDemoMock();
+  // Baseline: the offender is visible → the lane blocks (pre-fix AND post-fix).
+  const before = await handle.slice({ plateId: "plate-1" });
+  assert.equal(before.ok, false);
+  // Hide it with the exact mutation the object-tree eye toggle sends.
+  const toggle = await handle.mutateObject({
+    kind: "toggleVisible",
+    name: "sphere-non-watertight",
+  });
+  assert.equal(toggle.ok, true);
+  const result = await handle.slice({ plateId: "plate-1" });
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    assert.deepEqual(result.blockedBy, []);
+    assert.ok(
+      !("sphere-non-watertight" in result.stats.perObjectMm3),
+      "hidden non-watertight object must be excluded from the demo estimate",
+    );
+    assert.ok("cone" in result.stats.perObjectMm3 && "cube" in result.stats.perObjectMm3);
+    assert.equal(
+      result.stats.volumeMm3,
+      result.stats.perObjectMm3.cone + result.stats.perObjectMm3.cube,
+    );
+  }
+});
+
+test("slice-lane: hidden watertight object is excluded from layers and volume", async () => {
+  const { handle } = await freshDemoMock();
+  // Move the (visible, non-watertight) sphere off the plate first so the
+  // only thing being measured is the watertight stack; it has no bearing on
+  // this assert (its visibility would rightfully block the lane).
+  await handle.mutateObject({
+    kind: "setPlate",
+    name: "sphere-non-watertight",
+    plateId: "plate-2",
+  });
+  // Cone (28 mm tall → 130 layers @0.2) is hidden: the stack must recompute
+  // from the remaining cube (20 mm → 100 layers) and drop its volume share.
+  await handle.mutateObject({ kind: "toggleVisible", name: "cone" });
+  const result = await handle.slice({ plateId: "plate-1" });
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    assert.equal(result.stats.layers, 100);
+    assert.ok(!("cone" in result.stats.perObjectMm3), "hidden watertight excluded from volume");
+    assert.equal(result.stats.perObjectMm3.cube, 8000);
+    assert.equal(result.stats.volumeMm3, 8000);
+  }
+});
+
+test("slice-lane: all objects hidden returns a typed failure, never a stats-0 ready", async () => {
+  const { handle } = await freshDemoMock();
+  await handle.mutateObject({ kind: "toggleVisible", name: "cone" });
+  await handle.mutateObject({ kind: "toggleVisible", name: "cube" });
+  await handle.mutateObject({ kind: "toggleVisible", name: "sphere-non-watertight" });
+  const result = await handle.slice({ plateId: "plate-1" });
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.match(result.error, /plate-1/);
+    assert.ok(
+      !result.error.includes("non-watertight"),
+      "an all-hidden plate must not blame a hidden offender",
+    );
+  }
+});
+
+test("slice-lane: hidden object on another plate does not affect the active plate", async () => {
+  const { handle } = await freshDemoMock();
+  // Move the non-watertight offender off the active plate, then hide it there.
+  const moved = await handle.mutateObject({
+    kind: "setPlate",
+    name: "sphere-non-watertight",
+    plateId: "plate-2",
+  });
+  assert.equal(moved.ok, true);
+  await handle.mutateObject({ kind: "toggleVisible", name: "sphere-non-watertight" });
+  const active = await handle.slice({ plateId: "plate-1" });
+  assert.equal(active.ok, true);
+  if (active.ok) {
+    assert.deepEqual(active.blockedBy, []);
+    assert.ok(!("sphere-non-watertight" in active.stats.perObjectMm3));
+  }
+  // A plate holding only hidden objects is empty from the lane's view.
+  const other = await handle.slice({ plateId: "plate-2" });
+  assert.equal(other.ok, false);
+  if (!other.ok) assert.match(other.error, /plate-2/);
+});
+
+test("slice-lane: re-show restores the block (hidden → visible again blocks)", async () => {
+  const { handle } = await freshDemoMock();
+  await handle.mutateObject({ kind: "toggleVisible", name: "sphere-non-watertight" });
+  const hidden = await handle.slice({ plateId: "plate-1" });
+  assert.equal(hidden.ok, true); // unblocked while hidden
+  await handle.mutateObject({ kind: "toggleVisible", name: "sphere-non-watertight" }); // re-show
+  const reshown = await handle.slice({ plateId: "plate-1" });
+  assert.equal(reshown.ok, false);
+  if (!reshown.ok) {
+    assert.ok(reshown.error.includes("sphere-non-watertight"));
+  }
+});

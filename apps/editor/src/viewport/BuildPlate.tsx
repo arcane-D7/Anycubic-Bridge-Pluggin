@@ -118,14 +118,9 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
     () => (zColumnOn ? zColumnMarks(volume.heightMm) : []),
     [zColumnOn, volume.heightMm],
   );
-
-  if (
-    ![volume.widthMm, volume.depthMm, volume.heightMm].every(
-      (value) => Number.isFinite(value) && value > 0,
-    )
-  ) {
-    return null;
-  }
+  const volumeIsValid = [volume.widthMm, volume.depthMm, volume.heightMm].every(
+    (value) => Number.isFinite(value) && value > 0,
+  );
   // Plate centered on the XY origin, footprint from the profile.
   const halfW = volume.widthMm / 2;
   const halfD = volume.depthMm / 2;
@@ -153,6 +148,8 @@ export const BuildPlate = memo(function BuildPlate({ volume }: BuildPlateProps) 
     [-areaW / 2 + drawer, areaD / 2 - drawer],
     [areaW / 2 - drawer, areaD / 2 - drawer],
   ];
+
+  if (!volumeIsValid) return null;
 
   return (
     <group>

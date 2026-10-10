@@ -22,9 +22,52 @@ async function loadStore() {
 }
 const storePromise = loadStore();
 
-/** Tiny stub with the same shape the view uses. */
-function laneStub(result) {
-  return { printerControl: async () => result };
+const selectedPrinterId = "printer-test";
+const initialCapturedAt = Date.now();
+const selectedTarget = {
+  printerId: selectedPrinterId,
+  source: "cloud",
+  snapshotCapturedAt: initialCapturedAt,
+  capabilities: { tempature: true, fans: true, print: true, light: true, multiColorBox: true },
+};
+
+function providerStub(result, observed) {
+  const currentContext = {
+    target: selectedTarget,
+    selectedPrinterId,
+    currentCapturedAt: initialCapturedAt,
+    capabilityKey: "tempature",
+  };
+  return {
+    currentContext: () => currentContext,
+    authorize: async () => ({ ok: true, reference: "synthetic-approval" }),
+    execute: async () => {
+      if (observed) {
+        currentContext.currentCapturedAt = observed.capturedAt;
+      }
+      return { ...result, ...(observed ? { observed } : {}) };
+    },
+  };
+}
+
+function request(action, payload, provider) {
+  const capabilityKey = {
+    "temps.setNozzle": "tempature",
+    "lights.setEnabled": "light",
+    "speed.setMode": "print",
+  }[action];
+  const currentContext = provider.currentContext();
+  return {
+    action,
+    payload,
+    target: selectedTarget,
+    selectedPrinterId,
+    currentCapturedAt: initialCapturedAt,
+    provider: {
+      ...provider,
+      currentContext: () => ({ ...currentContext, capabilityKey }),
+    },
+  };
 }
 function toastSpy() {
   const calls = [];
@@ -39,20 +82,30 @@ test("store: accepted → success toast + envelope recorded", async () => {
   usePrinterControl.getState().reset();
   const spy = toastSpy();
   await usePrinterControl.getState().sendControl({
-    action: "temps.setNozzle",
-    payload: { action: "temps.setNozzle", targetC: 220 },
-    printerId: "printer-1",
-    lane: laneStub({ ok: true, command: "temperature_set" }),
+    ...request(
+      "temps.setNozzle",
+      { action: "temps.setNozzle", targetC: 220 },
+      providerStub(
+        { ok: true, command: "temperature_set" },
+        {
+          printerId: selectedPrinterId,
+          capturedAt: initialCapturedAt + 1,
+          temps: { nozzle: { targetC: 220 }, bed: { targetC: null } },
+        },
+      ),
+    ),
     toast: spy.toast,
     t: i18nStub(),
   });
   assert.equal(spy.calls.length, 1);
   assert.equal(spy.calls[0].kind, "success");
-  assert.equal(spy.calls[0].title, "control.accepted.title");
+  assert.equal(spy.calls[0].title, "control.observed.title");
   const s = usePrinterControl.getState();
   assert.equal(s.busy, false);
   assert.equal(s.lastError, null);
   assert.deepEqual(s.lastEnvelope?.command, "temperature_set");
+  assert.equal(s.lastOutcome?.kind, "observed");
+  assert.equal(s.lastOutcome?.snapshotCapturedAt, initialCapturedAt + 1);
 });
 
 test("store: refused → warning toast (distinct from timeout)", async () => {
@@ -60,10 +113,11 @@ test("store: refused → warning toast (distinct from timeout)", async () => {
   usePrinterControl.getState().reset();
   const spy = toastSpy();
   await usePrinterControl.getState().sendControl({
-    action: "lights.setEnabled",
-    payload: { action: "lights.setEnabled", enabled: true },
-    printerId: "printer-1",
-    lane: laneStub({ ok: false, kind: "refused", error: "printer refused light_control" }),
+    ...request(
+      "lights.setEnabled",
+      { action: "lights.setEnabled", enabled: true },
+      providerStub({ ok: false, kind: "refused", error: "printer refused light_control" }),
+    ),
     toast: spy.toast,
     t: i18nStub(),
   });
@@ -78,10 +132,11 @@ test("store: timeout → warning toast (distinct text from refused)", async () =
   usePrinterControl.getState().reset();
   const spy = toastSpy();
   await usePrinterControl.getState().sendControl({
-    action: "speed.setMode",
-    payload: { action: "speed.setMode", mode: "sport" },
-    printerId: "printer-1",
-    lane: laneStub({ ok: false, kind: "timeout", error: "no reply from printer-1" }),
+    ...request(
+      "speed.setMode",
+      { action: "speed.setMode", mode: "sport" },
+      providerStub({ ok: false, kind: "timeout", error: "no reply from printer-test" }),
+    ),
     toast: spy.toast,
     t: i18nStub(),
   });
@@ -96,13 +151,25 @@ test("store: invalid envelope → error toast, lane NEVER called", async () => {
   usePrinterControl.getState().reset();
   const spy = toastSpy();
   let laneCalled = false;
-  const lane = { printerControl: async () => ((laneCalled = true), { ok: true }) };
+  const provider = providerStub({ ok: true, command: "temperature_set" });
+  const guardedProvider = {
+    ...provider,
+    authorize: async (...args) => {
+      laneCalled = true;
+      return provider.authorize(...args);
+    },
+    execute: async (...args) => {
+      laneCalled = true;
+      return provider.execute(...args);
+    },
+  };
   await usePrinterControl.getState().sendControl({
-    action: "temps.setNozzle",
-    // Out of the schema window — the core refuses, so nothing reaches the lane.
-    payload: { action: "temps.setNozzle", targetC: 500 },
-    printerId: "printer-1",
-    lane,
+    ...request(
+      "temps.setNozzle",
+      // Out of the schema window — the core refuses, so nothing reaches the lane.
+      { action: "temps.setNozzle", targetC: 500 },
+      guardedProvider,
+    ),
     toast: spy.toast,
     t: i18nStub(),
   });

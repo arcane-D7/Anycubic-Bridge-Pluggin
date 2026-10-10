@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { conversationsSorted, conversationStats } from "../state/chat-conversations-core";
+import {
+  conversationsForScope,
+  conversationsSorted,
+  conversationStats,
+} from "../state/chat-conversations-core";
 import { useChatConversations } from "../state/chat-conversations";
 import { useI18n } from "../state/i18n";
 import type { MsgKey } from "../state/i18n-core";
@@ -11,6 +15,10 @@ import type { MsgKey } from "../state/i18n-core";
  * the broker FS lane; S9.6-007 makes "saved" meaningful), mono token-budget
  * bar and "uses context: N sources · M approvals". Inline create/rename
  * (Enter commits, Esc cancels) + row actions (switch on click, delete on ✕).
+ *
+ * S9.17-004 NAV-05: lists show ONLY the current project scope's
+ * conversations — another project's chats (and their approval counts) never
+ * leak into this list, and "New" creates in the current scope.
  *
  * Pure view over `useChatConversations` — no harness logic lives here.
  */
@@ -37,6 +45,7 @@ export function ConversationList() {
   const t = useI18n((s) => s.t);
   const conversations = useChatConversations((s) => s.conversations);
   const activeId = useChatConversations((s) => s.activeId);
+  const scope = useChatConversations((s) => s.currentProjectId);
   const create = useChatConversations((s) => s.create);
   const switchTo = useChatConversations((s) => s.switchTo);
   const rename = useChatConversations((s) => s.rename);
@@ -45,7 +54,7 @@ export function ConversationList() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
 
-  const rows = conversationsSorted(conversations);
+  const rows = conversationsSorted(conversationsForScope(conversations, scope));
 
   function commitRename(id: string) {
     const title = editingValue.trim();

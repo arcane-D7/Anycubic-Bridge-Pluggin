@@ -31,7 +31,10 @@ test("pointer cancellation and capture loss suppress a later menu", () => {
   const started = core.beginRightGesture(2, 40, 50);
   const cancelled = core.cancelRightGesture(started);
   assert.deepEqual(core.consumeRightGestureMenu(cancelled), { openMenu: false, next: null });
-  assert.deepEqual(core.consumeRightGestureMenu(null), { openMenu: false, next: null });
+});
+
+test("context menu opens without a recorded pointer gesture when no drag was observed", () => {
+  assert.deepEqual(core.consumeRightGestureMenu(null), { openMenu: true, next: null });
 });
 
 test("a drag remains latched even if the pointer returns to its origin", () => {

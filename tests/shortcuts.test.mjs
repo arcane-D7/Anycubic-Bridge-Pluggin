@@ -32,10 +32,16 @@ async function loadTransformCore() {
   );
   return import(`${url.href}?key=${Date.now()}`);
 }
-
 const corePromise = loadCore();
 const registryPromise = loadRegistry();
 const transformPromise = loadTransformCore();
+
+test("viewport workspace policy: Prepare stays editable; Preview is read-only", async () => {
+  const { isViewportReadOnly } = await corePromise;
+  assert.equal(isViewportReadOnly(), false);
+  assert.equal(isViewportReadOnly("prepare"), false);
+  assert.equal(isViewportReadOnly("preview"), true);
+});
 
 const editable = {
   input: (key, mods = {}) => ({ key, targetTag: "INPUT", isContentEditable: false, ...mods }),

@@ -422,12 +422,27 @@ export interface SendRequest {
 }
 
 /**
+ * Explicit simulation receipt (UI truthfulness, S9.17-003 SimSend). A demo
+ * lane returns this INSTEAD of claiming a physical transport task: `mode`
+ * names the simulator and `simulationId` is the synthetic run id. It never
+ * contains a real device/cloud id — the demo simulated a run, nothing else.
+ */
+export interface SimulationReceipt {
+  readonly mode: "demo";
+  readonly simulationId: string;
+}
+
+/**
  * Result of the send-to-print lane (S9.5-004). `ok: false` carries a
  * semantic error code so the UI can surface offline/region/unknown reasons
- * as distinct toasts instead of a generic failure.
+ * as distinct toasts instead of a generic failure. A success MAY carry an
+ * OPTIONAL `simulation` receipt (added S9.17-003, non-breaking): when the
+ * lane ran as a simulation, the UI shows "Simulation complete" — never
+ * "Job sent" — and `taskId` remains the legacy synthetic id for
+ * backward-compatible consumers.
  */
 export type SendResult =
-  | { readonly ok: true; readonly taskId: string }
+  | { readonly ok: true; readonly taskId: string; readonly simulation?: SimulationReceipt }
   | { readonly ok: false; readonly error: string; readonly kind: "offline" | "region" | "unknown" };
 
 /**
@@ -521,11 +536,17 @@ export interface PrinterControlRequest {
  * success nor failure, per the MQTT honesty rule).
  */
 export type PrinterControlResult =
-  | { readonly ok: true; readonly command: string }
+  | {
+      readonly ok: true;
+      readonly kind?: "accepted" | "observed";
+      readonly command: string;
+      readonly reference?: string;
+      readonly observed?: PrinterSnapshot;
+    }
   | {
       readonly ok: false;
       readonly error: string;
-      readonly kind: "invalid" | "refused" | "timeout";
+      readonly kind: "invalid" | "refused" | "timeout" | "unavailable" | "indeterminate";
     };
 
 /**

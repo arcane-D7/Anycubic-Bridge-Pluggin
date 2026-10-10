@@ -55,6 +55,7 @@ export function ToastViewport() {
   const dismissToast = useUi((s) => s.dismissToast);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   // Close the popover on outside click / Escape (header-relative wrapper).
   useEffect(() => {
@@ -63,7 +64,10 @@ export function ToastViewport() {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
     };
     window.addEventListener("mousedown", onDown);
     window.addEventListener("keydown", onKey);
@@ -79,6 +83,9 @@ export function ToastViewport() {
         type="button"
         className={cn("toast-bell-button", open && "is-open")}
         aria-label={t("toast.bell.aria", { count: String(toasts.length) })}
+        aria-expanded={open}
+        aria-controls={open ? "toast-notifications" : undefined}
+        ref={triggerRef}
         data-testid="toast-bell"
         onClick={() => setOpen((v) => !v)}
       >
@@ -98,6 +105,9 @@ export function ToastViewport() {
       {open ? (
         <div
           className={cn("toast-popover", toasts.length === 0 && "empty")}
+          id="toast-notifications"
+          role="region"
+          aria-label={t("toast.bell.title")}
           aria-live="polite"
           aria-atomic="false"
         >

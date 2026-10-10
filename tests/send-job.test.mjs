@@ -185,3 +185,59 @@ test("bridge lane: region blocked → semantic region error", async () => {
     assert.equal(res.kind, "region");
   }
 });
+
+test("bridge lane: demo success carries an explicit simulation receipt (S9.17-003)", async () => {
+  const mockUrlKey = `${mockUrl}?key=${Date.now() + 10}`;
+  const { fetchSceneSnapshot } = await import(mockUrlKey);
+  const handle = await fetchSceneSnapshot();
+  const res = await handle.sendJob({
+    printerId: "printer-192-168-1-10",
+    ip: "192.168.1.10",
+    stats: STATS,
+    summary: "140 layers",
+  });
+  assert.ok(res.ok);
+  if (!res.ok) return;
+  // Honest semantics: a demo run is a SIMULATION — the receipt says so and
+  // never claims a physical transport task id as authoritative.
+  assert.ok(res.simulation, "demo sendJob MUST return explicit simulation metadata");
+  assert.equal(res.simulation.mode, "demo");
+  assert.match(res.simulation.simulationId, /^sim-\d+$/);
+  // Backward compatibility: the legacy synthetic taskId is still minted.
+  assert.match(res.taskId, /^mock-task-\d+$/);
+  assert.notEqual(res.simulation.simulationId, res.taskId);
+});
+
+test("bridge lane: error results carry NO simulation receipt (optional, non-breaking)", async () => {
+  const mockUrlKey = `${mockUrl}?key=${Date.now() + 11}`;
+  const { fetchSceneSnapshot, setMockOfflinePrinters, setMockRegionBlocked } = await import(
+    mockUrlKey
+  );
+  setMockOfflinePrinters(["printer-192-168-1-20"]);
+  const handle = await fetchSceneSnapshot();
+  const offline = await handle.sendJob({
+    printerId: "printer-192-168-1-20",
+    ip: "192.168.1.20",
+    stats: STATS,
+    summary: "x",
+  });
+  assert.equal(offline.ok, false);
+  if (!offline.ok) {
+    // The simulation field is OPTIONAL — error results must not fake one.
+    assert.equal("simulation" in offline, false);
+    assert.equal(offline.simulation, undefined);
+  }
+  const next = await import(`${mockUrl}?key=${Date.now() + 12}`);
+  next.setMockRegionBlocked(true);
+  const regionHandle = await next.fetchSceneSnapshot();
+  const region = await regionHandle.sendJob({
+    printerId: "printer-192-168-1-30",
+    ip: "192.168.1.30",
+    stats: STATS,
+    summary: "x",
+  });
+  assert.equal(region.ok, false);
+  if (!region.ok) {
+    assert.equal("simulation" in region, false);
+  }
+});

@@ -206,7 +206,7 @@
   --text-secondary: #a3ada5;
   --text-tertiary: #8b958d;
   --text-disabled: rgb(231 236 231 / 0.36);
-  --text-on-accent: #ffffff;
+  --text-on-accent: #10130f;
 
   --brand: #3fa06b;
   --accent-primary: #3fa06b;
@@ -817,6 +817,54 @@
     /* Opts back into the input path — the overlay wrapper is pointer-events:
        none so the R3F canvas keeps events wherever the panel rect isn't. */
     pointer-events: auto;
+  }
+
+  @media (max-width: 760px) {
+    .floating-panel-host {
+      left: 12px !important;
+      top: 12px !important;
+      width: min(384px, calc(100% - 24px)) !important;
+      max-width: calc(100% - 24px);
+      min-width: 0;
+      height: min(560px, calc(100% - 24px)) !important;
+      max-height: calc(100% - 24px);
+      min-height: min(320px, calc(100% - 24px));
+    }
+
+    .floating-header {
+      min-height: 44px;
+      height: auto;
+    }
+
+    .floating-icon-btn {
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  @media (pointer: coarse) {
+    .floating-icon-btn,
+    .dock-pill,
+    .chat-input,
+    .send-btn,
+    .chat-thread button,
+    .chat-thread input,
+    .chat-thread select,
+    .chat-thread summary {
+      min-height: 44px;
+    }
+
+    .chat-input-row {
+      flex-wrap: wrap;
+      max-height: 112px;
+      overflow-y: auto;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .floating-panel-host[role="dialog"] {
+      max-height: calc(100dvh - 24px);
+    }
   }
 
   /* S9.8-006 — gesture-scoped compositing hint (added by use-dock during drag). */

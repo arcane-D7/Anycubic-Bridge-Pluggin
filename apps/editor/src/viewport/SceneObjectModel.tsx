@@ -98,6 +98,7 @@ export const SceneObjectModel = memo(function SceneObjectModel({
   // Edges shown by default; a global view mode toggle (sceneViewEdges) or a
   // per-object flag can hide them (S9.2-003 AC: "wireframe edges toggleable").
   const edgesVisible = useUi((s) => s.sceneViewEdges);
+  const viewMode = useViewMode((s) => s.mode);
 
   const geometry = useMemo(() => geometryFromBuffers(info), [info]);
   const box = useMemo(() => boundsBox(info), [info]);
@@ -120,6 +121,8 @@ export const SceneObjectModel = memo(function SceneObjectModel({
   const renderState = resolveModelRenderState(info, {
     isSelected: !!(selected || authoritativeSelected),
     isHovered: hovered,
+    viewMode,
+    edgesVisible,
   });
   lockedRef.current = renderState.locked;
   // S9.8-002 — register the LIVE anchor probe for the label projector: the
@@ -151,8 +154,7 @@ export const SceneObjectModel = memo(function SceneObjectModel({
   // the REAL material + color: per-object `filamentId` (S9.6-002), else the
   // global preset filament, mapped through the live ACE snapshot with the
   // preset-neutral fallback chain (never guesses). Procedural material only.
-  const viewMode = useViewMode((s) => s.mode);
-  const selectedMode = viewMode === "slicer" ? "slicer" : null;
+  const selectedMode = viewMode === "slicer" || viewMode === "live" ? "slicer" : null;
   const globalFilamentId = usePresets((s) => s.filamentId);
   const printerSnapshot = usePrinterDevice((s) => s.snapshot);
   const printerId = usePrinterDevice((s) => s.printerId);
@@ -180,14 +182,18 @@ export const SceneObjectModel = memo(function SceneObjectModel({
   const filamentColor = slicerMatch?.color;
   const effectiveBaseColor = filamentColor ?? baseColor;
   const useFilamentMaterial = selectedMode === "slicer";
+  const filamentClass = slicerMatch ? materialClassFor(slicerMatch) : "matte";
   const material = useMemo(
     () =>
-      useFilamentMaterial && filamentColor
-        ? filamentMaterial(filamentColor, materialClassFor(slicerMatch!))
-        : null,
-    [useFilamentMaterial, filamentColor, slicerMatch],
+      useFilamentMaterial && filamentColor ? filamentMaterial(filamentColor, filamentClass) : null,
+    [useFilamentMaterial, filamentColor, filamentClass],
   );
   useEffect(() => () => material?.dispose(), [material]);
+  useEffect(() => {
+    if (!material) return;
+    material.emissive.set(isSelected ? (outlineColor ?? "#000000") : "#000000");
+    material.emissiveIntensity = isSelected ? 0.14 : 0;
+  }, [material, isSelected, outlineColor]);
 
   if (!visible) return null;
 
@@ -257,7 +263,7 @@ export const SceneObjectModel = memo(function SceneObjectModel({
       )}
 
       {/* wireframe edges (optional) */}
-      {edgesVisible &&
+      {renderState.showEdges &&
         (geometry ? (
           <lineSegments>
             <edgesGeometry args={[geometry]} />
@@ -273,7 +279,7 @@ export const SceneObjectModel = memo(function SceneObjectModel({
       {/* selection outline: bounds wireframe 2px + 6px glow halo (hidden
           while a transient transform is in progress — the gizmo carries the
           affordance then) */}
-      {isSelected && box && outlineColor && (
+      {renderState.selectionOutline && box && outlineColor && (
         <>
           <mesh
             position={box.getCenter(new THREE.Vector3()).toArray()}

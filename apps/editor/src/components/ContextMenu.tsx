@@ -40,7 +40,6 @@ export function ContextMenu() {
     if (state) {
       setFocusIndex(0);
       focusTargetRef.current = state.focusTarget;
-      setPosition({ x: state.x, y: state.y, state });
     } else {
       const target = focusTargetRef.current;
       if (target?.isConnected !== false) target?.focus();
@@ -86,7 +85,7 @@ export function ContextMenu() {
       window.visualViewport?.removeEventListener("resize", measureAndClamp);
       window.visualViewport?.removeEventListener("scroll", measureAndClamp);
     };
-  }, [state, position]);
+  }, [state]);
 
   if (!state) return null;
 

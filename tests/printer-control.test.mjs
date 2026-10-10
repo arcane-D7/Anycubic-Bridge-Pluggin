@@ -35,6 +35,562 @@ test("envelope: nozzle target maps to temperature_set with confirm true", async 
   assert.equal(r.envelope.confirm, true);
 });
 
+test("observed control outcome requires the matching printer snapshot value", async () => {
+  const { controlEffectObserved } = await corePromise;
+  const envelope = {
+    command: "temperature_set",
+    args: { nozzle: 200 },
+    confirm: true,
+  };
+  const snapshot = {
+    printerId: "printer-test",
+    capturedAt: 12,
+    temps: { nozzle: { targetC: 200 }, bed: { targetC: null } },
+  };
+  assert.equal(
+    controlEffectObserved(envelope, snapshot, { printerId: "printer-test" }, 10, 12),
+    true,
+  );
+  assert.equal(
+    controlEffectObserved(
+      envelope,
+      { ...snapshot, temps: { ...snapshot.temps, nozzle: { targetC: 199 } } },
+      { printerId: "printer-test" },
+      10,
+      12,
+    ),
+    false,
+  );
+  assert.equal(
+    controlEffectObserved(envelope, undefined, { printerId: "printer-test" }, 10, 12),
+    false,
+  );
+});
+
+test("observation requires every requested field and compares speed modes by name", async () => {
+  const { controlEffectObserved } = await corePromise;
+  const snapshot = {
+    printerId: "printer-test",
+    capturedAt: 12,
+    temps: { nozzle: { targetC: 200 }, bed: { targetC: 60 } },
+    lights: { enabled: true, brightnessPct: 80 },
+    print: { speedMode: "sport" },
+  };
+  assert.equal(
+    controlEffectObserved(
+      { command: "temperature_set", args: { nozzle: 200, bed: 60 }, confirm: true },
+      snapshot,
+      { printerId: "printer-test" },
+      10,
+      12,
+    ),
+    true,
+  );
+  assert.equal(
+    controlEffectObserved(
+      { command: "temperature_set", args: { nozzle: 200, bed: 70 }, confirm: true },
+      snapshot,
+      { printerId: "printer-test" },
+      10,
+      12,
+    ),
+    false,
+  );
+  assert.equal(
+    controlEffectObserved(
+      { command: "light_control", args: { on: false, brightness: 80 }, confirm: true },
+      snapshot,
+      { printerId: "printer-test" },
+      10,
+      12,
+    ),
+    false,
+  );
+  assert.equal(
+    controlEffectObserved(
+      { command: "print_update", args: { print_speed_mode: 3 }, confirm: true },
+      snapshot,
+      { printerId: "printer-test" },
+      10,
+      12,
+    ),
+    true,
+  );
+});
+
+test("observed control requires a complete command match", async () => {
+  const { controlEffectObserved } = await corePromise;
+  const snapshot = {
+    printerId: "printer-test",
+    capturedAt: 12,
+    temps: { nozzle: { targetC: 200 }, bed: { targetC: 60 } },
+  };
+  assert.equal(
+    controlEffectObserved(
+      { command: "temperature_set", args: { nozzle: 200 }, confirm: true },
+      snapshot,
+      { printerId: "printer-test" },
+      10,
+      12,
+    ),
+    true,
+  );
+  assert.equal(
+    controlEffectObserved(
+      { command: "temperature_set", args: { nozzle: 200, bed: undefined }, confirm: true },
+      snapshot,
+      { printerId: "printer-test" },
+      10,
+      12,
+    ),
+    false,
+  );
+});
+
+test("provider executor requires authorization reference and executes exactly once", async () => {
+  const { executeControl } = await corePromise;
+  const request = {
+    target: {
+      printerId: "printer-test",
+      source: "lan",
+      snapshotCapturedAt: Date.now(),
+      capabilities: { tempature: true },
+    },
+    envelope: {
+      command: "temperature_set",
+      args: { nozzle: 200 },
+      confirm: true,
+    },
+  };
+  let executions = 0;
+  const denied = await executeControl(
+    {
+      currentContext: () => ({
+        target: request.target,
+        selectedPrinterId: "printer-test",
+        currentCapturedAt: request.target.snapshotCapturedAt,
+        capabilityKey: "tempature",
+      }),
+      authorize: async () => ({ ok: false, reason: "approval unavailable" }),
+      execute: async () => {
+        executions += 1;
+        return { ok: true, command: "temperature_set" };
+      },
+    },
+    request,
+  );
+  assert.equal(denied.ok, false);
+  assert.equal(denied.kind, "unavailable");
+  assert.equal(executions, 0);
+
+  const accepted = await executeControl(
+    {
+      currentContext: () => ({
+        target: request.target,
+        selectedPrinterId: "printer-test",
+        currentCapturedAt: request.target.snapshotCapturedAt,
+        capabilityKey: "tempature",
+      }),
+      authorize: async () => ({ ok: true, reference: "opaque-approval" }),
+      execute: async (_request, reference) => {
+        executions += 1;
+        assert.equal(reference, "opaque-approval");
+        return { ok: true, command: "temperature_set", reference };
+      },
+    },
+    request,
+  );
+  assert.equal(accepted.ok, true);
+  assert.equal(executions, 1);
+});
+
+test("provider executor revalidates the live target after authorization", async () => {
+  const { executeControl } = await corePromise;
+  let selectedPrinterId = "printer-test";
+  let executions = 0;
+  const request = {
+    target: {
+      printerId: "printer-test",
+      source: "lan",
+      snapshotCapturedAt: Date.now(),
+      capabilities: { tempature: true },
+    },
+    envelope: { command: "temperature_set", args: { nozzle: 200 }, confirm: true },
+  };
+  const result = await executeControl(
+    {
+      currentContext: () => ({
+        target: request.target,
+        selectedPrinterId,
+        currentCapturedAt: 10,
+        capabilityKey: "tempature",
+      }),
+      authorize: async () => {
+        selectedPrinterId = "printer-other";
+        return { ok: true, reference: "opaque-approval" };
+      },
+      execute: async () => {
+        executions += 1;
+        return { ok: true, command: "temperature_set" };
+      },
+    },
+    request,
+  );
+  assert.equal(result.ok, false);
+  assert.equal(result.kind, "invalid");
+  assert.equal(executions, 0);
+});
+
+test("provider executor revalidates live capability and target binding after authorization", async () => {
+  const { executeControl } = await corePromise;
+  const request = {
+    target: {
+      printerId: "printer-test",
+      source: "lan",
+      snapshotCapturedAt: Date.now(),
+      capabilities: { tempature: true, fans: true },
+    },
+    envelope: { command: "temperature_set", args: { nozzle: 200 }, confirm: true },
+  };
+  for (const context of [
+    {
+      target: request.target,
+      selectedPrinterId: "printer-other",
+      currentCapturedAt: request.target.snapshotCapturedAt,
+      capabilityKey: "tempature",
+    },
+    {
+      target: request.target,
+      selectedPrinterId: "printer-test",
+      currentCapturedAt: request.target.snapshotCapturedAt,
+      capabilityKey: "fans",
+    },
+    {
+      target: { ...request.target, source: "cloud" },
+      selectedPrinterId: "printer-test",
+      currentCapturedAt: request.target.snapshotCapturedAt,
+      capabilityKey: "tempature",
+    },
+    {
+      target: { ...request.target, capabilities: { tempature: false, fans: true } },
+      selectedPrinterId: "printer-test",
+      currentCapturedAt: request.target.snapshotCapturedAt,
+      capabilityKey: "tempature",
+    },
+    {
+      target: { ...request.target, snapshotCapturedAt: request.target.snapshotCapturedAt + 1 },
+      selectedPrinterId: "printer-test",
+      currentCapturedAt: request.target.snapshotCapturedAt,
+      capabilityKey: "tempature",
+    },
+    {
+      target: request.target,
+      selectedPrinterId: "printer-test",
+      currentCapturedAt: Date.now() - 60_001,
+      capabilityKey: "tempature",
+    },
+    {
+      target: { ...request.target, snapshotCapturedAt: Date.now() + 60_000 },
+      selectedPrinterId: "printer-test",
+      currentCapturedAt: Date.now() + 60_000,
+      capabilityKey: "tempature",
+    },
+  ]) {
+    let executions = 0;
+    const result = await executeControl(
+      {
+        currentContext: () => context,
+        authorize: async () => ({ ok: true, reference: "opaque-approval" }),
+        execute: async () => {
+          executions += 1;
+          return { ok: true, command: "temperature_set" };
+        },
+      },
+      request,
+    );
+    assert.equal(result.ok, false);
+    assert.equal(executions, 0);
+  }
+  let executions = 0;
+  const current = await executeControl(
+    {
+      currentContext: () => ({
+        target: request.target,
+        selectedPrinterId: "printer-test",
+        currentCapturedAt: request.target.snapshotCapturedAt,
+        capabilityKey: "tempature",
+      }),
+      authorize: async () => ({ ok: true, reference: "opaque-approval" }),
+      execute: async () => {
+        executions += 1;
+        return { ok: true, command: "temperature_set" };
+      },
+    },
+    request,
+  );
+  assert.equal(current.ok, true);
+  assert.equal(executions, 1);
+});
+
+test("provider executor refuses dispatch when snapshot capture changes after authorization", async () => {
+  const { executeControl } = await corePromise;
+  const request = {
+    target: {
+      printerId: "printer-test",
+      source: "lan",
+      snapshotCapturedAt: Date.now(),
+      capabilities: { tempature: true },
+    },
+    envelope: { command: "temperature_set", args: { nozzle: 200 }, confirm: true },
+  };
+  let executions = 0;
+  const result = await executeControl(
+    {
+      currentContext: () => ({
+        target: { ...request.target, snapshotCapturedAt: request.target.snapshotCapturedAt + 1 },
+        selectedPrinterId: "printer-test",
+        currentCapturedAt: request.target.snapshotCapturedAt + 1,
+        capabilityKey: "tempature",
+      }),
+      authorize: async () => ({ ok: true, reference: "opaque-approval" }),
+      execute: async () => {
+        executions += 1;
+        return { ok: true, command: "temperature_set" };
+      },
+    },
+    request,
+  );
+  assert.equal(result.ok, false);
+  assert.equal(result.kind, "invalid");
+  assert.equal(executions, 0);
+});
+
+test("provider executor dispatches a frozen copy of the authorized request", async () => {
+  const { executeControl } = await corePromise;
+  const request = {
+    target: {
+      printerId: "printer-test",
+      source: "lan",
+      snapshotCapturedAt: Date.now(),
+      capabilities: { test: true, light: true },
+    },
+    envelope: { command: "light_control", args: { on: true }, confirm: true },
+  };
+  let dispatched;
+  const result = await executeControl(
+    {
+      currentContext: () => ({
+        target: request.target,
+        selectedPrinterId: "printer-test",
+        currentCapturedAt: request.target.snapshotCapturedAt,
+        capabilityKey: "light",
+      }),
+      authorize: async (authorized) => {
+        assert.equal(Object.isFrozen(authorized.envelope.args), true);
+        assert.throws(() => {
+          authorized.envelope.args.on = false;
+        }, TypeError);
+        return { ok: true, reference: "opaque-approval" };
+      },
+      execute: async (actual) => {
+        dispatched = actual;
+        return { ok: true, command: "light_control" };
+      },
+    },
+    request,
+  );
+  assert.equal(result.ok, true);
+  assert.equal(dispatched.envelope.args.on, true);
+  assert.equal(Object.isFrozen(dispatched.envelope.args), true);
+});
+
+test("store rejects overlapping sends without releasing the active busy lock", async () => {
+  const moduleUrl = pathToFileURL(
+    path.join(root, "apps", "editor", "src", "state", "printer-control.ts"),
+  );
+  const { usePrinterControl } = await import(`${moduleUrl.href}?key=${Date.now()}`);
+  usePrinterControl.getState().reset();
+  let releaseAuthorization;
+  let authorizations = 0;
+  let executions = 0;
+  const provider = {
+    currentContext: () => ({
+      target: req.target,
+      selectedPrinterId: "printer-test",
+      currentCapturedAt: req.target.snapshotCapturedAt,
+      capabilityKey: "tempature",
+    }),
+    authorize: () => {
+      authorizations += 1;
+      return new Promise((resolve) => {
+        releaseAuthorization = () => resolve({ ok: true, reference: "opaque-approval" });
+      });
+    },
+    execute: async () => {
+      executions += 1;
+      return { ok: true, command: "temperature_set" };
+    },
+  };
+  const req = {
+    action: "temps.setNozzle",
+    payload: { action: "temps.setNozzle", targetC: 200 },
+    target: {
+      printerId: "printer-test",
+      source: "lan",
+      snapshotCapturedAt: Date.now(),
+      capabilities: { tempature: true },
+    },
+    selectedPrinterId: "printer-test",
+    currentCapturedAt: Date.now(),
+    provider,
+    toast() {},
+    t: (key) => key,
+  };
+  const first = usePrinterControl.getState().sendControl(req);
+  assert.equal(usePrinterControl.getState().busy, true);
+  await usePrinterControl.getState().sendControl(req);
+  assert.equal(authorizations, 1);
+  assert.equal(usePrinterControl.getState().busy, true);
+  releaseAuthorization();
+  await first;
+  assert.equal(executions, 1);
+  assert.equal(usePrinterControl.getState().busy, false);
+  usePrinterControl.getState().reset();
+});
+
+test("store keeps accepted, observed, unavailable, invalid, timeout, and indeterminate outcomes distinct", async () => {
+  const moduleUrl = pathToFileURL(
+    path.join(root, "apps", "editor", "src", "state", "printer-control.ts"),
+  );
+  const { usePrinterControl, initialControlState } = await import(
+    `${moduleUrl.href}?outcomes=${Date.now()}`
+  );
+  const request = {
+    action: "temps.setNozzle",
+    payload: { action: "temps.setNozzle", targetC: 200 },
+    target: {
+      printerId: "printer-test",
+      source: "lan",
+      snapshotCapturedAt: Date.now(),
+      capabilities: { tempature: true, temperature: true },
+    },
+    selectedPrinterId: "printer-test",
+    currentCapturedAt: Date.now(),
+    toast: (toast) => toasts.push(toast),
+    t: (key) => key,
+  };
+  const toasts = [];
+  const baseProvider = {
+    currentContext: () => ({
+      target: request.target,
+      selectedPrinterId: "printer-test",
+      currentCapturedAt: request.target.snapshotCapturedAt,
+      capabilityKey: "tempature",
+    }),
+    authorize: async () => ({ ok: true, reference: "opaque-approval" }),
+  };
+  const sendResult = async (result) => {
+    usePrinterControl.getState().reset();
+    await usePrinterControl
+      .getState()
+      .sendControl({ ...request, provider: { ...baseProvider, execute: async () => result } });
+    return usePrinterControl.getState().lastOutcome;
+  };
+
+  assert.equal((await sendResult({ ok: true, command: "temperature_set" })).kind, "accepted");
+  assert.equal(toasts.at(-1).kind, "info");
+  assert.equal(toasts.at(-1).title, "control.accepted.title");
+
+  usePrinterControl.getState().reset();
+  await usePrinterControl.getState().sendControl({
+    ...request,
+    observationMatcher: () => true,
+    provider: {
+      ...baseProvider,
+      execute: async () => ({
+        ok: true,
+        kind: "observed",
+        command: "temperature_set",
+        observed: {
+          printerId: "printer-test",
+          capturedAt: 12,
+          temps: { nozzle: { targetC: 200 } },
+        },
+      }),
+    },
+  });
+  assert.equal(usePrinterControl.getState().lastOutcome.kind, "observed");
+  assert.equal(toasts.at(-1).kind, "success");
+  assert.equal(toasts.at(-1).title, "control.observed.title");
+
+  for (const kind of ["unavailable", "invalid", "timeout", "indeterminate"]) {
+    const outcome = await sendResult({ ok: false, kind, error: "controlled test reason" });
+    assert.equal(outcome.kind, kind);
+    assert.equal(outcome.reason, "controlled test reason");
+  }
+  assert.equal(toasts.at(-4).title, "control.unavailable.title");
+  assert.equal(toasts.at(-3).title, "control.invalid.title");
+  assert.equal(toasts.at(-2).title, "control.timeout.title");
+  assert.equal(toasts.at(-1).title, "control.indeterminate.title");
+  assert.equal(toasts.at(-1).message, "control.indeterminate.message");
+  assert.deepEqual(initialControlState().lastOutcome, null);
+  usePrinterControl.getState().reset();
+  assert.equal(usePrinterControl.getState().lastOutcome, null);
+});
+
+test("provider executor rejects missing reference and classifies post-dispatch throw indeterminate", async () => {
+  const { executeControl } = await corePromise;
+  const request = {
+    target: {
+      printerId: "printer-test",
+      source: "lan",
+      snapshotCapturedAt: Date.now(),
+      capabilities: { light: true },
+    },
+    envelope: { command: "light_control", args: { on: true }, confirm: true },
+  };
+  let executions = 0;
+  const noReference = await executeControl(
+    {
+      currentContext: () => ({
+        target: request.target,
+        selectedPrinterId: "printer-test",
+        currentCapturedAt: request.target.snapshotCapturedAt,
+        capabilityKey: "light",
+      }),
+      authorize: async () => ({ ok: true, reference: " " }),
+      execute: async () => {
+        executions += 1;
+        return { ok: true, command: "light_control" };
+      },
+    },
+    request,
+  );
+  assert.equal(noReference.ok, false);
+  assert.equal(noReference.kind, "invalid");
+  assert.equal(executions, 0);
+
+  const ambiguous = await executeControl(
+    {
+      currentContext: () => ({
+        target: request.target,
+        selectedPrinterId: "printer-test",
+        currentCapturedAt: request.target.snapshotCapturedAt,
+        capabilityKey: "light",
+      }),
+      authorize: async () => ({ ok: true, reference: "opaque-approval" }),
+      execute: async () => {
+        executions += 1;
+        throw new Error("connection lost after dispatch");
+      },
+    },
+    request,
+  );
+  assert.equal(ambiguous.ok, false);
+  assert.equal(ambiguous.kind, "indeterminate");
+  assert.equal(executions, 1);
+});
+
 test("envelope: bed target maps to temperature_set with confirm true", async () => {
   const { buildCommandEnvelope } = await corePromise;
   const r = buildCommandEnvelope({ action: "temps.setBed", targetC: 60 });

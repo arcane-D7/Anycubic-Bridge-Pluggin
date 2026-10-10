@@ -66,8 +66,13 @@ function coneGeometry(radiusMm = 14, heightMm = 26, segments = 24): ObjectGeomet
     // side triangles (base → apex)
     const base = positions.length / 3;
     positions.push(x0, 0, z0, x1, 0, z1, 0, heightMm, 0);
-    normals.push(0, 1, 0, 0, 1, 0, 0, 1, 0);
-    indices.push(base, base + 1, base + 2);
+    const normalX = heightMm * (z1 - z0);
+    const normalY = x0 * (z1 - z0) - z0 * (x1 - x0);
+    const normalZ = -heightMm * (x1 - x0);
+    const normalLength = Math.hypot(normalX, normalY, normalZ);
+    const normal = [normalX / normalLength, normalY / normalLength, normalZ / normalLength];
+    normals.push(...normal, ...normal, ...normal);
+    indices.push(base, base + 2, base + 1);
     // base fan
     const bbase = positions.length / 3;
     positions.push(0, 0, 0, x0, 0, z0, x1, 0, z1);
@@ -190,7 +195,8 @@ function cubeGeometry(sizeMm = [20, 20, 20] as const): ObjectGeometry {
   const indices: number[] = [];
   for (let f = 0; f < 6; f += 1) {
     const base = f * 4;
-    indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+    if (f === 1) indices.push(base, base + 2, base + 1, base, base + 3, base + 2);
+    else indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
   }
   return { positions, normals, indices: new Uint32Array(indices) };
 }
@@ -202,7 +208,7 @@ function sphereGeometry(radiusMm = 13, segments = 12): ObjectGeometry {
   for (let vi = 0; vi <= vCount; vi += 1) {
     const phi = Math.PI / 2 - (vi / vCount) * Math.PI;
     const y = radiusMm * Math.sin(phi);
-    const r = radiusMm * Math.cos(phi);
+    const r = vi === 0 || vi === vCount ? 0 : radiusMm * Math.cos(phi);
     for (let ui = 0; ui <= uCount; ui += 1) {
       const theta = (ui / uCount) * Math.PI * 2;
       positions.push(r * Math.cos(theta), y, r * Math.sin(theta));
@@ -212,7 +218,8 @@ function sphereGeometry(radiusMm = 13, segments = 12): ObjectGeometry {
     for (let ui = 0; ui < uCount; ui += 1) {
       const a = vi * (uCount + 1) + ui;
       const b = a + uCount + 1;
-      indices.push(a, b, a + 1, a + 1, b, b + 1);
+      if (vi > 0) indices.push(a, a + 1, b);
+      if (vi < vCount - 1) indices.push(a + 1, b + 1, b);
     }
   }
   const normals = new Float32Array(positions.length);
@@ -497,11 +504,11 @@ function booleanResultGeometry(sizeMm: readonly [number, number, number]): Objec
     const i0 = f * 4;
     const triBase = f * 6;
     indices[triBase] = i0;
-    indices[triBase + 1] = i0 + 1;
-    indices[triBase + 2] = i0 + 2;
+    indices[triBase + 1] = i0 + 2;
+    indices[triBase + 2] = i0 + 1;
     indices[triBase + 3] = i0;
-    indices[triBase + 4] = i0 + 2;
-    indices[triBase + 5] = i0 + 3;
+    indices[triBase + 4] = i0 + 3;
+    indices[triBase + 5] = i0 + 2;
   }
   return { positions, normals, indices };
 }
@@ -709,6 +716,10 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
   const journal: TransformJournalEvent[] = [];
   const handle: BridgeHandle = {
     ...base,
+    /** S9.17-004 NAV-05: demo bridge is the workspace/demo scope (no project). */
+    projectId: null,
+    workspaceScope: "demo",
+    bridgeSnapshot: { id: "demo", projectId: null, workspaceScope: "demo" },
     /** S9.3-004: committed transform journal (S7-005 soft events). */
     journal: journal as readonly TransformJournalEvent[],
     async begin(revision) {
@@ -950,10 +961,27 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
     // --- S9.5-002 slice lane ---------------------------------------------
     // Read-only over the authoritative snapshot: computes G24 stats for the
     // requested plate (layers/time/grams/volume/per-object), rejects when any
-    // object on the plate is non-watertight. No revision advance — slicing
-    // never mutates the scene.
+    // VISIBLE object on the plate is non-watertight. S9.17-003 SimSend
+    // visibility parity: the UI Slice gate derives eligibility from
+    // `objectsOnPlate(...).filter(o => o.visible)` (SliceButton), so the lane
+    // applies the SAME predicate — an explicitly hidden object (`visible ===
+    // false`) must neither block nor count in the estimate; snapshots that
+    // omit `visible` default to visible (`visible !== false`), matching the
+    // broad mock where everything starts visible. An all-hidden plate is a
+    // TYPED failure (the UI gate is disabled and a native job with an empty
+    // plate is rejected — never fabricate a stats-0 "ready"). No revision
+    // advance — slicing never mutates the scene.
     async slice(req) {
-      const onPlate = sceneObjects.filter((o) => (o.plateId ?? DEFAULT_PLATE_ID) === req.plateId);
+      const onPlate = sceneObjects.filter(
+        (o) => o.visible !== false && (o.plateId ?? DEFAULT_PLATE_ID) === req.plateId,
+      );
+      if (onPlate.length === 0) {
+        return {
+          ok: false as const,
+          error: `nothing visible on plate ${req.plateId} to slice`,
+          blockedBy: [],
+        };
+      }
       const blocked = onPlate.filter((o) => !o.watertight).map((o) => o.name);
       if (blocked.length > 0) {
         return {
@@ -994,7 +1022,11 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
     // The lane is headless-testable: reachability/region are module-level
     // seeds (setMockOfflinePrinters / setMockRegionBlocked) so unit tests
     // cover the error paths without any network. On success it mints a
-    // deterministic mock task id from the current revision.
+    // deterministic mock task id from the current revision AND an explicit
+    // simulation receipt (S9.17-003): this lane never touches a printer, so
+    // the result says so — the UI shows "Simulation complete", never "Job
+    // sent". `taskId` stays for backward-compatible consumers; `simulation`
+    // is the honest, optional metadata.
     async sendJob(req) {
       const offline = mockOfflinePrinterIds.has(req.printerId);
       const region = mockRegionBlocked;
@@ -1010,6 +1042,7 @@ export async function fetchSceneSnapshot(): Promise<BridgeHandle> {
       return {
         ok: true as const,
         taskId: `mock-task-${currentRevision}`,
+        simulation: { mode: "demo" as const, simulationId: `sim-${currentRevision}` },
       } satisfies SendResult;
     },
     // --- S9.7-001 boolean lane (G26) --------------------------------------
@@ -1501,11 +1534,21 @@ export interface BridgeContract {
  * and the modal contract. The viewport subscribes to commit events here
  * (AC-1) and drives gizmo/numeric flows (AC-2) against the same handle.
  * S9.3-004 adds the committed transform journal for soft undo/redo replay.
+ * S9.17-004 NAV-05: carriers `projectId` (null = workspace/demo standalone),
+ * `workspaceScope` and a readonly `bridgeSnapshot` ({id, projectId,
+ * workspaceScope}) exposed at create-handle time — frontend-only, no backend.
  */
 export type BridgeHandle = (BridgeProfile & Awaited<ReturnType<typeof snapshot>>) &
   BridgeContract & {
     onCommitEvent?: (payload: CommitSinkPayload) => void;
     journal: readonly TransformJournalEvent[];
+    projectId: string | null;
+    workspaceScope: string | null;
+    readonly bridgeSnapshot: {
+      readonly id: string;
+      readonly projectId: string | null;
+      readonly workspaceScope: string | null;
+    };
   };
 
 /**
