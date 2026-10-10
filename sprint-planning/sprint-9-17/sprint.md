@@ -14,6 +14,8 @@
 | **Depends On**        | Sprint 9.16                                                                                                                                                                                |
 | **Status**            | 🔄 In progress — S9.17-001–002 complete; S9.17-003 partially implemented; S9.17-004 NAV-05 + Workbench Live frontend slices in progress (camera adapter + Tauri backend transport pending) |
 
+> **📌 Gate-evidence reconciliation — 2026-10-10.** Gate numbers cited below (2026-10-09: 803 unit / 3 E2E; later slices: 838 unit / e2e×4; auth 27; broker 82) are **dated records of their runs, not current**. Verified today (two `pnpm run check` EXIT 0 runs covering the S9.17/S9.18 committed tree, plus a final run that reached licenses): **unit 879 / integration 11 / 5 E2E suites / smoke 115 tools / licenses 59 / sanitizer 0**. The E2E set today is cad-ui, editor-reload, editor-home, editor-chat-scope, broker-provider-status.
+
 ## ⚠️ MANDATORY COMPLETION REQUIREMENT
 
 > **100% of tickets must pass their acceptance criteria and the full health gate before the sprint is accepted.** Commit each ticket separately only after focused validation, full `pnpm run check`, and `node scripts/sanitize-repo.mjs --dry-run` all pass.
