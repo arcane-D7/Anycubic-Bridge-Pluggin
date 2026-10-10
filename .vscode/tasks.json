@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Prettier and full check gate",
+      "type": "shell",
+      "command": "pnpm exec prettier --check tests/e2e/editor-reload.e2e.mjs tests/e2e/editor-home.e2e.mjs && pnpm run check",
+      "isBackground": false,
+      "problemMatcher": [],
+      "group": "test"
+    }
+  ]
+}

@@ -508,7 +508,10 @@ impl ProjectAuthority {
         if artifact.get("source_revision").and_then(Value::as_u64) != Some(source_revision)
             || artifact.get("input_digest") != job.get("input_digest")
         {
-            return Ok(blocked("artifact-provenance-mismatch", Some(snapshot.revision)));
+            return Ok(blocked(
+                "artifact-provenance-mismatch",
+                Some(snapshot.revision),
+            ));
         }
         let mode = artifact
             .pointer("/ir/mode")
@@ -523,13 +526,22 @@ impl ProjectAuthority {
             .and_then(Value::as_str)
             .or_else(|| artifact.get("tool_binding").and_then(Value::as_str));
         let Some(destination) = destination_provider.current_destination() else {
-            return Ok(blocked("destination-capability-unavailable", Some(snapshot.revision)));
+            return Ok(blocked(
+                "destination-capability-unavailable",
+                Some(snapshot.revision),
+            ));
         };
         let Some(profile_fingerprint) = profile_fingerprint else {
-            return Ok(blocked("profile-provenance-unavailable", Some(snapshot.revision)));
+            return Ok(blocked(
+                "profile-provenance-unavailable",
+                Some(snapshot.revision),
+            ));
         };
         let Some(tool_binding) = tool_binding else {
-            return Ok(blocked("tool-binding-provenance-unavailable", Some(snapshot.revision)));
+            return Ok(blocked(
+                "tool-binding-provenance-unavailable",
+                Some(snapshot.revision),
+            ));
         };
         if mode != destination.mode {
             return Ok(blocked("mode-mismatch", Some(snapshot.revision)));
@@ -567,7 +579,13 @@ impl ProjectAuthority {
             return Ok(blocked("intent-id-already-exists", Some(snapshot.revision)));
         }
         let intent_digest = hex::encode(Sha256::digest(serde_json::to_vec(&intent)?));
-        self.put_slice_job(intent_id, snapshot.revision, &intent_digest, "reprint_intent", &intent)?;
+        self.put_slice_job(
+            intent_id,
+            snapshot.revision,
+            &intent_digest,
+            "reprint_intent",
+            &intent,
+        )?;
         Ok(ReprintIntentResult::Proposed {
             intent_id: intent_id.to_owned(),
             source_job_id: source_job_id.to_owned(),
@@ -861,15 +879,27 @@ mod tests {
     fn qualified_fixture_persists_a_new_intent_without_reusing_source_job_id() {
         let (root, authority) = reprint_fixture("validated-provider-fixture", 0);
         let result = authority
-            .preflight_reprint("historical-job", "new-intent", &fixture_destination("qualified"))
+            .preflight_reprint(
+                "historical-job",
+                "new-intent",
+                &fixture_destination("qualified"),
+            )
             .unwrap();
-        assert!(matches!(result, ReprintIntentResult::Proposed { ref intent_id, ref source_job_id, .. }
-            if intent_id == "new-intent" && source_job_id == "historical-job"));
+        assert!(
+            matches!(result, ReprintIntentResult::Proposed { ref intent_id, ref source_job_id, .. }
+            if intent_id == "new-intent" && source_job_id == "historical-job")
+        );
         assert!(authority.get_slice_job("new-intent").unwrap().is_some());
         let duplicate = authority
-            .preflight_reprint("historical-job", "historical-job", &fixture_destination("qualified"))
+            .preflight_reprint(
+                "historical-job",
+                "historical-job",
+                &fixture_destination("qualified"),
+            )
             .unwrap();
-        assert!(matches!(duplicate, ReprintIntentResult::Blocked { ref reason, .. } if reason == "intent-id-already-exists"));
+        assert!(
+            matches!(duplicate, ReprintIntentResult::Blocked { ref reason, .. } if reason == "intent-id-already-exists")
+        );
         let _ = fs::remove_dir_all(root);
     }
 
@@ -877,9 +907,15 @@ mod tests {
     fn native_preview_artifact_is_blocked_even_with_qualified_fixture() {
         let (root, authority) = reprint_fixture("planar-core-section-v2", 0);
         let result = authority
-            .preflight_reprint("historical-job", "new-intent", &fixture_destination("qualified"))
+            .preflight_reprint(
+                "historical-job",
+                "new-intent",
+                &fixture_destination("qualified"),
+            )
             .unwrap();
-        assert!(matches!(result, ReprintIntentResult::Blocked { ref reason, .. } if reason == "preview-only"));
+        assert!(
+            matches!(result, ReprintIntentResult::Blocked { ref reason, .. } if reason == "preview-only")
+        );
         assert!(authority.get_slice_job("new-intent").unwrap().is_none());
         let _ = fs::remove_dir_all(root);
     }
@@ -888,13 +924,21 @@ mod tests {
     fn stale_job_and_unavailable_destination_fail_closed() {
         let (root, stale_authority) = reprint_fixture("validated-provider-fixture", 4);
         let stale = stale_authority
-            .preflight_reprint("historical-job", "new-intent", &fixture_destination("qualified"))
+            .preflight_reprint(
+                "historical-job",
+                "new-intent",
+                &fixture_destination("qualified"),
+            )
             .unwrap();
-        assert!(matches!(stale, ReprintIntentResult::Blocked { ref reason, .. } if reason == "source-revision-stale"));
+        assert!(
+            matches!(stale, ReprintIntentResult::Blocked { ref reason, .. } if reason == "source-revision-stale")
+        );
         let unavailable = stale_authority
             .preflight_reprint("missing-job", "another-intent", &FixtureDestination(None))
             .unwrap();
-        assert!(matches!(unavailable, ReprintIntentResult::Blocked { ref reason, .. } if reason == "historical-job-missing"));
+        assert!(
+            matches!(unavailable, ReprintIntentResult::Blocked { ref reason, .. } if reason == "historical-job-missing")
+        );
         let _ = fs::remove_dir_all(root);
     }
 

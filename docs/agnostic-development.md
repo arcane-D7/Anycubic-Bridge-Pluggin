@@ -11,7 +11,7 @@ desenvolvimento futuro.
 Este repo foi alvo de uma limpeza completa de segurança (commit `0ccafd4` +
 histórico reescrito em `ad7bee1`). Removemos:
 
-- paths do utilizador (`C:\Users\mafsc\...`, `%APPDATA%` real)
+- paths do utilizador (`C:\<USER_HOME>\...`, `%APPDATA%` real)
 - device key / printer id / machine type / ACE model / firmware reais
 - IP da LAN da rede doméstica
 - ids de conta cloud (user id, task ids, gcode id, file ids)
@@ -113,17 +113,18 @@ Os argumentos do node são um **caminho relativo** resolvido a partir do `cwd`
 
 ## 4. Variáveis de ambiente (fonte única de verdade por máquina)
 
-| Variável                                              | Uso                              | Onde é lida                    |
-| ----------------------------------------------------- | -------------------------------- | ------------------------------ |
-| `ANYCUBIC_ACCESS_CODE`                                | access code da impressora LAN    | `.mcp.json` env                |
-| `ANYCUBIC_PRINTER_IPS`                                | IP(s) da impressora              | `.mcp.json` env                |
-| `ANYCUBIC_CLOUD_TOKEN`                                | JWT cloud capturado              | `.mcp.json` env                |
-| `ANYCUBIC_CLOUD_REGION`                               | região cloud (`en`/`cn`)         | `.mcp.json` env                |
-| `ANYCUBIC_SLICER_EXE`                                 | override do executável do slicer | `slicer-cli.mjs`               |
-| `ANYCUBIC_CONTROL_OUTPUT_ROOT`                        | root de output                   | slicer CLI tools               |
-| `ANYCUBIC_FW_VERSION`                                 | firmware observado (relatório)   | `printer-property-catalog.mjs` |
-| `ANYCUBIC_PRINTER_ID`                                 | printer id cloud (relatório)     | `printer-property-catalog.mjs` |
-| `CAD_AI_API_KEY` / `CAD_AI_BASE_URL` / `CAD_AI_MODEL` | AI text-to-CAD                   | `cad-ai-translator.mjs`        |
+| Variável                                              | Uso                                                       | Onde é lida                                                           |
+| ----------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------- |
+| `ANYCUBIC_ACCESS_CODE`                                | access code da impressora LAN                             | `.mcp.json` env                                                       |
+| `ANYCUBIC_PRINTER_IPS`                                | IP(s) da impressora                                       | `.mcp.json` env                                                       |
+| `ANYCUBIC_CLOUD_TOKEN`                                | JWT cloud capturado                                       | `.mcp.json` env                                                       |
+| `ANYCUBIC_CLOUD_REGION`                               | região cloud (`en`/`cn`)                                  | `.mcp.json` env                                                       |
+| `ANYCUBIC_SLICER_EXE`                                 | override do executável do slicer                          | `slicer-cli.mjs`                                                      |
+| `ANYCUBIC_CONTROL_OUTPUT_ROOT`                        | root de output                                            | slicer CLI tools                                                      |
+| `ANYCUBIC_FW_VERSION`                                 | firmware observado (relatório)                            | `printer-property-catalog.mjs`                                        |
+| `ANYCUBIC_PRINTER_ID`                                 | printer id cloud (relatório)                              | `printer-property-catalog.mjs`                                        |
+| `ANYCUBIC_AUTH_DB`                                    | auth db (sessões); legado `AUTH_DB` ainda é lido (compat) | `crates/auth-service/src/config.rs` (CLI + Tauri `device_control.rs`) |
+| `CAD_AI_API_KEY` / `CAD_AI_BASE_URL` / `CAD_AI_MODEL` | AI text-to-CAD                                            | `cad-ai-translator.mjs`                                               |
 
 Padrão obrigatório:
 
@@ -162,7 +163,7 @@ Cobre (data-driven, derivado de `os.homedir()`):
 ### Verificação manual rápida antes do push
 
 ```sh
-git grep -nE "(mafsc|120622460|120800420|120029158|120799976|89894086|834765|94badc6d|192\.168\.)|C:\\\\Users" -- ":(exclude)tests" ":(exclude)scripts/sanitize-repo.mjs"
+git grep -nE "(<USERNAME>|120622460|120800420|120029158|120799976|89894086|834765|94badc6d|192\.168\.)|C:\\\\Users" -- ":(exclude)tests" ":(exclude)scripts/sanitize-repo.mjs"
 # → sem output = limpo (exit 1 do grep)
 ```
 

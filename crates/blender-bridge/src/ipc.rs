@@ -675,12 +675,10 @@ mod tests {
     #[test]
     fn topology_revision_fields_are_required_on_the_wire() {
         assert!(serde_json::from_str::<SelectionState>("{}").is_err());
-        assert!(
-            serde_json::from_str::<RemapTable>(
-                r#"{"entries":[],"removed_local_indices":[],"removed_stable_ids":[]}"#
-            )
-            .is_err()
-        );
+        assert!(serde_json::from_str::<RemapTable>(
+            r#"{"entries":[],"removed_local_indices":[],"removed_stable_ids":[]}"#
+        )
+        .is_err());
     }
 
     #[test]

@@ -86,8 +86,8 @@ pub fn execute(
     }
     fs::write(&input_path, encoded).map_err(|error| GeometryError::Worker(error.to_string()))?;
 
-    let result = run_worker(&install, &work, &script_path, &input_path, &output_path)
-        .and_then(|output| {
+    let result =
+        run_worker(&install, &work, &script_path, &input_path, &output_path).and_then(|output| {
             validate_output(&output)?;
             Ok(output)
         });
