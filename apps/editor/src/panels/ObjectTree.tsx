@@ -9,6 +9,7 @@ import { useObjectContextMenu } from "../hooks/use-object-context-menu";
 import { useScene } from "../state/scene";
 import { useUi } from "../state/ui";
 import { useI18n } from "../state/i18n";
+import { executeRegistryOperation } from "../state/operation-registry";
 import type { MsgKey } from "../state/i18n-core";
 import { FILAMENT_PRESETS } from "../presets/catalog";
 import { usePrinterDevice } from "../state/printer-device";
@@ -85,7 +86,6 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
   const selectedNames = useScene((s) => s.selectedNames);
   const anchorName = useScene((s) => s.anchorName);
   const toggleSelect = useScene((s) => s.toggleSelect);
-  const select = useScene((s) => s.select);
   const remove = useScene((s) => s.remove);
   const rename = useScene((s) => s.rename);
   const pushToast = useUi((s) => s.pushToast);
@@ -186,10 +186,15 @@ export function ObjectTree({ scene, onOpenImport }: ObjectTreeProps) {
 
   const onRowClick = (o: SceneObjectSnapshot, e: React.MouseEvent) => {
     if (e.shiftKey) {
+      // Shift-multiselect is a UI-only affordance — the catalog truthfully
+      // claims single selection only, so it stays on the scene store toggle.
       toggleSelect(o.name, o.watertight);
-    } else {
-      select(o.name, o.watertight);
+      return;
     }
+    // S9.18-001 — single-click selection goes through the SAME shared
+    // registry handler the future AI tool frontend calls (scene.select →
+    // store select()), so pointer and tool selection are observable-identical.
+    executeRegistryOperation({ id: "scene.select", args: { name: o.name } });
   };
 
   const onRowContextMenu = (o: SceneObjectSnapshot, e: React.MouseEvent) => {

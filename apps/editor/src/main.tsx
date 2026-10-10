@@ -5,6 +5,7 @@ import { App } from "./App";
 import { bindSystemThemeListener } from "./state/theme";
 import { flushChatPersistenceNow, initChatPersistence } from "./state/chat-persistence-pod";
 import { useChatConversations } from "./state/chat-conversations";
+import { createOperationTestBridge } from "./state/operation-registry";
 // Tailwind v4 + design tokens first (Sprint 9.1); legacy styles.css then
 // adds its class rules on top. CSS cascade order is import order, so legacy
 // beats tailwind utilities only where both define the same property.
@@ -13,6 +14,16 @@ import "./styles.css";
 
 // Keep `system` theme in sync with OS preference changes (S9.1-002).
 bindSystemThemeListener();
+
+// S9.18-001 — DEV-only registry test bridge. The e2e
+// (tests/e2e/editor-operations.e2e.mjs) drives the EXACT same registry entry
+// (`executeRegistryOperation`) the future S9.18-002 AI tool frontend will
+// call — the bridge models only its invocation shape, not any model token.
+// It is guarded by import.meta.env.DEV, so production bundles never expose a
+// window hook.
+if (import.meta.env.DEV && typeof window !== "undefined") {
+  window.__anycubicOperationRegistry = createOperationTestBridge();
+}
 
 // S9.2-006 — silence the R3F-internal `THREE.Clock` deprecation warning.
 // @react-three/fiber 9.8.1 (current latest) instantiates `new THREE.Clock()`

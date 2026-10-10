@@ -44,6 +44,8 @@ import { useScene } from "./state/scene";
 import { useUi } from "./state/ui";
 import { useI18n } from "./state/i18n";
 import { usePlates } from "./state/plates";
+import { useWorkspaceView, type WorkspaceViewId } from "./state/workspace-view";
+import { executeRegistryOperation } from "./state/operation-registry";
 import { usePrinters } from "./state/printers";
 import { useChatConversations } from "./state/chat-conversations";
 import { useProjectScope } from "./state/project-scope";
@@ -120,10 +122,18 @@ export function App() {
   // the whole map (G/R/S grabs, X/Y/Z axis constrain, Enter/Esc, Q/W/E/R tools,
   // F frame, Delete/Ctrl+D, Ctrl+Z/Y soft journal) — decisions in the pure
   // `shortcuts-core`, actions here against the stores + bridge mutation lane.
-  const [workspaceView, setWorkspaceView] = useState<"home" | "prepare" | "preview" | "workbench">(
-    "home",
-  );
+  const workspaceView = useWorkspaceView((s) => s.view);
   useShortcuts(scene, workspaceView === "prepare");
+
+  // S9.18-001 — single shared navigation entry. The nav buttons and the
+  // future AI tool frontend both invoke the EXACT same registry handler
+  // (executeRegistryOperation → workspace.navigate), so a tool-driven switch
+  // is observable-identical to a pointer tab click. The registry
+  // closed-validates and reads LIVE store state on every call — it never
+  // mutates project scope, conversation identity or the scene.
+  const goWorkspace = useCallback((view: WorkspaceViewId) => {
+    return executeRegistryOperation({ id: "workspace.navigate", args: { view } });
+  }, []);
   const objects = useScene((s) => s.objects);
   const projectRevision = useViewport((s) => s.revision);
 
@@ -186,7 +196,7 @@ export function App() {
   const previousDevicePanelMode = useRef(devicePanelMode);
   useEffect(() => {
     if (devicePanelMode === "floating" && previousDevicePanelMode.current !== "floating") {
-      setWorkspaceView("workbench");
+      void goWorkspace("workbench");
       useDock.getState().setPanelMode("device", "collapsed");
     }
     previousDevicePanelMode.current = devicePanelMode;
@@ -328,7 +338,9 @@ export function App() {
         if (action !== "recover") {
           await queryClient.invalidateQueries({ queryKey: QUERY_KEY });
         }
-        setWorkspaceView("prepare");
+        // View switch only — the chat scope was already entered above and the
+        // registry handler never touches it.
+        void goWorkspace("prepare");
         await refreshHome();
       } catch (error) {
         setHomeError(error instanceof Error ? error.message : String(error));
@@ -369,7 +381,7 @@ export function App() {
       setPreviewArtifactId(null);
       setPreviewSourceRevision(null);
       setMode(document.mode);
-      setWorkspaceView("preview");
+      void goWorkspace("preview");
       setIrError(null);
     } catch (err) {
       if (seq !== loadSeq.current) return;
@@ -391,7 +403,9 @@ export function App() {
       setPreviewSourceRevision(sourceRevision);
       setMode(document.mode);
       setIrError(null);
-      setWorkspaceView((current) => (current === "prepare" ? "preview" : current));
+      if (useWorkspaceView.getState().view === "prepare") {
+        void goWorkspace("preview");
+      }
     },
     [],
   );
@@ -415,7 +429,7 @@ export function App() {
       setPreviewSourceRevision(payload.sourceRevision);
       setMode(payload.ir.mode);
       setIrError(null);
-      setWorkspaceView("preview");
+      void goWorkspace("preview");
     },
     [],
   );
@@ -461,7 +475,7 @@ export function App() {
             type="button"
             aria-pressed={workspaceView === "home"}
             onClick={() => {
-              setWorkspaceView("home");
+              void goWorkspace("home");
               void refreshHome();
             }}
           >
@@ -470,21 +484,21 @@ export function App() {
           <button
             type="button"
             aria-pressed={workspaceView === "prepare"}
-            onClick={() => setWorkspaceView("prepare")}
+            onClick={() => void goWorkspace("prepare")}
           >
             {t("app.tab.prepare")}
           </button>
           <button
             type="button"
             aria-pressed={workspaceView === "preview"}
-            onClick={() => setWorkspaceView("preview")}
+            onClick={() => void goWorkspace("preview")}
           >
             {t("app.tab.preview")}
           </button>
           <button
             type="button"
             aria-pressed={workspaceView === "workbench"}
-            onClick={() => setWorkspaceView("workbench")}
+            onClick={() => void goWorkspace("workbench")}
           >
             {t("app.tab.workbench")}
           </button>
@@ -509,7 +523,7 @@ export function App() {
             aria-label={t("device.button.aria")}
             title={t("device.button.title")}
             data-testid="device-panel-toggle"
-            onClick={() => setWorkspaceView("workbench")}
+            onClick={() => void goWorkspace("workbench")}
           >
             <span className="device-panel-toggle-label">{t("device.panel.title")}</span>
             {deviceTitle ? (
@@ -616,7 +630,7 @@ export function App() {
                   }
                   onClick={() => {
                     if (provider?.mode === "demo") {
-                      setWorkspaceView("prepare");
+                      void goWorkspace("prepare");
                     } else {
                       void activateProject("continue");
                     }
@@ -646,7 +660,7 @@ export function App() {
                       data-testid="home-demo-prepare"
                       onClick={() => {
                         setSidebarView("objects");
-                        setWorkspaceView("prepare");
+                        void goWorkspace("prepare");
                       }}
                     >
                       <Icon name="cube" size={16} />
@@ -871,7 +885,7 @@ export function App() {
                   type="button"
                   aria-label={t("app.preview.empty.prepare")}
                   title={t("app.preview.empty.prepare")}
-                  onClick={() => setWorkspaceView("prepare")}
+                  onClick={() => void goWorkspace("prepare")}
                 >
                   <Icon name="cube" />
                   {t("app.preview.empty.prepare")}
@@ -952,7 +966,7 @@ export function App() {
         <DockPanel
           onDock={() => {
             setSidebarView("chat");
-            setWorkspaceView("prepare");
+            void goWorkspace("prepare");
           }}
         />
         {workspaceView === "prepare" ? <TransformPanelHost scene={scene} /> : null}

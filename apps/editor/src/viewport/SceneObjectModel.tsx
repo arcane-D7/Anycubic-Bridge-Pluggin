@@ -5,6 +5,8 @@ import { useScene } from "../state/scene";
 import { useViewport } from "../state/viewport";
 import { useUi } from "../state/ui";
 import { useLabelsBus } from "../state/labels";
+import { useWorkspaceView } from "../state/workspace-view";
+import { executeRegistryOperation } from "../state/operation-registry";
 import { registerAnchorProbe } from "./Labels";
 
 /**
@@ -211,10 +213,20 @@ export const SceneObjectModel = memo(function SceneObjectModel({
           geometry={geometry}
           onClick={(e) => {
             e.stopPropagation();
-            useScene.getState().select(info.name, info.watertight);
+            // S9.18-001 — object click goes through the SAME shared registry
+            // handler as the tool frontend (scene.select → store select()).
+            // Eligibility (prepare-only, visible, active plate) is enforced
+            // by the registry — the model is only clickable there.
+            if (useWorkspaceView.getState().view !== "prepare") return;
+            executeRegistryOperation({ id: "scene.select", args: { name: info.name } });
           }}
           onContextMenu={(e) => {
             e.stopPropagation();
+            if (useWorkspaceView.getState().view === "prepare") {
+              // Preselect via the shared handler so the menu opens on the
+              // registry's selection (tool-identical, eligibility-checked).
+              executeRegistryOperation({ id: "scene.select", args: { name: info.name } });
+            }
             onObjectContextMenu("canvas", info, { clientX: e.clientX, clientY: e.clientY });
           }}
           onPointerOver={(e) => {
@@ -243,10 +255,14 @@ export const SceneObjectModel = memo(function SceneObjectModel({
           scale={box ? box.getSize(new THREE.Vector3()).toArray() : undefined}
           onClick={(e) => {
             e.stopPropagation();
-            useScene.getState().select(info.name, info.watertight);
+            if (useWorkspaceView.getState().view !== "prepare") return;
+            executeRegistryOperation({ id: "scene.select", args: { name: info.name } });
           }}
           onContextMenu={(e) => {
             e.stopPropagation();
+            if (useWorkspaceView.getState().view === "prepare") {
+              executeRegistryOperation({ id: "scene.select", args: { name: info.name } });
+            }
             onObjectContextMenu("canvas", info, { clientX: e.clientX, clientY: e.clientY });
           }}
           onPointerOver={(e) => {
