@@ -546,6 +546,19 @@ export type MsgKey =
   | "chat.input.placeholder"
   | "chat.send"
   | "chat.error"
+  | "chat.stop"
+  // S9.18-002 — tool parts (provider proposals executed in the registry)
+  | "chat.tool.running"
+  | "chat.tool.done.navigate"
+  | "chat.tool.done.select"
+  | "chat.tool.denied"
+  | "chat.tool.unsupported"
+  | "chat.tool.limit"
+  | "chat.tool.name.workspaceNavigate"
+  | "chat.tool.name.sceneSelect"
+  | "chat.tool.result.navigated"
+  | "chat.tool.result.alreadyOnView"
+  | "chat.tool.result.selected"
   | "chat.title"
   | "chat.switchConversation.title"
   | "chat.scope.project"
@@ -1494,6 +1507,18 @@ export const EN: Record<MsgKey, string> = {
   "chat.input.placeholder": "Message",
   "chat.send": "Send",
   "chat.error": "Message could not be sent. Please try again.",
+  "chat.stop": "Stop",
+  "chat.tool.running": "Running {tool}…",
+  "chat.tool.done.navigate": "Ok — workspace view set to {view}.",
+  "chat.tool.done.select": 'Selected object "{name}" on the plate.',
+  "chat.tool.denied": "Refused: {reason}",
+  "chat.tool.unsupported": 'Unsupported tool "{tool}" — not part of the closed operation set.',
+  "chat.tool.limit": "Tool round limit reached — the loop is not resubmitted.",
+  "chat.tool.name.workspaceNavigate": "workspace navigate",
+  "chat.tool.name.sceneSelect": "scene select",
+  "chat.tool.result.navigated": "workspace view switched to {view}.",
+  "chat.tool.result.alreadyOnView": "workspace is already on view {view}.",
+  "chat.tool.result.selected": "selected {name} (watertight: {watertight}).",
   "chat.title": "Chat",
   "chat.switchConversation.title": "Switch conversation (active: {title})",
   "chat.scope.project": "Project: {name}",
@@ -2441,6 +2466,19 @@ export const PT_BR: Record<MsgKey, string> = {
   "chat.input.placeholder": "Mensagem",
   "chat.send": "Enviar",
   "chat.error": "Não foi possível enviar a mensagem. Tente novamente.",
+  "chat.stop": "Parar",
+  "chat.tool.running": "A executar {tool}…",
+  "chat.tool.done.navigate": "Ok — vista do espaço de trabalho definida para {view}.",
+  "chat.tool.done.select": 'Objeto "{name}" selecionado na placa.',
+  "chat.tool.denied": "Recusado: {reason}",
+  "chat.tool.unsupported":
+    'Ferramenta "{tool}" não suportada — não faz parte do conjunto fechado de operações.',
+  "chat.tool.limit": "Limite de rondas de ferramenta atingido — o ciclo não é reenviado.",
+  "chat.tool.name.workspaceNavigate": "navegar no espaço de trabalho",
+  "chat.tool.name.sceneSelect": "selecionar objeto",
+  "chat.tool.result.navigated": "vista do espaço de trabalho alterada para {view}.",
+  "chat.tool.result.alreadyOnView": "o espaço de trabalho já está na vista {view}.",
+  "chat.tool.result.selected": "selecionado {name} (estanque: {watertight}).",
   "chat.title": "Chat",
   "chat.switchConversation.title": "Mudar conversa (ativa: {title})",
   "chat.scope.project": "Projeto: {name}",

@@ -91,6 +91,38 @@ pub const MAX_RESPONSE_BODY: usize = 4 * 1024 * 1024;
 pub const MAX_EGRESS_TIMEOUT: Duration = Duration::from_secs(60);
 
 // ---------------------------------------------------------------------------
+// S9.18-002 — tool-loop bounds (fail closed, both sides)
+// ---------------------------------------------------------------------------
+
+/// Max tool-result pairs (assistant `tool_calls` + `role:"tool"` result)
+/// serialized from ONE client request. Each continuation re-sends the whole
+/// transcript, so this bounds the ROUND count a misbehaving client can push
+/// to the provider per request — round 1 carries 0 pairs, round N carries
+/// N-1, so a value of 4 caps client-driven rounds at 5.
+pub const MAX_TOOL_RESULT_PAIRS: usize = 4;
+/// Max provider tool calls honored per response (navigate + select in
+/// parallel is the ceiling; anything more is refused whole-response).
+pub const MAX_TOOL_CALLS_PER_RESPONSE: usize = 2;
+/// Max serialized args bytes per provider tool call (the webview renders and
+/// the registry consumes this JSON — a hostile payload cannot exceed it).
+pub const MAX_TOOL_ARGS_BYTES: usize = 8 * 1024;
+/// Max length of a provider tool call id (used as the registry callId). The
+/// registry only requires non-empty; the broker bounds it to keep the wire
+/// bounded and the charset printable.
+pub const MAX_TOOL_CALL_ID_LEN: usize = 128;
+/// Max bytes of the per-message `uiContext` line injected upstream (AI-08:
+/// UI-originated mutations refresh agent context — bounded snippet only).
+pub const MAX_UICONTEXT_BYTES: usize = 512;
+
+/// The ONLY provider tool names this broker will ever declare upstream or
+/// honor in a reply — safe provider-compatible names (`[A-Za-z0-9_-]`)
+/// mapped by the webview to the registered frontend operations. Any other
+/// name (client-invented, backend writer ids like `nozzle`/`job.start`, …)
+/// is a structured `unsupported-tools` denial with ZERO effects — never
+/// forwarded as authority.
+pub const TOOL_NAMES: [&str; 2] = ["workspace_navigate", "scene_select"];
+
+// ---------------------------------------------------------------------------
 // Wire types (mirror of the AI SDK v7 `SendMessages` payload)
 // ---------------------------------------------------------------------------
 
@@ -130,6 +162,12 @@ pub struct UiMessageChunk {
     pub error_text: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_metadata: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_call_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input: Option<serde_json::Value>,
 }
 
 impl UiMessageChunk {
@@ -142,6 +180,9 @@ impl UiMessageChunk {
             finish_reason: None,
             error_text: None,
             message_metadata: None,
+            tool_call_id: None,
+            tool_name: None,
+            input: None,
         }
     }
 
@@ -154,6 +195,9 @@ impl UiMessageChunk {
             finish_reason: None,
             error_text: None,
             message_metadata: None,
+            tool_call_id: None,
+            tool_name: None,
+            input: None,
         }
     }
 
@@ -166,6 +210,9 @@ impl UiMessageChunk {
             finish_reason: None,
             error_text: None,
             message_metadata: None,
+            tool_call_id: None,
+            tool_name: None,
+            input: None,
         }
     }
 
@@ -178,6 +225,9 @@ impl UiMessageChunk {
             finish_reason: None,
             error_text: None,
             message_metadata: None,
+            tool_call_id: None,
+            tool_name: None,
+            input: None,
         }
     }
 
@@ -190,6 +240,9 @@ impl UiMessageChunk {
             finish_reason: Some(finish_reason.into()),
             error_text: None,
             message_metadata: None,
+            tool_call_id: None,
+            tool_name: None,
+            input: None,
         }
     }
 
@@ -203,6 +256,9 @@ impl UiMessageChunk {
             finish_reason: None,
             error_text: Some(error_text.into()),
             message_metadata: None,
+            tool_call_id: None,
+            tool_name: None,
+            input: None,
         }
     }
 
@@ -217,6 +273,44 @@ impl UiMessageChunk {
             finish_reason: None,
             error_text: None,
             message_metadata: Some(metadata),
+            tool_call_id: None,
+            tool_name: None,
+            input: None,
+        }
+    }
+
+    /// `{type:"tool-input-start", toolCallId, toolName}` header for a tool
+    /// invocation — mirrors the AI SDK v7 chunk shape, `providerExecuted`
+    /// ABSENT so the webview's `onToolCall` owns the execution.
+    pub fn tool_input_start(tool_call_id: &str, tool_name: &str) -> Self {
+        Self {
+            kind: "tool-input-start".into(),
+            message_id: None,
+            id: None,
+            delta: None,
+            finish_reason: None,
+            error_text: None,
+            message_metadata: None,
+            tool_call_id: Some(tool_call_id.into()),
+            tool_name: Some(tool_name.into()),
+            input: None,
+        }
+    }
+
+    /// `{type:"tool-input-available", toolCallId, toolName, input}` — the
+    /// arguments object the webview will execute (NO `providerExecuted`).
+    pub fn tool_input_available(tool_call_id: &str, tool_name: &str, input: serde_json::Value) -> Self {
+        Self {
+            kind: "tool-input-available".into(),
+            message_id: None,
+            id: None,
+            delta: None,
+            finish_reason: None,
+            error_text: None,
+            message_metadata: None,
+            tool_call_id: Some(tool_call_id.into()),
+            tool_name: Some(tool_name.into()),
+            input: Some(input),
         }
     }
 }
@@ -422,6 +516,10 @@ pub enum ProviderError {
     MalformedResponse,
     /// Provider sent `tool_calls` — unsupported THIS slice (S9.18-002 next).
     UnsupportedTools,
+    /// The client request serialized more tool-result pairs than
+    /// [`MAX_TOOL_RESULT_PAIRS`] — a misbehaving/replayed loop must fail
+    /// closed, never grow unbounded.
+    ToolLoopLimit,
 }
 
 impl ProviderError {
@@ -440,6 +538,7 @@ impl ProviderError {
             Self::Network => "network-error",
             Self::MalformedResponse => "malformed-response",
             Self::UnsupportedTools => "unsupported-tools",
+            Self::ToolLoopLimit => "tool-loop-limit",
         }
     }
 }
@@ -560,11 +659,113 @@ impl AppState {
     }
 }
 
-/// Map the AI SDK message array onto the closed chat-completions request:
-/// only text parts, capped at [`MAX_INPUT_MESSAGES`]. Non-text parts
-/// (tool/file/reasoning) are STRIPPED — never forwarded upstream this slice.
+/// One provider tool call extracted from a completion choice (S9.18-002).
+/// `arguments` is kept as a parsed JSON Value — it MUST validate as an
+/// object and byte-bound serialized compact before it may reach the webview.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ProviderToolCall {
+    pub id: String,
+    pub name: String,
+    pub arguments: serde_json::Value,
+}
+
+/// Full provider outcome: optional text + zero-or-more tool calls. A reply
+/// with `content: None` and `tool_calls: []` is malformed (checked in
+/// `call_provider`), never surfaced.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ProviderReply {
+    pub content: Option<String>,
+    pub tool_calls: Vec<ProviderToolCall>,
+}
+
+/// Tools declaration sent upstream (once per request) — mirrors the CLOSED
+/// frontend-operation schemas (`schemas/frontend-operations.json`,
+/// `workspace.navigate` + `scene.select`) so the provider can only ever learn
+/// the two safe wrapper names. Provider-safe function names (`[A-Za-z0-9_-]`)
+/// are used on the wire; the webview maps them to the registry ids.
+pub fn provider_tools() -> serde_json::Value {
+    serde_json::json!([
+        {
+            "type": "function",
+            "function": {
+                "name": "workspace_navigate",
+                "description":
+                    "Switch the active workspace view (home/prepare/preview/workbench). \
+                     Pure view state — project scope, conversation identity and slicing \
+                     state are never touched.",
+                "parameters": {
+                    "additionalProperties": false,
+                    "required": ["view"],
+                    "properties": {
+                        "view": {
+                            "type": "string",
+                            "enum": ["home", "prepare", "preview", "workbench"],
+                            "description": "Target workspace view."
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "scene_select",
+                "description":
+                    "Select an existing, visible object on the active plate through the \
+                     shared scene store select(). Read-only preview is preserved: selection \
+                     is only eligible on the prepare surface.",
+                "parameters": {
+                    "additionalProperties": false,
+                    "required": ["name"],
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 256,
+                            "description": "Object name that must exist in the active scene, \
+                             be visible and belong to the active plate."
+                        }
+                    }
+                }
+            }
+        }
+    ])
+}
+
+/// Map the AI SDK message array onto the closed chat-completions request.
+///
+/// S9.18-002: (a) the LAST message's `metadata.uiContext` string, if any, is
+/// inlined bounded ([`MAX_UICONTEXT_BYTES`]) as a leading `system` line so
+/// UI-originated mutations refresh agent context (AI-08); (b) each input
+/// message's TEXT parts become the content, and each `role:"tool"` part
+/// (already-executed tool, state output-available/output-error) is emitted as
+/// an assistant `tool_calls` entry on ITS OWN assistant message PLUS the
+/// immediately-following `role:"tool"` result message — the exact pair shape
+/// the provider needs to continue the loop. The number of such pairs is
+/// bounded ([`MAX_TOOL_RESULT_PAIRS`]); beyond it the request FAILS CLOSED
+/// ([`ProviderError::ToolLoopLimit`]) instead of growing unbounded. Non-text,
+/// non-tool parts (file/reasoning) are stripped — never forwarded upstream.
 fn map_messages(messages: &[serde_json::Value]) -> Result<Vec<serde_json::Value>, ProviderError> {
     let mut mapped: Vec<serde_json::Value> = Vec::new();
+
+    // (a) UI context line from the LAST message — bounded, absent if empty.
+    if let Some(last) = messages.last() {
+        if let Some(ctx) = last
+            .get("metadata")
+            .and_then(|m| m.get("uiContext"))
+            .and_then(|c| c.as_str())
+        {
+            let ctx: String = ctx.chars().take(MAX_UICONTEXT_BYTES).collect();
+            if !ctx.trim().is_empty() {
+                mapped.push(serde_json::json!({
+                    "role": "system",
+                    "content": format!("current UI context: {ctx}")
+                }));
+            }
+        }
+    }
+
+    let mut tool_pairs: usize = 0;
     for message in messages {
         let Some(role) = message.get("role").and_then(|r| r.as_str()) else {
             continue;
@@ -585,11 +786,91 @@ fn map_messages(messages: &[serde_json::Value]) -> Result<Vec<serde_json::Value>
                     .collect::<String>()
             })
             .unwrap_or_default();
-        if text.trim().is_empty() {
+        let trimmed = text.trim();
+        if trimmed.is_empty() {
             continue;
         }
         mapped.push(serde_json::json!({ "role": role, "content": text }));
     }
+
+    // (b) tool parts. In the AI SDK v7 resubmission protocol the executed
+    // tools travel as `type:"tool"` PARTS on the assistant message that owns
+    // them — the SDK encodes the tool name IN the part type (`tool-<name>`),
+    // with `toolCallId`, `input`, and the outcome under `state` +
+    // `output`/`errorText`. Reconstruct the provider pair (assistant
+    // `tool_calls` + immediately-following `role:"tool"` result) from EVERY
+    // message's parts, honoring ONLY the two closed names.
+    for message in messages {
+        let Some(parts) = message.get("parts").and_then(|p| p.as_array()) else {
+            continue;
+        };
+        for part in parts {
+            let Some(kind) = part.get("type").and_then(|t| t.as_str()) else {
+                continue;
+            };
+            // Static tool parts are `tool-<name>`; dynamic/custom/other part
+            // types carry no static tool id and are never honored.
+            let Some(tool_name) = kind.strip_prefix("tool-") else {
+                continue;
+            };
+            let Some(tool_call_id) = part.get("toolCallId").and_then(|t| t.as_str()) else {
+                continue;
+            };
+            if tool_call_id.is_empty() || tool_call_id.len() > MAX_TOOL_CALL_ID_LEN {
+                return Err(ProviderError::MalformedResponse);
+            }
+            if !TOOL_NAMES.contains(&tool_name) {
+                return Err(ProviderError::UnsupportedTools);
+            }
+            let state = part.get("state").and_then(|s| s.as_str()).unwrap_or("");
+            if state != "output-available" && state != "output-error" {
+                continue;
+            }
+            let arguments = match part.get("input") {
+                Some(input) => serde_json::to_value(input).unwrap_or(serde_json::json!({})),
+                None => serde_json::json!({}),
+            };
+            let args_bytes = serde_json::to_string(&arguments)
+                .map_err(|_| ProviderError::MalformedResponse)?
+                .len();
+            if args_bytes > MAX_TOOL_ARGS_BYTES {
+                return Err(ProviderError::MalformedResponse);
+            }
+            tool_pairs += 1;
+            if tool_pairs > MAX_TOOL_RESULT_PAIRS {
+                return Err(ProviderError::ToolLoopLimit);
+            }
+            let result_content = if state == "output-available" {
+                part.get("output").cloned().unwrap_or_else(|| {
+                    serde_json::json!({ "ok": false, "error": "missing output" })
+                })
+            } else {
+                serde_json::json!({ "error": part.get("errorText").and_then(|e| e.as_str()).unwrap_or("tool error") })
+            };
+            // Assistant tool_calls message + the immediately-following tool
+            // result — the provider pair shape.
+            mapped.push(serde_json::json!({
+                "role": "assistant",
+                "content": serde_json::Value::Null,
+                "tool_calls": [{
+                    "id": tool_call_id,
+                    "type": "function",
+                    "function": {
+                        "name": tool_name,
+                        "arguments": serde_json::to_string(&arguments)
+                            .map_err(|_| ProviderError::MalformedResponse)?
+                    }
+                }]
+            }));
+            mapped.push(serde_json::json!({
+                "role": "tool",
+                "tool_call_id": tool_call_id,
+                "content": serde_json::to_string(&result_content)
+                    .map_err(|_| ProviderError::MalformedResponse)?
+            }));
+        }
+    }
+
     if mapped.len() > MAX_INPUT_MESSAGES {
         return Err(ProviderError::TooManyMessages);
     }
@@ -609,7 +890,87 @@ pub fn append_bounded(buf: &mut Vec<u8>, chunk: &[u8]) -> Result<(), ProviderErr
     Ok(())
 }
 
-/// Execute ONE provider completion (stream:false) and return the text.
+/// Parse a closed chat-completions body into a [`ProviderReply`], validating
+/// every provider tool call: id non-empty ≤ [`MAX_TOOL_CALL_ID_LEN`] with the
+/// `[A-Za-z0-9_-]` charset; name ∈ [`TOOL_NAMES`] (else a structured
+/// `unsupported-tools` denial — never forwarded as authority); arguments a
+/// JSON object ≤ [`MAX_TOOL_ARGS_BYTES`]. More calls than
+/// [`MAX_TOOL_CALLS_PER_RESPONSE`] refuses the WHOLE response; content
+/// `None` + zero calls is malformed.
+pub fn parse_provider_reply(
+    parsed: &serde_json::Value,
+) -> Result<ProviderReply, ProviderError> {
+    let choice = parsed
+        .pointer("/choices/0/message")
+        .ok_or(ProviderError::MalformedResponse)?;
+    let content = match choice.get("content") {
+        Some(content) if content.is_string() => {
+            Some(content.as_str().unwrap_or_default().to_string())
+        }
+        _ => None,
+    };
+    let mut tool_calls: Vec<ProviderToolCall> = Vec::new();
+    if let Some(calls) = choice.get("tool_calls").and_then(|t| t.as_array()) {
+        if calls.len() > MAX_TOOL_CALLS_PER_RESPONSE {
+            // More tool calls than the webview can honor in one round —
+            // refuse the WHOLE response, never partial execution.
+            return Err(ProviderError::ToolLoopLimit);
+        }
+        for call in calls {
+            let id = call
+                .get("id")
+                .and_then(|i| i.as_str())
+                .filter(|id| !id.is_empty() && id.len() <= MAX_TOOL_CALL_ID_LEN)
+                .filter(|id| {
+                    id.bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'-'))
+                })
+                .ok_or(ProviderError::MalformedResponse)?;
+            let name = call
+                .pointer("/function/name")
+                .and_then(|n| n.as_str())
+                .ok_or(ProviderError::MalformedResponse)?;
+            if !TOOL_NAMES.contains(&name) {
+                // Client-invented or backend writer id — structured denial,
+                // never forwarded as authority.
+                return Err(ProviderError::UnsupportedTools);
+            }
+            let arguments: serde_json::Value = match call
+                .pointer("/function/arguments")
+                .and_then(|a| a.as_str())
+            {
+                Some(args_string) => serde_json::from_str(args_string)
+                    .unwrap_or(serde_json::Value::Null),
+                None => serde_json::Value::Null,
+            };
+            if !arguments.is_object() {
+                return Err(ProviderError::MalformedResponse);
+            }
+            let args_bytes = serde_json::to_string(&arguments)
+                .map_err(|_| ProviderError::MalformedResponse)?
+                .len();
+            if args_bytes > MAX_TOOL_ARGS_BYTES {
+                return Err(ProviderError::MalformedResponse);
+            }
+            tool_calls.push(ProviderToolCall {
+                id: id.to_string(),
+                name: name.to_string(),
+                arguments,
+            });
+        }
+    }
+    // A reply that is neither text nor tool calls is malformed.
+    if content.is_none() && tool_calls.is_empty() {
+        return Err(ProviderError::MalformedResponse);
+    }
+    Ok(ProviderReply {
+        content,
+        tool_calls,
+    })
+}
+
+/// Execute ONE provider completion (stream:false) and return the reply —
+/// optional text and/or validated tool calls (S9.18-002).
 ///
 /// Cancellation: if the handler future is dropped (client disconnect) every
 /// `.await` here is dropped too — the socket is aborted and the semaphore
@@ -617,7 +978,7 @@ pub fn append_bounded(buf: &mut Vec<u8>, chunk: &[u8]) -> Result<(), ProviderErr
 async fn call_provider(
     state: &AppState,
     messages: &[serde_json::Value],
-) -> Result<String, ProviderError> {
+) -> Result<ProviderReply, ProviderError> {
     let config = &state.config;
     let model_url = config
         .model_url
@@ -648,6 +1009,8 @@ async fn call_provider(
         "model": config.model.as_deref().unwrap_or(DEFAULT_MODEL),
         "messages": mapped,
         "stream": false,
+        "tools": provider_tools(),
+        "tool_choice": "auto",
     });
     let body_bytes = serde_json::to_vec(&body).map_err(|_| ProviderError::MalformedResponse)?;
     if body_bytes.len() > MAX_REQUEST_BODY {
@@ -718,23 +1081,8 @@ async fn call_provider(
     // The request is fully read and deserialized — the permit may now drop
     // (end of scope): subsequent calls can start while we post-process.
     drop(permit);
-    let message = parsed
-        .pointer("/choices/0/message")
-        .ok_or(ProviderError::MalformedResponse)?;
-    if message
-        .get("tool_calls")
-        .and_then(|t| t.as_array())
-        .is_some_and(|calls| !calls.is_empty())
-    {
-        // Tool loop is the NEXT slice — fail loudly, never drop the call.
-        return Err(ProviderError::UnsupportedTools);
-    }
-    match message.get("content") {
-        Some(content) if content.is_string() => {
-            Ok(content.as_str().unwrap_or_default().to_string())
-        }
-        _ => Err(ProviderError::MalformedResponse),
-    }
+
+    parse_provider_reply(&parsed)
 }
 
 // ---------------------------------------------------------------------------
@@ -812,6 +1160,35 @@ fn sse_provider_body(message_id: &str, text_id: &str, text: &str) -> String {
     buf
 }
 
+/// Tool-loop SSE body (S9.18-002): optional buffered text delta + one
+/// `tool-input-start`/`tool-input-available` pair PER provider tool call,
+/// then `finish "tool-calls"`. The `input` chunk carries the EXACT arguments
+/// object the webview will execute — and NO `providerExecuted` flag, so the
+/// webview's `onToolCall` owns execution (AI SDK v7 verifies this: the hook
+/// only fires when `providerExecuted` is absent).
+fn sse_tool_loop_body(message_id: &str, text_id: &str, reply: &ProviderReply) -> String {
+    let mut buf = String::new();
+    sse_line(&UiMessageChunk::start(message_id), &mut buf);
+    if let Some(text) = reply.content.as_deref().filter(|t| !t.trim().is_empty()) {
+        sse_line(&UiMessageChunk::text_start(text_id), &mut buf);
+        sse_line(&UiMessageChunk::text_delta(text_id, text), &mut buf);
+        sse_line(&UiMessageChunk::text_end(text_id), &mut buf);
+    }
+    for call in &reply.tool_calls {
+        sse_line(
+            &UiMessageChunk::tool_input_start(&call.id, &call.name),
+            &mut buf,
+        );
+        sse_line(
+            &UiMessageChunk::tool_input_available(&call.id, &call.name, call.arguments.clone()),
+            &mut buf,
+        );
+    }
+    sse_line(&UiMessageChunk::finish("tool-calls"), &mut buf);
+    buf.push_str("data: [DONE]\n\n");
+    buf
+}
+
 /// Error SSE body — FIXED reason, finish `error`, NEVER the offline echo.
 fn sse_error_body(message_id: &str, reason: &str) -> String {
     let mut buf = String::new();
@@ -857,11 +1234,35 @@ fn origin_allowed(headers: &HeaderMap, state: &AppState) -> bool {
             .any(|allowed| origin == Some(allowed.as_str()))
 }
 
+/// Full configured-provider round trip: map → ONE provider call → SSE body.
+/// Returns the plain text body when the reply is text-only, or the tool-loop
+/// body when the provider asked for tool calls. Any error becomes a
+/// fixed-reason SSE error body.
+async fn stream_provider_reply(
+    state: &AppState,
+    messages: &[serde_json::Value],
+    message_id: &str,
+    text_id: &str,
+) -> String {
+    match call_provider(state, messages).await {
+        Ok(reply) if reply.tool_calls.is_empty() => match reply.content {
+            Some(text) => sse_provider_body(message_id, text_id, &text),
+            // Unreachable: call_provider rejects content-less, call-less
+            // replies — but an empty text is still a malformed reply.
+            None => sse_error_body(message_id, ProviderError::MalformedResponse.reason()),
+        },
+        Ok(reply) => sse_tool_loop_body(message_id, text_id, &reply),
+        Err(error) => sse_error_body(message_id, error.reason()),
+    }
+}
+
 /// `POST /chat` — stream the AI SDK UI protocol for a chat request.
 ///
 /// S9.18-001: demo echo when egress is disabled; a REAL provider relay when
 /// configured; a fixed-reason SSE error when configured-but-failing — never
 /// the offline echo as a fake success.
+/// S9.18-002: when the provider answers with tool calls, the body carries
+/// `tool-input-start`/`tool-input-available` chunks the webview executes.
 pub async fn chat_handler(
     headers: HeaderMap,
     State(state): State<AppState>,
@@ -888,10 +1289,7 @@ pub async fn chat_handler(
         ProviderStatus {
             mode: ProviderMode::Configured,
             ..
-        } => match call_provider(&state, &chat.messages).await {
-            Ok(text) => sse_provider_body(&message_id, "text-1", &text),
-            Err(error) => sse_error_body(&message_id, error.reason()),
-        },
+        } => stream_provider_reply(&state, &chat.messages, &message_id, "text-1").await,
     };
     let mut builder = AxumResponse::builder().status(StatusCode::OK);
     for (name, value) in sse_headers() {
@@ -1188,5 +1586,241 @@ mod tests {
         assert!(env_broker_addr().ip().is_loopback());
         assert_eq!(env_broker_addr().port(), 41999);
         std::env::remove_var("ANYCUBIC_BROKER_PORT");
+    }
+
+    // ---------------------------------------------------------------------
+    // S9.18-002 — tool loop
+    // ---------------------------------------------------------------------
+
+    #[test]
+    fn tool_names_are_the_only_declared_and_honored_names() {
+        // allowlist accepts exactly the two closed operation wrappers
+        assert!(TOOL_NAMES.contains(&"workspace_navigate"));
+        assert!(TOOL_NAMES.contains(&"scene_select"));
+        // backend writer ids and client-invented names are NEVER in the set
+        for forged in [
+            "nozzle",
+            "part_fan",
+            "job.start",
+            "job.stop",
+            "upload",
+            "ace_bind_slot",
+            "light_set_enabled",
+            "temperature",
+            "anything_else",
+        ] {
+            assert!(
+                !TOOL_NAMES.contains(&forged),
+                "{forged} must not be an honored tool name"
+            );
+        }
+    }
+
+    #[test]
+    fn provider_tools_shape_is_closed() {
+        let tools = provider_tools();
+        let names: Vec<&str> = tools
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|t| t.pointer("/function/name").and_then(|n| n.as_str()))
+            .collect();
+        assert_eq!(
+            names,
+            vec![
+                "workspace_navigate",
+                "scene_select",
+            ]
+        );
+        // every entry has a parameters schema with additionalProperties false
+        for tool in tools.as_array().unwrap() {
+            let params = tool.pointer("/function/parameters").unwrap();
+            assert_eq!(
+                params.get("additionalProperties"),
+                Some(&serde_json::Value::Bool(false))
+            );
+        }
+    }
+
+    fn tool_message(tool_call_id: &str, tool_name: &str, state: &str, output: &str) -> serde_json::Value {
+        serde_json::json!({
+            "id": "msg-1",
+            "role": "assistant",
+            "parts": [{
+                // AI SDK v7: the tool name is encoded IN the part type.
+                "type": format!("tool-{tool_name}"),
+                "toolCallId": tool_call_id,
+                "state": state,
+                "input": { "view": "prepare" },
+                "output": serde_json::from_str::<serde_json::Value>(output).unwrap(),
+            }]
+        })
+    }
+
+    #[test]
+    fn map_messages_emits_provider_tool_pair() {
+        let messages = vec![
+            serde_json::json!({
+                "id": "u1",
+                "role": "user",
+                "parts": [{ "type": "text", "text": "go prepare" }]
+            }),
+            tool_message("call_abc_1", "workspace_navigate", "output-available", "{\"ok\":true,\"outcome\":{\"code\":\"changed\",\"view\":\"prepare\"}}"),
+        ];
+        let mapped = map_messages(&messages).unwrap();
+        // [system(no uiContext → skipped), user, assistant tool_calls, tool result]
+        assert_eq!(mapped.len(), 3);
+        assert_eq!(mapped[0]["role"], "user");
+        assert_eq!(mapped[1]["role"], "assistant");
+        assert_eq!(mapped[1]["tool_calls"][0]["id"], "call_abc_1");
+        assert_eq!(mapped[1]["tool_calls"][0]["function"]["name"], "workspace_navigate");
+        let args: serde_json::Value =
+            serde_json::from_str(mapped[1]["tool_calls"][0]["function"]["arguments"].as_str().unwrap())
+                .unwrap();
+        assert_eq!(args["view"], "prepare");
+        assert_eq!(mapped[2]["role"], "tool");
+        assert_eq!(mapped[2]["tool_call_id"], "call_abc_1");
+        let result: serde_json::Value =
+            serde_json::from_str(mapped[2]["content"].as_str().unwrap()).unwrap();
+        assert_eq!(result["outcome"]["code"], "changed");
+    }
+
+    #[test]
+    fn map_messages_ui_context_inlined_bounded_from_last_message() {
+        let mut messages = vec![
+            serde_json::json!({
+                "id": "u1",
+                "role": "user",
+                "parts": [{ "type": "text", "text": "hi" }]
+            }),
+            serde_json::json!({
+                "id": "u2",
+                "role": "user",
+                "parts": [{ "type": "text", "text": "hi again" }],
+                "metadata": { "uiContext": "view:prepare;selected:cone" }
+            }),
+        ];
+        let mapped = map_messages(&messages).unwrap();
+        assert_eq!(mapped.len(), 3);
+        assert_eq!(mapped[0]["role"], "system");
+        assert_eq!(mapped[0]["content"], "current UI context: view:prepare;selected:cone");
+        // bounded: an oversized context is truncated to MAX_UICONTEXT_BYTES
+        messages[1]["metadata"]["uiContext"] = serde_json::json!("x".repeat(4096));
+        let mapped = map_messages(&messages).unwrap();
+        assert_eq!(
+            mapped[0]
+                .get("content")
+                .and_then(|c| c.as_str())
+                .map(|c| c.len()),
+            Some(MAX_UICONTEXT_BYTES + "current UI context: ".len())
+        );
+    }
+
+    #[test]
+    fn map_messages_rejects_unknown_and_writer_tool_names() {
+        for forged in ["job.start", "nozzle", "upload", "totally_fake"] {
+            let messages = vec![
+                serde_json::json!({
+                    "id": "m",
+                    "role": "assistant",
+                    "parts": [{
+                        "type": format!("tool-{forged}"),
+                        "toolCallId": "call_1",
+                        "state": "output-available",
+                        "input": {},
+                    }]
+                })
+            ];
+            assert_eq!(
+                map_messages(&messages).unwrap_err(),
+                ProviderError::UnsupportedTools,
+                "{forged} must be a structured denial"
+            );
+        }
+    }
+
+    #[test]
+    fn map_messages_rejects_tool_pairs_beyond_limit() {
+        // 5 pairs (limit is 4) → fail closed
+        let mut messages = Vec::new();
+        for i in 0..=MAX_TOOL_RESULT_PAIRS as usize {
+            messages.push(tool_message(
+                &format!("call_{i}"),
+                "scene_select",
+                "output-available",
+                "{\"ok\":true}",
+            ));
+        }
+        assert_eq!(
+            map_messages(&messages).unwrap_err(),
+            ProviderError::ToolLoopLimit
+        );
+    }
+
+    #[test]
+    fn map_messages_invalid_call_id_rejected() {
+        let messages = vec![
+            serde_json::json!({
+                "id": "m",
+                "role": "assistant",
+                "parts": [{
+                    "type": "tool-scene_select",
+                    "toolCallId": "",
+                    "state": "output-available",
+                    "input": {},
+                }]
+            })
+        ];
+        assert_eq!(
+            map_messages(&messages).unwrap_err(),
+            ProviderError::MalformedResponse
+        );
+    }
+
+    #[test]
+    fn call_provider_parses_tool_calls_and_rejects_forged_names() {
+        // Valid tool_calls reply parses into ProviderReply.
+        let body = serde_json::json!({
+            "choices": [{
+                "message": {
+                    "content": null,
+                    "tool_calls": [{
+                        "id": "call_ok_1",
+                        "type": "function",
+                        "function": {
+                            "name": "workspace_navigate",
+                            "arguments": "{\"view\":\"workbench\"}"
+                        }
+                    }]
+                }
+            }]
+        });
+        let reply = parse_provider_reply(&body);
+        assert!(reply.is_ok(), "{reply:?}");
+        let reply = reply.unwrap();
+        assert!(reply.content.is_none());
+        assert_eq!(reply.tool_calls.len(), 1);
+        assert_eq!(reply.tool_calls[0].name, "workspace_navigate");
+        assert_eq!(reply.tool_calls[0].arguments["view"], "workbench");
+    }
+
+    #[test]
+    fn parse_provider_reply_rejects_oversized_tool_call_set() {
+        // More calls than MAX_TOOL_CALLS_PER_RESPONSE → whole-response refusal.
+        let mut calls: Vec<serde_json::Value> = Vec::new();
+        for i in 0..=MAX_TOOL_CALLS_PER_RESPONSE as usize {
+            calls.push(serde_json::json!({
+                "id": format!("call_{i}"),
+                "type": "function",
+                "function": { "name": "scene_select", "arguments": "{\"name\":\"x\"}" }
+            }));
+        }
+        let body = serde_json::json!({
+            "choices": [{ "message": { "content": null, "tool_calls": calls } }]
+        });
+        assert_eq!(
+            parse_provider_reply(&body).unwrap_err(),
+            ProviderError::ToolLoopLimit
+        );
     }
 }
